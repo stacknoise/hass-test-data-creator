@@ -7,8 +7,8 @@ from typing import Any
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError, TdcError
+from ..engine.behaviours import Live
 from ..model.models import DeviceDef
-from ..platforms.entities import Live
 from ..store.store import TdcStore
 from .actions import ActionFactory
 
@@ -75,9 +75,8 @@ class ActionRunner:
     ) -> None:
         """Run `action` on entity `key` of the device `reference` (id or name)."""
         device_id = self.find_device_id(reference)
-        entity = self._live.get((device_id, key))
-        if entity is None:
+        behaviour = self._live.get((device_id, key))
+        if behaviour is None:
             raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
-        platform = entity.platform.domain
-        await self._actions.create(platform, action)(entity, params or {})
+        await self._actions.create(behaviour.platform, action)(behaviour, params or {})
         self._audit.record(self._audit_factory.action_fired(reference, key, action))

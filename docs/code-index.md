@@ -137,6 +137,66 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.engine.__init__` | `module` | `custom_components/hass_test_data_creator/engine/__init__.py` | Engine package of the HASS Test Data Creator. |
+| `hass_test_data_creator.engine.behaviour_factory` | `module` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Factory that creates the behaviour per platform (concept 13.2). |
+| `entity_seed` | `def entity_seed(device_seed: int, key: str) -> int` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the seed of one entity from the seed of its device and its key. |
+| `BehaviourFactory` | `class BehaviourFactory` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Creates the behaviour for an entity definition. |
+| `BehaviourFactory.__init__` | `def __init__(self, signals: SignalFactory, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Keep the signal factory and the scheduler the behaviours use. |
+| `BehaviourFactory.create` | `def create(self, device: DeviceDef, definition: EntityDef) -> Behaviour` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the behaviour for `definition` of `device`. |
+| `hass_test_data_creator.engine.behaviours` | `module` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Behaviours: the state and logic of one generated entity, independent of any output (concept 2). |
+| `Scheduler` | `class Scheduler(Protocol)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The clock and the timers of the output; the behaviours know nothing else about time. |
+| `Scheduler.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the signal time in seconds. |
+| `Scheduler.call_later` | `def call_later(self, delay_s: float, callback: Callable[[], None]) -> Cancel` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Run `callback` after `delay_s` seconds and return the function that cancels it. |
+| `_ignore` | `def _ignore() -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing; the default of the change callbacks. |
+| `_ignore_event` | `def _ignore_event(event_type: str) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing with an event; the default of the event callback. |
+| `Behaviour` | `class Behaviour` | `custom_components/hass_test_data_creator/engine/behaviours.py` | What every entity has: its place in a device, a fault and a callback for changes. |
+| `Behaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Keep the ids, the definition and the scheduler. |
+| `Behaviour.available` | `def available(self) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | False while a fault makes the entity unavailable. |
+| `Behaviour.fault_kind` | `def fault_kind(self) -> str \| None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The kind of the active fault, if there is one. |
+| `Behaviour.start_fault` | `def start_fault(self, fault: Fault) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Make `fault` active; it ends by itself after its duration and replaces a running one. |
+| `Behaviour.close` | `def close(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Cancel the timers and stop reporting; the behaviour is no longer used. |
+| `Behaviour._end_fault` | `def _end_fault(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | End the active fault. |
+| `Behaviour._clear_fault_timer` | `def _clear_fault_timer(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Cancel the timer that ends the active fault. |
+| `Behaviour._fault_changed` | `def _fault_changed(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Apply the new fault (or its end) to the state; sensors recompute their value. |
+| `SensorBehaviour` | `class SensorBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A sensor whose value comes from a signal. |
+| `SensorBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Compute the first value at the current signal time. |
+| `SensorBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Compute a new value if the interval has passed and the sensor is not frozen. |
+| `SensorBehaviour._value` | `def _value(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the value of the signal at `now` with the transformation of an active fault. |
+| `SensorBehaviour._fault_changed` | `def _fault_changed(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Show the changed value at once, unless the sensor is frozen. |
+| `OnOffBehaviour` | `class OnOffBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | An entity with an on/off state that survives a restart. |
+| `OnOffBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start in the initial state of the definition. |
+| `OnOffBehaviour.restore` | `def restore(self, is_on: bool) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last state without telling anyone. |
+| `OnOffBehaviour.turn_on` | `def turn_on(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch on. |
+| `OnOffBehaviour.turn_off` | `def turn_off(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch off. |
+| `OnOffBehaviour.toggle` | `def toggle(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch to the other state. |
+| `LightBehaviour` | `class LightBehaviour(OnOffBehaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A dimmable light; the brightness is kept for the next time it is switched on. |
+| `LightBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start at full brightness. |
+| `LightBehaviour.turn_on` | `def turn_on(self, brightness: int \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch on, at `brightness` or the last one. |
+| `BinarySensorBehaviour` | `class BinarySensorBehaviour(OnOffBehaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A binary sensor that is set by actions; motion sensors switch off after a pulse. |
+| `BinarySensorBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start without a running pulse. |
+| `BinarySensorBehaviour.close` | `def close(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Cancel a running pulse and the fault timer. |
+| `BinarySensorBehaviour.set_state` | `def set_state(self, is_on: bool) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the state; a running pulse is cancelled. |
+| `BinarySensorBehaviour.pulse` | `def pulse(self, seconds: float \| None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch on and off again after `seconds` (default: the pulse of the template). |
+| `BinarySensorBehaviour._end_pulse` | `def _end_pulse(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch off at the end of a pulse. |
+| `BinarySensorBehaviour._clear_pulse` | `def _clear_pulse(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Cancel a running pulse timer. |
+| `EventBehaviour` | `class EventBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | An entity that fires events, for example the buttons of a wall button. |
+| `EventBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Keep the event types and start without a listener. |
+| `EventBehaviour.press` | `def press(self, event_type: str) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Fire the event `event_type`. |
+| `CoverBehaviour` | `class CoverBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A cover that moves to a position at once; 100 is open, 0 is closed. |
+| `CoverBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start open if the definition says `initial_on`, otherwise closed. |
+| `CoverBehaviour.is_closed` | `def is_closed(self) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Whether the cover is fully closed. |
+| `CoverBehaviour.restore` | `def restore(self, position: int) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last position without telling anyone. |
+| `CoverBehaviour.set_position` | `def set_position(self, position: int) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Move to `position` (0 to 100) at once. |
+| `CoverBehaviour.open_cover` | `def open_cover(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Open fully. |
+| `CoverBehaviour.close_cover` | `def close_cover(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Close fully. |
+| `ClimateBehaviour` | `class ClimateBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A thermostat: the measured temperature follows a signal, the target is set by actions. |
+| `ClimateBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start in heat mode at the default target temperature. |
+| `ClimateBehaviour.current_temperature` | `def current_temperature(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature at signal time `now`. |
+| `ClimateBehaviour.restore` | `def restore(self, heating: bool, target: float \| None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last mode and target without telling anyone. |
+| `ClimateBehaviour.update` | `def update(self, *, heating: bool \| None=None, target: float \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Change the mode and the target together and report once. |
+| `ClimateBehaviour.set_heating` | `def set_heating(self, heating: bool) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch between heat and off. |
+| `ClimateBehaviour.set_target` | `def set_target(self, target: float) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the target temperature. |
+| `ClimateBehaviour.turn_on` | `def turn_on(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch to heat. |
+| `ClimateBehaviour.turn_off` | `def turn_off(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch to off. |
 | `hass_test_data_creator.engine.signal_factory` | `module` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Factory that creates a signal per shape (concept 13.2). |
 | `Signal` | `class Signal` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | A configured signal that returns its value for a point in time. |
 | `Signal.__init__` | `def __init__(self, spec: SignalSpec) -> None` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Keep the validated spec. |
@@ -261,62 +321,60 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.platforms.__init__` | `module` | `custom_components/hass_test_data_creator/platforms/__init__.py` | Platforms package of the HASS Test Data Creator. |
 | `hass_test_data_creator.platforms.actuators` | `module` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Entity classes of the actuators: light, cover and climate (concept 7.2). |
 | `TdcLight` | `class TdcLight(TdcStatefulEntity, LightEntity)` | `custom_components/hass_test_data_creator/platforms/actuators.py` | A dimmable light that keeps its on/off state. |
-| `TdcLight.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Create the light; it can only be dimmed. |
+| `TdcLight.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: LightBehaviour, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Create the light; it can only be dimmed. |
+| `TdcLight.brightness` | `def brightness(self) -> int` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The brightness from 1 to 255. |
 | `TdcLight.async_turn_on` | `async def async_turn_on(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch on, at the brightness of the call or the last one. |
 | `TdcLight.async_turn_off` | `async def async_turn_off(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch off; the brightness is kept for the next time. |
 | `TdcCover` | `class TdcCover(TdcEntity, RestoreEntity, CoverEntity)` | `custom_components/hass_test_data_creator/platforms/actuators.py` | A cover (blind, shutter) that moves to a position at once; 100 is open, 0 is closed. |
-| `TdcCover.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Start open if the definition says `initial_on`, otherwise closed. |
-| `TdcCover.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Restore the last position. |
+| `TdcCover.current_cover_position` | `def current_cover_position(self) -> int` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The position from 0 (closed) to 100 (open). |
 | `TdcCover.is_closed` | `def is_closed(self) -> bool` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Whether the cover is fully closed. |
-| `TdcCover.set_position` | `def set_position(self, position: int) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Move to `position` (0 to 100) at once. |
+| `TdcCover.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Restore the last position. |
 | `TdcCover.async_open_cover` | `async def async_open_cover(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Open fully. |
 | `TdcCover.async_close_cover` | `async def async_close_cover(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Close fully. |
 | `TdcCover.async_set_cover_position` | `async def async_set_cover_position(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Move to the position of the call. |
 | `TdcCover.async_stop_cover` | `async def async_stop_cover(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Do nothing: the cover never moves slowly. |
 | `TdcClimate` | `class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity)` | `custom_components/hass_test_data_creator/platforms/actuators.py` | A thermostat: the measured temperature follows a signal, the target is set by actions. |
-| `TdcClimate.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live, signal: Signal) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Start in heat mode at the default target temperature. |
+| `TdcClimate.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: ClimateBehaviour, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Create the thermostat with the range of its behaviour. |
+| `TdcClimate.hvac_mode` | `def hvac_mode(self) -> HVACMode` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Heat or off. |
+| `TdcClimate.target_temperature` | `def target_temperature(self) -> float` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The target temperature. |
 | `TdcClimate.current_temperature` | `def current_temperature(self) -> float` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The measured temperature, computed from the signal. |
 | `TdcClimate.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Restore mode and target, then follow the tick. |
 | `TdcClimate._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Publish the new measured temperature. |
 | `TdcClimate.async_set_hvac_mode` | `async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch between off and heat. |
 | `TdcClimate.async_set_temperature` | `async def async_set_temperature(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Set the target temperature and, if given, the mode. |
-| `hass_test_data_creator.platforms.entities` | `module` | `custom_components/hass_test_data_creator/platforms/entities.py` | Entity classes of the native output (concept 5.4, 7.2). |
-| `TdcEntity` | `class TdcEntity` | `custom_components/hass_test_data_creator/platforms/entities.py` | Mixin with what every generated entity has: ids, device info, live registry and faults. |
-| `TdcEntity.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Set unique id, name, device info and category from the definitions. |
-| `TdcEntity.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Make the entity findable for actions. |
-| `TdcEntity.async_will_remove_from_hass` | `async def async_will_remove_from_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Cancel a running fault and remove the entity from the live registry. |
-| `TdcEntity.fault_kind` | `def fault_kind(self) -> str \| None` | `custom_components/hass_test_data_creator/platforms/entities.py` | The kind of the active fault, if there is one. |
-| `TdcEntity.start_fault` | `def start_fault(self, fault: Fault) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Make `fault` active; it ends by itself after its duration and replaces a running one. |
-| `TdcEntity._end_fault` | `def _end_fault(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | End the active fault. |
-| `TdcEntity._clear_fault_timer` | `def _clear_fault_timer(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Cancel the timer that ends the active fault. |
-| `TdcEntity._show_fault` | `def _show_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Apply the active fault (or its end) to the state and write it. |
-| `TdcEntity._apply_fault` | `def _apply_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Change what the fault changes beyond availability; sensors recompute their value. |
+| `hass_test_data_creator.platforms.entities` | `module` | `custom_components/hass_test_data_creator/platforms/entities.py` | Entity classes of the native output: thin shells around the behaviours (concept 5.4, 7.2). |
+| `TdcEntity` | `class TdcEntity` | `custom_components/hass_test_data_creator/platforms/entities.py` | Mixin with what every generated entity has: ids, device info and its behaviour. |
+| `TdcEntity.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: Behaviour, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Set unique id, name, device info and category from the definitions. |
+| `TdcEntity.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Make the behaviour findable for actions and let it report changes. |
+| `TdcEntity.async_will_remove_from_hass` | `async def async_will_remove_from_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Stop the behaviour and remove it from the live registry. |
+| `TdcEntity.available` | `def available(self) -> bool` | `custom_components/hass_test_data_creator/platforms/entities.py` | False while a fault makes the entity unavailable. |
+| `TdcEntity._write` | `def _write(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Publish the state after the behaviour changed. |
 | `TdcStatefulEntity` | `class TdcStatefulEntity(TdcEntity, RestoreEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A generated entity with an on/off state that survives a restart. |
-| `TdcStatefulEntity.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Start in the initial state of the definition. |
+| `TdcStatefulEntity.is_on` | `def is_on(self) -> bool` | `custom_components/hass_test_data_creator/platforms/entities.py` | Whether the entity is on. |
 | `TdcStatefulEntity.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Restore the last state. |
 | `TdcSensor` | `class TdcSensor(TdcEntity, SensorEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A sensor whose value comes from a signal. |
-| `TdcSensor.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live, signal: Signal) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the sensor with its signal and compute the first value. |
-| `TdcSensor._value` | `def _value(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/platforms/entities.py` | Return the value of the signal at `now` with the transformation of an active fault. |
-| `TdcSensor._apply_fault` | `def _apply_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Show the changed value at once, unless the sensor is frozen. |
+| `TdcSensor.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: SensorBehaviour, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the sensor; sensors with states get the enum device class and their options. |
+| `TdcSensor.native_value` | `def native_value(self) -> float \| str` | `custom_components/hass_test_data_creator/platforms/entities.py` | The current value. |
 | `TdcSensor.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Follow the tick. |
 | `TdcSensor._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Compute a new value if the interval of the signal has passed. |
 | `TdcBinarySensor` | `class TdcBinarySensor(TdcStatefulEntity, BinarySensorEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A binary sensor that is set by actions; motion sensors switch off after a pulse. |
-| `TdcBinarySensor.async_will_remove_from_hass` | `async def async_will_remove_from_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Cancel a running pulse. |
-| `TdcBinarySensor.set_state` | `def set_state(self, is_on: bool) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Set the state; a running pulse is cancelled. |
-| `TdcBinarySensor.pulse` | `def pulse(self, seconds: float \| None) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Switch on and off again after `seconds` (default: the pulse of the template). |
-| `TdcBinarySensor._end_pulse` | `def _end_pulse(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Switch off at the end of a pulse. |
-| `TdcBinarySensor._clear_pulse` | `def _clear_pulse(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Cancel a running pulse timer. |
 | `TdcSwitch` | `class TdcSwitch(TdcStatefulEntity, SwitchEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A switch that keeps its state. |
 | `TdcSwitch.async_turn_on` | `async def async_turn_on(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Switch on. |
 | `TdcSwitch.async_turn_off` | `async def async_turn_off(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Switch off. |
 | `TdcEvent` | `class TdcEvent(TdcEntity, EventEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | An event entity, for example the buttons of a wall button. |
-| `TdcEvent.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the event entity with the event types of its definition. |
-| `TdcEvent.press` | `def press(self, event_type: str) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Fire the event `event_type`. |
+| `TdcEvent.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: EventBehaviour, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the event entity with the event types of its behaviour. |
+| `TdcEvent.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Fire the events of the behaviour. |
+| `TdcEvent._fire` | `def _fire(self, event_type: str) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Fire the event `event_type` and publish the state. |
 | `hass_test_data_creator.platforms.factory` | `module` | `custom_components/hass_test_data_creator/platforms/factory.py` | Factory that creates the entity class per platform (concept 13.2). |
-| `entity_seed` | `def entity_seed(device_seed: int, key: str) -> int` | `custom_components/hass_test_data_creator/platforms/factory.py` | Return the seed of one entity from the seed of its device and its key. |
-| `EntityFactory` | `class EntityFactory` | `custom_components/hass_test_data_creator/platforms/factory.py` | Creates the Home Assistant entity for an entity definition. |
-| `EntityFactory.__init__` | `def __init__(self, signals: SignalFactory, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/factory.py` | Keep the signal factory and the live registry the entities register in. |
+| `EntityFactory` | `class EntityFactory` | `custom_components/hass_test_data_creator/platforms/factory.py` | Creates the Home Assistant entity, and its behaviour, for an entity definition. |
+| `EntityFactory.__init__` | `def __init__(self, behaviours: BehaviourFactory, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/factory.py` | Keep the behaviour factory and the live registry the entities register in. |
 | `EntityFactory.create` | `def create(self, device: DeviceDef, definition: EntityDef) -> TdcEntity` | `custom_components/hass_test_data_creator/platforms/factory.py` | Return the entity for `definition` of `device`. |
+| `hass_test_data_creator.platforms.scheduler` | `module` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | The clock and the timers of the native output (concept 7.2). |
+| `HassScheduler` | `class HassScheduler` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Gives the behaviours the signal time and timers of Home Assistant. |
+| `HassScheduler.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Keep the instance the timers run in. |
+| `HassScheduler.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Return the signal time in seconds. |
+| `HassScheduler.call_later` | `def call_later(self, delay_s: float, callback: Callable[[], None]) -> Cancel` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Run `callback` after `delay_s` seconds and return the function that cancels it. |
+| `HassScheduler.call_later.fire` | `def fire(_now: datetime) -> None` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Run the callback on the event loop. |
 | `hass_test_data_creator.platforms.setup` | `module` | `custom_components/hass_test_data_creator/platforms/setup.py` | Common setup of the entity platforms (concept 7.2). |
 | `platform_setup` | `def platform_setup(platform: str) -> Callable[[HomeAssistant, ConfigEntry, AddEntitiesCallback], Awaitable[None]]` | `custom_components/hass_test_data_creator/platforms/setup.py` | Return the `async_setup_entry` of the platform `platform`. |
 | `platform_setup.async_setup_entry` | `async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None` | `custom_components/hass_test_data_creator/platforms/setup.py` | Add the stored entities and the ones of devices created later. |
@@ -328,25 +386,25 @@ Lists every module, class and function of the integration with signature, file a
 | --- | --- | --- | --- |
 | `hass_test_data_creator.scheduler.__init__` | `module` | `custom_components/hass_test_data_creator/scheduler/__init__.py` | Scheduler package of the HASS Test Data Creator. |
 | `hass_test_data_creator.scheduler.actions` | `module` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Actions on entities and their factory (concept 6.2, 13.2); manual actions and faults. |
-| `_turn_on` | `async def _turn_on(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a switch on. |
-| `_turn_off` | `async def _turn_off(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a switch off. |
-| `_toggle` | `async def _toggle(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Toggle a switch. |
-| `_set_on` | `async def _set_on(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set a binary sensor to on. |
-| `_set_off` | `async def _set_off(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set a binary sensor to off. |
-| `_pulse` | `async def _pulse(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a binary sensor on for `duration_s` seconds. |
-| `_press` | `async def _press(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Fire an event of an event entity; `event_type` defaults to the first one. |
+| `_turn_on` | `async def _turn_on(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a switch, light or thermostat on. |
+| `_turn_off` | `async def _turn_off(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a switch, light or thermostat off. |
+| `_toggle` | `async def _toggle(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Toggle a switch or a light. |
+| `_set_on` | `async def _set_on(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set a binary sensor to on. |
+| `_set_off` | `async def _set_off(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set a binary sensor to off. |
+| `_pulse` | `async def _pulse(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a binary sensor on for `duration_s` seconds. |
+| `_press` | `async def _press(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Fire an event of an event entity; `event_type` defaults to the first one. |
 | `_number` | `def _number(params: dict[str, Any], key: str, low: float, high: float) -> float` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return `params[key]` as a number within `low` and `high` or raise SCH_INVALID_PARAMS. |
-| `_set_brightness` | `async def _set_brightness(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set the brightness (0 to 255) of a light; 0 switches it off. |
-| `_open_cover` | `async def _open_cover(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Open a cover fully. |
-| `_close_cover` | `async def _close_cover(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Close a cover fully. |
-| `_set_position` | `async def _set_position(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Move a cover to a position (0 closed, 100 open). |
-| `_set_temperature` | `async def _set_temperature(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set the target temperature of a thermostat. |
+| `_set_brightness` | `async def _set_brightness(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set the brightness (0 to 255) of a light; 0 switches it off. |
+| `_open_cover` | `async def _open_cover(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Open a cover fully. |
+| `_close_cover` | `async def _close_cover(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Close a cover fully. |
+| `_set_position` | `async def _set_position(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Move a cover to a position (0 closed, 100 open). |
+| `_set_temperature` | `async def _set_temperature(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set the target temperature of a thermostat. |
 | `ActionFactory` | `class ActionFactory` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Creates the action for a platform and an action name; faults are `fault_<kind>`. |
 | `ActionFactory.__init__` | `def __init__(self, faults: FaultFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Keep the factory that builds the faults. |
 | `ActionFactory.create` | `def create(self, platform: str, action: str) -> Action` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action or raise SCH_UNKNOWN_ACTION. |
 | `ActionFactory.names` | `def names(self) -> dict[str, list[str]]` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action names per platform. |
 | `ActionFactory._fault_action` | `def _fault_action(self, kind: str) -> Action` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action that starts a fault of `kind` on an entity. |
-| `ActionFactory._fault_action.start` | `async def start(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Start the fault; `duration_s` and the kind's parameters come from `params`. |
+| `ActionFactory._fault_action.start` | `async def start(behaviour: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Start the fault; `duration_s` and the kind's parameters come from `params`. |
 | `hass_test_data_creator.scheduler.manager` | `module` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Stores schedules and runs their actions at the planned moments (concept 6). |
 | `ScheduleManager` | `class ScheduleManager` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Adds, removes and enables schedules and fires them with a single timer. |
 | `ScheduleManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, triggers: TriggerFactory, planner: SchedulePlanner, runner: ActionRunner, scenarios: ScenarioManager, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Keep the collaborators. |

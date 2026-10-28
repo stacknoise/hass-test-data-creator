@@ -12,12 +12,14 @@ from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..const import CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS, DOMAIN
 from ..devices.manager import DevicesManager
+from ..engine.behaviour_factory import BehaviourFactory
+from ..engine.behaviours import Live
 from ..engine.signal_factory import SignalFactory
 from ..engine.tick import Tick
 from ..faults.factory import FaultFactory
 from ..outputs.adapter import OutputAdapterFactory
-from ..platforms.entities import Live
 from ..platforms.factory import EntityFactory
+from ..platforms.scheduler import HassScheduler
 from ..removal.planner import RemovalPlanner
 from ..removal.runner import RemovalRunner
 from ..scenarios.manager import ScenarioManager
@@ -103,7 +105,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
             hass, store, outputs, areas, schedules, scenarios, audit, audit_factory
         ),
         template_registry=registry,
-        entity_factory=EntityFactory(SignalFactory(), live),
+        entity_factory=EntityFactory(BehaviourFactory(SignalFactory(), HassScheduler(hass)), live),
         live=live,
     )
 
