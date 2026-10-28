@@ -12,3 +12,6 @@ node_modules/
 panel-src/coverage/
 dev/config/*
 !dev/config/configuration.yaml
+
+# rendered by npm run screenshots (German, for the homepage)
+panel-src/screenshots/out-de/

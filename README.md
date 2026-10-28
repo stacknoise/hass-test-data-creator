@@ -29,6 +29,34 @@ Home Assistant custom integration that creates and manages **test devices, test 
 
 Not planned for now: YAML import and export, sharing of templates. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
+## Screenshots
+
+The panel in the sidebar of Home Assistant (admin only). The images are rendered with demo data by `npm run screenshots` in `panel-src`.
+
+**Devices**: every generated device with its values; open one to change its area and the curve of a sensor, and to see where it is used.
+
+![The device list](docs/images/devices.png)
+
+![A device with its curve editor and its uses](docs/images/device-details.png)
+
+![The popup that creates devices](docs/images/create-devices.png)
+
+**Schedules and scenarios**: schedules with the planned runs of the next 24 hours, and scenarios as timed steps.
+
+![The schedules with the next 24 hours](docs/images/schedules.png)
+
+![The popup of a new schedule](docs/images/schedule-new.png)
+
+![A scenario with its steps](docs/images/scenarios.png)
+
+**MQTT groups, history and removal**
+
+![The MQTT groups](docs/images/groups.png)
+
+![The statistics import](docs/images/history.png)
+
+![The removal with its plan](docs/images/removal.png)
+
 ## Status
 
 Version 0.3.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.2.0: the MQTT discovery and Zigbee2MQTT outputs with groups and base topic options, the state shapes `enum` and `state_machine` with the washing machine template, the faults `late` and `duplicate`, the MQTT groups tab, and scheduling a scenario from the panel. Not tried yet in a running Home Assistant or against a real broker beyond the automatic tests; native Home Assistant groups are not created.
@@ -39,7 +67,7 @@ Version 0.3.0. Requires Home Assistant 2026.9.0 or newer. The integration create
 2. Add `https://github.com/stacknoise/hass-test-data-creator` as category **Integration**.
 3. Install **HASS Test Data Creator** and restart Home Assistant.
 4. Go to **Settings → Devices & services → Add integration** and add **HASS Test Data Creator**. Confirm that this is a test environment.
-5. Open **Test data** in the sidebar (administrators only).
+5. Open **Test Data Generator** in the sidebar (administrators only).
 
 ## Services
 
