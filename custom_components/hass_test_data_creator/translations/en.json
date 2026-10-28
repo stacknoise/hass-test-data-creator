@@ -86,6 +86,9 @@
     },
     "sch_invalid_fault": {
       "message": "The fault or its parameters are invalid"
+    },
+    "sch_invalid_params": {
+      "message": "A parameter of the action is missing or out of range"
     }
   },
   "services": {

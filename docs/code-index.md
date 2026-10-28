@@ -13,11 +13,14 @@ Lists every module, class and function of the integration with signature, file a
 | `async_unload_entry` | `async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool` | `custom_components/hass_test_data_creator/__init__.py` | Stop the tick, unload the platforms and remove services and panel. |
 | `async_remove_entry` | `async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None` | `custom_components/hass_test_data_creator/__init__.py` | Delete everything left behind: created areas and the storage file. |
 | `hass_test_data_creator.binary_sensor` | `module` | `custom_components/hass_test_data_creator/binary_sensor.py` | The binary_sensor platform of the generated devices. |
+| `hass_test_data_creator.climate` | `module` | `custom_components/hass_test_data_creator/climate.py` | The climate platform of the generated devices. |
 | `hass_test_data_creator.config_flow` | `module` | `custom_components/hass_test_data_creator/config_flow.py` | Config flow: one entry, created after the test environment confirmation (concept 10.4). |
 | `TestDataCreatorConfigFlow` | `class TestDataCreatorConfigFlow(ConfigFlow)` | `custom_components/hass_test_data_creator/config_flow.py` | Asks once whether this is a test instance and for the seed and tick interval. |
 | `TestDataCreatorConfigFlow.async_step_user` | `async def async_step_user(self, user_input: dict[str, Any] \| None=None) -> ConfigFlowResult` | `custom_components/hass_test_data_creator/config_flow.py` | Create the entry if the user confirms that this is a test environment. |
 | `hass_test_data_creator.const` | `module` | `custom_components/hass_test_data_creator/const.py` | Constants of the HASS Test Data Creator. |
+| `hass_test_data_creator.cover` | `module` | `custom_components/hass_test_data_creator/cover.py` | The cover platform of the generated devices. |
 | `hass_test_data_creator.event` | `module` | `custom_components/hass_test_data_creator/event.py` | The event platform of the generated devices. |
+| `hass_test_data_creator.light` | `module` | `custom_components/hass_test_data_creator/light.py` | The light platform of the generated devices. |
 | `hass_test_data_creator.panel` | `module` | `custom_components/hass_test_data_creator/panel.py` | Registers the sidebar panel and serves the built panel file (concept 9). |
 | `async_register_panel` | `async def async_register_panel(hass: HomeAssistant, version: str) -> None` | `custom_components/hass_test_data_creator/panel.py` | Serve the `frontend` folder (once) and add the admin-only sidebar panel. |
 | `async_remove_panel` | `def async_remove_panel(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/panel.py` | Remove the sidebar panel. |
@@ -241,6 +244,27 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.platforms.__init__` | `module` | `custom_components/hass_test_data_creator/platforms/__init__.py` | Platforms package of the HASS Test Data Creator. |
+| `hass_test_data_creator.platforms.actuators` | `module` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Entity classes of the actuators: light, cover and climate (concept 7.2). |
+| `TdcLight` | `class TdcLight(TdcStatefulEntity, LightEntity)` | `custom_components/hass_test_data_creator/platforms/actuators.py` | A dimmable light that keeps its on/off state. |
+| `TdcLight.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Create the light; it can only be dimmed. |
+| `TdcLight.async_turn_on` | `async def async_turn_on(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch on, at the brightness of the call or the last one. |
+| `TdcLight.async_turn_off` | `async def async_turn_off(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch off; the brightness is kept for the next time. |
+| `TdcCover` | `class TdcCover(TdcEntity, RestoreEntity, CoverEntity)` | `custom_components/hass_test_data_creator/platforms/actuators.py` | A cover (blind, shutter) that moves to a position at once; 100 is open, 0 is closed. |
+| `TdcCover.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Start open if the definition says `initial_on`, otherwise closed. |
+| `TdcCover.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Restore the last position. |
+| `TdcCover.is_closed` | `def is_closed(self) -> bool` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Whether the cover is fully closed. |
+| `TdcCover.set_position` | `def set_position(self, position: int) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Move to `position` (0 to 100) at once. |
+| `TdcCover.async_open_cover` | `async def async_open_cover(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Open fully. |
+| `TdcCover.async_close_cover` | `async def async_close_cover(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Close fully. |
+| `TdcCover.async_set_cover_position` | `async def async_set_cover_position(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Move to the position of the call. |
+| `TdcCover.async_stop_cover` | `async def async_stop_cover(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Do nothing: the cover never moves slowly. |
+| `TdcClimate` | `class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity)` | `custom_components/hass_test_data_creator/platforms/actuators.py` | A thermostat: the measured temperature follows a signal, the target is set by actions. |
+| `TdcClimate.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live, signal: Signal) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Start in heat mode at the default target temperature. |
+| `TdcClimate.current_temperature` | `def current_temperature(self) -> float` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The measured temperature, computed from the signal. |
+| `TdcClimate.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Restore mode and target, then follow the tick. |
+| `TdcClimate._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Publish the new measured temperature. |
+| `TdcClimate.async_set_hvac_mode` | `async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch between off and heat. |
+| `TdcClimate.async_set_temperature` | `async def async_set_temperature(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Set the target temperature and, if given, the mode. |
 | `hass_test_data_creator.platforms.entities` | `module` | `custom_components/hass_test_data_creator/platforms/entities.py` | Entity classes of the native output (concept 5.4, 7.2). |
 | `TdcEntity` | `class TdcEntity` | `custom_components/hass_test_data_creator/platforms/entities.py` | Mixin with what every generated entity has: ids, device info, live registry and faults. |
 | `TdcEntity.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Set unique id, name, device info and category from the definitions. |
@@ -296,6 +320,12 @@ Lists every module, class and function of the integration with signature, file a
 | `_set_off` | `async def _set_off(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set a binary sensor to off. |
 | `_pulse` | `async def _pulse(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a binary sensor on for `duration_s` seconds. |
 | `_press` | `async def _press(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Fire an event of an event entity; `event_type` defaults to the first one. |
+| `_number` | `def _number(params: dict[str, Any], key: str, low: float, high: float) -> float` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return `params[key]` as a number within `low` and `high` or raise SCH_INVALID_PARAMS. |
+| `_set_brightness` | `async def _set_brightness(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set the brightness (0 to 255) of a light; 0 switches it off. |
+| `_open_cover` | `async def _open_cover(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Open a cover fully. |
+| `_close_cover` | `async def _close_cover(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Close a cover fully. |
+| `_set_position` | `async def _set_position(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Move a cover to a position (0 closed, 100 open). |
+| `_set_temperature` | `async def _set_temperature(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set the target temperature of a thermostat. |
 | `ActionFactory` | `class ActionFactory` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Creates the action for a platform and an action name; faults are `fault_<kind>`. |
 | `ActionFactory.__init__` | `def __init__(self, faults: FaultFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Keep the factory that builds the faults. |
 | `ActionFactory.create` | `def create(self, platform: str, action: str) -> Action` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action or raise SCH_UNKNOWN_ACTION. |

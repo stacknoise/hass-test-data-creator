@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
+from homeassistant.components.cover import CoverDeviceClass
 from homeassistant.components.event import EventDeviceClass
 from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.switch import SwitchDeviceClass
@@ -22,8 +23,9 @@ _DEVICE_CLASSES: dict[str, set[str]] = {
     "binary_sensor": {item.value for item in BinarySensorDeviceClass},
     "event": {item.value for item in EventDeviceClass},
     "switch": {item.value for item in SwitchDeviceClass},
+    "cover": {item.value for item in CoverDeviceClass},
 }
-_SIGNAL_PLATFORMS = {"sensor"}
+_SIGNAL_PLATFORMS = {"sensor", "climate"}
 
 
 @dataclass

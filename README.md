@@ -2,11 +2,11 @@
 
 Home Assistant custom integration that creates and manages **test devices, test entities and test data** for development and performance tests. It is meant for **test environments only**, never for an instance with real devices.
 
-- Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor) or from your own entity definitions.
+- Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor, dimmable light, blind, radiator thermostat) or from your own entity definitions.
 - Assign the devices to areas on creation.
 - Value curves: constant, sine, saw, square, triangle, noise, random walk, counter, and the daily profiles `household_load` and `pv_day`, a staircase (`steps`) and a battery `discharge`. Every curve is a function of time and seed, so the same seed gives the same values.
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
-- Trigger actions by hand: switch, press a button, set or pulse a binary sensor.
+- Trigger actions by hand: switch, press a button, set or pulse a binary sensor, dim a light (`set_brightness` 0 to 255), move a blind (`open`, `close`, `set_position` 0 to 100), set a thermostat (`set_temperature`, `turn_on`, `turn_off`). A blind moves at once. Wrong parameters give error `TDC-SCH-006`.
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
 - Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`. The device list shows active faults.
 - Everything that was generated can be removed again, completely, and nothing else is touched.

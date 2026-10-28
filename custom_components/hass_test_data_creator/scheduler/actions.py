@@ -49,6 +49,47 @@ async def _press(entity: Any, params: dict[str, Any]) -> None:
     entity.press(event_type)
 
 
+def _number(params: dict[str, Any], key: str, low: float, high: float) -> float:
+    """Return `params[key]` as a number within `low` and `high` or raise SCH_INVALID_PARAMS."""
+    try:
+        value = float(params[key])
+    except KeyError, TypeError, ValueError:
+        raise ScheduleError(ErrorCode.SCH_INVALID_PARAMS) from None
+    if not low <= value <= high:
+        raise ScheduleError(ErrorCode.SCH_INVALID_PARAMS)
+    return value
+
+
+async def _set_brightness(entity: Any, params: dict[str, Any]) -> None:
+    """Set the brightness (0 to 255) of a light; 0 switches it off."""
+    brightness = int(_number(params, "brightness", 0, 255))
+    if brightness == 0:
+        await entity.async_turn_off()
+    else:
+        await entity.async_turn_on(brightness=brightness)
+
+
+async def _open_cover(entity: Any, params: dict[str, Any]) -> None:
+    """Open a cover fully."""
+    await entity.async_open_cover()
+
+
+async def _close_cover(entity: Any, params: dict[str, Any]) -> None:
+    """Close a cover fully."""
+    await entity.async_close_cover()
+
+
+async def _set_position(entity: Any, params: dict[str, Any]) -> None:
+    """Move a cover to a position (0 closed, 100 open)."""
+    await entity.async_set_cover_position(position=int(_number(params, "position", 0, 100)))
+
+
+async def _set_temperature(entity: Any, params: dict[str, Any]) -> None:
+    """Set the target temperature of a thermostat."""
+    low, high = entity.min_temp, entity.max_temp
+    await entity.async_set_temperature(temperature=_number(params, "temperature", low, high))
+
+
 _ACTIONS: dict[tuple[str, str], Action] = {
     ("switch", "turn_on"): _turn_on,
     ("switch", "turn_off"): _turn_off,
@@ -57,6 +98,16 @@ _ACTIONS: dict[tuple[str, str], Action] = {
     ("binary_sensor", "set_off"): _set_off,
     ("binary_sensor", "pulse"): _pulse,
     ("event", "press"): _press,
+    ("light", "turn_on"): _turn_on,
+    ("light", "turn_off"): _turn_off,
+    ("light", "toggle"): _toggle,
+    ("light", "set_brightness"): _set_brightness,
+    ("cover", "open"): _open_cover,
+    ("cover", "close"): _close_cover,
+    ("cover", "set_position"): _set_position,
+    ("climate", "set_temperature"): _set_temperature,
+    ("climate", "turn_on"): _turn_on,
+    ("climate", "turn_off"): _turn_off,
 }
 
 
