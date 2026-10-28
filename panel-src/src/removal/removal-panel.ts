@@ -1,9 +1,10 @@
-import { html, type TemplateResult } from 'lit';
+import { css, html, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import '../common/target-select';
 import type { TextKey } from '../common/i18n';
+import { usageEntries } from '../devices/helpers';
 import { sortedByLabel } from '../common/labels';
 import type { RemovalPlan, RemovalTarget } from '../common/types';
 
@@ -16,6 +17,19 @@ const TARGET_LABELS: Record<RemovalTarget, TextKey> = {
 /** Shows what a removal would delete and removes it after the user confirms. */
 @customElement('tdc-removal-panel')
 export class RemovalPanel extends TdcElement {
+  static override styles = [
+    TdcElement.styles,
+    css`
+      .plan {
+        margin-top: 20px;
+      }
+      .plan ul {
+        margin: 0 0 12px;
+        padding-left: 20px;
+      }
+    `,
+  ];
+
   @property() target: RemovalTarget = 'all';
   @property() targetId = '';
 
@@ -99,7 +113,27 @@ export class RemovalPanel extends TdcElement {
             .join(', ')}${plan.devices.length > 20 ? ' …' : ''}</small
         >
       </p>
-      <button class="primary" ?disabled=${this.busy} @click=${() => void this.confirm()}>
+      ${
+        plan.in_use.length
+          ? html`<p class="error">${this.tr('inUseWarning')}</p>
+              <ul>
+                ${plan.in_use.map(
+                  (item) =>
+                    html`<li>
+                      ${item.device}:
+                      ${usageEntries(item.usage)
+                        .map((entry) => `${this.tr(`use_${entry.kind}` as TextKey)} ${entry.name}`)
+                        .join(', ')}
+                    </li>`,
+                )}
+              </ul>`
+          : ''
+      }
+      <button
+        class="primary"
+        ?disabled=${this.busy || plan.in_use.length > 0}
+        @click=${() => void this.confirm()}
+      >
         ${this.tr('confirmRemove')}
       </button>`;
   }
@@ -107,8 +141,8 @@ export class RemovalPanel extends TdcElement {
   /** Render the element. */
   override render(): TemplateResult {
     return html`
-      <div class="row">
-        <label style="flex: 0 0 280px"
+      <div class="fields bottom">
+        <label
           >${this.tr('target')}
           <select
             @change=${(e: Event) => {
@@ -141,14 +175,16 @@ export class RemovalPanel extends TdcElement {
                 }}
               ></tdc-target-select>`
         }
-        <button
-          ?disabled=${this.target !== 'all' && !this.targetId}
-          @click=${() => void this.showPlan()}
-        >
-          ${this.tr('showPlan')}
-        </button>
+        <div>
+          <button
+            ?disabled=${this.target !== 'all' && !this.targetId}
+            @click=${() => void this.showPlan()}
+          >
+            ${this.tr('showPlan')}
+          </button>
+        </div>
       </div>
-      ${this.plan ? this.renderPlan(this.plan) : ''}
+      ${this.plan ? html`<div class="plan">${this.renderPlan(this.plan)}</div>` : ''}
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;
   }

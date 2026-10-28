@@ -115,6 +115,9 @@
     "out_group_not_found": {
       "message": "Die Gruppe wurde nicht gefunden"
     },
+    "rem_in_use": {
+      "message": "Ein Gerät, das noch verwendet wird, lässt sich nicht entfernen. Nimm es zuerst aus den Zeitplänen, Szenarien und Gruppen: {usage}"
+    },
     "rem_failed": {
       "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"
     },
@@ -171,7 +174,7 @@
         },
         "label": {
           "name": "Bezeichnung",
-          "description": "Name des Erstellungslaufs."
+          "description": "Name des Geräte Sets."
         },
         "output": {
           "name": "Ausgang",
@@ -207,7 +210,7 @@
     },
     "remove": {
       "name": "Entfernen",
-      "description": "Entfernt ein Testgerät oder einen Erstellungslauf.",
+      "description": "Entfernt ein Testgerät oder ein Geräte Set.",
       "fields": {
         "target": {
           "name": "Ziel",
@@ -299,7 +302,7 @@
         },
         "device": {
           "name": "Gerät",
-          "description": "Id oder Name eines Geräts; leer für alle Geräte."
+          "description": "Id oder Name eines Geräts oder eine Liste davon; leer für alle Geräte."
         },
         "entity": {
           "name": "Entität",
@@ -383,7 +386,7 @@
     "remove_target": {
       "options": {
         "device": "Ein Gerät",
-        "run": "Ein Erstellungslauf"
+        "run": "Ein Geräte Set"
       }
     }
   }

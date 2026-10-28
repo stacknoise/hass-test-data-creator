@@ -21,6 +21,7 @@ export class TdcPanel extends TdcElement {
   @state() private removeTarget: RemovalTarget = 'all';
   @state() private removeId = '';
   @state() private lapse = 1;
+  @state() private mqtt = false;
 
   static override styles = [
     TdcElement.styles,
@@ -66,14 +67,22 @@ export class TdcPanel extends TdcElement {
     `,
   ];
 
-  /** Read the time lapse factor, so that the header can show it. */
-  override async connectedCallback(): Promise<void> {
+  /** Read what the backend offers, so that the header and the tabs follow it. */
+  override connectedCallback(): void {
     super.connectedCallback();
+    void this.loadInfo();
+  }
+
+  /** Read the time lapse factor and whether MQTT is connected; MQTT groups need it. */
+  private async loadInfo(): Promise<void> {
     try {
-      this.lapse = (await this.api.info()).time_lapse;
+      const info = await this.api.info();
+      this.lapse = info.time_lapse;
+      this.mqtt = info.mqtt;
     } catch {
       this.lapse = 1;
     }
+    if (!this.mqtt && this.tab === 'groups') this.tab = 'devices';
   }
 
   /** Switch to the removal tab with a preset target. */
@@ -85,7 +94,13 @@ export class TdcPanel extends TdcElement {
 
   /** Render one tab button. */
   private renderTab(tab: Tab, label: string): TemplateResult {
-    return html`<button class=${this.tab === tab ? 'active' : ''} @click=${() => (this.tab = tab)}>
+    return html`<button
+      class=${this.tab === tab ? 'active' : ''}
+      @click=${() => {
+        this.tab = tab;
+        void this.loadInfo();
+      }}
+    >
       ${label}
     </button>`;
   }
@@ -106,7 +121,7 @@ export class TdcPanel extends TdcElement {
         ${this.renderTab('devices', this.tr('tabDevices'))}
         ${this.renderTab('schedules', this.tr('tabSchedules'))}
         ${this.renderTab('scenarios', this.tr('tabScenarios'))}
-        ${this.renderTab('groups', this.tr('tabGroups'))}
+        ${this.mqtt ? this.renderTab('groups', this.tr('tabGroups')) : ''}
         ${this.renderTab('history', this.tr('tabHistory'))}
         ${this.renderTab('remove', this.tr('tabRemove'))}
       </nav>

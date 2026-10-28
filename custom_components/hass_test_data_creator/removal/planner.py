@@ -11,8 +11,8 @@ from homeassistant.helpers import area_registry as ar, device_registry as dr, en
 
 from ..const import DOMAIN
 from ..core.errors import ErrorCode, ScheduleError
+from ..devices.usage import KINDS, DeviceUsage
 from ..model.models import DeviceDef
-from ..scheduler.schema import device_references
 from ..store.store import TdcStore
 
 TARGET_ALL = "all"
@@ -35,6 +35,15 @@ class RemovalPlan:
     topics: list[str] = field(default_factory=list)
     statistics: list[str] = field(default_factory=list)
     areas: list[str] = field(default_factory=list)
+    in_use: list[dict[str, Any]] = field(default_factory=list)
+
+    def describe_in_use(self) -> str:
+        """Return the devices that are still used, each with the names of its users."""
+        return "; ".join(
+            f"{item['device']}: "
+            + ", ".join(user["name"] for kind in KINDS for user in item["usage"][kind])
+            for item in self.in_use
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return the plan as the panel shows it before the user confirms."""
@@ -49,17 +58,21 @@ class RemovalPlan:
             "topics": self.topics,
             "statistics": self.statistics,
             "areas": self.areas,
+            "in_use": self.in_use,
         }
 
 
 class RemovalPlanner:
     """Builds the plan for a target from the store and the registry markers."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, store: TdcStore) -> None:
-        """Keep the instance, the config entry and the store."""
+    def __init__(
+        self, hass: HomeAssistant, entry: ConfigEntry, store: TdcStore, usage: DeviceUsage
+    ) -> None:
+        """Keep the instance, the config entry, the store and the finder of the users of devices."""
         self._hass = hass
         self._entry = entry
         self._store = store
+        self._usage = usage
 
     def plan(self, target: str, target_id: str | None) -> RemovalPlan:
         """Return the plan to remove `target` (`all`, `device` or `run`) with `target_id`."""
@@ -82,6 +95,7 @@ class RemovalPlanner:
             if device is None:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             plan.devices = [device]
+        plan.in_use = self._in_use(plan)
         plan.schedules = self._schedule_ids(plan)
         plan.groups = self._group_ids(plan)
         owners = None if target == TARGET_ALL else {d.id for d in plan.devices} | set(plan.groups)
@@ -92,33 +106,29 @@ class RemovalPlanner:
         )
         return plan
 
-    def _group_ids(self, plan: RemovalPlan) -> list[str]:
-        """Return the ids of the groups that go with the plan: all, or those left without members."""
-        groups = self._store.groups()
+    def _in_use(self, plan: RemovalPlan) -> list[dict[str, Any]]:
+        """Return the devices of a plan that a schedule, scenario or group names; "all" has none."""
         if plan.target == TARGET_ALL:
-            return [item.id for item in groups]
-        removed = {device.id for device in plan.devices}
-        return [item.id for item in groups if set(item.members) <= removed]
+            return []
+        found = [(device, self._usage.of(device)) for device in plan.devices]
+        return [
+            {"device": device.name, "usage": usage}
+            for device, usage in found
+            if self._usage.is_used(usage)
+        ]
+
+    def _group_ids(self, plan: RemovalPlan) -> list[str]:
+        """Return the ids of the groups that go with the plan: all of them, or none."""
+        if plan.target == TARGET_ALL:
+            return [item.id for item in self._store.groups()]
+        return []
 
     def _schedule_ids(self, plan: RemovalPlan) -> list[str]:
-        """Return the ids of the schedules that go with the plan: all, or those aimed at it."""
+        """Return the ids of the schedules that go with the plan: all, or those aimed at its runs."""
         schedules = self._store.schedules()
         if plan.target == TARGET_ALL:
             return [item.id for item in schedules]
-        names = {name for device in plan.devices for name in (device.id, device.name)}
-        existing = {name for device in self._store.devices() for name in (device.id, device.name)}
-        return [
-            item.id
-            for item in schedules
-            if self._aims_only_at(item.target.get("device"), names, existing)
-            or item.target.get("run") in plan.runs
-        ]
-
-    @staticmethod
-    def _aims_only_at(device: str | list[str] | None, names: set[str], existing: set[str]) -> bool:
-        """Whether a target names devices that still exist and all of them are being removed."""
-        alive = device_references(device) & existing
-        return bool(alive) and alive <= names
+        return [item.id for item in schedules if item.target.get("run") in plan.runs]
 
     def _orphans(self, known: set[str]) -> list[dict[str, str]]:
         """Return registry devices of this entry that the store does not know (damaged store)."""

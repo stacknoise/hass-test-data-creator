@@ -1,4 +1,4 @@
-import type { ScenarioStep, TemplateInfo } from '../common/types';
+import type { ScenarioStep } from '../common/types';
 import { defaultWork, resolveWork, workOf, type WorkForm } from '../schedule/helpers';
 
 /** The inputs of one step in the scenario form. */
@@ -42,14 +42,10 @@ export function buildSteps(forms: StepForm[]): ScenarioStep[] | undefined {
 }
 
 /** Return the form of an existing step; parameters become the JSON text that the form edits. */
-export function stepFormOf(
-  step: ScenarioStep,
-  actions: Record<string, string[]>,
-  templates: TemplateInfo[],
-): StepForm {
+export function stepFormOf(step: ScenarioStep): StepForm {
   return {
     afterS: step.after_s,
-    work: workOf(step, actions, templates),
+    work: workOf(step),
     params: Object.keys(step.params).length ? JSON.stringify(step.params) : '',
   };
 }

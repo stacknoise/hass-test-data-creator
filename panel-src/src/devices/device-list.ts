@@ -18,7 +18,7 @@ import {
 import '../common/dialog';
 import '../wizard/creation-wizard';
 import './device-detail';
-import { knownAreas } from './helpers';
+import { knownAreas, usageEntries } from './helpers';
 
 const PAGE_SIZE = 200;
 const REFRESH_MS = 10_000;
@@ -140,7 +140,15 @@ export class DeviceList extends TdcElement {
       }));
     return sortedByLabel(
       lang,
-      [...items, { value: REMOVE, label: this.tr('remove') }],
+      [
+        ...items,
+        {
+          value: REMOVE,
+          label: this.tr('remove'),
+          disabled: usageEntries(device.used_by).length > 0,
+          hint: this.tr('removeBlocked'),
+        },
+      ],
       (i) => i.label,
     );
   }

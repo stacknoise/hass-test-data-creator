@@ -150,7 +150,7 @@ export class TdcApi {
   }
 
   /** Write hourly statistics for the past days; `device` (id or name) and `entity` (key) narrow it. */
-  importHistory(days: number, device?: string, entity?: string): Promise<HistoryResult> {
+  importHistory(days: number, device?: string | string[], entity?: string): Promise<HistoryResult> {
     return this.call('history/import', { days, device, entity });
   }
 

@@ -3,12 +3,12 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
-import { actionKeyLabel, labelOf, sortedByLabel } from '../common/labels';
+import { actionLabel, labelOf, sortedByLabel } from '../common/labels';
 import '../common/target-select';
 import type { DeviceInfo, TemplateInfo } from '../common/types';
 import {
   allEntities,
-  availableActionKeys,
+  availableActions,
   entitiesOfTarget,
   entityKeysFor,
   type TargetKind,
@@ -49,8 +49,8 @@ export class WorkPicker extends TdcElement {
     this.dispatchEvent(new CustomEvent('tdc-work-change', { detail: { ...this.work, ...patch } }));
   }
 
-  /** Return the actions and entities that fit the chosen target. */
-  private scope(): { actionKeys: string[]; entities: string[] } {
+  /** Return the actions that fit the chosen target, and the entities that the chosen action fits. */
+  private scope(): { actions: string[]; entities: string[] } {
     const scoped = entitiesOfTarget(
       this.work.kind,
       this.work.targetIds,
@@ -58,23 +58,23 @@ export class WorkPicker extends TdcElement {
       this.templates,
     );
     const lang = this.hass?.language;
-    const actionKeys = sortedByLabel(lang, availableActionKeys(this.actions, scoped), (key) =>
-      actionKeyLabel(lang, key),
+    const actions = sortedByLabel(lang, availableActions(this.actions, scoped), (action) =>
+      actionLabel(lang, action),
     );
     const entities = sortedByLabel(
       lang,
-      entityKeysFor(scoped ?? allEntities(this.templates), this.work.actionKey),
+      entityKeysFor(scoped ?? allEntities(this.templates), this.actions, this.work.action),
       (key) => labelOf(lang, 'entity', key),
     );
-    return { actionKeys, entities };
+    return { actions, entities };
   }
 
   /** Move the action and the entity to ones that fit, when the target changed under them. */
   protected override updated(changed: PropertyValues): void {
     super.updated(changed);
-    const { actionKeys, entities } = this.scope();
-    if (actionKeys.length && !actionKeys.includes(this.work.actionKey)) {
-      this.emit({ actionKey: actionKeys[0], entity: '' });
+    const { actions, entities } = this.scope();
+    if (actions.length && !actions.includes(this.work.action)) {
+      this.emit({ action: actions[0], entity: '' });
     } else if (entities.length && !entities.includes(this.work.entity)) {
       this.emit({ entity: entities[0] });
     }
@@ -82,7 +82,7 @@ export class WorkPicker extends TdcElement {
 
   /** Render the element. */
   override render(): TemplateResult {
-    const { actionKeys, entities } = this.scope();
+    const { actions, entities } = this.scope();
     const lang = this.hass?.language;
     return html`
       <div class="fields">
@@ -108,10 +108,10 @@ export class WorkPicker extends TdcElement {
         }
         ${this.select(
           this.tr('schAction'),
-          actionKeys,
-          this.work.actionKey,
-          (key) => actionKeyLabel(lang, key),
-          (key) => this.emit({ actionKey: key, entity: '' }),
+          actions,
+          this.work.action,
+          (action) => actionLabel(lang, action),
+          (action) => this.emit({ action, entity: '' }),
         )}
         ${this.select(
           this.tr('schEntity'),

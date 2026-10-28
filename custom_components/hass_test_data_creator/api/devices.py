@@ -41,6 +41,7 @@ def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any
                 "entity_id": entity_id,
                 "state": state.state if state else None,
                 "unit": definition.unit,
+                "state_class": definition.state_class,
                 "signal": definition.signal,
                 "fault": getattr(live.get((device.id, definition.key)), "fault_kind", None),
             }
@@ -76,6 +77,7 @@ async def ws_devices_list(
                 "run_id": device.run_id,
                 "created_at": device.created_at,
                 "entities": _entity_states(hass, device),
+                "used_by": get_data(hass).usage.of(device),
             }
             for device in page
         ],

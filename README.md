@@ -18,7 +18,10 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - The Schedules tab shows the form for a new schedule first, then the preview of the next 24 hours, then the list. Click a schedule to change it in the same form (name, target, action, trigger, scenario); the change replans the runs at once. The WebSocket command `schedules/update` does the same.
 - Devices are created in a popup of the Devices tab (the button "Create devices"), and so are schedules in the Schedules tab ("New schedule"). The area of a creation job is picked from a multi-select dropdown (the areas of Home Assistant, and new names you add).
 - Scenarios and MQTT groups work like schedules: a button opens a popup for a new one, and a click on a row changes it. The members of a group are picked from a multi-select of the Zigbee2MQTT devices; renaming a group deletes its retained state under the old name. The WebSocket commands `scenarios/update` and `groups/update` do the same.
-- A target of an action, schedule or scenario step can name one device, several devices (`target: {device: ["Plug 01", "Plug 02"]}`), a template or one creation (a run). The forms offer the devices, templates and creations to pick from, and only the actions and entities that fit the chosen target. Removing devices removes a schedule only when all the devices it names are gone.
+- The details of a device end with a collapsible list of where it is used: the schedules, scenarios and MQTT groups that name it. As long as a device is used it cannot be removed (error `TDC-REM-002`; "Remove" is greyed out and the removal tab names the users). A target by template, creation or all devices does not count, and "Remove everything" is never blocked.
+- The History tab picks one or several devices, and one sensor, from lists; `import_history` takes the same: a device, or a list of devices.
+- The MQTT discovery and Zigbee2MQTT outputs and the MQTT groups tab are offered only while the MQTT integration is connected to its broker.
+- A target of an action, schedule or scenario step can name one device, several devices (`target: {device: ["Plug 01", "Plug 02"]}`), a template or one device set (the devices of one creation job). The forms offer the devices, templates and device sets to pick from, and only the actions and entities that fit the chosen target. Removing devices removes a schedule only when all the devices it names are gone.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
@@ -42,7 +45,7 @@ Version 0.3.0. Requires Home Assistant 2026.9.0 or newer. The integration create
 | --- | --- |
 | `hass_test_data_creator.create_devices` | Create devices from a template or custom entities |
 | `hass_test_data_creator.fire_event` | Run an action on one entity of a test device |
-| `hass_test_data_creator.remove` | Remove one device or one creation run |
+| `hass_test_data_creator.remove` | Remove one device or one device set (all devices of one creation job) |
 | `hass_test_data_creator.remove_all` | Remove everything the integration created |
 | `hass_test_data_creator.add_schedule` | Run an action on devices at fixed, repeating or random times |
 | `hass_test_data_creator.remove_schedule` | Delete a schedule (`schedule_id`) |

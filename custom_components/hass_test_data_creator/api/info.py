@@ -30,8 +30,12 @@ from ..scheduler.triggers import TRIGGER_TYPES
 async def ws_info(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
-    """Return version, API version, features, limits, outputs, shapes and platforms."""
+    """Return version, API version, features, limits, outputs, shapes and platforms.
+
+    The MQTT and Zigbee2MQTT outputs are listed only while the MQTT integration is connected.
+    """
     data = get_data(hass)
+    mqtt = data.mqtt.available()
     integration = await async_get_integration(hass, DOMAIN)
     return {
         "version": str(integration.version),
@@ -42,7 +46,8 @@ async def ws_info(
             "max_batch": MAX_BATCH,
             "max_entities_per_device": MAX_ENTITIES_PER_DEVICE,
         },
-        "outputs": [OUTPUT_NATIVE, OUTPUT_MQTT, OUTPUT_Z2M],
+        "outputs": [OUTPUT_NATIVE, *([OUTPUT_MQTT, OUTPUT_Z2M] if mqtt else [])],
+        "mqtt": mqtt,
         "shapes": list(SHAPE_NAMES),
         "triggers": list(TRIGGER_TYPES),
         "platforms": list(PLATFORMS),

@@ -7,6 +7,8 @@ import { PopoverElement, popoverStyles } from './popover';
 export interface MenuItem {
   value: string;
   label: string;
+  disabled?: boolean;
+  hint?: string;
 }
 
 /** A button that opens a menu; choosing an entry fires `tdc-pick` with its value. */
@@ -65,7 +67,12 @@ export class MenuButton extends PopoverElement {
           ? html`<div class="popover" popover="manual" role="menu">
               ${this.items.map(
                 (item) =>
-                  html`<button role="menuitem" @click=${() => this.pick(item.value)}>
+                  html`<button
+                    role="menuitem"
+                    ?disabled=${item.disabled}
+                    title=${item.hint ?? ''}
+                    @click=${() => this.pick(item.value)}
+                  >
                     ${item.label}
                   </button>`,
               )}

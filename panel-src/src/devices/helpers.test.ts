@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceInfo } from '../common/types';
-import { actionsFor, faultParams, knownAreas, valueParams } from './helpers';
+import { actionsFor, faultParams, knownAreas, usageEntries, valueParams } from './helpers';
 
 const ACTIONS = {
   light: ['turn_on', 'turn_off', 'toggle', 'set_brightness', 'fault_unavailable', 'fault_late'],
@@ -52,5 +52,25 @@ describe('knownAreas', () => {
       'Kitchen',
     ]);
     expect(knownAreas(undefined, [])).toEqual([]);
+  });
+});
+
+describe('usageEntries', () => {
+  it('lists schedules first, then scenarios, then groups', () => {
+    const used = {
+      schedules: [{ id: 's', name: 'Evening' }],
+      scenarios: [{ id: 'c', name: 'Leaving' }],
+      groups: [{ id: 'g', name: 'Lights' }],
+    };
+    expect(usageEntries(used)).toEqual([
+      { kind: 'schedules', name: 'Evening' },
+      { kind: 'scenarios', name: 'Leaving' },
+      { kind: 'groups', name: 'Lights' },
+    ]);
+  });
+
+  it('is empty for a device that nothing uses, or one without the information', () => {
+    expect(usageEntries({ schedules: [], scenarios: [], groups: [] })).toEqual([]);
+    expect(usageEntries(undefined)).toEqual([]);
   });
 });

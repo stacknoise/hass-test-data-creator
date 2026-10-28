@@ -58,9 +58,9 @@ export class ScheduleForm extends TdcElement {
       this.loadedId = this.schedule.id;
       this.name = this.schedule.name;
       this.scenarioId = this.schedule.scenario ?? '';
-      this.work = workOf(this.schedule, actions, this.templates);
+      this.work = workOf(this.schedule);
       this.form = triggerFormOf(this.schedule.trigger);
-    } else if (!this.schedule && actions && !this.work.actionKey) {
+    } else if (!this.schedule && actions && !this.work.action) {
       this.work = defaultWork(actions);
     }
     super.willUpdate(changed);
@@ -99,7 +99,7 @@ export class ScheduleForm extends TdcElement {
   /** Whether the action, and the target if it needs one, are chosen. */
   private complete(): boolean {
     return (
-      Boolean(this.work.actionKey) && (this.work.kind === 'all' || this.work.targetIds.length > 0)
+      Boolean(this.work.action) && (this.work.kind === 'all' || this.work.targetIds.length > 0)
     );
   }
 

@@ -27,7 +27,8 @@ async def test_info_and_templates(
     assert info["success"]
     assert info["result"]["api_version"] == API_VERSION
     assert info["result"]["version"] == "0.3.0"
-    assert info["result"]["outputs"] == ["native", "mqtt", "z2m"]
+    assert info["result"]["outputs"] == ["native"]
+    assert info["result"]["mqtt"] is False
     assert "sine" in info["result"]["shapes"]
 
     templates = await call(client, "templates/list")

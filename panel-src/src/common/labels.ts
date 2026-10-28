@@ -217,13 +217,6 @@ export function actionLabel(code: string | undefined, action: string): string {
   return `${prefix}: ${labelOf(code, 'fault', action.slice(FAULT_PREFIX.length))}`;
 }
 
-/** Return the text of `platform/action`, as the schedule and scenario forms list it. */
-export function actionKeyLabel(code: string | undefined, key: string): string {
-  const [platform, action] = key.split('/');
-  if (!action) return key;
-  return `${labelOf(code, 'platform', platform)} · ${actionLabel(code, action)}`;
-}
-
 /** Return the text of a template: the translated name of a bundled one, else the name it has. */
 export function templateLabel(code: string | undefined, id: string, name: string): string {
   return tables[languageOf(code)].template[id] ?? name;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TemplateInfo } from '../common/types';
-import { actionKeys, allEntities, entityKeysFor, resolveWork } from '../schedule/helpers';
+import { actionNames, allEntities, entityKeysFor, resolveWork } from '../schedule/helpers';
 import { buildSteps, defaultStep, parseParams, stepFormOf } from './helpers';
 
 const ACTIONS = { switch: ['toggle', 'turn_on'], light: ['set_brightness'] };
@@ -22,22 +22,19 @@ const TEMPLATES: TemplateInfo[] = [
 ];
 
 describe('scenario helpers', () => {
-  it('lists actions and the entities they work on', () => {
-    expect(actionKeys(ACTIONS)).toEqual([
-      'switch/toggle',
-      'switch/turn_on',
-      'light/set_brightness',
-    ]);
+  it('lists each action once and the entities that it works on', () => {
+    expect(actionNames(ACTIONS)).toEqual(['toggle', 'turn_on', 'set_brightness']);
     const refs = allEntities(TEMPLATES);
-    expect(entityKeysFor(refs, 'light/set_brightness')).toEqual(['light']);
-    expect(entityKeysFor(refs, 'cover/open')).toEqual([]);
+    expect(entityKeysFor(refs, ACTIONS, 'set_brightness')).toEqual(['light']);
+    expect(entityKeysFor(refs, ACTIONS, 'toggle')).toEqual(['state']);
+    expect(entityKeysFor(refs, ACTIONS, 'open')).toEqual([]);
   });
 
   it('resolves the work of a form', () => {
     const work = {
       kind: 'template' as const,
       targetIds: ['plug'],
-      actionKey: 'switch/toggle',
+      action: 'toggle',
       entity: 'state',
     };
     expect(resolveWork(work)).toEqual({
@@ -60,7 +57,7 @@ describe('scenario helpers', () => {
     const second = {
       ...first,
       afterS: 30,
-      work: { ...first.work, actionKey: 'light/set_brightness', entity: 'light' },
+      work: { ...first.work, action: 'set_brightness', entity: 'light' },
       params: '{"brightness": 128}',
     };
     expect(buildSteps([first, second])).toEqual([
@@ -86,13 +83,13 @@ describe('editing a step', () => {
       action: 'set_brightness',
       params: { brightness: 128 },
     };
-    const form = stepFormOf(step, ACTIONS, TEMPLATES);
+    const form = stepFormOf(step);
     expect(form).toEqual({
       afterS: 30,
       work: {
         kind: 'device',
         targetIds: ['d1', 'd2'],
-        actionKey: 'light/set_brightness',
+        action: 'set_brightness',
         entity: 'light',
       },
       params: '{"brightness":128}',
@@ -108,6 +105,6 @@ describe('editing a step', () => {
       action: 'toggle',
       params: {},
     };
-    expect(stepFormOf(step, ACTIONS, TEMPLATES).params).toBe('');
+    expect(stepFormOf(step).params).toBe('');
   });
 });

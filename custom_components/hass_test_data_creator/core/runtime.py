@@ -24,6 +24,7 @@ from ..const import (
 )
 from ..devices.manager import DevicesManager
 from ..devices.signal_editor import SignalEditor
+from ..devices.usage import DeviceUsage
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import Live
 from ..engine.clock import Clock
@@ -83,6 +84,7 @@ class TdcData:
     history: HistoryManager
     clock: Clock
     signal_editor: SignalEditor
+    usage: DeviceUsage
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -133,6 +135,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         audit,
         audit_factory,
     )
+    usage = DeviceUsage(store)
     history = HistoryManager(
         hass, store, StatisticsClient(hass), SeriesFactory(signals), audit, audit_factory
     )
@@ -155,7 +158,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         action_runner=action_runner,
         schedules=schedules,
         scenarios=scenarios,
-        removal_planner=RemovalPlanner(hass, entry, store),
+        removal_planner=RemovalPlanner(hass, entry, store, usage),
         removal_runner=RemovalRunner(
             hass,
             store,
@@ -173,6 +176,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         groups=groups,
         history=history,
         clock=clock,
+        usage=usage,
         signal_editor=SignalEditor(store, live, behaviours, audit, audit_factory),
         live=live,
     )

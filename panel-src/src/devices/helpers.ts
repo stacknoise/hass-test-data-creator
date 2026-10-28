@@ -1,4 +1,4 @@
-import type { DeviceInfo } from '../common/types';
+import type { DeviceInfo, DeviceUsage } from '../common/types';
 
 /** An action that needs one number, with the name of its parameter and the allowed range. */
 export interface ValueAction {
@@ -62,4 +62,20 @@ export function knownAreas(
     ...devices.flatMap((d) => (d.area ? [d.area] : [])),
   ];
   return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+}
+
+/** The kinds of user of a device, in the order that they are listed. */
+export const USAGE_KINDS = ['schedules', 'scenarios', 'groups'] as const;
+
+/** One user of a device: its kind and its name. */
+export interface UsageEntry {
+  kind: (typeof USAGE_KINDS)[number];
+  name: string;
+}
+
+/** Return the users of a device as a flat list: schedules first, then scenarios, then groups. */
+export function usageEntries(used: DeviceUsage | undefined): UsageEntry[] {
+  return USAGE_KINDS.flatMap((kind) =>
+    (used?.[kind] ?? []).map((item) => ({ kind, name: item.name })),
+  );
 }

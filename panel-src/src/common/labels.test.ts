@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  actionKeyLabel,
   actionLabel,
   entityName,
   labelIds,
@@ -28,12 +27,10 @@ describe('label tables', () => {
 });
 
 describe('action labels', () => {
-  it('translate actions, faults and platform/action keys', () => {
+  it('translate actions and faults', () => {
     expect(actionLabel('de', 'toggle')).toBe('Umschalten');
     expect(actionLabel('de', 'fault_dropout')).toBe('Störung: Aussetzer');
     expect(actionLabel('en', 'fault_dropout')).toBe('Fault: Dropout');
-    expect(actionKeyLabel('de', 'light/set_brightness')).toBe('Leuchte · Helligkeit setzen');
-    expect(actionKeyLabel('en', 'nothing')).toBe('nothing');
   });
 });
 

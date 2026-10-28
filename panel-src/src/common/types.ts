@@ -53,6 +53,7 @@ export interface Info {
   actions: Record<string, string[]>;
   tick_seconds: number;
   time_lapse: number;
+  mqtt: boolean;
   device_count: number;
 }
 
@@ -65,6 +66,7 @@ export interface EntityState {
   entity_id: string | null;
   state: string | null;
   unit: string | null;
+  state_class?: string | null;
   fault: string | null;
 }
 
@@ -79,6 +81,14 @@ export interface DeviceInfo {
   run_id: string;
   created_at: number;
   entities: EntityState[];
+  used_by: DeviceUsage;
+}
+
+/** The schedules, scenarios and groups that name a device. */
+export interface DeviceUsage {
+  schedules: { id: string; name: string }[];
+  scenarios: { id: string; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 /** One page of devices. */
@@ -112,6 +122,7 @@ export interface RemovalPlan {
   groups: string[];
   topics: string[];
   statistics: string[];
+  in_use: { device: string; usage: DeviceUsage }[];
 }
 
 /** What a statistics import wrote. */

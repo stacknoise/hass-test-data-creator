@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { DeviceInfo, EntityState, SignalDef } from '../common/types';
+import type { TextKey } from '../common/i18n';
 import { actionLabel, entityName, labelOf, sortedByLabel, stateLabel } from '../common/labels';
 import '../common/menu-button';
 import type { MenuItem } from '../common/menu-button';
@@ -13,6 +14,7 @@ import {
   FAULT_PREFIX,
   VALUE_ACTIONS,
   actionsFor,
+  usageEntries,
   faultParams,
   valueParams,
 } from './helpers';
@@ -56,6 +58,13 @@ export class DeviceDetail extends TdcElement {
       }
       .curve {
         padding: 4px 0 8px;
+      }
+      .usage {
+        margin: 24px 0 8px 32px;
+      }
+      .usage ul {
+        margin: 8px 0 0;
+        padding-left: 20px;
       }
       @container (max-width: 560px) {
         table,
@@ -302,6 +311,21 @@ export class DeviceDetail extends TdcElement {
       ${entity.key in this.curves ? this.renderCurve(entity) : ''}`;
   }
 
+  /** Render the list of the schedules, scenarios and groups that name the device. */
+  private renderUsage(): TemplateResult {
+    const entries = usageEntries(this.device.used_by);
+    if (entries.length === 0)
+      return html`<p class="usage"><small>${this.tr('useNone')}</small></p>`;
+    return html`<details class="usage">
+      <summary>${this.tr('useTitle', { count: entries.length })}</summary>
+      <ul>
+        ${entries.map(
+          (entry) => html`<li>${this.tr(`use_${entry.kind}` as TextKey)}: ${entry.name}</li>`,
+        )}
+      </ul>
+    </details>`;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     return html`
@@ -314,6 +338,7 @@ export class DeviceDetail extends TdcElement {
         </tr>
         ${this.device.entities.map((entity) => this.renderEntity(entity))}
       </table>
+      ${this.renderUsage()}
       <p class="error">${this.error}</p>
     `;
   }

@@ -3,11 +3,12 @@ import type { DeviceInfo, Trigger } from '../common/types';
 import {
   buildTarget,
   allEntities,
-  availableActionKeys,
+  availableActions,
   buildTrigger,
   defaultTriggerForm,
   describeTarget,
   entitiesOfTarget,
+  entityKeysFor,
   formatWhen,
   parseTimes,
   summarizeTrigger,
@@ -68,23 +69,6 @@ describe('schedule helpers', () => {
 });
 
 describe('editing an existing schedule', () => {
-  const actions = {
-    switch: ['toggle', 'turn_on'],
-    light: ['toggle', 'set_brightness'],
-  };
-  const entity = (
-    key: string,
-    platform: string,
-  ): { key: string; platform: string; name: string } => ({
-    key,
-    platform,
-    name: key,
-  });
-  const templates = [
-    { id: 'lamp', name: 'Lamp', model: 'x', bundled: true, entities: [entity('light', 'light')] },
-    { id: 'plug', name: 'Plug', model: 'x', bundled: true, entities: [entity('state', 'switch')] },
-  ];
-
   it('turns every trigger back into the form values', () => {
     expect(
       triggerFormOf({ type: 'times', times: ['07:00', '19:30'], weekdays: [1, 3] }),
@@ -104,35 +88,15 @@ describe('editing an existing schedule', () => {
     expect(buildTrigger(triggerFormOf(trigger))).toEqual(trigger);
   });
 
-  it('finds the platform of an action by the entity that it works on', () => {
-    const work = workOf(
-      { target: { device: 'Lamp 01' }, entity: 'light', action: 'toggle' },
-      actions,
-      templates,
-    );
+  it('keeps the target, the action and the entity of a stored schedule', () => {
+    const work = workOf({ target: { device: ['a', 'b'] }, entity: 'light', action: 'toggle' });
     expect(work).toEqual({
       kind: 'device',
-      targetIds: ['Lamp 01'],
-      actionKey: 'light/toggle',
+      targetIds: ['a', 'b'],
+      action: 'toggle',
       entity: 'light',
     });
-    const plug = workOf(
-      { target: { all: true }, entity: 'state', action: 'toggle' },
-      actions,
-      templates,
-    );
-    expect(plug.actionKey).toBe('switch/toggle');
-  });
-
-  it('falls back to the first platform, and to nothing for an unknown action', () => {
-    const other = workOf(
-      { target: { all: true }, entity: 'other', action: 'toggle' },
-      actions,
-      templates,
-    );
-    expect(other.actionKey).toBe('switch/toggle');
-    const gone = workOf({ target: { all: true }, entity: 'x', action: 'gone' }, actions, templates);
-    expect(gone.actionKey).toBe('');
+    expect(workOf({ target: { all: true }, entity: 'state', action: 'turn_on' }).kind).toBe('all');
   });
 });
 
@@ -186,16 +150,23 @@ describe('what fits a target', () => {
     expect(entitiesOfTarget('template', ['gone'], devices, templates)).toBeUndefined();
   });
 
-  it('offers only the actions of the platforms that the target has', () => {
+  it('offers each action once, and only those of the platforms that the target has', () => {
     const plugs = entitiesOfTarget('device', ['p1'], devices, templates);
-    expect(availableActionKeys(actions, plugs)).toEqual(['switch/toggle', 'switch/turn_on']);
+    expect(availableActions(actions, plugs)).toEqual(['toggle', 'turn_on']);
     const both = entitiesOfTarget('device', ['p1', 'l1'], devices, templates);
-    expect(availableActionKeys(actions, both)).toEqual([
-      'switch/toggle',
-      'switch/turn_on',
-      'light/toggle',
-      'light/set_brightness',
+    expect(availableActions(actions, both)).toEqual(['toggle', 'turn_on', 'set_brightness']);
+    expect(availableActions(actions, undefined)).toEqual([
+      'toggle',
+      'turn_on',
+      'set_brightness',
+      'open',
     ]);
-    expect(availableActionKeys(actions, undefined)).toHaveLength(5);
+  });
+
+  it('finds the entities that can do the chosen action', () => {
+    const both = entitiesOfTarget('device', ['p1', 'l1'], devices, templates) ?? [];
+    expect(entityKeysFor(both, actions, 'toggle')).toEqual(['state', 'light']);
+    expect(entityKeysFor(both, actions, 'set_brightness')).toEqual(['light']);
+    expect(entityKeysFor(both, actions, 'open')).toEqual([]);
   });
 });

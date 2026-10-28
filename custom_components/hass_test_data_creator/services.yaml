@@ -72,7 +72,7 @@ remove:
       required: true
       selector:
         select:
-          options: [run, device]
+          options: [device, run]
           translation_key: remove_target
     target_id:
       required: true

@@ -14,6 +14,14 @@ FRONTEND_DIR = Path(__file__).parent / "frontend"
 STATIC_KEY = f"{DOMAIN}_static_registered"
 
 
+def _built_at() -> int:
+    """Return when the built panel file was last changed, so that a new build is not served from the cache."""
+    try:
+        return int((FRONTEND_DIR / PANEL_FILE).stat().st_mtime)
+    except OSError:
+        return 0
+
+
 async def async_register_panel(hass: HomeAssistant, version: str) -> None:
     """Serve the `frontend` folder (once) and add the admin-only sidebar panel."""
     if not hass.data.get(STATIC_KEY):
@@ -21,11 +29,12 @@ async def async_register_panel(hass: HomeAssistant, version: str) -> None:
             [StaticPathConfig(PANEL_STATIC_URL, str(FRONTEND_DIR), cache_headers=False)]
         )
         hass.data[STATIC_KEY] = True
+    built = await hass.async_add_executor_job(_built_at)
     await panel_custom.async_register_panel(
         hass,
         webcomponent_name=PANEL_ELEMENT,
         frontend_url_path=PANEL_URL_PATH,
-        module_url=f"{PANEL_STATIC_URL}/{PANEL_FILE}?v={version}",
+        module_url=f"{PANEL_STATIC_URL}/{PANEL_FILE}?v={version}-{built}",
         sidebar_title="Test data",
         sidebar_icon="mdi:flask-outline",
         require_admin=True,

@@ -33,7 +33,7 @@ export class ScenarioForm extends TdcElement {
     if (this.scenario && actions && this.loadedId !== this.scenario.id) {
       this.loadedId = this.scenario.id;
       this.name = this.scenario.name;
-      this.steps = this.scenario.steps.map((step) => stepFormOf(step, actions, this.templates));
+      this.steps = this.scenario.steps.map(stepFormOf);
     } else if (!this.scenario && actions && this.steps.length === 0) {
       this.steps = [defaultStep(actions)];
     }
