@@ -4067,6 +4067,8 @@ var Mr = [
 		return y`
       <div class="fields">
         ${this.textField(this.tr("schName"), this.name, (e) => this.name = e)}
+      </div>
+      <div class="fields">
         ${this.select(this.tr("schTrigger"), Mr, this.form.type, (e) => this.tr(`schTrigger_${e}`), (e) => this.setForm({ type: e }))}
         ${this.select(this.tr("schRuns"), ["", ...this.scenarios.map((e) => e.id)], this.scenarioId, (e) => e ? this.tr("schScenario", { id: this.scenarioName(e) }) : this.tr("schRunsAction"), (e) => this.scenarioId = e)}
       </div>

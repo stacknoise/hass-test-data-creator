@@ -175,6 +175,8 @@ export class ScheduleForm extends TdcElement {
     return html`
       <div class="fields">
         ${this.textField(this.tr('schName'), this.name, (v) => (this.name = v))}
+      </div>
+      <div class="fields">
         ${this.select(
           this.tr('schTrigger'),
           TRIGGER_TYPES,
