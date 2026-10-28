@@ -2,6 +2,7 @@ import { html, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
+import { actionKeyLabel, labelOf } from '../common/labels';
 import type { TemplateInfo } from '../common/types';
 import { actionKeys, entityKeysFor, type TargetKind, type WorkForm } from './helpers';
 
@@ -42,14 +43,14 @@ export class WorkPicker extends TdcElement {
           this.tr('schAction'),
           actionKeys(this.actions),
           this.work.actionKey,
-          (key) => key,
+          (key) => actionKeyLabel(this.hass?.language, key),
           (key) => this.emit({ actionKey: key, entity: '' }),
         )}
         ${this.select(
           this.tr('schEntity'),
           entities,
           this.work.entity || entities[0] || '',
-          (key) => key,
+          (key) => labelOf(this.hass?.language, 'entity', key),
           (key) => this.emit({ entity: key }),
         )}
       </div>

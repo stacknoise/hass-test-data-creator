@@ -4,6 +4,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { DeviceInfo, EntityState, Info } from '../common/types';
+import { OUTPUT_LABELS, entityName, labelOf, stateLabel, templateLabel } from '../common/labels';
 import './device-detail';
 import { knownAreas } from './helpers';
 
@@ -97,14 +98,22 @@ export class DeviceList extends TdcElement {
 
   /** Return the current values of the first entities as one line. */
   private values(device: DeviceInfo): string {
+    const lang = this.hass?.language;
     return device.entities
       .filter((e) => VALUE_PLATFORMS.includes(e.platform))
       .slice(0, 4)
-      .map(
-        (e) =>
-          `${e.name}: ${e.state ?? '–'}${e.unit ? ` ${e.unit}` : ''}${e.fault ? ` ⚠ ${e.fault}` : ''}`,
-      )
+      .map((e) => {
+        const unit = e.unit ? ` ${e.unit}` : '';
+        const fault = e.fault ? ` ⚠ ${labelOf(lang, 'fault', e.fault)}` : '';
+        return `${entityName(lang, e.key, e.name)}: ${stateLabel(lang, e.state)}${unit}${fault}`;
+      })
       .join(' · ');
+  }
+
+  /** Return the text of the template of a device. */
+  private templateName(device: DeviceInfo): string {
+    if (device.template === 'custom') return this.tr('customTemplate');
+    return templateLabel(this.hass?.language, device.template, device.model);
   }
 
   /** Render the table row of one device. */
@@ -113,9 +122,9 @@ export class DeviceList extends TdcElement {
     const open = this.expanded.has(device.id);
     return html`<tr class="device" @click=${() => this.toggle(device.id)}>
         <td>${open ? '▾' : '▸'} ${device.name}</td>
-        <td>${device.model}</td>
+        <td>${this.templateName(device)}</td>
         <td>${device.area ?? '–'}</td>
-        <td>${device.output}</td>
+        <td>${this.tr(OUTPUT_LABELS[device.output] ?? 'outputNative')}</td>
         <td><small>${this.values(device)}</small></td>
         <td class="row">
           ${actionable.map(
@@ -126,7 +135,7 @@ export class DeviceList extends TdcElement {
                   void this.fire(device, e);
                 }}
               >
-                ${e.name}
+                ${entityName(this.hass?.language, e.key, e.name)}
               </button>`,
           )}
           <button

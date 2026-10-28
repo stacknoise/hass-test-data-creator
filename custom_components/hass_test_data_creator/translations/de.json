@@ -258,6 +258,10 @@
         "enabled": {
           "name": "Aktiv",
           "description": "Den Zeitplan eingeschaltet anlegen."
+        },
+        "scenario": {
+          "name": "Szenario",
+          "description": "Id eines Szenarios, das statt einer Aktion läuft."
         }
       }
     },
@@ -301,6 +305,85 @@
           "name": "Entität",
           "description": "Schlüssel einer Entität, zum Beispiel power; leer für alle Sensoren."
         }
+      }
+    },
+    "add_scenario": {
+      "name": "Szenario anlegen",
+      "description": "Speichert eine benannte Liste zeitlich versetzter Schritte.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name des Szenarios."
+        },
+        "steps": {
+          "name": "Schritte",
+          "description": "Liste von Schritten mit Ziel, Entität, Aktion, optionalen Parametern und after_s, der Wartezeit in Sekunden nach dem Schritt davor."
+        }
+      }
+    },
+    "remove_scenario": {
+      "name": "Szenario entfernen",
+      "description": "Löscht ein Szenario.",
+      "fields": {
+        "scenario_id": {
+          "name": "Id",
+          "description": "Id des Szenarios."
+        }
+      }
+    },
+    "run_scenario": {
+      "name": "Szenario starten",
+      "description": "Startet ein Szenario und gibt die Zahl seiner Schritte zurück.",
+      "fields": {
+        "scenario_id": {
+          "name": "Id",
+          "description": "Id des Szenarios."
+        }
+      }
+    },
+    "add_group": {
+      "name": "Gruppe anlegen",
+      "description": "Fasst Zigbee2MQTT-Geräte unter einem Namen zusammen.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name der Gruppe, ohne Schrägstrich."
+        },
+        "members": {
+          "name": "Mitglieder",
+          "description": "Namen oder Ids der Geräte; sie müssen den Zigbee2MQTT-Ausgang nutzen."
+        }
+      }
+    },
+    "remove_group": {
+      "name": "Gruppe entfernen",
+      "description": "Löscht eine Gruppe.",
+      "fields": {
+        "group_id": {
+          "name": "Id",
+          "description": "Id der Gruppe."
+        }
+      }
+    }
+  },
+  "selector": {
+    "area_mode": {
+      "options": {
+        "even": "Der Reihe nach",
+        "random": "Zufällig"
+      }
+    },
+    "output": {
+      "options": {
+        "mqtt": "MQTT-Discovery",
+        "native": "Home Assistant (nativ)",
+        "z2m": "Zigbee2MQTT"
+      }
+    },
+    "remove_target": {
+      "options": {
+        "device": "Ein Gerät",
+        "run": "Ein Erstellungslauf"
       }
     }
   }

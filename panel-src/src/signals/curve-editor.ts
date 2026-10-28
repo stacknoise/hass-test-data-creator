@@ -2,6 +2,7 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
+import { labelOf, sortedByLabel } from '../common/labels';
 import type { SignalDef } from '../common/types';
 import {
   fieldsFor,
@@ -78,10 +79,12 @@ export class CurveEditor extends TdcElement {
             @change=${(e: Event) =>
               this.emit(withShape(this.signal, (e.target as HTMLSelectElement).value))}
           >
-            ${this.shapes.map(
+            ${sortedByLabel(this.hass?.language, this.shapes, (s) =>
+              labelOf(this.hass?.language, 'shape', s),
+            ).map(
               (shape) =>
                 html`<option value=${shape} ?selected=${shape === this.signal.shape}>
-                  ${shape}
+                  ${labelOf(this.hass?.language, 'shape', shape)}
                 </option>`,
             )}
           </select>

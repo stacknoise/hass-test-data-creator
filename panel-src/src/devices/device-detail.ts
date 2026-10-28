@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { DeviceInfo, EntityState, SignalDef } from '../common/types';
+import { actionLabel, entityName, labelOf, sortedByLabel, stateLabel } from '../common/labels';
 import '../signals/curve-editor';
 import { isDiscrete } from '../signals/editor-helpers';
 import {
@@ -156,14 +157,16 @@ export class DeviceDetail extends TdcElement {
         ?disabled=${this.busy || !params}
         @click=${() => void this.fire(entity, action, params)}
       >
-        ${action}
+        ${actionLabel(this.hass?.language, action)}
       </button>
     </span>`;
   }
 
   /** Render the fault select with the duration and its start button. */
   private renderFault(entity: EntityState, kinds: string[]): TemplateResult {
-    const kind = this.faultKind[entity.key] ?? kinds[0];
+    const lang = this.hass?.language;
+    const sorted = sortedByLabel(lang, kinds, (k) => labelOf(lang, 'fault', k));
+    const kind = this.faultKind[entity.key] ?? sorted[0];
     const text = this.faultSeconds[entity.key] ?? String(DEFAULT_FAULT_SECONDS);
     const params = faultParams(text);
     return html`<span class="row">
@@ -174,7 +177,10 @@ export class DeviceDetail extends TdcElement {
             [entity.key]: (e.target as HTMLSelectElement).value,
           })}
       >
-        ${kinds.map((k) => html`<option value=${k} ?selected=${k === kind}>${k}</option>`)}
+        ${sorted.map(
+          (k) =>
+            html`<option value=${k} ?selected=${k === kind}>${labelOf(lang, 'fault', k)}</option>`,
+        )}
       </select>
       <input
         type="number"
@@ -226,20 +232,33 @@ export class DeviceDetail extends TdcElement {
 
   /** Render the row of one entity. */
   private renderEntity(entity: EntityState): TemplateResult {
-    const available = actionsFor(this.actions, entity.platform);
+    const lang = this.hass?.language;
+    const found = actionsFor(this.actions, entity.platform);
+    const byLabel = (action: string): string => actionLabel(lang, action);
+    const available = {
+      plain: sortedByLabel(lang, found.plain, byLabel),
+      withValue: sortedByLabel(lang, found.withValue, byLabel),
+      faults: found.faults,
+    };
     const editable = entity.signal != null && !isDiscrete(entity.signal.shape);
     return html`<tr>
-        <td>${entity.name}<br /><small>${entity.platform}</small></td>
         <td>
-          ${entity.state ?? '–'}${entity.unit ? ` ${entity.unit}` : ''}${
-            entity.fault ? html`<br /><small class="warning">⚠ ${entity.fault}</small>` : ''
+          ${entityName(lang, entity.key, entity.name)}<br /><small
+            >${labelOf(lang, 'platform', entity.platform)}</small
+          >
+        </td>
+        <td>
+          ${stateLabel(lang, entity.state)}${entity.unit ? ` ${entity.unit}` : ''}${
+            entity.fault
+              ? html`<br /><small class="warning">⚠ ${labelOf(lang, 'fault', entity.fault)}</small>`
+              : ''
           }
         </td>
         <td class="row">
           ${available.plain.map(
             (action) =>
               html`<button ?disabled=${this.busy} @click=${() => void this.fire(entity, action)}>
-                ${action}
+                ${byLabel(action)}
               </button>`,
           )}
           ${available.withValue.map((action) => this.renderValueAction(entity, action))}

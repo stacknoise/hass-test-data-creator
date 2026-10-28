@@ -2,6 +2,7 @@ import { LitElement, css, html, type CSSResultGroup, type TemplateResult } from 
 import { property } from 'lit/decorators.js';
 import { TdcApi } from './api';
 import { languageOf, t, type TextKey } from './i18n';
+import { sortedByLabel } from './labels';
 import type { Hass } from './types';
 
 /** The look that buttons and form fields share. */
@@ -118,7 +119,7 @@ export abstract class TdcElement extends LitElement {
     </label>`;
   }
 
-  /** Render a labelled select; `text` returns the label of a value. */
+  /** Render a labelled select; `text` returns the label of a value, and the options are sorted by it. */
   protected select(
     label: string,
     values: string[],
@@ -129,7 +130,7 @@ export abstract class TdcElement extends LitElement {
     return html`<label style="flex: 1 1 180px"
       >${label}
       <select @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}>
-        ${values.map(
+        ${sortedByLabel(this.hass?.language, values, text).map(
           (value) =>
             html`<option value=${value} ?selected=${value === current}>${text(value)}</option>`,
         )}

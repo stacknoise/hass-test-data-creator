@@ -1,6 +1,7 @@
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
+import { actionLabel, labelOf } from '../common/labels';
 import { TdcPollingElement } from '../common/polling';
 import type { Info, ScenarioInfo } from '../common/types';
 import { describeTarget, type WorkForm } from '../schedule/helpers';
@@ -126,7 +127,7 @@ export class ScenarioPanel extends TdcPollingElement {
       <td>${item.name}</td>
       <td>
         ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
-          >${first ? `${first.entity}: ${first.action} · ${this.tr(`schTarget_${kind}`)}` : ''}</small
+          >${first ? `${labelOf(this.hass?.language, 'entity', first.entity)}: ${actionLabel(this.hass?.language, first.action)} · ${this.tr(`schTarget_${kind}`)}` : ''}</small
         >
       </td>
       <td>

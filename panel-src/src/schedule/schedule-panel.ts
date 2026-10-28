@@ -3,6 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcPollingElement } from '../common/polling';
 import type { TextKey } from '../common/i18n';
+import { actionLabel, labelOf } from '../common/labels';
 import type { Info, PlannedRun, ScenarioInfo, ScheduleInfo, TriggerType } from '../common/types';
 import './work-picker';
 import {
@@ -205,7 +206,7 @@ export class SchedulePanel extends TdcPollingElement {
         ${item.scenario ? '–' : `${this.tr(`schTarget_${kind}` as TextKey)}${id ? ` ${id}` : ''}`}
       </td>
       <td>
-        ${item.scenario ? this.tr('schScenario', { id: this.scenarioName(item.scenario) }) : `${item.entity}: ${item.action}`}
+        ${item.scenario ? this.tr('schScenario', { id: this.scenarioName(item.scenario) }) : `${labelOf(this.hass?.language, 'entity', item.entity)}: ${actionLabel(this.hass?.language, item.action)}`}
       </td>
       <td>
         ${this.tr(`schTrigger_${item.trigger.type}` as TextKey)}<br /><small

@@ -202,7 +202,7 @@ const de: Record<TextKey, string> = {
   schMoreRuns: '… und {count} weitere',
   planSchedules: '{count} Zeitpläne',
   planScenarios: '{count} Szenarien',
-  planTopics: '{count} MQTT-Topics mit retained Nachrichten',
+  planTopics: '{count} MQTT-Topics mit gespeicherten (retained) Nachrichten',
   planStatistics: '{count} importierte Statistiken',
   tabHistory: 'Verlauf',
   histIntro:

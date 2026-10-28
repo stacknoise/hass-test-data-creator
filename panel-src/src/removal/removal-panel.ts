@@ -2,7 +2,15 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
+import type { TextKey } from '../common/i18n';
+import { sortedByLabel } from '../common/labels';
 import type { RemovalPlan, RemovalTarget } from '../common/types';
+
+const TARGET_LABELS: Record<RemovalTarget, TextKey> = {
+  all: 'targetAll',
+  device: 'targetDevice',
+  run: 'targetRun',
+};
 
 /** Shows what a removal would delete and removes it after the user confirms. */
 @customElement('tdc-removal-panel')
@@ -107,11 +115,16 @@ export class RemovalPanel extends TdcElement {
               this.plan = undefined;
             }}
           >
-            <option value="all" ?selected=${this.target === 'all'}>${this.tr('targetAll')}</option>
-            <option value="device" ?selected=${this.target === 'device'}>
-              ${this.tr('targetDevice')}
-            </option>
-            <option value="run" ?selected=${this.target === 'run'}>${this.tr('targetRun')}</option>
+            ${sortedByLabel(
+              this.hass?.language,
+              Object.keys(TARGET_LABELS) as RemovalTarget[],
+              (kind) => this.tr(TARGET_LABELS[kind]),
+            ).map(
+              (kind) =>
+                html`<option value=${kind} ?selected=${this.target === kind}>
+                  ${this.tr(TARGET_LABELS[kind])}
+                </option>`,
+            )}
           </select>
         </label>
         ${
