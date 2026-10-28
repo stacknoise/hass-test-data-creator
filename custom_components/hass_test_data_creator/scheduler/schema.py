@@ -24,3 +24,10 @@ SCHEDULE_FIELDS: dict[Any, Any] = {
     vol.Optional("seed"): vol.All(str, vol.Length(min=1, max=64)),
     vol.Optional("enabled", default=True): bool,
 }
+
+# Changing a schedule keeps what the request leaves out; `enabled` has no default here.
+SCHEDULE_UPDATE_FIELDS: dict[Any, Any] = {
+    vol.Required("schedule_id"): str,
+    **{key: value for key, value in SCHEDULE_FIELDS.items() if key.schema != "enabled"},
+    vol.Optional("enabled"): bool,
+}

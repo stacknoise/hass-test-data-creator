@@ -1,4 +1,10 @@
-import type { ScheduleTarget, TemplateInfo, Trigger, TriggerType } from '../common/types';
+import type {
+  ScheduleInfo,
+  ScheduleTarget,
+  TemplateInfo,
+  Trigger,
+  TriggerType,
+} from '../common/types';
 
 /** The raw inputs of the trigger part of the schedule form. */
 export interface TriggerForm {
@@ -141,5 +147,46 @@ export function resolveWork(
     target: buildTarget(work.kind, work.targetId),
     entity: work.entity || entityKeysFor(templates, work.actionKey)[0] || '',
     action: work.actionKey.split('/')[1] ?? '',
+  };
+}
+
+/** Return the form values of an existing trigger; fields that its type lacks keep their defaults. */
+export function triggerFormOf(trigger: Trigger): TriggerForm {
+  const base = { ...defaultTriggerForm(), type: trigger.type };
+  switch (trigger.type) {
+    case 'times':
+      return { ...base, times: trigger.times.join(', '), weekdays: trigger.weekdays ?? [] };
+    case 'interval':
+      return { ...base, everyS: trigger.every_s, start: trigger.start, end: trigger.end };
+    case 'once':
+      return { ...base, at: trigger.at };
+    case 'random_window':
+      return { ...base, count: trigger.count, start: trigger.start, end: trigger.end };
+    case 'poisson':
+      return { ...base, perDay: trigger.per_day };
+  }
+}
+
+/** Return the work form of an existing schedule: the platform is the one whose entity has that key. */
+export function workOf(
+  schedule: Pick<ScheduleInfo, 'target' | 'entity' | 'action'>,
+  actions: Record<string, string[]>,
+  templates: TemplateInfo[],
+): WorkForm {
+  const { kind, id } = describeTarget(schedule.target);
+  const platforms = Object.entries(actions)
+    .filter(([, names]) => names.includes(schedule.action))
+    .map(([platform]) => platform);
+  const platform =
+    platforms.find((p) =>
+      templates.some((tpl) =>
+        tpl.entities.some((e) => e.platform === p && e.key === schedule.entity),
+      ),
+    ) ?? platforms[0];
+  return {
+    kind,
+    targetId: id,
+    actionKey: platform ? `${platform}/${schedule.action}` : '',
+    entity: schedule.entity,
   };
 }

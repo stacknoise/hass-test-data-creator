@@ -55,6 +55,10 @@ class AuditEntryFactory:
         """Return the entry for a schedule that ran."""
         return AuditEntry(logging.INFO, "schedule ran", {"schedule": name, "action": action})
 
+    def schedule_changed(self, name: str) -> AuditEntry:
+        """Return the entry for a schedule that was changed."""
+        return AuditEntry(logging.INFO, "schedule changed", {"schedule": name})
+
     def scenario_started(self, name: str, steps: int) -> AuditEntry:
         """Return the entry for a scenario that was started."""
         return AuditEntry(logging.INFO, "scenario started", {"scenario": name, "steps": steps})

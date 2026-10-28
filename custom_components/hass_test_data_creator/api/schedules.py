@@ -11,7 +11,7 @@ import voluptuous as vol
 from ..const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from ..core.command import tdc_command
 from ..core.runtime import get_data
-from ..scheduler.schema import SCHEDULE_FIELDS
+from ..scheduler.schema import SCHEDULE_FIELDS, SCHEDULE_UPDATE_FIELDS
 
 MAX_PREVIEW_HOURS = 72
 
@@ -32,6 +32,15 @@ async def ws_schedules_add(
     data = get_data(hass)
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
     schedule = await data.schedules.async_add(msg, seed)
+    return schedule.to_dict()
+
+
+@tdc_command(f"{DOMAIN}/schedules/update", SCHEDULE_UPDATE_FIELDS)
+async def ws_schedules_update(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Change a schedule and return it."""
+    schedule = await get_data(hass).schedules.async_update(msg["schedule_id"], msg)
     return schedule.to_dict()
 
 

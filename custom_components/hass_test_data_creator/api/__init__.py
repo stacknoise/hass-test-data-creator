@@ -28,6 +28,7 @@ from .schedules import (
     ws_schedules_list,
     ws_schedules_preview,
     ws_schedules_remove,
+    ws_schedules_update,
 )
 
 COMMANDS = (
@@ -42,6 +43,7 @@ COMMANDS = (
     ws_removal_run,
     ws_schedules_list,
     ws_schedules_add,
+    ws_schedules_update,
     ws_schedules_remove,
     ws_schedules_enable,
     ws_schedules_preview,

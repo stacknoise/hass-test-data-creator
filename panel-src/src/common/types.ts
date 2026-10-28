@@ -170,6 +170,8 @@ export interface ScheduleRequest {
   scenario?: string;
   trigger: Trigger;
   seed?: string;
+  params?: Record<string, unknown>;
+  enabled?: boolean;
 }
 
 /** One planned run of a schedule. */

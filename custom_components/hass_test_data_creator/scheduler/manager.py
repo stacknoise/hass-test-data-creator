@@ -25,7 +25,7 @@ MIDNIGHT_SECOND = 5
 
 
 class ScheduleManager:
-    """Adds, removes and enables schedules and fires them with a single timer."""
+    """Adds, changes, removes and enables schedules and fires them with a single timer."""
 
     def __init__(
         self,
@@ -96,6 +96,29 @@ class ScheduleManager:
         self._store.put_schedule(schedule)
         await self._store.async_save()
         self._replan()
+        return schedule
+
+    async def async_update(self, schedule_id: str, data: dict[str, Any]) -> ScheduleDef:
+        """Replace the work, trigger and name of a schedule; a wrong request changes nothing.
+
+        The id, the creation time, the seed (unless given) and `enabled` (unless given) stay.
+        """
+        schedule = self.get(schedule_id)
+        self._triggers.create(data["trigger"])
+        self._check_work(data)
+        schedule.name = data["name"]
+        schedule.target = data.get("target", {})
+        schedule.entity = data.get("entity", "")
+        schedule.action = data.get("action", "")
+        schedule.scenario = data.get("scenario")
+        schedule.params = data.get("params", {})
+        schedule.trigger = data["trigger"]
+        schedule.seed = data.get("seed", schedule.seed)
+        schedule.enabled = data.get("enabled", schedule.enabled)
+        self._store.put_schedule(schedule)
+        await self._store.async_save()
+        self._replan()
+        self._audit.record(self._audit_factory.schedule_changed(schedule.name))
         return schedule
 
     async def async_remove(self, schedule_id: str) -> None:

@@ -84,6 +84,11 @@ export class TdcApi {
     return this.call('schedules/add', { ...request });
   }
 
+  /** Change a schedule; what the request leaves out stays. */
+  updateSchedule(scheduleId: string, request: ScheduleRequest): Promise<ScheduleInfo> {
+    return this.call('schedules/update', { schedule_id: scheduleId, ...request });
+  }
+
   /** Delete a schedule. */
   removeSchedule(scheduleId: string): Promise<Record<string, never>> {
     return this.call('schedules/remove', { schedule_id: scheduleId });
