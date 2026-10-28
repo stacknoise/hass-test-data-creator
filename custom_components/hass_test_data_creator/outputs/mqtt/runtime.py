@@ -5,12 +5,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.event import async_call_later
 
 from ...audit.factory import AuditEntryFactory
 from ...audit.log import AuditLog
@@ -60,6 +62,7 @@ class BehaviourRuntime(ABC):
         self._entries: dict[tuple[str, str], RuntimeEntry] = {}
         self._unsubscribe: Callable[[], None] | None = None
         self._unsubscribe_tick: CALLBACK_TYPE | None = None
+        self._late: dict[str, set[CALLBACK_TYPE]] = {}
 
     def require_connection(self) -> None:
         """Raise TDC-OUT-002 unless MQTT is usable."""
@@ -92,6 +95,7 @@ class BehaviourRuntime(ABC):
             if entry is not None:
                 entry.behaviour.close()
                 self._live.pop((device.id, definition.key), None)
+        self._cancel_late(device.id)
         if not self._entries:
             self._stop_listening()
         await self._async_removed(device)
@@ -104,6 +108,8 @@ class BehaviourRuntime(ABC):
             entry.behaviour.close()
             self._live.pop((entry.device.id, entry.definition.key), None)
         self._entries.clear()
+        for device_id in list(self._late):
+            self._cancel_late(device_id)
         self._stop_listening()
 
     @abstractmethod
@@ -185,6 +191,44 @@ class BehaviourRuntime(ABC):
         for entry in list(self._entries.values()):
             if entry.behaviour.tick(now):
                 self._schedule(self._async_changed(entry))
+
+    async def _async_deliver(
+        self,
+        behaviours: list[Behaviour],
+        topic: str,
+        payload: str,
+        device_id: str,
+        *,
+        retain: bool = True,
+    ) -> None:
+        """Publish a state or an event, held back by a late fault and repeated by a duplicate one."""
+        delay = max((item.message_delay_s for item in behaviours), default=0.0)
+        copies = 1 + max((item.message_repeats for item in behaviours), default=0)
+        if delay <= 0:
+            await self._async_copies(topic, payload, device_id, copies, retain)
+            return
+        timers = self._late.setdefault(device_id, set())
+
+        @callback
+        def fire(_now: datetime) -> None:
+            """Send the held back message."""
+            timers.discard(cancel)
+            self._schedule(self._async_copies(topic, payload, device_id, copies, retain))
+
+        cancel = async_call_later(self._hass, delay, fire)
+        timers.add(cancel)
+
+    async def _async_copies(
+        self, topic: str, payload: str, device_id: str, copies: int, retain: bool
+    ) -> None:
+        """Publish the same message `copies` times."""
+        for _ in range(copies):
+            await self._async_publish(topic, payload, device_id, retain=retain)
+
+    def _cancel_late(self, device_id: str) -> None:
+        """Drop the messages of a device that are still held back."""
+        for cancel in self._late.pop(device_id, set()):
+            cancel()
 
     async def _async_publish(
         self, topic: str, payload: str, device_id: str | None, *, retain: bool = True

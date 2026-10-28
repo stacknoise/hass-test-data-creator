@@ -64,6 +64,16 @@ class Behaviour:
         """The kind of the active fault, if there is one."""
         return self._fault.kind if self._fault else None
 
+    @property
+    def message_delay_s(self) -> float:
+        """Seconds that the messages of this entity are held back (fault late)."""
+        return self._fault.message_delay_s if self._fault else 0.0
+
+    @property
+    def message_repeats(self) -> int:
+        """How many extra copies of every message are sent (fault duplicate)."""
+        return self._fault.message_repeats if self._fault else 0
+
     def start_fault(self, fault: Fault) -> None:
         """Make `fault` active; it ends by itself after its duration and replaces a running one."""
         self._clear_fault_timer()

@@ -9,13 +9,13 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Trigger actions by hand: switch, press a button, set or pulse a binary sensor, dim a light (`set_brightness` 0 to 255), move a blind (`open`, `close`, `set_position` 0 to 100), set a thermostat (`set_temperature`, `turn_on`, `turn_off`). A blind moves at once. Wrong parameters give error `TDC-SCH-006`.
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
 - Scenarios: a named list of steps, each with a target, an entity, an action and `after_s`, the wait after the step before. Start one by hand, from the scenario tab, or from a schedule (`scenario: <id>` instead of target, entity and action; the schedule form of the panel has a "Runs" select).
-- Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`. The device list shows active faults.
+- Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`, and for the MQTT outputs `late` and `duplicate` messages. The device list shows active faults.
 - Publish the devices over MQTT discovery instead (output `mqtt`, base topic `tdc`): Home Assistant creates the entities through its MQTT integration, values follow the curves, commands and faults work, and a removal deletes the retained messages. MQTT must be set up and connected.
 - Publish the devices as a Zigbee2MQTT bridge instead (output `z2m`, base topic `tdc_z2m`): `bridge/state`, `bridge/info`, `bridge/devices` with exposes, one JSON state per device, availability, `<name>/set` and button actions. Groups of such devices (`add_group`, `remove_group`, the Groups tab) are listed in `bridge/groups`, publish a state derived from their members and pass `set` on to every member. It refuses a base topic with a foreign bridge on it. The base topics are set in the options of the integration.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
-Planned: more fault kinds (`late`, `duplicate`), statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Planned: statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
 ## Status
 
@@ -79,6 +79,8 @@ Faults are actions named `fault_<kind>` (for `fire_event` and schedules); `param
 | `spike` | sensors | value times `factor` | `factor` = 5 (30 s) |
 | `battery_low` | sensors | value fixed at `value` | `value` = 5 (3600 s) |
 | `linkquality_drop` | sensors | value fixed at `value` | `value` = 20 (600 s) |
+| `late` | all, MQTT outputs only | state and event messages arrive `delay_s` seconds late, with the old payload | `delay_s` = 30 (120 s) |
+| `duplicate` | all, MQTT outputs only | every state and event message is sent `copies` more times | `copies` = 1 (120 s) |
 
 ```yaml
 action: hass_test_data_creator.fire_event
