@@ -60,6 +60,7 @@ export interface Info {
 export interface EntityState {
   key: string;
   name: string;
+  signal?: SignalDef | null;
   platform: string;
   entity_id: string | null;
   state: string | null;

@@ -9,6 +9,7 @@ import type {
   GroupInfo,
   HistoryResult,
   RemovalTarget,
+  SignalDef,
   ScenarioInfo,
   ScenarioStep,
   ScheduleInfo,
@@ -56,6 +57,11 @@ export class TdcApi {
   /** Put a device into an area (created if new), or into none if `area` is null. */
   updateDevice(device: string, area: string | null): Promise<{ id: string; area: string | null }> {
     return this.call('devices/update', { device, area });
+  }
+
+  /** Give a sensor of a device another curve. */
+  setSignal(device: string, entity: string, signal: SignalDef): Promise<{ entity: string }> {
+    return this.call('devices/signal', { device, entity, signal });
   }
 
   /** Return what a removal of the target would delete. */

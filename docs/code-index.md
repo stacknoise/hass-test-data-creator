@@ -163,6 +163,7 @@ Lists every module, class and function of the integration with signature, file a
 | `entity_seed` | `def entity_seed(device_seed: int, key: str) -> int` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the seed of one entity from the seed of its device and its key. |
 | `BehaviourFactory` | `class BehaviourFactory` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Creates the behaviour for an entity definition. |
 | `BehaviourFactory.__init__` | `def __init__(self, signals: SignalFactory, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Keep the signal factory and the scheduler the behaviours use. |
+| `BehaviourFactory.signal_for` | `def signal_for(self, device: DeviceDef, definition: EntityDef) -> Signal` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the signal of `definition` of `device`, with the seed and origin of the entity. |
 | `BehaviourFactory.create` | `def create(self, device: DeviceDef, definition: EntityDef) -> Behaviour` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the behaviour for `definition` of `device`. |
 | `hass_test_data_creator.engine.behaviours` | `module` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Behaviours: the state and logic of one generated entity, independent of any output (concept 2). |
 | `Scheduler` | `class Scheduler(Protocol)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The clock and the timers of the output; the behaviours know nothing else about time. |
@@ -188,6 +189,7 @@ Lists every module, class and function of the integration with signature, file a
 | `SensorBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Compute the first value at the current signal time. |
 | `SensorBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Compute a new value if the interval has passed and the sensor is not frozen. |
 | `SensorBehaviour._value` | `def _value(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the value of the signal at `now` with the transformation of an active fault. |
+| `SensorBehaviour.replace_signal` | `def replace_signal(self, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Follow another curve from now on and show its value at once, unless the sensor is frozen. |
 | `SensorBehaviour._fault_changed` | `def _fault_changed(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Show the changed value at once, unless the sensor is frozen. |
 | `OnOffBehaviour` | `class OnOffBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | An entity with an on/off state that survives a restart. |
 | `OnOffBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start in the initial state of the definition. |
@@ -218,6 +220,7 @@ Lists every module, class and function of the integration with signature, file a
 | `ClimateBehaviour` | `class ClimateBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A thermostat: the measured temperature follows a signal, the target is set by actions. |
 | `ClimateBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start in heat mode at the default target temperature. |
 | `ClimateBehaviour.current_temperature` | `def current_temperature(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature at signal time `now`. |
+| `ClimateBehaviour.replace_signal` | `def replace_signal(self, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Measure another curve from now on. |
 | `ClimateBehaviour.measured` | `def measured(self) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature now. |
 | `ClimateBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature moves all the time, so every tick is a change. |
 | `ClimateBehaviour.restore` | `def restore(self, heating: bool, target: float \| None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last mode and target without telling anyone. |
@@ -316,6 +319,10 @@ Lists every module, class and function of the integration with signature, file a
 | `DevicesManager.async_create` | `async def async_create(self, job: CreationJob) -> RunRecord` | `custom_components/hass_test_data_creator/devices/manager.py` | Create the devices of `job` in chunks and return the run that holds them. |
 | `hass_test_data_creator.devices.schema` | `module` | `custom_components/hass_test_data_creator/devices/schema.py` | Request fields of a creation job, shared by the service and the WebSocket command. |
 | `job_from_request` | `def job_from_request(data: dict[str, Any], default_seed: str) -> CreationJob` | `custom_components/hass_test_data_creator/devices/schema.py` | Return the creation job for a validated request; `default_seed` is used without a seed. |
+| `hass_test_data_creator.devices.signal_editor` | `module` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Changes the curve of a sensor of a generated device (concept 5). |
+| `SignalEditor` | `class SignalEditor` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Replaces the signal of a stored entity and of its live behaviour. |
+| `SignalEditor.__init__` | `def __init__(self, store: TdcStore, live: Live, behaviours: BehaviourFactory, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Keep the collaborators. |
+| `SignalEditor.async_set` | `async def async_set(self, device_id: str, key: str, signal: dict[str, Any]) -> EntityDef` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Give entity `key` of the device the numeric signal `signal`; return the entity. |
 
 ## areas
 
@@ -725,6 +732,7 @@ Lists every module, class and function of the integration with signature, file a
 | `AuditEntryFactory.removal_done` | `def removal_done(self, target: str, devices: int, areas: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a finished removal. |
 | `AuditEntryFactory.history_imported` | `def history_imported(self, series: int, rows: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a finished statistics import. |
 | `AuditEntryFactory.device_moved` | `def device_moved(self, device: str, area: str \| None) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a device that was put into another area. |
+| `AuditEntryFactory.signal_changed` | `def signal_changed(self, device: str, key: str, shape: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a sensor that got another curve. |
 | `AuditEntryFactory.action_fired` | `def action_fired(self, device: str, key: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for an action on one entity. |
 | `AuditEntryFactory.schedule_ran` | `def schedule_ran(self, name: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a schedule that ran. |
 | `AuditEntryFactory.scenario_started` | `def scenario_started(self, name: str, steps: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a scenario that was started. |
@@ -747,6 +755,7 @@ Lists every module, class and function of the integration with signature, file a
 | `ws_devices_list` | `async def ws_devices_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Return one page of devices with the current state of their entities. |
 | `ws_devices_create` | `async def ws_devices_create(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Create the devices of a job and return the run. |
 | `ws_devices_update` | `async def ws_devices_update(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Put a device into another area, or into none, and return its new area. |
+| `ws_devices_signal` | `async def ws_devices_signal(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Give a sensor of a device another curve and return the new signal. |
 | `ws_devices_fire` | `async def ws_devices_fire(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Run an action on one entity of a device. |
 | `hass_test_data_creator.api.groups` | `module` | `custom_components/hass_test_data_creator/api/groups.py` | Commands about groups (concept 8.2). |
 | `ws_groups_list` | `async def ws_groups_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/groups.py` | Return all groups. |

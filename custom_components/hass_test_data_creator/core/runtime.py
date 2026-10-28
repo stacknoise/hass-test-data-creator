@@ -23,6 +23,7 @@ from ..const import (
     DOMAIN,
 )
 from ..devices.manager import DevicesManager
+from ..devices.signal_editor import SignalEditor
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import Live
 from ..engine.clock import Clock
@@ -81,6 +82,7 @@ class TdcData:
     groups: GroupManager
     history: HistoryManager
     clock: Clock
+    signal_editor: SignalEditor
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -171,6 +173,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         groups=groups,
         history=history,
         clock=clock,
+        signal_editor=SignalEditor(store, live, behaviours, audit, audit_factory),
         live=live,
     )
 

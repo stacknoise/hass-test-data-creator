@@ -149,6 +149,7 @@ export class DeviceList extends TdcElement {
                   .hass=${this.hass}
                   .device=${device}
                   .actions=${this.info?.actions ?? {}}
+                  .shapes=${this.info?.shapes ?? []}
                   .areas=${knownAreas(this.hass.areas, this.devices)}
                   @tdc-changed=${() => void this.refresh()}
                 ></tdc-device-detail>

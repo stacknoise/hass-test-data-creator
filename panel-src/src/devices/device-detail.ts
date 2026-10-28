@@ -2,7 +2,9 @@ import { css, html, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
-import type { DeviceInfo, EntityState } from '../common/types';
+import type { DeviceInfo, EntityState, SignalDef } from '../common/types';
+import '../signals/curve-editor';
+import { isDiscrete } from '../signals/editor-helpers';
 import {
   DEFAULT_FAULT_SECONDS,
   FAULT_PREFIX,
@@ -18,11 +20,13 @@ export class DeviceDetail extends TdcElement {
   @property({ attribute: false }) device!: DeviceInfo;
   @property({ attribute: false }) actions: Record<string, string[]> = {};
   @property({ attribute: false }) areas: string[] = [];
+  @property({ attribute: false }) shapes: string[] = [];
 
   @state() private areaDraft?: string;
   @state() private values: Record<string, string> = {};
   @state() private faultKind: Record<string, string> = {};
   @state() private faultSeconds: Record<string, string> = {};
+  @state() private curves: Record<string, SignalDef> = {};
   @state() private busy = false;
   @state() private error = '';
 
@@ -40,6 +44,15 @@ export class DeviceDetail extends TdcElement {
       }
       select {
         width: auto;
+      }
+      .area-row {
+        align-items: flex-end;
+      }
+      .area-row small {
+        padding-bottom: 8px;
+      }
+      .curve {
+        padding: 4px 0 8px;
       }
     `,
   ];
@@ -66,6 +79,27 @@ export class DeviceDetail extends TdcElement {
     });
   }
 
+  /** Open the curve editor of a sensor with its current curve. */
+  private openCurve(entity: EntityState): void {
+    if (entity.signal) this.curves = { ...this.curves, [entity.key]: { ...entity.signal } };
+  }
+
+  /** Close the curve editor of a sensor without saving. */
+  private closeCurve(entity: EntityState): void {
+    const rest = { ...this.curves };
+    delete rest[entity.key];
+    this.curves = rest;
+  }
+
+  /** Save the curve of a sensor and close its editor. */
+  private async saveCurve(entity: EntityState): Promise<void> {
+    const signal = this.curves[entity.key];
+    await this.run(async () => {
+      await this.api.setSignal(this.device.id, entity.key, signal);
+      this.closeCurve(entity);
+    });
+  }
+
   /** Fire an action of an entity. */
   private fire(
     entity: EntityState,
@@ -79,7 +113,7 @@ export class DeviceDetail extends TdcElement {
   private renderArea(): TemplateResult {
     const draft = this.areaDraft ?? this.device.area ?? '';
     const changed = draft.trim() !== (this.device.area ?? '');
-    return html`<div class="row">
+    return html`<div class="row area-row">
       <label style="flex: 0 1 320px"
         >${this.tr('detArea')}
         <input
@@ -162,27 +196,67 @@ export class DeviceDetail extends TdcElement {
     </span>`;
   }
 
+  /** Render the curve editor of one sensor with its save and cancel buttons. */
+  private renderCurve(entity: EntityState): TemplateResult {
+    return html`<tr>
+      <td colspan="3" class="curve">
+        <tdc-curve-editor
+          .hass=${this.hass}
+          .signal=${this.curves[entity.key]}
+          .shapes=${this.shapes.filter((shape) => !isDiscrete(shape))}
+          unit=${entity.unit ?? ''}
+          @tdc-signal-change=${(e: CustomEvent<SignalDef>) =>
+            (this.curves = { ...this.curves, [entity.key]: e.detail })}
+        ></tdc-curve-editor>
+        <p class="row">
+          <button
+            class="primary"
+            ?disabled=${this.busy}
+            @click=${() => void this.saveCurve(entity)}
+          >
+            ${this.tr('detSaveCurve')}
+          </button>
+          <button ?disabled=${this.busy} @click=${() => this.closeCurve(entity)}>
+            ${this.tr('detCancel')}
+          </button>
+        </p>
+      </td>
+    </tr>`;
+  }
+
   /** Render the row of one entity. */
   private renderEntity(entity: EntityState): TemplateResult {
     const available = actionsFor(this.actions, entity.platform);
+    const editable = entity.signal != null && !isDiscrete(entity.signal.shape);
     return html`<tr>
-      <td>${entity.name}<br /><small>${entity.platform}</small></td>
-      <td>
-        ${entity.state ?? '–'}${entity.unit ? ` ${entity.unit}` : ''}${
-          entity.fault ? html`<br /><small class="warning">⚠ ${entity.fault}</small>` : ''
-        }
-      </td>
-      <td class="row">
-        ${available.plain.map(
-          (action) =>
-            html`<button ?disabled=${this.busy} @click=${() => void this.fire(entity, action)}>
-              ${action}
-            </button>`,
-        )}
-        ${available.withValue.map((action) => this.renderValueAction(entity, action))}
-        ${available.faults.length ? this.renderFault(entity, available.faults) : ''}
-      </td>
-    </tr>`;
+        <td>${entity.name}<br /><small>${entity.platform}</small></td>
+        <td>
+          ${entity.state ?? '–'}${entity.unit ? ` ${entity.unit}` : ''}${
+            entity.fault ? html`<br /><small class="warning">⚠ ${entity.fault}</small>` : ''
+          }
+        </td>
+        <td class="row">
+          ${available.plain.map(
+            (action) =>
+              html`<button ?disabled=${this.busy} @click=${() => void this.fire(entity, action)}>
+                ${action}
+              </button>`,
+          )}
+          ${available.withValue.map((action) => this.renderValueAction(entity, action))}
+          ${available.faults.length ? this.renderFault(entity, available.faults) : ''}
+          ${
+            editable
+              ? html`<button
+                  ?disabled=${this.busy || entity.key in this.curves}
+                  @click=${() => this.openCurve(entity)}
+                >
+                  ${this.tr('detCurve')}
+                </button>`
+              : ''
+          }
+        </td>
+      </tr>
+      ${entity.key in this.curves ? this.renderCurve(entity) : ''}`;
   }
 
   /** Render the element. */

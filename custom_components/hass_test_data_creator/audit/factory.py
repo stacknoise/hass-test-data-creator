@@ -39,6 +39,12 @@ class AuditEntryFactory:
         """Return the entry for a device that was put into another area."""
         return AuditEntry(logging.INFO, "device moved", {"device": device, "area": area or ""})
 
+    def signal_changed(self, device: str, key: str, shape: str) -> AuditEntry:
+        """Return the entry for a sensor that got another curve."""
+        return AuditEntry(
+            logging.INFO, "signal changed", {"device": device, "entity": key, "shape": shape}
+        )
+
     def action_fired(self, device: str, key: str, action: str) -> AuditEntry:
         """Return the entry for an action on one entity."""
         return AuditEntry(
