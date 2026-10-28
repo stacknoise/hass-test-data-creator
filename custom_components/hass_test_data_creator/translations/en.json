@@ -60,6 +60,9 @@
     "sig_invalid_range": {
       "message": "The minimum must not be greater than the maximum"
     },
+    "sig_invalid_states": {
+      "message": "The states of the signal are invalid"
+    },
     "sch_unknown_action": {
       "message": "This action is not available for this entity"
     },

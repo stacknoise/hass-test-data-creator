@@ -14,7 +14,7 @@ import voluptuous as vol
 
 from ..const import CUSTOM_TEMPLATE_ID, MAX_ENTITIES_PER_DEVICE
 from ..core.errors import ErrorCode, GenerationError, TemplateError
-from ..engine.signals import SHAPE_NAMES
+from ..engine.signals import DISCRETE_SHAPES, SHAPE_NAMES, SignalSpec, has_invalid_states
 from ..model.models import EntityDef
 from .schema import ENTITY_SCHEMA, TEMPLATE_SCHEMA
 
@@ -91,6 +91,14 @@ class TemplateFactory:
         if len(keys) != len(set(keys)):
             raise TemplateError(ErrorCode.TPL_INVALID, file="duplicate key")
 
+    def _check_discrete(self, data: dict[str, Any], signal: dict[str, Any]) -> None:
+        """Check a sensor with states: valid states, no unit or state class, device class enum."""
+        invalid = has_invalid_states(SignalSpec.from_dict(signal, 0, 0.0))
+        if invalid or data.get("unit") or data.get("state_class"):
+            raise TemplateError(ErrorCode.TPL_INVALID, file=f"{data['key']}: states")
+        if data.get("device_class") not in (None, "enum"):
+            raise TemplateError(ErrorCode.TPL_INVALID, file=f"{data['key']}: device_class")
+
     def _check_content(self, data: dict[str, Any]) -> None:
         """Check the rules that depend on the platform: signal, shape and device class."""
         platform = data["platform"]
@@ -99,6 +107,8 @@ class TemplateFactory:
             raise TemplateError(ErrorCode.TPL_INVALID, file=f"{data['key']}: signal missing")
         if signal is not None and signal["shape"] not in SHAPE_NAMES:
             raise TemplateError(ErrorCode.TPL_UNKNOWN_SHAPE)
+        if signal is not None and signal["shape"] in DISCRETE_SHAPES:
+            self._check_discrete(data, signal)
         if platform == "event" and not data.get("event_types"):
             raise TemplateError(ErrorCode.TPL_INVALID, file=f"{data['key']}: event_types missing")
         device_class = data.get("device_class")

@@ -1,7 +1,7 @@
 import { LitElement, css, html, svg, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { SignalDef } from '../common/types';
-import { specOf, valueAt } from './signals';
+import { optionsOf, specOf, valueAt } from './signals';
 
 const WIDTH = 320;
 const HEIGHT = 80;
@@ -37,9 +37,11 @@ export class SignalPreview extends LitElement {
   /** Return the points of the curve for 24 hours as an SVG point list. */
   private points(def: SignalDef): string {
     const spec = specOf(def, 1, 0);
-    const values = Array.from({ length: POINTS + 1 }, (_, i) =>
-      valueAt(spec, (i / POINTS) * DAY_SECONDS),
-    );
+    const options = optionsOf(spec);
+    const values = Array.from({ length: POINTS + 1 }, (_, i) => {
+      const value = valueAt(spec, (i / POINTS) * DAY_SECONDS);
+      return typeof value === 'string' ? options.indexOf(value) : value;
+    });
     const low = Math.min(...values);
     const high = Math.max(...values);
     const span = high - low || 1;
@@ -55,11 +57,13 @@ export class SignalPreview extends LitElement {
   /** Render the element. */
   override render(): TemplateResult {
     if (!this.signal) return html``;
+    const discrete = this.signal.shape === 'enum' || this.signal.shape === 'state_machine';
+    const options = discrete ? optionsOf(specOf(this.signal)).join(' · ') : '';
     const min = this.signal.min ?? 0;
     const max = this.signal.max ?? 100;
     return html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">
         ${svg`<polyline points=${this.points(this.signal)}></polyline>`}
       </svg>
-      <div>${min} – ${max} ${this.unit}</div>`;
+      <div>${discrete ? options : `${min} – ${max} ${this.unit}`}</div>`;
   }
 }

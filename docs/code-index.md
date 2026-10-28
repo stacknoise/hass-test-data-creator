@@ -140,7 +140,7 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.engine.signal_factory` | `module` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Factory that creates a signal per shape (concept 13.2). |
 | `Signal` | `class Signal` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | A configured signal that returns its value for a point in time. |
 | `Signal.__init__` | `def __init__(self, spec: SignalSpec) -> None` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Keep the validated spec. |
-| `Signal.value` | `def value(self, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the value at signal time `t` in seconds. |
+| `Signal.value` | `def value(self, t: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the value or state at signal time `t` in seconds. |
 | `SignalFactory` | `class SignalFactory` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Creates validated signals from the signal block of a template. |
 | `SignalFactory.shapes` | `def shapes(self) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the names of all shapes. |
 | `SignalFactory.create` | `def create(self, definition: dict[str, Any], seed: int, origin: float) -> Signal` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the signal for `definition` of one entity with its `seed` and time `origin`. |
@@ -163,7 +163,11 @@ Lists every module, class and function of the integration with signature, file a
 | `_pv_day` | `def _pv_day(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return photovoltaic power: zero at night, a bell between sunrise and sunset, with clouds. |
 | `_steps` | `def _steps(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a rising staircase: steps of `interval_s` seconds, one climb per period. |
 | `_discharge` | `def _discharge(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a battery discharge: from full to empty over the period, steeper at the end. |
-| `value_at` | `def value_at(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the value of the signal at signal time `t` (seconds), scaled to min..max. |
+| `_enum` | `def _enum(spec: SignalSpec, t: float) -> str` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a value drawn by weight; a new draw every `interval_s` seconds. |
+| `_state_machine` | `def _state_machine(spec: SignalSpec, t: float) -> str` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the state of a cycle of states with durations; `phase` shifts the start. |
+| `options_of` | `def options_of(spec: SignalSpec) -> list[str]` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the distinct states of a discrete signal in the order they are defined. |
+| `has_invalid_states` | `def has_invalid_states(spec: SignalSpec) -> bool` | `custom_components/hass_test_data_creator/engine/signals.py` | Whether a discrete shape lacks its states or has a weight or duration that is not positive. |
+| `value_at` | `def value_at(spec: SignalSpec, t: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the value at signal time `t` (seconds): a number scaled to min..max or a state name. |
 | `hass_test_data_creator.engine.tick` | `module` | `custom_components/hass_test_data_creator/engine/tick.py` | The tick that drives all signals with one timer (concept 5.3). |
 | `signal_time` | `def signal_time(now: datetime \| None=None) -> float` | `custom_components/hass_test_data_creator/engine/tick.py` | Return the signal time: seconds of the local wall clock, so daily curves follow the day. |
 | `Tick` | `class Tick` | `custom_components/hass_test_data_creator/engine/tick.py` | Sends one dispatcher signal per interval and reports a tick that takes too long. |
@@ -190,6 +194,7 @@ Lists every module, class and function of the integration with signature, file a
 | `TemplateFactory.template` | `def template(self, data: dict[str, Any], *, bundled: bool=True) -> Template` | `custom_components/hass_test_data_creator/templates/factory.py` | Return the validated template for `data`. |
 | `TemplateFactory.custom` | `def custom(self, entities: list[dict[str, Any]]) -> Template` | `custom_components/hass_test_data_creator/templates/factory.py` | Return a template for a device whose entities the user defined by hand. |
 | `TemplateFactory._check_unique` | `def _check_unique(self, entities: list[EntityDef]) -> None` | `custom_components/hass_test_data_creator/templates/factory.py` | Raise if two entities of one template share a key. |
+| `TemplateFactory._check_discrete` | `def _check_discrete(self, data: dict[str, Any], signal: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/templates/factory.py` | Check a sensor with states: valid states, no unit or state class, device class enum. |
 | `TemplateFactory._check_content` | `def _check_content(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/templates/factory.py` | Check the rules that depend on the platform: signal, shape and device class. |
 | `hass_test_data_creator.templates.registry` | `module` | `custom_components/hass_test_data_creator/templates/registry.py` | Loads the bundled and the user's template files (concept 4.2). |
 | `_read_files` | `def _read_files(directory: Path) -> list[tuple[str, dict[str, Any]]]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return (file name, content) of every YAML file in `directory`; runs in the executor. |
@@ -291,7 +296,7 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStatefulEntity.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Restore the last state. |
 | `TdcSensor` | `class TdcSensor(TdcEntity, SensorEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A sensor whose value comes from a signal. |
 | `TdcSensor.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live, signal: Signal) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the sensor with its signal and compute the first value. |
-| `TdcSensor._value` | `def _value(self, now: float) -> float` | `custom_components/hass_test_data_creator/platforms/entities.py` | Return the value of the signal at `now` with the transformation of an active fault. |
+| `TdcSensor._value` | `def _value(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/platforms/entities.py` | Return the value of the signal at `now` with the transformation of an active fault. |
 | `TdcSensor._apply_fault` | `def _apply_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Show the changed value at once, unless the sensor is frozen. |
 | `TdcSensor.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Follow the tick. |
 | `TdcSensor._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Compute a new value if the interval of the signal has passed. |

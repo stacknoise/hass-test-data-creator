@@ -19,6 +19,19 @@ SIGNAL_SCHEMA = vol.Schema(
         vol.Optional("decimals"): vol.All(int, vol.Range(min=0, max=6)),
         vol.Optional("phase"): vol.Coerce(float),
         vol.Optional("rate_per_hour"): vol.Coerce(float),
+        vol.Optional("values"): vol.All([str], vol.Length(min=1, max=50)),
+        vol.Optional("weights"): vol.All([vol.Coerce(float)], vol.Length(min=1, max=50)),
+        vol.Optional("states"): vol.All(
+            [
+                vol.Schema(
+                    {
+                        vol.Required("value"): str,
+                        vol.Required("duration_s"): vol.All(vol.Coerce(float), vol.Range(min=1)),
+                    }
+                )
+            ],
+            vol.Length(min=1, max=50),
+        ),
     },
     extra=vol.PREVENT_EXTRA,
 )

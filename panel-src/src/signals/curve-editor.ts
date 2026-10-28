@@ -3,7 +3,17 @@ import { customElement, property } from 'lit/decorators.js';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import type { SignalDef } from '../common/types';
-import { fieldsFor, withField, withShape, type SignalField } from './editor-helpers';
+import {
+  fieldsFor,
+  isDiscrete,
+  textFieldsFor,
+  textOf,
+  withField,
+  withShape,
+  withText,
+  type SignalField,
+  type TextField,
+} from './editor-helpers';
 import './signal-preview';
 
 const FIELD_LABELS: Record<SignalField | 'min' | 'max' | 'decimals', TextKey> = {
@@ -15,6 +25,11 @@ const FIELD_LABELS: Record<SignalField | 'min' | 'max' | 'decimals', TextKey> = 
   phase: 'edPhase',
   rate_per_hour: 'edRate',
   noise: 'edNoise',
+};
+const TEXT_LABELS: Record<TextField, TextKey> = {
+  values: 'edValues',
+  weights: 'edWeights',
+  states: 'edStates',
 };
 
 /** Edits the signal block of a sensor: the shape and its parameters, with a live preview. */
@@ -43,6 +58,16 @@ export class CurveEditor extends TdcElement {
     </label>`;
   }
 
+  /** Render the one-line text input of a list parameter. */
+  private listField(field: TextField): TemplateResult {
+    return this.textField(
+      this.tr(TEXT_LABELS[field]),
+      textOf(this.signal, field),
+      (text) => this.emit(withText(this.signal, field, text)),
+      { flex: '1 1 240px' },
+    );
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     return html`
@@ -61,9 +86,17 @@ export class CurveEditor extends TdcElement {
             )}
           </select>
         </label>
-        ${this.numberField('min')} ${this.numberField('max')} ${this.numberField('decimals')}
+        ${
+          isDiscrete(this.signal.shape)
+            ? ''
+            : html`${this.numberField('min')} ${this.numberField('max')}
+              ${this.numberField('decimals')}`
+        }
       </div>
-      <div class="row">${fieldsFor(this.signal.shape).map((field) => this.numberField(field))}</div>
+      <div class="row">
+        ${fieldsFor(this.signal.shape).map((field) => this.numberField(field))}
+        ${textFieldsFor(this.signal.shape).map((field) => this.listField(field))}
+      </div>
       <tdc-signal-preview .signal=${this.signal} unit=${this.unit}></tdc-signal-preview>
     `;
   }

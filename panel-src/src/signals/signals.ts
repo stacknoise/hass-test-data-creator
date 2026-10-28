@@ -33,6 +33,9 @@ export interface SignalSpec {
   decimals: number;
   phase: number;
   rate_per_hour: number;
+  values: string[];
+  weights: number[];
+  states: [string, number][];
   seed: number;
   origin: number;
 }
@@ -49,6 +52,9 @@ export function specOf(def: SignalDef, seed = 0, origin = 0): SignalSpec {
     decimals: def.decimals ?? 1,
     phase: def.phase ?? 0,
     rate_per_hour: def.rate_per_hour ?? 0,
+    values: def.values ?? [],
+    weights: def.weights ?? [],
+    states: (def.states ?? []).map((s) => [s.value, s.duration_s]),
     seed,
     origin,
   };
@@ -120,13 +126,50 @@ const SHAPES: Record<string, (spec: SignalSpec, t: number) => number> = {
   discharge: (spec, t) => 1 - cycle(spec, t) ** DISCHARGE_EXPONENT,
 };
 
+/** Return a value drawn by weight; a new draw every `interval_s` seconds. */
+function enumAt(spec: SignalSpec, t: number): string {
+  const weights = spec.weights.length ? spec.weights : spec.values.map(() => 1);
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  const pick = hash01(spec.seed, Math.floor(t / spec.interval_s)) * total;
+  let reached = 0;
+  for (const [index, value] of spec.values.entries()) {
+    reached += weights[index];
+    if (pick < reached) return value;
+  }
+  return spec.values[spec.values.length - 1];
+}
+
+/** Return the state of a cycle of states with durations; `phase` shifts the start. */
+function stateMachineAt(spec: SignalSpec, t: number): string {
+  const total = spec.states.reduce((sum, [, duration]) => sum + duration, 0);
+  const position = (((t + spec.phase * total) % total) + total) % total;
+  let reached = 0;
+  for (const [value, duration] of spec.states) {
+    reached += duration;
+    if (position < reached) return value;
+  }
+  return spec.states[spec.states.length - 1][0];
+}
+
+const DISCRETE: Record<string, (spec: SignalSpec, t: number) => string> = {
+  enum: enumAt,
+  state_machine: stateMachineAt,
+};
+
+/** Return the distinct states of a discrete signal in the order they are defined. */
+export function optionsOf(spec: SignalSpec): string[] {
+  const names = spec.shape === 'enum' ? spec.values : spec.states.map(([name]) => name);
+  return [...new Set(names)];
+}
+
 /** Round to `decimals` places. */
 function round(value: number, decimals: number): number {
   return Number(value.toFixed(decimals));
 }
 
 /** Return the value of the signal at signal time `t` in seconds, scaled to min..max. */
-export function valueAt(spec: SignalSpec, t: number): number {
+export function valueAt(spec: SignalSpec, t: number): number | string {
+  if (spec.shape in DISCRETE) return DISCRETE[spec.shape](spec, t);
   if (spec.shape === 'counter') {
     const elapsed = Math.max(0, t - spec.origin);
     return round(spec.min + (spec.rate_per_hour * elapsed) / SECONDS_PER_HOUR, spec.decimals);
