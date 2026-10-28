@@ -3952,11 +3952,11 @@ var Nr = class extends W {
         </td>
       </tr>
       ${i ? this.editRow(3, e.id, y`<tdc-scenario-form
+                .scenario=${e}
+                ?busy=${this.busy}
                 .hass=${this.hass}
                 .info=${this.info}
                 .templates=${this.templates}
-                .scenario=${e}
-                ?busy=${this.busy}
               ></tdc-scenario-form>`, (t) => void this.save(e, t)) : x}`;
 	}
 	render() {
