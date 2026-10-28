@@ -4,12 +4,13 @@ import { TdcElement } from './common/base';
 import type { RemovalTarget } from './common/types';
 import './devices/device-list';
 import './removal/removal-panel';
+import './schedule/schedule-panel';
 import './wizard/creation-wizard';
 
 /** The tabs of the panel. */
-type Tab = 'devices' | 'create' | 'remove';
+type Tab = 'devices' | 'create' | 'schedules' | 'remove';
 
-/** The sidebar panel: header with the test environment badge and three tabs. */
+/** The sidebar panel: header with the test environment badge and four tabs. */
 @customElement('hass-test-data-creator-panel')
 export class TdcPanel extends TdcElement {
   @property({ type: Boolean }) narrow = false;
@@ -85,6 +86,7 @@ export class TdcPanel extends TdcElement {
       <nav>
         ${this.renderTab('devices', this.tr('tabDevices'))}
         ${this.renderTab('create', this.tr('tabCreate'))}
+        ${this.renderTab('schedules', this.tr('tabSchedules'))}
         ${this.renderTab('remove', this.tr('tabRemove'))}
       </nav>
       ${
@@ -98,6 +100,11 @@ export class TdcPanel extends TdcElement {
       ${
         this.tab === 'create'
           ? html`<tdc-creation-wizard .hass=${this.hass}></tdc-creation-wizard>`
+          : ''
+      }
+      ${
+        this.tab === 'schedules'
+          ? html`<tdc-schedule-panel .hass=${this.hass}></tdc-schedule-panel>`
           : ''
       }
       ${
