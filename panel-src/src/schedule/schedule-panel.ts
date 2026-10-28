@@ -4,22 +4,23 @@ import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import type { Info, PlannedRun, ScheduleInfo, TemplateInfo, TriggerType } from '../common/types';
+import './work-picker';
 import {
-  buildTarget,
   buildTrigger,
   defaultTriggerForm,
+  defaultWork,
   describeTarget,
   formatWhen,
+  resolveWork,
   summarizeTrigger,
-  type TargetKind,
   type TriggerForm,
+  type WorkForm,
 } from './helpers';
 
 const REFRESH_MS = 10_000;
 const PREVIEW_HOURS = 24;
 const PREVIEW_ROWS = 50;
 const TRIGGER_TYPES: TriggerType[] = ['times', 'interval', 'once', 'random_window', 'poisson'];
-const TARGET_KINDS: TargetKind[] = ['all', 'template', 'device', 'run'];
 const WEEKDAYS = [
   'weekdayMon',
   'weekdayTue',
@@ -40,10 +41,7 @@ export class SchedulePanel extends TdcElement {
   @state() private error = '';
   @state() private busy = false;
   @state() private name = '';
-  @state() private kind: TargetKind = 'all';
-  @state() private targetId = '';
-  @state() private entity = '';
-  @state() private actionKey = '';
+  @state() private work: WorkForm = defaultWork({});
   @state() private seed = '';
   @state() private form: TriggerForm = defaultTriggerForm();
 
@@ -67,7 +65,7 @@ export class SchedulePanel extends TdcElement {
   private async loadOptions(): Promise<void> {
     try {
       [this.info, this.templates] = await Promise.all([this.api.info(), this.api.templates()]);
-      this.actionKey ||= this.actionKeys()[0] ?? '';
+      this.work = defaultWork(this.info.actions);
     } catch (err) {
       this.error = describeError(err);
     }
@@ -86,22 +84,6 @@ export class SchedulePanel extends TdcElement {
     }
   }
 
-  /** Return the actions as `platform/action`, for the select. */
-  private actionKeys(): string[] {
-    return Object.entries(this.info?.actions ?? {}).flatMap(([platform, names]) =>
-      names.map((name) => `${platform}/${name}`),
-    );
-  }
-
-  /** Return the keys of the template entities that the selected action works on. */
-  private entityKeys(): string[] {
-    const platform = this.actionKey.split('/')[0];
-    const keys = this.templates.flatMap((tpl) =>
-      tpl.entities.filter((e) => e.platform === platform).map((e) => e.key),
-    );
-    return [...new Set(keys)];
-  }
-
   /** Run a call, then reload; show an error as text. */
   private async run(call: () => Promise<unknown>): Promise<void> {
     this.busy = true;
@@ -116,14 +98,10 @@ export class SchedulePanel extends TdcElement {
 
   /** Create the schedule that the form describes. */
   private async add(): Promise<void> {
-    const [, action] = this.actionKey.split('/');
-    const entity = this.entity || this.entityKeys()[0] || '';
     await this.run(async () => {
       await this.api.addSchedule({
         name: this.name,
-        target: buildTarget(this.kind, this.targetId),
-        entity,
-        action,
+        ...resolveWork(this.work, this.templates),
         trigger: buildTrigger(this.form),
         seed: this.seed || undefined,
       });
@@ -192,63 +170,12 @@ export class SchedulePanel extends TdcElement {
     }
   }
 
-  /** Render a select with the given values; `text` returns the label of a value. */
-  private select(
-    label: string,
-    values: string[],
-    current: string,
-    text: (value: string) => string,
-    change: (value: string) => void,
-  ): TemplateResult {
-    return html`<label style="flex: 1 1 180px"
-      >${label}
-      <select @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}>
-        ${values.map(
-          (value) =>
-            html`<option value=${value} ?selected=${value === current}>${text(value)}</option>`,
-        )}
-      </select>
-    </label>`;
-  }
-
   /** Render the form for a new schedule. */
   private renderForm(): TemplateResult {
-    const entities = this.entityKeys();
     return html`
       <h3>${this.tr('schNew')}</h3>
       <div class="row">
         ${this.textField(this.tr('schName'), this.name, (v) => (this.name = v))}
-        ${this.select(
-          this.tr('schTarget'),
-          TARGET_KINDS,
-          this.kind,
-          (kind) => this.tr(`schTarget_${kind}` as TextKey),
-          (kind) => (this.kind = kind as TargetKind),
-        )}
-        ${
-          this.kind === 'all'
-            ? nothing
-            : this.textField(this.tr('targetId'), this.targetId, (v) => (this.targetId = v))
-        }
-      </div>
-      <div class="row">
-        ${this.select(
-          this.tr('schAction'),
-          this.actionKeys(),
-          this.actionKey,
-          (key) => key,
-          (key) => {
-            this.actionKey = key;
-            this.entity = '';
-          },
-        )}
-        ${this.select(
-          this.tr('schEntity'),
-          entities,
-          this.entity || entities[0] || '',
-          (key) => key,
-          (key) => (this.entity = key),
-        )}
         ${this.select(
           this.tr('schTrigger'),
           TRIGGER_TYPES,
@@ -257,6 +184,13 @@ export class SchedulePanel extends TdcElement {
           (type) => this.setForm({ type: type as TriggerType }),
         )}
       </div>
+      <tdc-work-picker
+        .hass=${this.hass}
+        .work=${this.work}
+        .actions=${this.info?.actions ?? {}}
+        .templates=${this.templates}
+        @tdc-work-change=${(e: CustomEvent<WorkForm>) => (this.work = e.detail)}
+      ></tdc-work-picker>
       <div class="row">
         ${this.renderTriggerFields()}
         ${this.textField(this.tr('seed'), this.seed, (v) => (this.seed = v), {
@@ -267,7 +201,7 @@ export class SchedulePanel extends TdcElement {
       <p>
         <button
           class="primary"
-          ?disabled=${this.busy || !this.name.trim() || !this.actionKey}
+          ?disabled=${this.busy || !this.name.trim() || !this.work.actionKey}
           @click=${() => void this.add()}
         >
           ${this.tr('schAdd')}

@@ -160,3 +160,20 @@ export interface PlannedRun {
   schedule_id: string;
   name: string;
 }
+
+/** One step of a scenario: an action that runs `after_s` seconds after the step before. */
+export interface ScenarioStep {
+  after_s: number;
+  target: ScheduleTarget;
+  entity: string;
+  action: string;
+  params: Record<string, unknown>;
+}
+
+/** A scenario as listed by the backend. */
+export interface ScenarioInfo {
+  id: string;
+  name: string;
+  steps: ScenarioStep[];
+  created_at: number;
+}

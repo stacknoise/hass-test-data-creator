@@ -118,6 +118,25 @@ export abstract class TdcElement extends LitElement {
     </label>`;
   }
 
+  /** Render a labelled select; `text` returns the label of a value. */
+  protected select(
+    label: string,
+    values: string[],
+    current: string,
+    text: (value: string) => string,
+    change: (value: string) => void,
+  ): TemplateResult {
+    return html`<label style="flex: 1 1 180px"
+      >${label}
+      <select @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}>
+        ${values.map(
+          (value) =>
+            html`<option value=${value} ?selected=${value === current}>${text(value)}</option>`,
+        )}
+      </select>
+    </label>`;
+  }
+
   /** The text `key` in the language of Home Assistant. */
   protected tr(key: TextKey, values?: Record<string, string | number>): string {
     return t(languageOf(this.hass?.language), key, values);
