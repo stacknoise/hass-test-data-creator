@@ -77,11 +77,11 @@ custom_components/hass_test_data_creator/
   store/       persistent storage, schema version, migrations
   templates/   template loader, TemplateFactory, DeviceFactory, bundled *.yaml
   devices/     DevicesManager (creation jobs in chunks), request schema of a job
-  engine/      signals.py (pure functions and the hash, no Home Assistant import), signal_factory.py, tick.py
+  engine/      signals.py (pure functions and the hash, no Home Assistant import), signal_factory.py, behaviours.py (the state and logic of one entity: sensor, switch, light, cover, climate, binary sensor, event, faults; it talks to its output only through `on_change`, `on_event` and a `Scheduler` for the clock and the timers), behaviour_factory.py, tick.py
   scheduler/   triggers.py (TriggerFactory), actions.py (ActionFactory), planner.py, runner.py
   faults/      FaultFactory and the fault kinds
   outputs/     adapter.py (OutputAdapterFactory), native/, mqtt_discovery/, z2m/
-  platforms/   sensor.py, binary_sensor.py, switch.py, light.py, event.py, ... (entity classes)
+  platforms/   sensor.py, binary_sensor.py, switch.py, light.py, event.py, ... (entity classes: thin shells around a behaviour; `scheduler.py` gives it the clock and the timers of Home Assistant)
   areas/       area assignment (distribution rules) and tracking of created areas
   removal/     RemovalPlanner, RemovalRunner, cleanup of registries, areas, statistics, retained messages
   audit/       AuditLog, AuditEntryFactory
@@ -304,7 +304,8 @@ Objects whose kind depends on a type or on runtime data are created only by a fa
 | --- | --- |
 | `TemplateFactory` | device description from a template and the user's inputs |
 | `DeviceFactory` | devices of a creation job (names, ids, seeds, area distribution) |
-| `EntityFactory` | the entity class per platform |
+| `BehaviourFactory` | the behaviour (state and logic, without Home Assistant classes) per platform |
+| `EntityFactory` | the Home Assistant entity per platform, a thin shell around a behaviour |
 | `SignalFactory` | the signal function per shape |
 | `TriggerFactory` | the planner per trigger type |
 | `ActionFactory` | the action per platform and action name |

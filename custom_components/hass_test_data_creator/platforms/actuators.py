@@ -23,17 +23,11 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from ..const import SIGNAL_TICK
-from ..engine.signal_factory import Signal
+from ..engine.behaviours import ClimateBehaviour, CoverBehaviour, LightBehaviour, Live
 from ..engine.tick import signal_time
 from ..model.models import DeviceDef, EntityDef
-from .entities import Live, TdcEntity, TdcStatefulEntity
+from .entities import TdcEntity, TdcStatefulEntity
 
-FULL_BRIGHTNESS = 255
-OPEN = 100
-CLOSED = 0
-DEFAULT_TARGET_TEMPERATURE = 21.0
-MIN_TEMPERATURE = 5.0
-MAX_TEMPERATURE = 30.0
 TEMPERATURE_STEP = 0.5
 
 
@@ -41,23 +35,27 @@ class TdcLight(TdcStatefulEntity, LightEntity):
     """A dimmable light that keeps its on/off state."""
 
     _attr_color_mode = ColorMode.BRIGHTNESS
-    _attr_brightness = FULL_BRIGHTNESS
+    _behaviour: LightBehaviour
 
-    def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None:
+    def __init__(
+        self, device: DeviceDef, definition: EntityDef, behaviour: LightBehaviour, live: Live
+    ) -> None:
         """Create the light; it can only be dimmed."""
-        super().__init__(device, definition, live)
+        super().__init__(device, definition, behaviour, live)
         self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
+
+    @property
+    def brightness(self) -> int:
+        """The brightness from 1 to 255."""
+        return self._behaviour.brightness
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Switch on, at the brightness of the call or the last one."""
-        self._attr_brightness = kwargs.get(ATTR_BRIGHTNESS, self._attr_brightness)
-        self._attr_is_on = True
-        self.async_write_ha_state()
+        self._behaviour.turn_on(kwargs.get(ATTR_BRIGHTNESS))
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Switch off; the brightness is kept for the next time."""
-        self._attr_is_on = False
-        self.async_write_ha_state()
+        self._behaviour.turn_off()
 
 
 class TdcCover(TdcEntity, RestoreEntity, CoverEntity):
@@ -69,40 +67,36 @@ class TdcCover(TdcEntity, RestoreEntity, CoverEntity):
         | CoverEntityFeature.STOP
         | CoverEntityFeature.SET_POSITION
     )
+    _behaviour: CoverBehaviour
 
-    def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None:
-        """Start open if the definition says `initial_on`, otherwise closed."""
-        super().__init__(device, definition, live)
-        self._attr_current_cover_position = OPEN if definition.initial_on else CLOSED
+    @property
+    def current_cover_position(self) -> int:
+        """The position from 0 (closed) to 100 (open)."""
+        return self._behaviour.position
+
+    @property
+    def is_closed(self) -> bool:
+        """Whether the cover is fully closed."""
+        return self._behaviour.is_closed
 
     async def async_added_to_hass(self) -> None:
         """Restore the last position."""
         await super().async_added_to_hass()
         last = await self.async_get_last_state()
         if last is not None and last.attributes.get(ATTR_CURRENT_POSITION) is not None:
-            self._attr_current_cover_position = int(last.attributes[ATTR_CURRENT_POSITION])
-
-    @property
-    def is_closed(self) -> bool:
-        """Whether the cover is fully closed."""
-        return self._attr_current_cover_position == CLOSED
-
-    def set_position(self, position: int) -> None:
-        """Move to `position` (0 to 100) at once."""
-        self._attr_current_cover_position = max(CLOSED, min(OPEN, position))
-        self.async_write_ha_state()
+            self._behaviour.restore(int(last.attributes[ATTR_CURRENT_POSITION]))
 
     async def async_open_cover(self, **kwargs: Any) -> None:
         """Open fully."""
-        self.set_position(OPEN)
+        self._behaviour.open_cover()
 
     async def async_close_cover(self, **kwargs: Any) -> None:
         """Close fully."""
-        self.set_position(CLOSED)
+        self._behaviour.close_cover()
 
     async def async_set_cover_position(self, **kwargs: Any) -> None:
         """Move to the position of the call."""
-        self.set_position(int(kwargs[ATTR_POSITION]))
+        self._behaviour.set_position(int(kwargs[ATTR_POSITION]))
 
     async def async_stop_cover(self, **kwargs: Any) -> None:
         """Do nothing: the cover never moves slowly."""
@@ -117,34 +111,42 @@ class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity):
         | ClimateEntityFeature.TURN_ON
         | ClimateEntityFeature.TURN_OFF
     )
-    _attr_min_temp = MIN_TEMPERATURE
-    _attr_max_temp = MAX_TEMPERATURE
     _attr_target_temperature_step = TEMPERATURE_STEP
+    _behaviour: ClimateBehaviour
 
     def __init__(
-        self, device: DeviceDef, definition: EntityDef, live: Live, signal: Signal
+        self, device: DeviceDef, definition: EntityDef, behaviour: ClimateBehaviour, live: Live
     ) -> None:
-        """Start in heat mode at the default target temperature."""
-        super().__init__(device, definition, live)
-        self._signal = signal
+        """Create the thermostat with the range of its behaviour."""
+        super().__init__(device, definition, behaviour, live)
         self._attr_hvac_modes = [HVACMode.OFF, HVACMode.HEAT]
-        self._attr_hvac_mode = HVACMode.HEAT
-        self._attr_target_temperature = DEFAULT_TARGET_TEMPERATURE
+        self._attr_min_temp = behaviour.min_temp
+        self._attr_max_temp = behaviour.max_temp
+
+    @property
+    def hvac_mode(self) -> HVACMode:
+        """Heat or off."""
+        return HVACMode.HEAT if self._behaviour.heating else HVACMode.OFF
+
+    @property
+    def target_temperature(self) -> float:
+        """The target temperature."""
+        return self._behaviour.target
 
     @property
     def current_temperature(self) -> float:
         """The measured temperature, computed from the signal."""
-        return self._signal.value(signal_time())
+        return float(self._behaviour.current_temperature(signal_time()))
 
     async def async_added_to_hass(self) -> None:
         """Restore mode and target, then follow the tick."""
         await super().async_added_to_hass()
         last = await self.async_get_last_state()
         if last is not None:
-            if last.state in (HVACMode.OFF, HVACMode.HEAT):
-                self._attr_hvac_mode = HVACMode(last.state)
-            if last.attributes.get(ATTR_TEMPERATURE) is not None:
-                self._attr_target_temperature = float(last.attributes[ATTR_TEMPERATURE])
+            target = last.attributes.get(ATTR_TEMPERATURE)
+            self._behaviour.restore(
+                last.state != HVACMode.OFF, None if target is None else float(target)
+            )
         self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_TICK, self._handle_tick))
 
     @callback
@@ -154,13 +156,13 @@ class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity):
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Switch between off and heat."""
-        self._attr_hvac_mode = hvac_mode
-        self.async_write_ha_state()
+        self._behaviour.set_heating(hvac_mode == HVACMode.HEAT)
 
     async def async_set_temperature(self, **kwargs: Any) -> None:
         """Set the target temperature and, if given, the mode."""
-        if ATTR_HVAC_MODE in kwargs:
-            self._attr_hvac_mode = HVACMode(kwargs[ATTR_HVAC_MODE])
-        if ATTR_TEMPERATURE in kwargs:
-            self._attr_target_temperature = float(kwargs[ATTR_TEMPERATURE])
-        self.async_write_ha_state()
+        mode = kwargs.get(ATTR_HVAC_MODE)
+        target = kwargs.get(ATTR_TEMPERATURE)
+        self._behaviour.update(
+            heating=None if mode is None else HVACMode(mode) == HVACMode.HEAT,
+            target=None if target is None else float(target),
+        )
