@@ -20,6 +20,7 @@ FEATURES: Final = (
     "schedules",
     "statistics_backfill",
     "templates",
+    "time_lapse",
     "z2m_bridge",
     "z2m_groups",
 )
@@ -36,6 +37,10 @@ CONF_TICK_SECONDS: Final = "tick_seconds"
 CONF_MQTT_BASE_TOPIC: Final = "mqtt_base_topic"
 CONF_Z2M_BASE_TOPIC: Final = "z2m_base_topic"
 CONF_Z2M_CONFIRM_DEFAULT: Final = "z2m_confirm_default_topic"
+CONF_TIME_LAPSE: Final = "time_lapse"
+DEFAULT_TIME_LAPSE: Final = 1.0
+MIN_TIME_LAPSE: Final = 1.0
+MAX_TIME_LAPSE: Final = 10000.0
 DEFAULT_SEED: Final = "tdc-0042"
 DEFAULT_TICK_SECONDS: Final = 10
 MIN_TICK_SECONDS: Final = 1

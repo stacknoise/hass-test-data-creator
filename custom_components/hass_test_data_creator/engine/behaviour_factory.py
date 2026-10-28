@@ -19,7 +19,6 @@ from .behaviours import (
     SensorBehaviour,
 )
 from .signal_factory import SignalFactory
-from .tick import signal_time
 
 _SIMPLE: dict[str, type[Behaviour]] = {
     "binary_sensor": BinarySensorBehaviour,
@@ -52,7 +51,7 @@ class BehaviourFactory:
         """Return the behaviour for `definition` of `device`."""
         if definition.platform in _WITH_SIGNAL:
             seed = entity_seed(device.seed, definition.key)
-            origin = signal_time(dt_util.as_local(dt_util.utc_from_timestamp(device.created_at)))
+            origin = self._scheduler.at(dt_util.utc_from_timestamp(device.created_at))
             signal = self._signals.create(definition.signal or {}, seed, origin)
             return _WITH_SIGNAL[definition.platform](device.id, definition, self._scheduler, signal)
         return _SIMPLE[definition.platform](device.id, definition, self._scheduler)

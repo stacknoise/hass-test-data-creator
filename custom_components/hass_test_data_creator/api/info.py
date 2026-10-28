@@ -48,6 +48,7 @@ async def ws_info(
         "platforms": list(PLATFORMS),
         "actions": data.action_runner.actions(),
         "tick_seconds": data.tick.seconds,
+        "time_lapse": data.clock.factor,
         "device_count": data.store.device_count(),
     }
 

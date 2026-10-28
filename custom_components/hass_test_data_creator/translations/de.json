@@ -26,13 +26,15 @@
   "options": {
     "step": {
       "init": {
-        "title": "MQTT-Basis-Topics",
+        "title": "Optionen",
         "data": {
           "mqtt_base_topic": "Basis-Topic des MQTT-Discovery-Ausgangs",
           "z2m_base_topic": "Basis-Topic des Zigbee2MQTT-Ausgangs",
-          "z2m_confirm_default_topic": "Das Basis-Topic zigbee2mqtt darf benutzt werden"
+          "z2m_confirm_default_topic": "Das Basis-Topic zigbee2mqtt darf benutzt werden",
+          "time_lapse": "Zeitraffer-Faktor"
         },
         "data_description": {
+          "time_lapse": "1 ist Echtzeit; bei 60 laufen die Kurven eine Stunde pro Minute. Zeitpläne, Störungsdauern und Impulse bleiben in Echtzeit",
           "z2m_confirm_default_topic": "Bestätige das nur, wenn kein echtes Zigbee2MQTT unter diesem Topic veröffentlicht"
         }
       }

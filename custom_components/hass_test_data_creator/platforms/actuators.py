@@ -24,7 +24,6 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from ..const import SIGNAL_TICK
 from ..engine.behaviours import ClimateBehaviour, CoverBehaviour, LightBehaviour, Live
-from ..engine.tick import signal_time
 from ..model.models import DeviceDef, EntityDef
 from .entities import TdcEntity, TdcStatefulEntity
 
@@ -136,7 +135,7 @@ class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity):
     @property
     def current_temperature(self) -> float:
         """The measured temperature, computed from the signal."""
-        return float(self._behaviour.current_temperature(signal_time()))
+        return float(self._behaviour.current_temperature(self._behaviour.now()))
 
     async def async_added_to_hass(self) -> None:
         """Restore mode and target, then follow the tick."""

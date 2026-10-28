@@ -19,7 +19,6 @@ from ...audit.log import AuditLog
 from ...const import SIGNAL_TICK
 from ...engine.behaviour_factory import BehaviourFactory
 from ...engine.behaviours import Behaviour, Live
-from ...engine.tick import signal_time
 from ...model.models import DeviceDef, EntityDef
 from .client import MqttClient
 
@@ -187,9 +186,8 @@ class BehaviourRuntime(ABC):
     @callback
     def _on_tick(self) -> None:
         """Publish the entities whose value changed."""
-        now = signal_time()
         for entry in list(self._entries.values()):
-            if entry.behaviour.tick(now):
+            if entry.behaviour.tick(entry.behaviour.now()):
                 self._schedule(self._async_changed(entry))
 
     async def _async_deliver(
