@@ -19,6 +19,7 @@ def _empty() -> dict[str, Any]:
         "schedules": {},
         "scenarios": {},
         "published_topics": {},
+        "created_statistics": {},
         "groups": {},
         "created_areas": [],
         "counters": {},
@@ -142,6 +143,23 @@ class TdcStore:
         """Forget recorded topics, for example after their retained messages were deleted."""
         for topic in topics:
             self._data["published_topics"].pop(topic, None)
+
+    def add_statistic(self, statistic_id: str, device_id: str) -> None:
+        """Record a statistic id the integration imported and the device it belongs to."""
+        self._data["created_statistics"][statistic_id] = device_id
+
+    def statistics(self, device_ids: set[str] | None = None) -> list[str]:
+        """Return the imported statistic ids: all, or those of the given devices."""
+        return [
+            statistic_id
+            for statistic_id, owner in self._data["created_statistics"].items()
+            if device_ids is None or owner in device_ids
+        ]
+
+    def forget_statistics(self, statistic_ids: list[str]) -> None:
+        """Forget imported statistic ids, for example after they were cleared."""
+        for statistic_id in statistic_ids:
+            self._data["created_statistics"].pop(statistic_id, None)
 
     def remove_run(self, run_id: str) -> None:
         """Delete the run record `run_id`."""

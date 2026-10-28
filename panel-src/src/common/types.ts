@@ -108,6 +108,14 @@ export interface RemovalPlan {
   scenarios: string[];
   groups: string[];
   topics: string[];
+  statistics: string[];
+}
+
+/** What a statistics import wrote. */
+export interface HistoryResult {
+  series: number;
+  rows: number;
+  skipped: number;
 }
 
 /** What a removal deleted. */

@@ -44,6 +44,7 @@ Lists every module, class and function of the integration with signature, file a
 | `_run_scenario` | `async def _run_scenario(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Start a scenario. |
 | `_add_group` | `async def _add_group(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Add a group of Zigbee2MQTT devices. |
 | `_remove_group` | `async def _remove_group(call: ServiceCall) -> None` | `custom_components/hass_test_data_creator/services.py` | Delete a group. |
+| `_import_history` | `async def _import_history(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Write hourly statistics for the past days of the test sensors. |
 | `async_register_services` | `def async_register_services(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/services.py` | Register the services as administrator services. |
 | `async_remove_services` | `def async_remove_services(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/services.py` | Remove the services when the entry is unloaded. |
 | `hass_test_data_creator.switch` | `module` | `custom_components/hass_test_data_creator/switch.py` | The switch platform of the generated devices. |
@@ -141,6 +142,9 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.add_topic` | `def add_topic(self, topic: str, device_id: str \| None) -> bool` | `custom_components/hass_test_data_creator/store/store.py` | Record a retained MQTT topic and its device (None: shared); True if it was new. |
 | `TdcStore.topics` | `def topics(self, device_ids: set[str] \| None=None) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the recorded topics: all, or those of the given devices. |
 | `TdcStore.forget_topics` | `def forget_topics(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Forget recorded topics, for example after their retained messages were deleted. |
+| `TdcStore.add_statistic` | `def add_statistic(self, statistic_id: str, device_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Record a statistic id the integration imported and the device it belongs to. |
+| `TdcStore.statistics` | `def statistics(self, device_ids: set[str] \| None=None) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the imported statistic ids: all, or those of the given devices. |
+| `TdcStore.forget_statistics` | `def forget_statistics(self, statistic_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Forget imported statistic ids, for example after they were cleared. |
 | `TdcStore.remove_run` | `def remove_run(self, run_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the run record `run_id`. |
 | `TdcStore.next_index` | `def next_index(self, template_id: str, count: int) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Reserve `count` device numbers of a template and return the first one (from 1). |
 | `TdcStore.created_areas` | `def created_areas(self) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the ids of the areas the integration created itself. |
@@ -293,6 +297,8 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.devices.__init__` | `module` | `custom_components/hass_test_data_creator/devices/__init__.py` | Devices package of the HASS Test Data Creator. |
+| `hass_test_data_creator.devices.entity_ids` | `module` | `custom_components/hass_test_data_creator/devices/entity_ids.py` | Finds the entity id of an entity of a generated device, whatever its output. |
+| `entity_id_of` | `def entity_id_of(registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef) -> str \| None` | `custom_components/hass_test_data_creator/devices/entity_ids.py` | Return the entity id of `definition` (native or MQTT unique id), or None if not registered. |
 | `hass_test_data_creator.devices.manager` | `module` | `custom_components/hass_test_data_creator/devices/manager.py` | Creates devices for a creation job (concept 4.1, 12). |
 | `CreationJob` | `class CreationJob` | `custom_components/hass_test_data_creator/devices/manager.py` | The inputs of one creation job. |
 | `DevicesManager` | `class DevicesManager` | `custom_components/hass_test_data_creator/devices/manager.py` | Creates devices with their registry entries, areas and entities. |
@@ -679,7 +685,7 @@ Lists every module, class and function of the integration with signature, file a
 | --- | --- | --- | --- |
 | `hass_test_data_creator.removal.__init__` | `module` | `custom_components/hass_test_data_creator/removal/__init__.py` | Removal package of the HASS Test Data Creator. |
 | `hass_test_data_creator.removal.cleanup` | `module` | `custom_components/hass_test_data_creator/removal/cleanup.py` | Cleanup when the config entry is removed (concept 10.3). |
-| `async_cleanup_after_entry_removal` | `async def async_cleanup_after_entry_removal(hass: HomeAssistant, entry: ConfigEntry) -> None` | `custom_components/hass_test_data_creator/removal/cleanup.py` | Remove the devices of the entry, then the created areas that are empty and the store. |
+| `async_cleanup_after_entry_removal` | `async def async_cleanup_after_entry_removal(hass: HomeAssistant, entry: ConfigEntry) -> None` | `custom_components/hass_test_data_creator/removal/cleanup.py` | Remove the devices, retained topics and statistics, then empty created areas and the store. |
 | `hass_test_data_creator.removal.planner` | `module` | `custom_components/hass_test_data_creator/removal/planner.py` | Plans a removal: what would be deleted (concept 10.2). |
 | `RemovalPlan` | `class RemovalPlan` | `custom_components/hass_test_data_creator/removal/planner.py` | What a removal would delete. |
 | `RemovalPlan.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the plan as the panel shows it before the user confirms. |
@@ -691,8 +697,9 @@ Lists every module, class and function of the integration with signature, file a
 | `RemovalPlanner._orphans` | `def _orphans(self, known: set[str]) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return registry devices of this entry that the store does not know (damaged store). |
 | `RemovalPlanner._empty_areas` | `def _empty_areas(self, removed: set[str]) -> list[str]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the names of created areas that would be empty after removing `removed`. |
 | `hass_test_data_creator.removal.runner` | `module` | `custom_components/hass_test_data_creator/removal/runner.py` | Runs a removal plan step by step; every step can be repeated (concept 10.3). |
-| `RemovalRunner` | `class RemovalRunner` | `custom_components/hass_test_data_creator/removal/runner.py` | Removes devices, run records and empty created areas. |
-| `RemovalRunner.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, outputs: OutputAdapterFactory, areas: AreaAssigner, schedules: ScheduleManager, scenarios: ScenarioManager, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/removal/runner.py` | Keep the collaborators. |
+| `Forgetters` | `class Forgetters` | `custom_components/hass_test_data_creator/removal/runner.py` | The managers that forget what a plan removes: schedules, scenarios and statistics. |
+| `RemovalRunner` | `class RemovalRunner` | `custom_components/hass_test_data_creator/removal/runner.py` | Removes devices, run records, statistics and empty created areas. |
+| `RemovalRunner.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, outputs: OutputAdapterFactory, areas: AreaAssigner, forgetters: Forgetters, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/removal/runner.py` | Keep the collaborators. |
 | `RemovalRunner.async_run` | `async def async_run(self, plan: RemovalPlan) -> dict[str, Any]` | `custom_components/hass_test_data_creator/removal/runner.py` | Execute `plan` and return what was removed (concept 10.3). |
 
 ## audit
@@ -705,6 +712,7 @@ Lists every module, class and function of the integration with signature, file a
 | `AuditEntryFactory` | `class AuditEntryFactory` | `custom_components/hass_test_data_creator/audit/factory.py` | Creates one audit entry per kind of action. |
 | `AuditEntryFactory.devices_created` | `def devices_created(self, run_id: str, template: str, count: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a finished creation job. |
 | `AuditEntryFactory.removal_done` | `def removal_done(self, target: str, devices: int, areas: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a finished removal. |
+| `AuditEntryFactory.history_imported` | `def history_imported(self, series: int, rows: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a finished statistics import. |
 | `AuditEntryFactory.action_fired` | `def action_fired(self, device: str, key: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for an action on one entity. |
 | `AuditEntryFactory.schedule_ran` | `def schedule_ran(self, name: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a schedule that ran. |
 | `AuditEntryFactory.scenario_started` | `def scenario_started(self, name: str, steps: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a scenario that was started. |
@@ -731,6 +739,8 @@ Lists every module, class and function of the integration with signature, file a
 | `ws_groups_list` | `async def ws_groups_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/groups.py` | Return all groups. |
 | `ws_groups_add` | `async def ws_groups_add(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Add a group and return it. |
 | `ws_groups_remove` | `async def ws_groups_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Delete a group. |
+| `hass_test_data_creator.api.history` | `module` | `custom_components/hass_test_data_creator/api/history.py` | Commands about the statistics backfill (concept 8.2). |
+| `ws_history_import` | `async def ws_history_import(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/history.py` | Write hourly statistics for the past days and return how many were written. |
 | `hass_test_data_creator.api.info` | `module` | `custom_components/hass_test_data_creator/api/info.py` | Commands about the integration itself and the templates (concept 8.2). |
 | `ws_info` | `async def ws_info(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/info.py` | Return version, API version, features, limits, outputs, shapes and platforms. |
 | `ws_templates_list` | `async def ws_templates_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/info.py` | Return all templates with their entities. |
@@ -783,6 +793,40 @@ Lists every module, class and function of the integration with signature, file a
 | `GroupManager._member` | `def _member(self, reference: str) -> DeviceDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Return the Zigbee2MQTT device with this id or name, or raise TDC-OUT-005. |
 | `GroupManager._name_is_free` | `def _name_is_free(self, name: str) -> bool` | `custom_components/hass_test_data_creator/groups/manager.py` | Whether `name` can be a group name: not reserved and used by no device or group. |
 | `hass_test_data_creator.groups.schema` | `module` | `custom_components/hass_test_data_creator/groups/schema.py` | Request fields of a group, shared by the services and the WebSocket commands. |
+
+## history
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.history.__init__` | `module` | `custom_components/hass_test_data_creator/history/__init__.py` | Statistics backfill: hourly long-term statistics for the past days (concept 5.1, 15 O5). |
+| `hass_test_data_creator.history.factory` | `module` | `custom_components/hass_test_data_creator/history/factory.py` | Factory that creates the hourly statistics of a sensor from its signal (concept 13.2). |
+| `Series` | `class Series` | `custom_components/hass_test_data_creator/history/factory.py` | The statistics of one entity: its metadata and one row per hour. |
+| `unit_class_of` | `def unit_class_of(device_class: str \| None, unit: str \| None) -> str \| None` | `custom_components/hass_test_data_creator/history/factory.py` | Return the unit conversion class the recorder expects for this device class and unit. |
+| `SeriesFactory` | `class SeriesFactory` | `custom_components/hass_test_data_creator/history/factory.py` | Creates the series of a sensor for a list of hours. |
+| `SeriesFactory.__init__` | `def __init__(self, signals: SignalFactory) -> None` | `custom_components/hass_test_data_creator/history/factory.py` | Keep the signal factory the series are computed with. |
+| `SeriesFactory.supports` | `def supports(self, definition: EntityDef) -> bool` | `custom_components/hass_test_data_creator/history/factory.py` | Whether the entity is a sensor with a state class and numbers as values. |
+| `SeriesFactory.create` | `def create(self, device: DeviceDef, definition: EntityDef, entity_id: str, hours: list[datetime]) -> Series` | `custom_components/hass_test_data_creator/history/factory.py` | Return the series of `definition` for the hours that start at `hours` (UTC, on the hour). |
+| `SeriesFactory._signal` | `def _signal(self, device: DeviceDef, definition: EntityDef, first: datetime) -> Signal` | `custom_components/hass_test_data_creator/history/factory.py` | Return the signal of the entity; a counter gets an origin not later than `first`. |
+| `_samples` | `def _samples(signal: Signal, begin: float) -> list[float]` | `custom_components/hass_test_data_creator/history/factory.py` | Return the values of the signal over the hour that starts at the signal time `begin`. |
+| `_measurement_row` | `def _measurement_row(signal: Signal, start: datetime, begin: float) -> StatisticData` | `custom_components/hass_test_data_creator/history/factory.py` | Return mean, minimum and maximum of the hour that starts at `start`. |
+| `_total_rows` | `def _total_rows(signal: Signal, state_class: str \| None, hours: list[datetime], times: list[float]) -> list[StatisticData]` | `custom_components/hass_test_data_creator/history/factory.py` | Return state and running sum at the end of every hour; the sum starts at 0. |
+| `hass_test_data_creator.history.manager` | `module` | `custom_components/hass_test_data_creator/history/manager.py` | Imports hourly statistics for generated sensors and removes them again (concept 5.1, 10.3). |
+| `last_hours` | `def last_hours(days: int, now: datetime \| None=None) -> list[datetime]` | `custom_components/hass_test_data_creator/history/manager.py` | Return the starts (UTC) of the `days` * 24 full hours before the current hour. |
+| `HistoryManager` | `class HistoryManager` | `custom_components/hass_test_data_creator/history/manager.py` | Writes the statistics of generated sensors and clears them when they are removed. |
+| `HistoryManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, client: StatisticsClient, series: SeriesFactory, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/history/manager.py` | Keep the collaborators. |
+| `HistoryManager.async_import` | `async def async_import(self, days: int, device: str \| None=None, entity: str \| None=None) -> dict[str, Any]` | `custom_components/hass_test_data_creator/history/manager.py` | Write `days` of hourly statistics for the sensors with a state class and return counts. |
+| `HistoryManager.check_clearable` | `def check_clearable(self, statistic_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/history/manager.py` | Raise TDC-CFG-003 if there are statistics to clear but no recorder. |
+| `HistoryManager.forget` | `def forget(self, statistic_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/history/manager.py` | Clear the statistics `statistic_ids` in the recorder and forget them. |
+| `HistoryManager._build` | `def _build(self, targets: list[Target], hours: list[datetime]) -> list[Series]` | `custom_components/hass_test_data_creator/history/manager.py` | Compute the series of all targets; runs in the executor. |
+| `HistoryManager._targets` | `def _targets(self, device: str \| None, entity: str \| None) -> tuple[list[Target], int]` | `custom_components/hass_test_data_creator/history/manager.py` | Return the sensors to import and the number of sensors that cannot be imported. |
+| `hass_test_data_creator.history.recorder` | `module` | `custom_components/hass_test_data_creator/history/recorder.py` | Access to the recorder: writing and clearing long-term statistics. |
+| `StatisticsClient` | `class StatisticsClient` | `custom_components/hass_test_data_creator/history/recorder.py` | Writes and clears statistics of the recorder; fails with TDC-CFG-003 without a recorder. |
+| `StatisticsClient.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Keep the Home Assistant instance. |
+| `StatisticsClient.available` | `def available(self) -> bool` | `custom_components/hass_test_data_creator/history/recorder.py` | Whether the recorder is loaded. |
+| `StatisticsClient.check` | `def check(self) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Raise TDC-CFG-003 if the recorder is not loaded. |
+| `StatisticsClient.write` | `def write(self, metadata: StatisticMetaData, rows: Iterable[StatisticData]) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Queue the hourly `rows` of one statistic; rows of the same hour are replaced. |
+| `StatisticsClient.clear` | `def clear(self, statistic_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Queue the deletion of the statistics `statistic_ids`. |
+| `hass_test_data_creator.history.schema` | `module` | `custom_components/hass_test_data_creator/history/schema.py` | Request fields of a statistics import, shared by the service and the WebSocket command. |
 
 ## scenarios
 

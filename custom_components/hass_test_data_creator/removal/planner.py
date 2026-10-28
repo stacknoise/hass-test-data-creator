@@ -32,6 +32,7 @@ class RemovalPlan:
     scenarios: list[str] = field(default_factory=list)
     groups: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
+    statistics: list[str] = field(default_factory=list)
     areas: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -45,6 +46,7 @@ class RemovalPlan:
             "scenarios": self.scenarios,
             "groups": self.groups,
             "topics": self.topics,
+            "statistics": self.statistics,
             "areas": self.areas,
         }
 
@@ -83,6 +85,7 @@ class RemovalPlanner:
         plan.groups = self._group_ids(plan)
         owners = None if target == TARGET_ALL else {d.id for d in plan.devices} | set(plan.groups)
         plan.topics = self._store.topics(owners)
+        plan.statistics = self._store.statistics(owners)
         plan.areas = self._empty_areas(
             {item.id for item in plan.devices} | {item["identifier"] for item in plan.orphans}
         )

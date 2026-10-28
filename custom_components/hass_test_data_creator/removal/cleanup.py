@@ -7,12 +7,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from ..areas.assigner import AreaAssigner
+from ..history.recorder import StatisticsClient
 from ..outputs.mqtt.client import MqttClient
 from ..store.store import TdcStore
 
 
 async def async_cleanup_after_entry_removal(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Remove the devices of the entry, then the created areas that are empty and the store.
+    """Remove the devices, retained topics and statistics, then empty created areas and the store.
 
     Home Assistant removes the devices only after this hook, so they are removed here first;
     otherwise their areas would not be empty.
@@ -25,5 +26,8 @@ async def async_cleanup_after_entry_removal(hass: HomeAssistant, entry: ConfigEn
     mqtt = MqttClient(hass, store)
     if store.topics() and mqtt.available():
         await mqtt.async_clear(store.topics())
+    statistics = StatisticsClient(hass)
+    if store.statistics() and statistics.available():
+        statistics.clear(store.statistics())
     AreaAssigner(hass, store).delete_empty_created()
     await store.async_remove()

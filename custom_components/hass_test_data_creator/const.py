@@ -18,6 +18,7 @@ FEATURES: Final = (
     "removal",
     "scenarios",
     "schedules",
+    "statistics_backfill",
     "templates",
     "z2m_bridge",
     "z2m_groups",
@@ -46,6 +47,9 @@ MAX_ENTITIES_PER_DEVICE: Final = 40
 MAX_BATCH: Final = 500
 CHUNK_SIZE: Final = 25
 SLOW_TICK_RATIO: Final = 0.5
+MAX_HISTORY_DAYS: Final = 365
+DEFAULT_HISTORY_DAYS: Final = 7
+MAX_HISTORY_ROWS: Final = 500_000
 MAX_PAGE_SIZE: Final = 500
 DEFAULT_PAGE_SIZE: Final = 200
 

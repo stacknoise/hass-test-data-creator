@@ -31,6 +31,10 @@ class AuditEntryFactory:
             logging.INFO, "removal done", {"target": target, "devices": devices, "areas": areas}
         )
 
+    def history_imported(self, series: int, rows: int) -> AuditEntry:
+        """Return the entry for a finished statistics import."""
+        return AuditEntry(logging.INFO, "history imported", {"series": series, "rows": rows})
+
     def action_fired(self, device: str, key: str, action: str) -> AuditEntry:
         """Return the entry for an action on one entity."""
         return AuditEntry(

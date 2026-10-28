@@ -27,6 +27,9 @@ from ..engine.signal_factory import SignalFactory
 from ..engine.tick import Tick
 from ..faults.factory import FaultFactory
 from ..groups.manager import GroupManager
+from ..history.factory import SeriesFactory
+from ..history.manager import HistoryManager
+from ..history.recorder import StatisticsClient
 from ..outputs.adapter import OutputAdapterFactory
 from ..outputs.mqtt.client import MqttClient
 from ..outputs.mqtt.devices import MqttDevices
@@ -38,7 +41,7 @@ from ..outputs.z2m.profiles import Z2mProfileFactory
 from ..platforms.factory import EntityFactory
 from ..platforms.scheduler import HassScheduler
 from ..removal.planner import RemovalPlanner
-from ..removal.runner import RemovalRunner
+from ..removal.runner import Forgetters, RemovalRunner
 from ..scenarios.manager import ScenarioManager
 from ..scheduler.actions import ActionFactory
 from ..scheduler.manager import ScheduleManager
@@ -73,6 +76,7 @@ class TdcData:
     mqtt_devices: MqttDevices
     z2m_devices: Z2mDevices
     groups: GroupManager
+    history: HistoryManager
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -86,7 +90,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     template_factory = TemplateFactory()
     registry = TemplateRegistry(template_factory)
     mqtt = MqttClient(hass, store)
-    behaviours = BehaviourFactory(SignalFactory(), HassScheduler(hass))
+    signals = SignalFactory()
+    behaviours = BehaviourFactory(signals, HassScheduler(hass))
     parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
     mqtt_devices = MqttDevices(
         parts,
@@ -121,6 +126,9 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         audit,
         audit_factory,
     )
+    history = HistoryManager(
+        hass, store, StatisticsClient(hass), SeriesFactory(signals), audit, audit_factory
+    )
     return TdcData(
         entry=entry,
         store=store,
@@ -142,7 +150,13 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         scenarios=scenarios,
         removal_planner=RemovalPlanner(hass, entry, store),
         removal_runner=RemovalRunner(
-            hass, store, outputs, areas, schedules, scenarios, audit, audit_factory
+            hass,
+            store,
+            outputs,
+            areas,
+            Forgetters(schedules, scenarios, history),
+            audit,
+            audit_factory,
         ),
         template_registry=registry,
         entity_factory=EntityFactory(behaviours, live),
@@ -150,6 +164,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         mqtt_devices=mqtt_devices,
         z2m_devices=z2m_devices,
         groups=groups,
+        history=history,
         live=live,
     )
 
