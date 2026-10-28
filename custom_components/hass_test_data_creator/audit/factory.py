@@ -41,6 +41,10 @@ class AuditEntryFactory:
         """Return the entry for a schedule that ran."""
         return AuditEntry(logging.INFO, "schedule ran", {"schedule": name, "action": action})
 
+    def scenario_started(self, name: str, steps: int) -> AuditEntry:
+        """Return the entry for a scenario that was started."""
+        return AuditEntry(logging.INFO, "scenario started", {"scenario": name, "steps": steps})
+
     def schedule_failed(self, name: str, device: str, code: str) -> AuditEntry:
         """Return the warning for a run that failed on one device."""
         return AuditEntry(

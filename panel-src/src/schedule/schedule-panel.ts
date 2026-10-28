@@ -281,8 +281,12 @@ export class SchedulePanel extends TdcElement {
     const { kind, id } = describeTarget(item.target);
     return html`<tr>
       <td>${item.name}</td>
-      <td>${this.tr(`schTarget_${kind}` as TextKey)}${id ? ` ${id}` : ''}</td>
-      <td>${item.entity}: ${item.action}</td>
+      <td>
+        ${item.scenario ? '–' : `${this.tr(`schTarget_${kind}` as TextKey)}${id ? ` ${id}` : ''}`}
+      </td>
+      <td>
+        ${item.scenario ? this.tr('schScenario', { id: item.scenario }) : `${item.entity}: ${item.action}`}
+      </td>
       <td>
         ${this.tr(`schTrigger_${item.trigger.type}` as TextKey)}<br /><small
           >${summarizeTrigger(item.trigger)}</small

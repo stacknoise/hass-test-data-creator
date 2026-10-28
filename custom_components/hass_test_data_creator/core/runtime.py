@@ -20,6 +20,7 @@ from ..platforms.entities import Live
 from ..platforms.factory import EntityFactory
 from ..removal.planner import RemovalPlanner
 from ..removal.runner import RemovalRunner
+from ..scenarios.manager import ScenarioManager
 from ..scheduler.actions import ActionFactory
 from ..scheduler.manager import ScheduleManager
 from ..scheduler.planner import SchedulePlanner
@@ -44,6 +45,7 @@ class TdcData:
     manager: DevicesManager
     action_runner: ActionRunner
     schedules: ScheduleManager
+    scenarios: ScenarioManager
     removal_planner: RemovalPlanner
     removal_runner: RemovalRunner
     template_registry: TemplateRegistry
@@ -65,14 +67,15 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
     actions = ActionFactory(FaultFactory())
     action_runner = ActionRunner(store, live, actions, audit, audit_factory)
+    scenarios = ScenarioManager(hass, store, actions, action_runner, audit, audit_factory)
     triggers = TriggerFactory()
     schedules = ScheduleManager(
         hass,
         store,
         triggers,
         SchedulePlanner(triggers),
-        actions,
         action_runner,
+        scenarios,
         audit,
         audit_factory,
     )
@@ -94,8 +97,11 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         ),
         action_runner=action_runner,
         schedules=schedules,
+        scenarios=scenarios,
         removal_planner=RemovalPlanner(hass, entry, store),
-        removal_runner=RemovalRunner(hass, store, outputs, areas, schedules, audit, audit_factory),
+        removal_runner=RemovalRunner(
+            hass, store, outputs, areas, schedules, scenarios, audit, audit_factory
+        ),
         template_registry=registry,
         entity_factory=EntityFactory(SignalFactory(), live),
         live=live,

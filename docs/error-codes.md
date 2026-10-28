@@ -24,6 +24,7 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-SCH-004 | The schedule was not found | The schedule does not exist. |
 | TDC-SCH-005 | The fault or its parameters are invalid | The kind or the parameters of a fault are invalid. |
 | TDC-SCH-006 | A parameter of the action is missing or out of range | A parameter of an action is missing or outside its range. |
+| TDC-SCH-007 | The scenario was not found | The scenario does not exist. |
 | TDC-OUT-001 | This output is not available in this version | The requested output is not available in this version. |
 | TDC-REM-001 | The removal was interrupted. Run it again to finish it | A step of a removal failed; the removal can be run again. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |

@@ -14,8 +14,8 @@ from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError, TdcError
 from ..core.ids import new_id
 from ..model.models import DeviceDef, ScheduleDef
+from ..scenarios.manager import ScenarioManager
 from ..store.store import TdcStore
-from .actions import ActionFactory
 from .planner import PlannedRun, SchedulePlanner
 from .runner import ActionRunner
 from .triggers import TriggerFactory
@@ -33,8 +33,8 @@ class ScheduleManager:
         store: TdcStore,
         triggers: TriggerFactory,
         planner: SchedulePlanner,
-        actions: ActionFactory,
         runner: ActionRunner,
+        scenarios: ScenarioManager,
         audit: AuditLog,
         audit_factory: AuditEntryFactory,
     ) -> None:
@@ -43,8 +43,8 @@ class ScheduleManager:
         self._store = store
         self._triggers = triggers
         self._planner = planner
-        self._actions = actions
         self._runner = runner
+        self._scenarios = scenarios
         self._audit = audit
         self._audit_factory = audit_factory
         self._queue: list[PlannedRun] = []
@@ -77,16 +77,16 @@ class ScheduleManager:
         return schedule
 
     async def async_add(self, data: dict[str, Any], default_seed: str) -> ScheduleDef:
-        """Validate and store a new schedule; `data` has name, target, entity, action, trigger."""
+        """Validate and store a schedule: a scenario, or a target with entity and action."""
         self._triggers.create(data["trigger"])
-        if not any(data["action"] in names for names in self._actions.names().values()):
-            raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
+        self._check_work(data)
         schedule = ScheduleDef(
             id=new_id(),
             name=data["name"],
-            target=data["target"],
-            entity=data["entity"],
-            action=data["action"],
+            target=data.get("target", {}),
+            entity=data.get("entity", ""),
+            action=data.get("action", ""),
+            scenario=data.get("scenario"),
             trigger=data["trigger"],
             seed=data.get("seed", default_seed),
             created_at=dt_util.utcnow().timestamp(),
@@ -128,16 +128,14 @@ class ScheduleManager:
             for run in runs
         ]
 
-    def devices_for(self, target: dict[str, Any]) -> list[DeviceDef]:
-        """Return the devices a target selects: a device, a template, a run or all."""
-        devices = self._store.devices()
-        if "all" in target:
-            return devices
-        if "device" in target:
-            return [d for d in devices if target["device"] in (d.id, d.name)]
-        if "template" in target:
-            return [d for d in devices if d.template == target["template"]]
-        return [d for d in devices if d.run_id == target.get("run")]
+    def _check_work(self, data: dict[str, Any]) -> None:
+        """Raise unless `data` names an existing scenario or a target with a known action."""
+        if data.get("scenario") is not None:
+            self._scenarios.get(data["scenario"])
+        elif not all(key in data for key in ("target", "entity", "action")):
+            raise ScheduleError(ErrorCode.SCH_INVALID_PARAMS)
+        elif not any(data["action"] in names for names in self._runner.actions().values()):
+            raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
     def ids_targeting(self, device: DeviceDef) -> list[str]:
         """Return the ids of the schedules that target exactly this device."""
@@ -192,15 +190,25 @@ class ScheduleManager:
         schedule = self._store.schedule(run.schedule_id)
         if schedule is None or not schedule.enabled:
             return
-        for device in self.devices_for(schedule.target):
-            try:
-                await self._runner.async_run(
-                    device.id, schedule.entity, schedule.action, schedule.params
-                )
-            except TdcError as error:
-                self._audit.record(
-                    self._audit_factory.schedule_failed(
-                        schedule.name, device.name, error.code.value
-                    )
-                )
-        self._audit.record(self._audit_factory.schedule_ran(schedule.name, schedule.action))
+        if schedule.scenario is not None:
+            await self._run_scenario(schedule)
+        else:
+            await self._runner.async_run_on(
+                self._runner.devices_for(schedule.target),
+                schedule.entity,
+                schedule.action,
+                schedule.params,
+                schedule.name,
+            )
+        self._audit.record(
+            self._audit_factory.schedule_ran(schedule.name, schedule.action or "scenario")
+        )
+
+    async def _run_scenario(self, schedule: ScheduleDef) -> None:
+        """Start the scenario of a schedule; a missing scenario is logged."""
+        try:
+            await self._scenarios.async_run(schedule.scenario or "")
+        except TdcError as error:
+            self._audit.record(
+                self._audit_factory.schedule_failed(schedule.name, "-", error.code.value)
+            )

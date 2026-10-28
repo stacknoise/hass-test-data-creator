@@ -8,12 +8,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from ..const import SAVE_DELAY_SECONDS, STORE_KEY, STORE_VERSION
-from ..model.models import DeviceDef, RunRecord, ScheduleDef
+from ..model.models import DeviceDef, RunRecord, ScenarioDef, ScheduleDef
 
 
 def _empty() -> dict[str, Any]:
     """Return the content of a new store."""
-    return {"devices": {}, "runs": {}, "schedules": {}, "created_areas": [], "counters": {}}
+    return {
+        "devices": {},
+        "runs": {},
+        "schedules": {},
+        "scenarios": {},
+        "created_areas": [],
+        "counters": {},
+    }
 
 
 class TdcStore:
@@ -80,6 +87,23 @@ class TdcStore:
     def remove_schedule(self, schedule_id: str) -> None:
         """Delete the schedule `schedule_id`."""
         self._data["schedules"].pop(schedule_id, None)
+
+    def scenarios(self) -> list[ScenarioDef]:
+        """Return all scenarios in creation order."""
+        return [ScenarioDef.from_dict(item) for item in self._data["scenarios"].values()]
+
+    def scenario(self, scenario_id: str) -> ScenarioDef | None:
+        """Return the scenario with `scenario_id`, or None."""
+        item = self._data["scenarios"].get(scenario_id)
+        return ScenarioDef.from_dict(item) if item else None
+
+    def put_scenario(self, scenario: ScenarioDef) -> None:
+        """Store `scenario`, replacing one with the same id."""
+        self._data["scenarios"][scenario.id] = scenario.to_dict()
+
+    def remove_scenario(self, scenario_id: str) -> None:
+        """Delete the scenario `scenario_id`."""
+        self._data["scenarios"].pop(scenario_id, None)
 
     def remove_run(self, run_id: str) -> None:
         """Delete the run record `run_id`."""

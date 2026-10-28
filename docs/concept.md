@@ -182,7 +182,7 @@ Sensor values are computed, never stored. Discrete states (switch, binary sensor
 | `random_window` | N times within a window, positions drawn from the seed | v0.2 |
 | `poisson` | on average N per hour/day, exponentially distributed gaps | v0.2 |
 | `manual`, `service` | button in the panel, service call | v0.1 |
-| `after` | delay after another action | with the scenarios |
+| `after` | delay after another action | v0.2, as `after_s` of a scenario step |
 
 ### 6.2 Actions (ActionFactory)
 
@@ -236,7 +236,7 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, save, preview), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, add, remove, enable, preview), `scenarios/*` (list, add, remove, run), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 

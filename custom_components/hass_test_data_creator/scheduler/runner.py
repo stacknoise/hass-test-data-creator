@@ -6,7 +6,8 @@ from typing import Any
 
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
-from ..core.errors import ErrorCode, ScheduleError
+from ..core.errors import ErrorCode, ScheduleError, TdcError
+from ..model.models import DeviceDef
 from ..platforms.entities import Live
 from ..store.store import TdcStore
 from .actions import ActionFactory
@@ -33,6 +34,34 @@ class ActionRunner:
     def actions(self) -> dict[str, list[str]]:
         """Return the available action names per platform."""
         return self._actions.names()
+
+    def devices_for(self, target: dict[str, Any]) -> list[DeviceDef]:
+        """Return the devices a target selects: a device, a template, a run or all."""
+        devices = self._store.devices()
+        if "all" in target:
+            return devices
+        if "device" in target:
+            return [d for d in devices if target["device"] in (d.id, d.name)]
+        if "template" in target:
+            return [d for d in devices if d.template == target["template"]]
+        return [d for d in devices if d.run_id == target.get("run")]
+
+    async def async_run_on(
+        self,
+        devices: list[DeviceDef],
+        key: str,
+        action: str,
+        params: dict[str, Any],
+        label: str,
+    ) -> None:
+        """Run `action` on entity `key` of every device; a failure is logged and the rest goes on."""
+        for device in devices:
+            try:
+                await self.async_run(device.id, key, action, params)
+            except TdcError as error:
+                self._audit.record(
+                    self._audit_factory.schedule_failed(label, device.name, error.code.value)
+                )
 
     def find_device_id(self, reference: str) -> str:
         """Return the id of the device whose id or name is `reference`."""

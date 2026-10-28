@@ -66,6 +66,9 @@ class ErrorCode(StrEnum):
     SCH_INVALID_PARAMS = "TDC-SCH-006"
     """A parameter of an action is missing or outside its range."""
 
+    SCH_SCENARIO_NOT_FOUND = "TDC-SCH-007"
+    """The scenario does not exist."""
+
     OUT_UNSUPPORTED = "TDC-OUT-001"
     """The requested output is not available in this version."""
 

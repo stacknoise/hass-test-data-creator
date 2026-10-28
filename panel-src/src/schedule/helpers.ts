@@ -72,11 +72,14 @@ export function buildTarget(kind: TargetKind, id: string): ScheduleTarget {
 }
 
 /** Return the kind and id of a target, for the list. */
-export function describeTarget(target: ScheduleTarget): { kind: TargetKind; id: string } {
-  if ('all' in target) return { kind: 'all', id: '' };
+export function describeTarget(target: ScheduleTarget | Record<string, never>): {
+  kind: TargetKind;
+  id: string;
+} {
   if ('template' in target) return { kind: 'template', id: target.template };
   if ('device' in target) return { kind: 'device', id: target.device };
-  return { kind: 'run', id: target.run };
+  if ('run' in target) return { kind: 'run', id: target.run };
+  return { kind: 'all', id: '' };
 }
 
 /** Return a short text for a trigger, for the list. */

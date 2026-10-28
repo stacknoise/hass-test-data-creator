@@ -101,6 +101,7 @@ export interface RemovalPlan {
   runs: string[];
   areas: string[];
   schedules: string[];
+  scenarios: string[];
 }
 
 /** What a removal deleted. */
@@ -132,9 +133,10 @@ export type TriggerType = Trigger['type'];
 export interface ScheduleInfo {
   id: string;
   name: string;
-  target: ScheduleTarget;
+  target: ScheduleTarget | Record<string, never>;
   entity: string;
   action: string;
+  scenario: string | null;
   trigger: Trigger;
   seed: string;
   created_at: number;
