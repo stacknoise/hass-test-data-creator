@@ -217,13 +217,7 @@ export class SchedulePanel extends TdcElement {
     return html`
       <h3>${this.tr('schNew')}</h3>
       <div class="row">
-        <label style="flex: 1 1 200px"
-          >${this.tr('schName')}
-          <input
-            .value=${this.name}
-            @input=${(e: Event) => (this.name = (e.target as HTMLInputElement).value)}
-          />
-        </label>
+        ${this.textField(this.tr('schName'), this.name, (v) => (this.name = v))}
         ${this.select(
           this.tr('schTarget'),
           TARGET_KINDS,
@@ -234,13 +228,7 @@ export class SchedulePanel extends TdcElement {
         ${
           this.kind === 'all'
             ? nothing
-            : html`<label style="flex: 1 1 200px"
-                >${this.tr('targetId')}
-                <input
-                  .value=${this.targetId}
-                  @input=${(e: Event) => (this.targetId = (e.target as HTMLInputElement).value)}
-                />
-              </label>`
+            : this.textField(this.tr('targetId'), this.targetId, (v) => (this.targetId = v))
         }
       </div>
       <div class="row">
@@ -271,14 +259,10 @@ export class SchedulePanel extends TdcElement {
       </div>
       <div class="row">
         ${this.renderTriggerFields()}
-        <label style="flex: 1 1 140px"
-          >${this.tr('seed')}
-          <input
-            .value=${this.seed}
-            placeholder=${this.tr('seedHint')}
-            @input=${(e: Event) => (this.seed = (e.target as HTMLInputElement).value)}
-          />
-        </label>
+        ${this.textField(this.tr('seed'), this.seed, (v) => (this.seed = v), {
+          flex: '1 1 140px',
+          placeholder: this.tr('seedHint'),
+        })}
       </div>
       <p>
         <button

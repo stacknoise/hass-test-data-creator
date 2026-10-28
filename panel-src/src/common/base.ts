@@ -1,4 +1,4 @@
-import { LitElement, css, type CSSResultGroup } from 'lit';
+import { LitElement, css, html, type CSSResultGroup, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { TdcApi } from './api';
 import { languageOf, t, type TextKey } from './i18n';
@@ -99,6 +99,23 @@ export abstract class TdcElement extends LitElement {
       this.client = { hass: this.hass, api: new TdcApi(this.hass) };
     }
     return this.client.api;
+  }
+
+  /** Render a labelled text input that reports each change as text. */
+  protected textField(
+    label: string,
+    value: string,
+    change: (value: string) => void,
+    options: { flex?: string; placeholder?: string } = {},
+  ): TemplateResult {
+    return html`<label style="flex: ${options.flex ?? '1 1 200px'}"
+      >${label}
+      <input
+        .value=${value}
+        placeholder=${options.placeholder ?? ''}
+        @input=${(e: Event) => change((e.target as HTMLInputElement).value)}
+      />
+    </label>`;
   }
 
   /** The text `key` in the language of Home Assistant. */

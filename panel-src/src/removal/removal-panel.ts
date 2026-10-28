@@ -97,13 +97,9 @@ export class RemovalPanel extends TdcElement {
         ${
           this.target === 'all'
             ? ''
-            : html`<label style="flex: 1 1 260px"
-                >${this.tr('targetId')}
-                <input
-                  .value=${this.targetId}
-                  @input=${(e: Event) => (this.targetId = (e.target as HTMLInputElement).value)}
-                />
-              </label>`
+            : this.textField(this.tr('targetId'), this.targetId, (v) => (this.targetId = v), {
+                flex: '1 1 260px',
+              })
         }
         <button @click=${() => void this.showPlan()}>${this.tr('showPlan')}</button>
       </div>
