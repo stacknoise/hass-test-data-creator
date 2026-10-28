@@ -7,6 +7,8 @@ import type {
   RemovalPlan,
   RemovalResult,
   RemovalTarget,
+  ScenarioInfo,
+  ScenarioStep,
   ScheduleInfo,
   ScheduleRequest,
   TemplateInfo,
@@ -77,6 +79,26 @@ export class TdcApi {
   /** Return the planned runs of the next hours. */
   schedulePreview(hours: number): Promise<PlannedRun[]> {
     return this.call('schedules/preview', { hours });
+  }
+
+  /** Return all scenarios. */
+  scenarios(): Promise<ScenarioInfo[]> {
+    return this.call('scenarios/list');
+  }
+
+  /** Add a scenario. */
+  addScenario(name: string, steps: ScenarioStep[]): Promise<ScenarioInfo> {
+    return this.call('scenarios/add', { name, steps });
+  }
+
+  /** Delete a scenario. */
+  removeScenario(scenarioId: string): Promise<Record<string, never>> {
+    return this.call('scenarios/remove', { scenario_id: scenarioId });
+  }
+
+  /** Start a scenario and return the number of its steps. */
+  runScenario(scenarioId: string): Promise<{ steps: number }> {
+    return this.call('scenarios/run', { scenario_id: scenarioId });
   }
 
   /** Send a command with its defined fields to the backend. */
