@@ -47,7 +47,7 @@ Tests in Docker on Windows:
 docker compose -f dev/docker-compose.test.yml run --rm tests
 ```
 
-Manual test with a real Home Assistant and Mosquitto: `docker compose -f dev/docker-compose.yml up`, then open `http://localhost:8123`. The integration folder is mounted into the container.
+Manual test with a real Home Assistant and Mosquitto: `docker compose -f dev/docker-compose.yml up`, then open `http://localhost:18123`. The integration folder is mounted into the container.
 
 Besides these, CI runs `hassfest`, the HACS validation (`hacs/action`), PMD CPD (copy-paste detection) and CodeQL (Python and TypeScript).
 
