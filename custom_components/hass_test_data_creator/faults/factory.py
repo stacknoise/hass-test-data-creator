@@ -16,6 +16,10 @@ SENSOR_ONLY = ("sensor",)
 DEFAULT_SPIKE_FACTOR = 5.0
 DEFAULT_BATTERY_LOW = 5.0
 DEFAULT_LINKQUALITY_DROP = 20.0
+DEFAULT_MESSAGE_DELAY_S = 30.0
+MAX_MESSAGE_DELAY_S = 3600
+DEFAULT_COPIES = 1
+MAX_COPIES = 10
 
 Transform = Callable[[float], float]
 
@@ -29,6 +33,8 @@ class Fault:
     unavailable: bool = False
     frozen: bool = False
     transform: Transform | None = None
+    message_delay_s: float = 0.0
+    message_repeats: int = 0
 
 
 @dataclass(frozen=True)
@@ -42,6 +48,8 @@ class FaultSpec:
 
 _DURATION = vol.All(vol.Coerce(float), vol.Range(min=1, max=MAX_DURATION_SECONDS))
 _NUMBER = vol.Coerce(float)
+_DELAY = vol.All(vol.Coerce(float), vol.Range(min=1, max=MAX_MESSAGE_DELAY_S))
+_COPIES = vol.All(int, vol.Range(min=1, max=MAX_COPIES))
 _SPECS: dict[str, FaultSpec] = {
     "unavailable": FaultSpec(ALL_PLATFORMS, 60, {}),
     "dropout": FaultSpec(SENSOR_ONLY, 10, {}),
@@ -49,6 +57,8 @@ _SPECS: dict[str, FaultSpec] = {
     "spike": FaultSpec(SENSOR_ONLY, 30, {vol.Optional("factor"): _NUMBER}),
     "battery_low": FaultSpec(SENSOR_ONLY, 3600, {vol.Optional("value"): _NUMBER}),
     "linkquality_drop": FaultSpec(SENSOR_ONLY, 600, {vol.Optional("value"): _NUMBER}),
+    "late": FaultSpec(ALL_PLATFORMS, 120, {vol.Optional("delay_s"): _DELAY}),
+    "duplicate": FaultSpec(ALL_PLATFORMS, 120, {vol.Optional("copies"): _COPIES}),
 }
 FAULT_KINDS = tuple(_SPECS)
 ACTION_PREFIX = "fault_"
@@ -105,5 +115,11 @@ class FaultFactory:
             return Fault(
                 kind, duration, transform=_scaled(checked.get("factor", DEFAULT_SPIKE_FACTOR))
             )
+        if kind == "late":
+            return Fault(
+                kind, duration, message_delay_s=checked.get("delay_s", DEFAULT_MESSAGE_DELAY_S)
+            )
+        if kind == "duplicate":
+            return Fault(kind, duration, message_repeats=checked.get("copies", DEFAULT_COPIES))
         default = DEFAULT_BATTERY_LOW if kind == "battery_low" else DEFAULT_LINKQUALITY_DROP
         return Fault(kind, duration, transform=_fixed(checked.get("value", default)))

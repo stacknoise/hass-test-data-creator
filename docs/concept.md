@@ -190,7 +190,7 @@ Switch on/off/toggle, button press (`single`, `double`, `hold`), motion for N se
 
 ### 6.3 Faults (FaultFactory)
 
-`unavailable`, `dropout` (sensor only), `frozen`, `spike`, `battery_low`, `linkquality_drop`, `late` and `duplicate` message. A fault has a duration and ends itself; a new fault replaces a running one on the same entity. All faults are visible in the panel while active. v0.2 delivers the first six, as actions `fault_<kind>` of the `ActionFactory` (parameters `duration_s`, `factor`, `value`); `late` and `duplicate` need the MQTT output and follow with v0.3.
+`unavailable`, `dropout` (sensor only), `frozen`, `spike`, `battery_low`, `linkquality_drop`, `late` and `duplicate` message. A fault has a duration and ends itself; a new fault replaces a running one on the same entity. All faults are visible in the panel while active. All eight are actions `fault_<kind>` of the `ActionFactory` (parameters `duration_s`, `factor`, `value`, `delay_s`, `copies`). `late` and `duplicate` act on the messages of the MQTT outputs only: while one is active, every state and event message of the entity (for Zigbee2MQTT the state of its device) is held back by `delay_s` seconds (1 to 3600, default 30) or sent `copies` extra times (1 to 10, default 1). The payload is the one of the moment the message was made, so a late message is a stale one. Availability and discovery are not delayed; messages still waiting when a device is removed or the integration is unloaded are dropped. The native output has no messages, so the fault has no effect there.
 
 ### 6.4 Determinism and restart
 

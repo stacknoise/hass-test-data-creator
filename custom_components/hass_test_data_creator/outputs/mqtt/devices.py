@@ -107,9 +107,13 @@ class MqttDevices(BehaviourRuntime):
         self, entry: _Entry, facet: str, payload: str, *, retain: bool = True
     ) -> None:
         """Publish `payload` on the topic of `facet`."""
-        await self._async_publish(
-            entry.topics.facet(facet), payload, entry.device.id, retain=retain
-        )
+        topic = entry.topics.facet(facet)
+        if facet == "availability":
+            await self._async_publish(topic, payload, entry.device.id, retain=retain)
+        else:
+            await self._async_deliver(
+                [entry.behaviour], topic, payload, entry.device.id, retain=retain
+            )
 
     def _mqtt(self, entry: RuntimeEntry) -> _Entry:
         """Return the entry as one of this output."""

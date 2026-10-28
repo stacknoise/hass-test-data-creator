@@ -115,8 +115,12 @@ class Z2mDevices(BehaviourRuntime):
             mine.definition,
             mine.behaviour,
             lambda action: self._schedule(
-                self._async_publish(
-                    f"{self._base}/{name}/action", action, mine.device.id, retain=False
+                self._async_deliver(
+                    [mine.behaviour],
+                    f"{self._base}/{name}/action",
+                    action,
+                    mine.device.id,
+                    retain=False,
                 )
             ),
         )
@@ -253,8 +257,11 @@ class Z2mDevices(BehaviourRuntime):
         await self._async_publish(
             f"{self._base}/{name}/availability", self._payloads.availability(online), device_id
         )
-        await self._async_publish(
-            f"{self._base}/{name}", self._payloads.device_state(properties), device_id
+        await self._async_deliver(
+            [entry.behaviour for entry in entries],
+            f"{self._base}/{name}",
+            self._payloads.device_state(properties),
+            device_id,
         )
         for group in self._groups.values():
             if device_id in group.members:
