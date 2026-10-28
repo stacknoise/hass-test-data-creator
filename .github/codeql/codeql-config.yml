@@ -1,0 +1,6 @@
+name: Test Data Creator CodeQL config
+
+# The built panel is generated from panel-src and bundles Lit. CodeQL flags the template
+# parser of Lit (js/bad-tag-filter) in the bundle; panel-src, the source, stays scanned.
+paths-ignore:
+  - custom_components/hass_test_data_creator/frontend
