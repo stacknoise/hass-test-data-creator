@@ -3,7 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcPollingElement } from '../common/polling';
 import type { TextKey } from '../common/i18n';
-import type { Info, PlannedRun, ScheduleInfo, TriggerType } from '../common/types';
+import type { Info, PlannedRun, ScenarioInfo, ScheduleInfo, TriggerType } from '../common/types';
 import './work-picker';
 import {
   buildTrigger,
@@ -35,6 +35,8 @@ const WEEKDAYS = [
 export class SchedulePanel extends TdcPollingElement {
   @state() private schedules: ScheduleInfo[] = [];
   @state() private runs: PlannedRun[] = [];
+  @state() private scenarios: ScenarioInfo[] = [];
+  @state() private scenarioId = '';
   @state() private name = '';
   @state() private work: WorkForm = defaultWork({});
   @state() private seed = '';
@@ -48,9 +50,10 @@ export class SchedulePanel extends TdcPollingElement {
   /** Reload the schedules and the planned runs. */
   protected async refresh(): Promise<void> {
     try {
-      [this.schedules, this.runs] = await Promise.all([
+      [this.schedules, this.runs, this.scenarios] = await Promise.all([
         this.api.schedules(),
         this.api.schedulePreview(PREVIEW_HOURS),
+        this.api.scenarios(),
       ]);
       this.error = '';
     } catch (err) {
@@ -63,12 +66,19 @@ export class SchedulePanel extends TdcPollingElement {
     await this.run(async () => {
       await this.api.addSchedule({
         name: this.name,
-        ...resolveWork(this.work, this.templates),
+        ...(this.scenarioId
+          ? { scenario: this.scenarioId }
+          : resolveWork(this.work, this.templates)),
         trigger: buildTrigger(this.form),
         seed: this.seed || undefined,
       });
       this.name = '';
     });
+  }
+
+  /** Return the name of a scenario, or its id if it is gone. */
+  private scenarioName(id: string): string {
+    return this.scenarios.find((s) => s.id === id)?.name ?? id;
   }
 
   /** Change one field of the trigger form. */
@@ -146,13 +156,27 @@ export class SchedulePanel extends TdcPollingElement {
           (type) => this.setForm({ type: type as TriggerType }),
         )}
       </div>
-      <tdc-work-picker
-        .hass=${this.hass}
-        .work=${this.work}
-        .actions=${this.info?.actions ?? {}}
-        .templates=${this.templates}
-        @tdc-work-change=${(e: CustomEvent<WorkForm>) => (this.work = e.detail)}
-      ></tdc-work-picker>
+      <div class="row">
+        ${this.select(
+          this.tr('schRuns'),
+          ['', ...this.scenarios.map((s) => s.id)],
+          this.scenarioId,
+          (id) =>
+            id ? this.tr('schScenario', { id: this.scenarioName(id) }) : this.tr('schRunsAction'),
+          (id) => (this.scenarioId = id),
+        )}
+      </div>
+      ${
+        this.scenarioId
+          ? nothing
+          : html`<tdc-work-picker
+              .hass=${this.hass}
+              .work=${this.work}
+              .actions=${this.info?.actions ?? {}}
+              .templates=${this.templates}
+              @tdc-work-change=${(e: CustomEvent<WorkForm>) => (this.work = e.detail)}
+            ></tdc-work-picker>`
+      }
       <div class="row">
         ${this.renderTriggerFields()}
         ${this.textField(this.tr('seed'), this.seed, (v) => (this.seed = v), {
@@ -163,7 +187,7 @@ export class SchedulePanel extends TdcPollingElement {
       <p>
         <button
           class="primary"
-          ?disabled=${this.busy || !this.name.trim() || !this.work.actionKey}
+          ?disabled=${this.busy || !this.name.trim() || !(this.scenarioId || this.work.actionKey)}
           @click=${() => void this.add()}
         >
           ${this.tr('schAdd')}
@@ -181,7 +205,7 @@ export class SchedulePanel extends TdcPollingElement {
         ${item.scenario ? '–' : `${this.tr(`schTarget_${kind}` as TextKey)}${id ? ` ${id}` : ''}`}
       </td>
       <td>
-        ${item.scenario ? this.tr('schScenario', { id: item.scenario }) : `${item.entity}: ${item.action}`}
+        ${item.scenario ? this.tr('schScenario', { id: this.scenarioName(item.scenario) }) : `${item.entity}: ${item.action}`}
       </td>
       <td>
         ${this.tr(`schTrigger_${item.trigger.type}` as TextKey)}<br /><small

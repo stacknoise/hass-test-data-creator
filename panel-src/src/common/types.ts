@@ -147,9 +147,10 @@ export interface ScheduleInfo {
 /** The inputs of a new schedule. */
 export interface ScheduleRequest {
   name: string;
-  target: ScheduleTarget;
-  entity: string;
-  action: string;
+  target?: ScheduleTarget;
+  entity?: string;
+  action?: string;
+  scenario?: string;
   trigger: Trigger;
   seed?: string;
 }
