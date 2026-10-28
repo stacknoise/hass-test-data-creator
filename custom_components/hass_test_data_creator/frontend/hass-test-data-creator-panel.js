@@ -1385,8 +1385,24 @@ var Ye = 1e4, Xe = 24, G = 50, Ze = [
 };
 V([z()], K.prototype, "schedules", void 0), V([z()], K.prototype, "runs", void 0), V([z()], K.prototype, "info", void 0), V([z()], K.prototype, "templates", void 0), V([z()], K.prototype, "error", void 0), V([z()], K.prototype, "busy", void 0), V([z()], K.prototype, "name", void 0), V([z()], K.prototype, "kind", void 0), V([z()], K.prototype, "targetId", void 0), V([z()], K.prototype, "entity", void 0), V([z()], K.prototype, "actionKey", void 0), V([z()], K.prototype, "seed", void 0), V([z()], K.prototype, "form", void 0), K = V([L("tdc-schedule-panel")], K);
 // src/signals/signals.ts
-var q = (1n << 64n) - 1n, et = 11400714819323198485n, tt = 13787848793156543929n, nt = 10723151780598845931n, rt = 3600;
-function it(e, t = 0, n = 0) {
+var q = (1n << 64n) - 1n, et = 11400714819323198485n, tt = 13787848793156543929n, nt = 10723151780598845931n, rt = 3600, it = 86400, at = 24, ot = .12, st = [
+	[
+		7.5,
+		1.2,
+		.3
+	],
+	[
+		12.5,
+		1,
+		.25
+	],
+	[
+		19,
+		2.2,
+		.55
+	]
+], ct = .12, lt = 600, ut = 6, dt = 900, ft = .3, pt = 2, mt = 3;
+function ht(e, t = 0, n = 0) {
 	return {
 		shape: e.shape,
 		min: e.min ?? 0,
@@ -1409,31 +1425,54 @@ function Y(e, t) {
 	let n = t / e.period_s + e.phase;
 	return n - Math.floor(n);
 }
-var at = {
+function gt(e, t) {
+	let n = Math.floor(t), r = t - n, i = r * r * (3 - 2 * r), a = J(e, n);
+	return a + (J(e, n + 1) - a) * i;
+}
+function _t(e) {
+	return (e % it + it) % it / rt;
+}
+function vt(e, t, n) {
+	let r = Math.abs(e - t), i = Math.min(r, at - r);
+	return Math.exp(-.5 * (i / n) ** 2);
+}
+var yt = {
 	constant: () => .5,
 	sine: (e, t) => .5 + .5 * Math.sin(2 * Math.PI * Y(e, t)),
 	saw: (e, t) => Y(e, t),
 	square: (e, t) => +(Y(e, t) < .5),
 	triangle: (e, t) => 1 - Math.abs(2 * Y(e, t) - 1),
 	noise: (e, t) => J(e.seed, Math.floor(t / e.interval_s)),
-	random_walk: (e, t) => {
-		let n = t / e.period_s + e.phase, r = Math.floor(n), i = n - r, a = i * i * (3 - 2 * i), o = J(e.seed, r);
-		return o + (J(e.seed, r + 1) - o) * a;
-	}
+	random_walk: (e, t) => gt(e.seed, t / e.period_s + e.phase),
+	household_load: (e, t) => {
+		let n = _t(t);
+		return st.reduce((e, [t, r, i]) => e + i * vt(n, t, r), ot) + ct * (gt(e.seed, t / lt) - .5);
+	},
+	pv_day: (e, t) => {
+		let n = (_t(t) - ut) / 14;
+		if (!(n > 0 && n < 1)) return 0;
+		let r = 1 - ft * gt(e.seed, t / dt);
+		return Math.sin(Math.PI * n) ** 1.5 * r;
+	},
+	steps: (e, t) => {
+		let n = Math.max(pt, Math.round(e.period_s / e.interval_s));
+		return Math.min(1, Math.floor(Y(e, t) * n) / (n - 1));
+	},
+	discharge: (e, t) => 1 - Y(e, t) ** mt
 };
-function ot(e, t) {
+function bt(e, t) {
 	return Number(e.toFixed(t));
 }
-function st(e, t) {
+function xt(e, t) {
 	if (e.shape === "counter") {
 		let n = Math.max(0, t - e.origin);
-		return ot(e.min + e.rate_per_hour * n / rt, e.decimals);
+		return bt(e.min + e.rate_per_hour * n / rt, e.decimals);
 	}
-	let n = (at[e.shape] ?? at.constant)(e, t);
-	return e.noise && (n += (J(e.seed + 1, Math.floor(t)) - .5) * 2 * e.noise), n = Math.min(1, Math.max(0, n)), ot(e.min + n * (e.max - e.min), e.decimals);
+	let n = (yt[e.shape] ?? yt.constant)(e, t);
+	return e.noise && (n += (J(e.seed + 1, Math.floor(t)) - .5) * 2 * e.noise), n = Math.min(1, Math.max(0, n)), bt(e.min + n * (e.max - e.min), e.decimals);
 }
 // src/signals/signal-preview.ts
-var ct = 320, lt = 80, ut = 96, dt = 86400, X = class extends I {
+var St = 320, Ct = 80, wt = 96, Tt = 86400, X = class extends I {
 	constructor(...e) {
 		super(...e), this.unit = "";
 	}
@@ -1459,16 +1498,16 @@ var ct = 320, lt = 80, ut = 96, dt = 86400, X = class extends I {
   `;
 	}
 	points(e) {
-		let t = it(e, 1, 0), n = Array.from({ length: 97 }, (e, n) => st(t, n / ut * dt)), r = Math.min(...n), i = Math.max(...n) - r || 1;
+		let t = ht(e, 1, 0), n = Array.from({ length: 97 }, (e, n) => xt(t, n / wt * Tt)), r = Math.min(...n), i = Math.max(...n) - r || 1;
 		return n.map((e, t) => {
-			let n = t / ut * ct, a = 74 - (e - r) / i * 68;
+			let n = t / wt * St, a = 74 - (e - r) / i * 68;
 			return `${n.toFixed(1)},${a.toFixed(1)}`;
 		}).join(" ");
 	}
 	render() {
 		if (!this.signal) return D``;
 		let e = this.signal.min ?? 0, t = this.signal.max ?? 100;
-		return D`<svg viewBox="0 0 ${ct} ${lt}" role="img">
+		return D`<svg viewBox="0 0 ${St} ${Ct}" role="img">
         ${ye`<polyline points=${this.points(this.signal)}></polyline>`}
       </svg>
       <div>${e} – ${t} ${this.unit}</div>`;
@@ -1476,14 +1515,14 @@ var ct = 320, lt = 80, ut = 96, dt = 86400, X = class extends I {
 };
 V([R({ attribute: !1 })], X.prototype, "signal", void 0), V([R()], X.prototype, "unit", void 0), X = V([L("tdc-signal-preview")], X);
 // src/wizard/helpers.ts
-function ft(e) {
+function Et(e) {
 	return e.split(",").map((e) => e.trim()).filter((e) => e.length > 0);
 }
-function pt(e, t) {
+function Dt(e, t) {
 	return Math.round(e / Math.max(1, t) * 10) / 10;
 }
 // src/wizard/creation-wizard.ts
-var Z = "custom", mt = 50, ht = JSON.stringify([{
+var Z = "custom", Ot = 50, kt = JSON.stringify([{
 	key: "level",
 	platform: "sensor",
 	name: "Level",
@@ -1495,7 +1534,7 @@ var Z = "custom", mt = 50, ht = JSON.stringify([{
 	}
 }], null, 2), Q = class extends H {
 	constructor(...e) {
-		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = "", this.mode = "even", this.seed = "", this.custom = ht, this.busy = !1, this.message = "", this.error = "";
+		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = "", this.mode = "even", this.seed = "", this.custom = kt, this.busy = !1, this.message = "", this.error = "";
 	}
 	async connectedCallback() {
 		super.connectedCallback();
@@ -1519,7 +1558,7 @@ var Z = "custom", mt = 50, ht = JSON.stringify([{
 			template: this.template,
 			count: this.count,
 			name_pattern: this.pattern,
-			areas: ft(this.areas),
+			areas: Et(this.areas),
 			area_mode: this.mode,
 			...this.seed ? { seed: this.seed } : {},
 			...this.template === Z ? { entities: this.entities() } : {}
@@ -1533,13 +1572,13 @@ var Z = "custom", mt = 50, ht = JSON.stringify([{
 		this.busy = !1;
 	}
 	renderEstimate() {
-		let e = this.entities(), t = pt(e.filter((e) => e.platform === "sensor").length * this.count, this.info?.tick_seconds ?? 10);
+		let e = this.entities(), t = Dt(e.filter((e) => e.platform === "sensor").length * this.count, this.info?.tick_seconds ?? 10);
 		return D`<p>
       <small>${this.tr("estimate", {
 			entities: e.length * this.count,
 			rate: t
 		})}</small>
-      ${t > mt ? D`<br /><span class="warning">${this.tr("rateWarning")}</span>` : ""}
+      ${t > Ot ? D`<br /><span class="warning">${this.tr("rateWarning")}</span>` : ""}
     </p>`;
 	}
 	render() {

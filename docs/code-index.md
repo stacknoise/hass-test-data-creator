@@ -142,7 +142,14 @@ Lists every module, class and function of the integration with signature, file a
 | `_square` | `def _square(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a square wave: high in the first half of the period. |
 | `_triangle` | `def _triangle(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a triangle wave. |
 | `_noise` | `def _noise(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return white noise that changes every `interval_s` seconds. |
+| `_smooth_noise` | `def _smooth_noise(seed: int, x: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return random points one unit apart, joined by a smooth curve. |
 | `_random_walk` | `def _random_walk(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return smooth noise: random points one period apart, joined by a smooth curve. |
+| `_hour_of_day` | `def _hour_of_day(t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the local hour of the day in [0, 24) for signal time `t`. |
+| `_peak` | `def _peak(hour: float, centre: float, width: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a bell curve around `centre` hours that wraps around midnight. |
+| `_household_load` | `def _household_load(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a household load: low at night, peaks in the morning, at noon and in the evening. |
+| `_pv_day` | `def _pv_day(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return photovoltaic power: zero at night, a bell between sunrise and sunset, with clouds. |
+| `_steps` | `def _steps(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a rising staircase: steps of `interval_s` seconds, one climb per period. |
+| `_discharge` | `def _discharge(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a battery discharge: from full to empty over the period, steeper at the end. |
 | `value_at` | `def value_at(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the value of the signal at signal time `t` (seconds), scaled to min..max. |
 | `hass_test_data_creator.engine.tick` | `module` | `custom_components/hass_test_data_creator/engine/tick.py` | The tick that drives all signals with one timer (concept 5.3). |
 | `signal_time` | `def signal_time(now: datetime \| None=None) -> float` | `custom_components/hass_test_data_creator/engine/tick.py` | Return the signal time: seconds of the local wall clock, so daily curves follow the day. |

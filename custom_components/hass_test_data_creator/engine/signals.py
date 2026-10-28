@@ -12,6 +12,18 @@ _GOLDEN = 0x9E3779B97F4A7C15
 _MIX_A = 0xBF58476D1CE4E5B9
 _MIX_B = 0x94D049BB133111EB
 SECONDS_PER_HOUR = 3600
+SECONDS_PER_DAY = 86400
+HOURS_PER_DAY = 24
+LOAD_BASE = 0.12
+LOAD_PEAKS = ((7.5, 1.2, 0.30), (12.5, 1.0, 0.25), (19.0, 2.2, 0.55))
+LOAD_VARIATION = 0.12
+LOAD_VARIATION_PERIOD_S = 600
+SUNRISE_HOUR = 6.0
+SUNSET_HOUR = 20.0
+CLOUD_PERIOD_S = 900
+CLOUD_DEPTH = 0.3
+MIN_STEPS = 2
+DISCHARGE_EXPONENT = 3.0
 
 
 @dataclass(frozen=True)
@@ -95,15 +107,59 @@ def _noise(spec: SignalSpec, t: float) -> float:
     return hash01(spec.seed, math.floor(t / spec.interval_s))
 
 
-def _random_walk(spec: SignalSpec, t: float) -> float:
-    """Return smooth noise: random points one period apart, joined by a smooth curve."""
-    x = t / spec.period_s + spec.phase
+def _smooth_noise(seed: int, x: float) -> float:
+    """Return random points one unit apart, joined by a smooth curve."""
     index = math.floor(x)
     fraction = x - index
     smooth = fraction * fraction * (3.0 - 2.0 * fraction)
-    low = hash01(spec.seed, index)
-    high = hash01(spec.seed, index + 1)
+    low = hash01(seed, index)
+    high = hash01(seed, index + 1)
     return low + (high - low) * smooth
+
+
+def _random_walk(spec: SignalSpec, t: float) -> float:
+    """Return smooth noise: random points one period apart, joined by a smooth curve."""
+    return _smooth_noise(spec.seed, t / spec.period_s + spec.phase)
+
+
+def _hour_of_day(t: float) -> float:
+    """Return the local hour of the day in [0, 24) for signal time `t`."""
+    return (t % SECONDS_PER_DAY) / SECONDS_PER_HOUR
+
+
+def _peak(hour: float, centre: float, width: float) -> float:
+    """Return a bell curve around `centre` hours that wraps around midnight."""
+    distance = abs(hour - centre)
+    distance = min(distance, HOURS_PER_DAY - distance)
+    return math.exp(-0.5 * (distance / width) ** 2)
+
+
+def _household_load(spec: SignalSpec, t: float) -> float:
+    """Return a household load: low at night, peaks in the morning, at noon and in the evening."""
+    hour = _hour_of_day(t)
+    level = LOAD_BASE + sum(weight * _peak(hour, c, w) for c, w, weight in LOAD_PEAKS)
+    variation = _smooth_noise(spec.seed, t / LOAD_VARIATION_PERIOD_S) - 0.5
+    return level + LOAD_VARIATION * variation
+
+
+def _pv_day(spec: SignalSpec, t: float) -> float:
+    """Return photovoltaic power: zero at night, a bell between sunrise and sunset, with clouds."""
+    x = (_hour_of_day(t) - SUNRISE_HOUR) / (SUNSET_HOUR - SUNRISE_HOUR)
+    if not 0.0 < x < 1.0:
+        return 0.0
+    clouds = 1.0 - CLOUD_DEPTH * _smooth_noise(spec.seed, t / CLOUD_PERIOD_S)
+    return math.sin(math.pi * x) ** 1.5 * clouds
+
+
+def _steps(spec: SignalSpec, t: float) -> float:
+    """Return a rising staircase: steps of `interval_s` seconds, one climb per period."""
+    count = max(MIN_STEPS, round(spec.period_s / spec.interval_s))
+    return min(1.0, math.floor(_cycle(spec, t) * count) / (count - 1))
+
+
+def _discharge(spec: SignalSpec, t: float) -> float:
+    """Return a battery discharge: from full to empty over the period, steeper at the end."""
+    return 1.0 - _cycle(spec, t) ** DISCHARGE_EXPONENT
 
 
 SHAPES: dict[str, Callable[[SignalSpec, float], float]] = {
@@ -114,6 +170,10 @@ SHAPES: dict[str, Callable[[SignalSpec, float], float]] = {
     "triangle": _triangle,
     "noise": _noise,
     "random_walk": _random_walk,
+    "household_load": _household_load,
+    "pv_day": _pv_day,
+    "steps": _steps,
+    "discharge": _discharge,
 }
 COUNTER_SHAPE = "counter"
 SHAPE_NAMES = (*SHAPES, COUNTER_SHAPE)

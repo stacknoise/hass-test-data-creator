@@ -4,6 +4,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 
 - Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor) or from your own entity definitions.
 - Assign the devices to areas on creation.
+- Value curves: constant, sine, saw, square, triangle, noise, random walk, counter, and the daily profiles `household_load` and `pv_day`, a staircase (`steps`) and a battery `discharge`. Every curve is a function of time and seed, so the same seed gives the same values.
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
 - Trigger actions by hand: switch, press a button, set or pulse a binary sensor.
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
@@ -11,7 +12,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours); services for scripts.
 
-Planned: more fault kinds (`late`, `duplicate`), more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Planned: more fault kinds (`late`, `duplicate`), the curve shapes `enum` and `state_machine`, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
 ## Status
 
