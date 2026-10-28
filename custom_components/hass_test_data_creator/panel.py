@@ -12,6 +12,8 @@ from .const import DOMAIN, PANEL_ELEMENT, PANEL_FILE, PANEL_STATIC_URL, PANEL_UR
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 STATIC_KEY = f"{DOMAIN}_static_registered"
+SIDEBAR_TITLE = "Test Data Generator"
+SIDEBAR_TITLES = {"de": "Testdaten Generator"}
 
 
 def _built_at() -> int:
@@ -35,7 +37,7 @@ async def async_register_panel(hass: HomeAssistant, version: str) -> None:
         webcomponent_name=PANEL_ELEMENT,
         frontend_url_path=PANEL_URL_PATH,
         module_url=f"{PANEL_STATIC_URL}/{PANEL_FILE}?v={version}-{built}",
-        sidebar_title="Test data",
+        sidebar_title=SIDEBAR_TITLES.get(hass.config.language.split("-")[0], SIDEBAR_TITLE),
         sidebar_icon="mdi:flask-outline",
         require_admin=True,
     )

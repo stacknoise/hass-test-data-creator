@@ -1,6 +1,8 @@
+import { html, type TemplateResult } from 'lit';
 import { state } from 'lit/decorators.js';
 import { describeError } from './api';
-import { TdcElement } from './base';
+import { TdcElement, toggled } from './base';
+import './dialog';
 import type { Info, TemplateInfo } from './types';
 
 const REFRESH_MS = 10_000;
@@ -12,6 +14,8 @@ export abstract class TdcPollingElement extends TdcElement {
   @state() protected message = '';
   @state() protected error = '';
   @state() protected busy = false;
+  @state() protected expanded = new Set<string>();
+  @state() protected creating = false;
 
   private timer?: number;
 
@@ -43,6 +47,41 @@ export abstract class TdcPollingElement extends TdcElement {
     } catch (err) {
       this.error = describeError(err);
     }
+  }
+
+  /** Open or close the form of an object. */
+  protected toggle(id: string): void {
+    this.expanded = toggled(this.expanded, id);
+  }
+
+  /** Render the button that removes the object of a row, without opening the row. */
+  protected removeButton(remove: () => Promise<unknown>): TemplateResult {
+    return html`<button
+      ?disabled=${this.busy}
+      @click=${(e: Event) => {
+        e.stopPropagation();
+        void this.run(remove);
+      }}
+    >
+      ${this.tr('remove')}
+    </button>`;
+  }
+
+  /** Render the button that opens the popup with the form for a new object. */
+  protected newPopup(label: string, form: TemplateResult): TemplateResult {
+    return html`
+      <p>
+        <button class="primary" @click=${() => (this.creating = true)}>+ ${label}</button>
+      </p>
+      <tdc-dialog
+        .hass=${this.hass}
+        heading=${label}
+        ?open=${this.creating}
+        @tdc-close=${() => (this.creating = false)}
+      >
+        ${form}
+      </tdc-dialog>
+    `;
   }
 
   /** Run a call, then reload; a text it returns is shown, an error is shown as text. */

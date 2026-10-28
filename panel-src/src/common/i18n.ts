@@ -2,7 +2,7 @@
 export type Language = 'de' | 'en';
 
 const en = {
-  title: 'Test data',
+  title: 'Test Data Generator',
   badge: 'Test environment',
   badgeLapse: 'Time lapse ×{factor}',
   tabDevices: 'Devices',
@@ -177,7 +177,7 @@ const en = {
 export type TextKey = keyof typeof en;
 
 const de: Record<TextKey, string> = {
-  title: 'Testdaten',
+  title: 'Testdaten Generator',
   badge: 'Testumgebung',
   badgeLapse: 'Zeitraffer ×{factor}',
   tabDevices: 'Geräte',

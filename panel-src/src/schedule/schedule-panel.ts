@@ -52,9 +52,7 @@ export class SchedulePanel extends TdcPollingElement {
   @state() private runs: PlannedRun[] = [];
   @state() private scenarios: ScenarioInfo[] = [];
   @state() private devices: DeviceInfo[] = [];
-  @state() private expanded = new Set<string>();
   @state() private previewOpen = false;
-  @state() private creating = false;
 
   @query('tdc-schedule-form#new') private newForm?: ScheduleForm;
 
@@ -104,13 +102,6 @@ export class SchedulePanel extends TdcPollingElement {
     if (this.error) await this.refresh();
   }
 
-  /** Open or close the form of a schedule. */
-  private toggle(id: string): void {
-    const next = new Set(this.expanded);
-    if (!next.delete(id)) next.add(id);
-    this.expanded = next;
-  }
-
   /** Return the name of a scenario, or its id if it is gone. */
   private scenarioName(id: string): string {
     return this.scenarios.find((s) => s.id === id)?.name ?? id;
@@ -130,32 +121,21 @@ export class SchedulePanel extends TdcPollingElement {
     return `${label}: ${name}`;
   }
 
-  /** Render the button that opens the popup with the form for a new schedule. */
+  /** Render the button that opens the popup with the form for a new object. */
   private renderNew(): TemplateResult {
-    return html`
-      <p>
-        <button class="primary" @click=${() => (this.creating = true)}>
-          + ${this.tr('schNew')}
-        </button>
-      </p>
-      <tdc-dialog
+    return this.newPopup(
+      this.tr('schNew'),
+      html`<tdc-schedule-form
+        id="new"
         .hass=${this.hass}
-        heading=${this.tr('schNew')}
-        ?open=${this.creating}
-        @tdc-close=${() => (this.creating = false)}
-      >
-        <tdc-schedule-form
-          id="new"
-          .hass=${this.hass}
-          .info=${this.info}
-          .templates=${this.templates}
-          .scenarios=${this.scenarios}
-          submitLabel=${this.tr('schAdd')}
-          ?busy=${this.busy}
-          @tdc-submit=${(e: CustomEvent<ScheduleRequest>) => void this.add(e.detail)}
-        ></tdc-schedule-form>
-      </tdc-dialog>
-    `;
+        .info=${this.info}
+        .templates=${this.templates}
+        .scenarios=${this.scenarios}
+        submitLabel=${this.tr('schAdd')}
+        ?busy=${this.busy}
+        @tdc-submit=${(e: CustomEvent<ScheduleRequest>) => void this.add(e.detail)}
+      ></tdc-schedule-form>`,
+    );
   }
 
   /** Render the table row of one schedule and, if open, its form. */
@@ -193,34 +173,25 @@ export class SchedulePanel extends TdcPollingElement {
           />
         </td>
         <td data-label=${this.tr('colActions')}>
-          <button
-            ?disabled=${this.busy}
-            @click=${(e: Event) => {
-              e.stopPropagation();
-              void this.run(() => this.api.removeSchedule(item.id));
-            }}
-          >
-            ${this.tr('remove')}
-          </button>
+          ${this.removeButton(() => this.api.removeSchedule(item.id))}
         </td>
       </tr>
       ${
         open
-          ? html`<tr>
-              <td colspan="6">
-                <tdc-schedule-form
-                  .hass=${this.hass}
-                  .info=${this.info}
-                  .templates=${this.templates}
-                  .scenarios=${this.scenarios}
-                  .schedule=${item}
-                  submitLabel=${this.tr('schSave')}
-                  ?busy=${this.busy}
-                  @tdc-submit=${(e: CustomEvent<ScheduleRequest>) => void this.save(item, e.detail)}
-                  @tdc-cancel=${() => this.toggle(item.id)}
-                ></tdc-schedule-form>
-              </td>
-            </tr>`
+          ? this.detailRow(
+              6,
+              html`<tdc-schedule-form
+                .hass=${this.hass}
+                .info=${this.info}
+                .templates=${this.templates}
+                .scenarios=${this.scenarios}
+                .schedule=${item}
+                submitLabel=${this.tr('schSave')}
+                ?busy=${this.busy}
+                @tdc-submit=${(e: CustomEvent<ScheduleRequest>) => void this.save(item, e.detail)}
+                @tdc-cancel=${() => this.toggle(item.id)}
+              ></tdc-schedule-form>`,
+            )
           : nothing
       }`;
   }

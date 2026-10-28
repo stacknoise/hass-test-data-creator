@@ -2,7 +2,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { describeError } from '../common/api';
-import { TdcElement, containerHost } from '../common/base';
+import { TdcElement, containerHost, toggled } from '../common/base';
 import '../common/menu-button';
 import type { MenuItem } from '../common/menu-button';
 import type { DeviceInfo, EntityState, Info } from '../common/types';
@@ -100,9 +100,7 @@ export class DeviceList extends TdcElement {
 
   /** Open or close the details of a device. */
   private toggle(id: string): void {
-    const next = new Set(this.expanded);
-    if (!next.delete(id)) next.add(id);
-    this.expanded = next;
+    this.expanded = toggled(this.expanded, id);
   }
 
   /** Reload the devices that are shown now, at least the first page. */
@@ -210,18 +208,17 @@ export class DeviceList extends TdcElement {
       </tr>
       ${
         open
-          ? html`<tr>
-              <td colspan="6">
-                <tdc-device-detail
-                  .hass=${this.hass}
-                  .device=${device}
-                  .actions=${this.info?.actions ?? {}}
-                  .shapes=${this.info?.shapes ?? []}
-                  .areas=${knownAreas(this.hass.areas, this.devices)}
-                  @tdc-changed=${() => void this.refresh()}
-                ></tdc-device-detail>
-              </td>
-            </tr>`
+          ? this.detailRow(
+              6,
+              html`<tdc-device-detail
+                .hass=${this.hass}
+                .device=${device}
+                .actions=${this.info?.actions ?? {}}
+                .shapes=${this.info?.shapes ?? []}
+                .areas=${knownAreas(this.hass.areas, this.devices)}
+                @tdc-changed=${() => void this.refresh()}
+              ></tdc-device-detail>`,
+            )
           : ''
       }`;
   }

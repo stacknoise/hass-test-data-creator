@@ -66,25 +66,13 @@ export class GroupForm extends TdcElement {
           ${this.devices.length === 0 ? html`<small>${this.tr('grpNoDevices')}</small>` : nothing}
         </label>
       </div>
-      <p class="row">
-        <button
-          class="primary"
-          ?disabled=${this.busy || !this.name.trim() || this.members.length === 0}
-          @click=${() => this.submit()}
-        >
-          ${this.submitLabel}
-        </button>
-        ${
-          this.group
-            ? html`<button
-                ?disabled=${this.busy}
-                @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel'))}
-              >
-                ${this.tr('detCancel')}
-              </button>`
-            : nothing
-        }
-      </p>
+      ${this.submitRow({
+        enabled: !!this.name.trim() && this.members.length > 0,
+        busy: this.busy,
+        label: this.submitLabel,
+        editing: !!this.group,
+        submit: () => this.submit(),
+      })}
     `;
   }
 }

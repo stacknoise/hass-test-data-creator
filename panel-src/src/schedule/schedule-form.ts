@@ -211,25 +211,13 @@ export class ScheduleForm extends TdcElement {
           placeholder: this.tr(this.schedule ? 'schSeedKeep' : 'seedHint'),
         })}
       </div>
-      <p class="row">
-        <button
-          class="primary"
-          ?disabled=${this.busy || !this.name.trim() || !(this.scenarioId || this.complete())}
-          @click=${() => this.submit()}
-        >
-          ${this.submitLabel}
-        </button>
-        ${
-          this.schedule
-            ? html`<button
-                ?disabled=${this.busy}
-                @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel'))}
-              >
-                ${this.tr('detCancel')}
-              </button>`
-            : nothing
-        }
-      </p>
+      ${this.submitRow({
+        enabled: !!this.name.trim() && !!(this.scenarioId || this.complete()),
+        busy: this.busy,
+        label: this.submitLabel,
+        editing: !!this.schedule,
+        submit: () => this.submit(),
+      })}
     `;
   }
 }

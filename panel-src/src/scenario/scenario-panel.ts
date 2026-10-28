@@ -28,8 +28,6 @@ export class ScenarioPanel extends TdcPollingElement {
   ];
 
   @state() private scenarios: ScenarioInfo[] = [];
-  @state() private expanded = new Set<string>();
-  @state() private creating = false;
 
   @query('tdc-scenario-form#new') private newForm?: ScenarioForm;
 
@@ -72,38 +70,20 @@ export class ScenarioPanel extends TdcPollingElement {
     });
   }
 
-  /** Open or close the form of a scenario. */
-  private toggle(id: string): void {
-    const next = new Set(this.expanded);
-    if (!next.delete(id)) next.add(id);
-    this.expanded = next;
-  }
-
-  /** Render the button that opens the popup with the form for a new scenario. */
+  /** Render the button that opens the popup with the form for a new object. */
   private renderNew(): TemplateResult {
-    return html`
-      <p>
-        <button class="primary" @click=${() => (this.creating = true)}>
-          + ${this.tr('scnNew')}
-        </button>
-      </p>
-      <tdc-dialog
+    return this.newPopup(
+      this.tr('scnNew'),
+      html`<tdc-scenario-form
+        id="new"
         .hass=${this.hass}
-        heading=${this.tr('scnNew')}
-        ?open=${this.creating}
-        @tdc-close=${() => (this.creating = false)}
-      >
-        <tdc-scenario-form
-          id="new"
-          .hass=${this.hass}
-          .info=${this.info}
-          .templates=${this.templates}
-          submitLabel=${this.tr('scnCreate')}
-          ?busy=${this.busy}
-          @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.add(e.detail)}
-        ></tdc-scenario-form>
-      </tdc-dialog>
-    `;
+        .info=${this.info}
+        .templates=${this.templates}
+        submitLabel=${this.tr('scnCreate')}
+        ?busy=${this.busy}
+        @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.add(e.detail)}
+      ></tdc-scenario-form>`,
+    );
   }
 
   /** Render the table row of one scenario and, if open, its form. */
@@ -134,33 +114,24 @@ export class ScenarioPanel extends TdcPollingElement {
           >
             ${this.tr('scnRun')}
           </button>
-          <button
-            ?disabled=${this.busy}
-            @click=${(e: Event) => {
-              e.stopPropagation();
-              void this.run(() => this.api.removeScenario(item.id).then(() => undefined));
-            }}
-          >
-            ${this.tr('remove')}
-          </button>
+          ${this.removeButton(() => this.api.removeScenario(item.id).then(() => undefined))}
         </td>
       </tr>
       ${
         open
-          ? html`<tr>
-              <td colspan="3">
-                <tdc-scenario-form
-                  .hass=${this.hass}
-                  .info=${this.info}
-                  .templates=${this.templates}
-                  .scenario=${item}
-                  submitLabel=${this.tr('schSave')}
-                  ?busy=${this.busy}
-                  @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.save(item, e.detail)}
-                  @tdc-cancel=${() => this.toggle(item.id)}
-                ></tdc-scenario-form>
-              </td>
-            </tr>`
+          ? this.detailRow(
+              3,
+              html`<tdc-scenario-form
+                .hass=${this.hass}
+                .info=${this.info}
+                .templates=${this.templates}
+                .scenario=${item}
+                submitLabel=${this.tr('schSave')}
+                ?busy=${this.busy}
+                @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.save(item, e.detail)}
+                @tdc-cancel=${() => this.toggle(item.id)}
+              ></tdc-scenario-form>`,
+            )
           : nothing
       }`;
   }

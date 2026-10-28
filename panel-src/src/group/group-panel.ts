@@ -31,8 +31,6 @@ export class GroupPanel extends TdcPollingElement {
 
   @state() private groups: GroupInfo[] = [];
   @state() private devices: DeviceInfo[] = [];
-  @state() private expanded = new Set<string>();
-  @state() private creating = false;
 
   @query('tdc-group-form#new') private newForm?: GroupForm;
 
@@ -85,37 +83,19 @@ export class GroupPanel extends TdcPollingElement {
     });
   }
 
-  /** Open or close the form of a group. */
-  private toggle(id: string): void {
-    const next = new Set(this.expanded);
-    if (!next.delete(id)) next.add(id);
-    this.expanded = next;
-  }
-
-  /** Render the button that opens the popup with the form for a new group. */
+  /** Render the button that opens the popup with the form for a new object. */
   private renderNew(): TemplateResult {
-    return html`
-      <p>
-        <button class="primary" @click=${() => (this.creating = true)}>
-          + ${this.tr('grpNew')}
-        </button>
-      </p>
-      <tdc-dialog
+    return this.newPopup(
+      this.tr('grpNew'),
+      html`<tdc-group-form
+        id="new"
         .hass=${this.hass}
-        heading=${this.tr('grpNew')}
-        ?open=${this.creating}
-        @tdc-close=${() => (this.creating = false)}
-      >
-        <tdc-group-form
-          id="new"
-          .hass=${this.hass}
-          .devices=${this.members()}
-          submitLabel=${this.tr('grpAdd')}
-          ?busy=${this.busy}
-          @tdc-submit=${(e: CustomEvent<GroupRequest>) => void this.add(e.detail)}
-        ></tdc-group-form>
-      </tdc-dialog>
-    `;
+        .devices=${this.members()}
+        submitLabel=${this.tr('grpAdd')}
+        ?busy=${this.busy}
+        @tdc-submit=${(e: CustomEvent<GroupRequest>) => void this.add(e.detail)}
+      ></tdc-group-form>`,
+    );
   }
 
   /** Render the table row of one group and, if open, its form. */
@@ -129,32 +109,23 @@ export class GroupPanel extends TdcPollingElement {
         </td>
         <td data-label=${this.tr('grpMembers')}>${this.memberNames(item)}</td>
         <td data-label=${this.tr('colActions')}>
-          <button
-            ?disabled=${this.busy}
-            @click=${(e: Event) => {
-              e.stopPropagation();
-              void this.run(() => this.api.removeGroup(item.id));
-            }}
-          >
-            ${this.tr('remove')}
-          </button>
+          ${this.removeButton(() => this.api.removeGroup(item.id))}
         </td>
       </tr>
       ${
         open
-          ? html`<tr>
-              <td colspan="3">
-                <tdc-group-form
-                  .hass=${this.hass}
-                  .devices=${this.members()}
-                  .group=${item}
-                  submitLabel=${this.tr('schSave')}
-                  ?busy=${this.busy}
-                  @tdc-submit=${(e: CustomEvent<GroupRequest>) => void this.save(item, e.detail)}
-                  @tdc-cancel=${() => this.toggle(item.id)}
-                ></tdc-group-form>
-              </td>
-            </tr>`
+          ? this.detailRow(
+              3,
+              html`<tdc-group-form
+                .hass=${this.hass}
+                .devices=${this.members()}
+                .group=${item}
+                submitLabel=${this.tr('schSave')}
+                ?busy=${this.busy}
+                @tdc-submit=${(e: CustomEvent<GroupRequest>) => void this.save(item, e.detail)}
+                @tdc-cancel=${() => this.toggle(item.id)}
+              ></tdc-group-form>`,
+            )
           : nothing
       }`;
   }

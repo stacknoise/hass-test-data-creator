@@ -1,4 +1,4 @@
-import { LitElement, css, html, type CSSResultGroup, type TemplateResult } from 'lit';
+import { LitElement, css, html, nothing, type CSSResultGroup, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { TdcApi } from './api';
 import { languageOf, t, type TextKey } from './i18n';
@@ -11,6 +11,25 @@ export const containerHost = css`
     container-type: inline-size;
   }
 `;
+
+/** Return `ids` with `id` added, or removed if it is in. */
+export function toggled(ids: Set<string>, id: string): Set<string> {
+  const next = new Set(ids);
+  if (!next.delete(id)) next.add(id);
+  return next;
+}
+
+/** What the buttons under a form need. */
+export interface SubmitRowOptions {
+  enabled: boolean;
+  busy: boolean;
+  label: string;
+  /** Whether an existing object is changed; then a cancel button is shown too. */
+  editing: boolean;
+  submit: () => void;
+  /** Buttons in front of the save button. */
+  extra?: TemplateResult;
+}
 
 /** The look that buttons and form fields share. */
 const controlStyle = css`
@@ -231,6 +250,37 @@ export abstract class TdcElement extends LitElement {
         )}
       </select>
     </label>`;
+  }
+
+  /** Render a table row that spans the table and holds the details of the row above it. */
+  protected detailRow(columns: number, content: TemplateResult): TemplateResult {
+    return html`<tr>
+      <td colspan=${columns}>${content}</td>
+    </tr>`;
+  }
+
+  /** Render the buttons under a form: save and, when an object is changed, cancel. */
+  protected submitRow(options: SubmitRowOptions): TemplateResult {
+    return html`<p class="row">
+      ${options.extra ?? nothing}
+      <button
+        class="primary"
+        ?disabled=${!options.enabled || options.busy}
+        @click=${options.submit}
+      >
+        ${options.label}
+      </button>
+      ${
+        options.editing
+          ? html`<button
+              ?disabled=${options.busy}
+              @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel'))}
+            >
+              ${this.tr('detCancel')}
+            </button>`
+          : nothing
+      }
+    </p>`;
   }
 
   /** The text `key` in the language of Home Assistant. */

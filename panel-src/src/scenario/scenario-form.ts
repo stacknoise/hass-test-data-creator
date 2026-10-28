@@ -1,4 +1,4 @@
-import { html, nothing, type PropertyValues, type TemplateResult } from 'lit';
+import { html, type PropertyValues, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { TdcElement } from '../common/base';
 import type { Info, ScenarioInfo, ScenarioStep, TemplateInfo } from '../common/types';
@@ -123,30 +123,18 @@ export class ScenarioForm extends TdcElement {
         ${this.textField(this.tr('schName'), this.name, (v) => (this.name = v))}
       </div>
       ${this.steps.map((step, index) => this.renderStep(step, index))}
-      <p class="row">
-        <button
+      ${this.submitRow({
+        enabled: this.complete(),
+        busy: this.busy,
+        label: this.submitLabel,
+        editing: !!this.scenario,
+        submit: () => this.submit(),
+        extra: html`<button
           @click=${() => (this.steps = [...this.steps, defaultStep(this.info?.actions ?? {})])}
         >
           ${this.tr('scnAddStep')}
-        </button>
-        <button
-          class="primary"
-          ?disabled=${this.busy || !this.complete()}
-          @click=${() => this.submit()}
-        >
-          ${this.submitLabel}
-        </button>
-        ${
-          this.scenario
-            ? html`<button
-                ?disabled=${this.busy}
-                @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel'))}
-              >
-                ${this.tr('detCancel')}
-              </button>`
-            : nothing
-        }
-      </p>
+        </button>`,
+      })}
       <p class="error">${this.error}</p>
     `;
   }
