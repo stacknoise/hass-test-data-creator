@@ -34,7 +34,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | Version | Content |
 | --- | --- |
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
-| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler (triggers, planner, services, commands) first; schedule tab in the panel, faults, shapes, scenarios and templates follow |
+| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler with its panel tab and the faults (without `late` and `duplicate`) are done; shapes, scenarios and templates follow |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check |
 | v0.4 | Statistics backfill, time lapse, CSV replay, YAML import/export, sharing of templates |
 
@@ -190,7 +190,7 @@ Switch on/off/toggle, button press (`single`, `double`, `hold`), motion for N se
 
 ### 6.3 Faults (FaultFactory)
 
-`unavailable`, `dropout` (sensor only), `frozen`, `spike`, `battery_low`, `linkquality_drop`, `late` and `duplicate` message. A fault has a duration and ends itself. All faults are visible in the panel while active.
+`unavailable`, `dropout` (sensor only), `frozen`, `spike`, `battery_low`, `linkquality_drop`, `late` and `duplicate` message. A fault has a duration and ends itself; a new fault replaces a running one on the same entity. All faults are visible in the panel while active. v0.2 delivers the first six, as actions `fault_<kind>` of the `ActionFactory` (parameters `duration_s`, `factor`, `value`); `late` and `duplicate` need the MQTT output and follow with v0.3.
 
 ### 6.4 Determinism and restart
 

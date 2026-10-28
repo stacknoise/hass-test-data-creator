@@ -83,6 +83,9 @@
     },
     "sch_not_found": {
       "message": "The schedule was not found"
+    },
+    "sch_invalid_fault": {
+      "message": "The fault or its parameters are invalid"
     }
   },
   "services": {

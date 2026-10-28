@@ -235,15 +235,23 @@ Lists every module, class and function of the integration with signature, file a
 | --- | --- | --- | --- |
 | `hass_test_data_creator.platforms.__init__` | `module` | `custom_components/hass_test_data_creator/platforms/__init__.py` | Platforms package of the HASS Test Data Creator. |
 | `hass_test_data_creator.platforms.entities` | `module` | `custom_components/hass_test_data_creator/platforms/entities.py` | Entity classes of the native output (concept 5.4, 7.2). |
-| `TdcEntity` | `class TdcEntity` | `custom_components/hass_test_data_creator/platforms/entities.py` | Mixin with what every generated entity has: ids, device info and the live registry. |
+| `TdcEntity` | `class TdcEntity` | `custom_components/hass_test_data_creator/platforms/entities.py` | Mixin with what every generated entity has: ids, device info, live registry and faults. |
 | `TdcEntity.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Set unique id, name, device info and category from the definitions. |
 | `TdcEntity.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Make the entity findable for actions. |
-| `TdcEntity.async_will_remove_from_hass` | `async def async_will_remove_from_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Remove the entity from the live registry. |
+| `TdcEntity.async_will_remove_from_hass` | `async def async_will_remove_from_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Cancel a running fault and remove the entity from the live registry. |
+| `TdcEntity.fault_kind` | `def fault_kind(self) -> str \| None` | `custom_components/hass_test_data_creator/platforms/entities.py` | The kind of the active fault, if there is one. |
+| `TdcEntity.start_fault` | `def start_fault(self, fault: Fault) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Make `fault` active; it ends by itself after its duration and replaces a running one. |
+| `TdcEntity._end_fault` | `def _end_fault(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | End the active fault. |
+| `TdcEntity._clear_fault_timer` | `def _clear_fault_timer(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Cancel the timer that ends the active fault. |
+| `TdcEntity._show_fault` | `def _show_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Apply the active fault (or its end) to the state and write it. |
+| `TdcEntity._apply_fault` | `def _apply_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Change what the fault changes beyond availability; sensors recompute their value. |
 | `TdcStatefulEntity` | `class TdcStatefulEntity(TdcEntity, RestoreEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A generated entity with an on/off state that survives a restart. |
 | `TdcStatefulEntity.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Start in the initial state of the definition. |
 | `TdcStatefulEntity.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Restore the last state. |
 | `TdcSensor` | `class TdcSensor(TdcEntity, SensorEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A sensor whose value comes from a signal. |
 | `TdcSensor.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, live: Live, signal: Signal) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the sensor with its signal and compute the first value. |
+| `TdcSensor._value` | `def _value(self, now: float) -> float` | `custom_components/hass_test_data_creator/platforms/entities.py` | Return the value of the signal at `now` with the transformation of an active fault. |
+| `TdcSensor._apply_fault` | `def _apply_fault(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Show the changed value at once, unless the sensor is frozen. |
 | `TdcSensor.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Follow the tick. |
 | `TdcSensor._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Compute a new value if the interval of the signal has passed. |
 | `TdcBinarySensor` | `class TdcBinarySensor(TdcStatefulEntity, BinarySensorEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A binary sensor that is set by actions; motion sensors switch off after a pulse. |
@@ -273,7 +281,7 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.scheduler.__init__` | `module` | `custom_components/hass_test_data_creator/scheduler/__init__.py` | Scheduler package of the HASS Test Data Creator. |
-| `hass_test_data_creator.scheduler.actions` | `module` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Actions on entities and their factory (concept 6.2, 13.2); v0.1 has manual actions only. |
+| `hass_test_data_creator.scheduler.actions` | `module` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Actions on entities and their factory (concept 6.2, 13.2); manual actions and faults. |
 | `_turn_on` | `async def _turn_on(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a switch on. |
 | `_turn_off` | `async def _turn_off(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a switch off. |
 | `_toggle` | `async def _toggle(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Toggle a switch. |
@@ -281,9 +289,12 @@ Lists every module, class and function of the integration with signature, file a
 | `_set_off` | `async def _set_off(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Set a binary sensor to off. |
 | `_pulse` | `async def _pulse(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Switch a binary sensor on for `duration_s` seconds. |
 | `_press` | `async def _press(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Fire an event of an event entity; `event_type` defaults to the first one. |
-| `ActionFactory` | `class ActionFactory` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Creates the action for a platform and an action name. |
+| `ActionFactory` | `class ActionFactory` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Creates the action for a platform and an action name; faults are `fault_<kind>`. |
+| `ActionFactory.__init__` | `def __init__(self, faults: FaultFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Keep the factory that builds the faults. |
 | `ActionFactory.create` | `def create(self, platform: str, action: str) -> Action` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action or raise SCH_UNKNOWN_ACTION. |
 | `ActionFactory.names` | `def names(self) -> dict[str, list[str]]` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action names per platform. |
+| `ActionFactory._fault_action` | `def _fault_action(self, kind: str) -> Action` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Return the action that starts a fault of `kind` on an entity. |
+| `ActionFactory._fault_action.start` | `async def start(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Start the fault; `duration_s` and the kind's parameters come from `params`. |
 | `hass_test_data_creator.scheduler.manager` | `module` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Stores schedules and runs their actions at the planned moments (concept 6). |
 | `ScheduleManager` | `class ScheduleManager` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Adds, removes and enables schedules and fires them with a single timer. |
 | `ScheduleManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, triggers: TriggerFactory, planner: SchedulePlanner, actions: ActionFactory, runner: ActionRunner, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Keep the collaborators. |
@@ -402,3 +413,20 @@ Lists every module, class and function of the integration with signature, file a
 | `ws_schedules_remove` | `async def ws_schedules_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/schedules.py` | Delete a schedule. |
 | `ws_schedules_enable` | `async def ws_schedules_enable(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/schedules.py` | Switch a schedule on or off and return it. |
 | `ws_schedules_preview` | `async def ws_schedules_preview(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/api/schedules.py` | Return the planned runs of the next hours. |
+
+## faults
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.faults.__init__` | `module` | `custom_components/hass_test_data_creator/faults/__init__.py` | Faults of generated entities (concept 6.3). |
+| `hass_test_data_creator.faults.factory` | `module` | `custom_components/hass_test_data_creator/faults/factory.py` | Faults of generated entities and their factory (concept 6.3, 13.2). |
+| `Fault` | `class Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | A fault that is active on one entity until `duration_s` has passed. |
+| `FaultSpec` | `class FaultSpec` | `custom_components/hass_test_data_creator/faults/factory.py` | What a kind of fault does, where it applies and which parameters it takes. |
+| `_scaled` | `def _scaled(factor: float) -> Transform` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the transformation that multiplies a value by `factor`. |
+| `_scaled.apply` | `def apply(value: float) -> float` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the value multiplied by the factor. |
+| `_fixed` | `def _fixed(level: float) -> Transform` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the transformation that replaces every value by `level`. |
+| `_fixed.apply` | `def apply(value: float) -> float` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fixed level. |
+| `FaultFactory` | `class FaultFactory` | `custom_components/hass_test_data_creator/faults/factory.py` | Creates the fault for a kind and its parameters. |
+| `FaultFactory.kinds` | `def kinds(self) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the names of all kinds of fault. |
+| `FaultFactory.platforms` | `def platforms(self, kind: str) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the platforms a kind of fault applies to; empty if the kind is unknown. |
+| `FaultFactory.create` | `def create(self, kind: str, params: dict[str, Any]) -> Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fault or raise SCH_INVALID_FAULT for unknown kinds and bad parameters. |

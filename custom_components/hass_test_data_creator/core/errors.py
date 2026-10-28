@@ -60,6 +60,9 @@ class ErrorCode(StrEnum):
     SCH_NOT_FOUND = "TDC-SCH-004"
     """The schedule does not exist."""
 
+    SCH_INVALID_FAULT = "TDC-SCH-005"
+    """The kind or the parameters of a fault are invalid."""
+
     OUT_UNSUPPORTED = "TDC-OUT-001"
     """The requested output is not available in this version."""
 

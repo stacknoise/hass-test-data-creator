@@ -83,6 +83,9 @@
     },
     "sch_not_found": {
       "message": "Der Zeitplan wurde nicht gefunden"
+    },
+    "sch_invalid_fault": {
+      "message": "Die Störung oder ihre Parameter sind ungültig"
     }
   },
   "services": {
