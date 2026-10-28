@@ -1,0 +1,6 @@
+# Test image for Windows machines: Home Assistant does not run there (needs fcntl).
+FROM python:3.14-slim
+WORKDIR /repo
+COPY requirements_test.txt requirements_lint.txt ./
+RUN pip install --no-cache-dir -r requirements_test.txt -r requirements_lint.txt
+CMD ["pytest", "-m", "not slow"]

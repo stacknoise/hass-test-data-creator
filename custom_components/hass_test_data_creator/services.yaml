@@ -1,0 +1,79 @@
+create_devices:
+  fields:
+    template:
+      required: true
+      example: plug_metering
+      selector:
+        text:
+    count:
+      required: true
+      example: 24
+      selector:
+        number:
+          min: 1
+          max: 500
+          mode: box
+    name_pattern:
+      example: "Plug {nn}"
+      selector:
+        text:
+    areas:
+      example: '["Living room", "Kitchen"]'
+      selector:
+        object:
+    area_mode:
+      default: even
+      selector:
+        select:
+          options: [even, random]
+    seed:
+      example: tdc-0042
+      selector:
+        text:
+    label:
+      selector:
+        text:
+    output:
+      default: native
+      selector:
+        select:
+          options: [native]
+    entities:
+      example: '[{"key": "level", "platform": "sensor", "name": "Level", "signal": {"shape": "sine", "min": 0, "max": 100}}]'
+      selector:
+        object:
+
+fire_event:
+  fields:
+    device:
+      required: true
+      example: Plug 01
+      selector:
+        text:
+    entity:
+      required: true
+      example: state
+      selector:
+        text:
+    action:
+      required: true
+      example: toggle
+      selector:
+        text:
+    params:
+      selector:
+        object:
+
+remove:
+  fields:
+    target:
+      required: true
+      selector:
+        select:
+          options: [device, run]
+    target_id:
+      required: true
+      selector:
+        text:
+
+remove_all:

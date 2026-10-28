@@ -1,0 +1,28 @@
+{
+  "name": "hass-test-data-creator-panel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src && prettier --check src",
+    "format": "prettier --write src",
+    "test": "vitest run",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "lit": "^3.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "@types/node": "^22.20.5",
+    "eslint": "^9.15.0",
+    "eslint-plugin-jsdoc": "^50.5.0",
+    "prettier": "^3.4.1",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.16.0",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.8"
+  }
+}

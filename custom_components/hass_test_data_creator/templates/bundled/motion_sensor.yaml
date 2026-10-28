@@ -1,0 +1,11 @@
+id: motion_sensor
+name: Motion sensor
+model: Motion sensor
+entities:
+  - { key: motion, platform: binary_sensor, name: Motion, device_class: motion, pulse_s: 30 }
+  - { key: illuminance, platform: sensor, name: Illuminance, device_class: illuminance, unit: lx, state_class: measurement,
+      signal: { shape: sine, min: 0, max: 800, period_s: 86400, decimals: 0 } }
+  - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 20, max: 100, period_s: 86400, decimals: 0 } }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

@@ -68,4 +68,5 @@ tests/  dev/  .github/workflows/
 - Panel: TypeScript `strict`, Lit, Vite; colours only from Home Assistant CSS variables; texts only through `i18n` (`de` informal "Du", `en`).
 - UI and exception texts in German and English. Code, comments and docs in English.
 - Git: protected `main`, squash merge, branches `feat|fix|docs|chore|ci/<topic>`, Conventional Commits, tags `vX.Y.Z`; the version in `manifest.json`, `pyproject.toml` and `panel-src/package.json` equals the tag. Do not create a release in the GitHub UI first.
+- README: keep `README.md` current in the same pull request as every user-visible change (service, template, signal shape, panel feature, limit, required version, installation); planned features are named as planned; the release PR updates its status line. Details in `docs/development.md`, section "The README".
 - Licence Apache-2.0. No licence headers in source files. Dependencies only under Apache-2.0-compatible licences (Apache-2.0, MIT, BSD), never GPL.

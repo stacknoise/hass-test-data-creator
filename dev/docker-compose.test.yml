@@ -1,0 +1,12 @@
+# Runs the Python checks in a container: docker compose -f dev/docker-compose.test.yml run --rm tests
+services:
+  tests:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.test
+    volumes:
+      - ..:/repo
+    working_dir: /repo
+    command: >
+      sh -c "ruff check . && ruff format --check . && python scripts/code_index.py --check
+      && pytest -p no:cacheprovider -m 'not slow'"
