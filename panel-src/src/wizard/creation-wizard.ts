@@ -2,7 +2,9 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
-import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
+import type { CreateRequest, EntityDef, Info, SignalDef, TemplateInfo } from '../common/types';
+import { editableSensors, withSignal } from '../signals/editor-helpers';
+import '../signals/curve-editor';
 import '../signals/signal-preview';
 import { parseAreas, stateRate } from './helpers';
 
@@ -34,6 +36,7 @@ export class CreationWizard extends TdcElement {
   @state() private mode: 'even' | 'random' = 'even';
   @state() private seed = '';
   @state() private custom = SAMPLE_ENTITIES;
+  @state() private editIndex = -1;
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -59,6 +62,37 @@ export class CreationWizard extends TdcElement {
       }
     }
     return this.templates.find((t) => t.id === this.template)?.entities ?? [];
+  }
+
+  /** Write a signal changed in the curve editor back into the JSON of the custom entities. */
+  private changeSignal(index: number, event: CustomEvent<SignalDef>): void {
+    this.custom = withSignal(this.custom, index, event.detail);
+  }
+
+  /** Render the curve editor for one sensor of the custom entities. */
+  private renderEditor(): TemplateResult {
+    const sensors = editableSensors(this.custom);
+    const current = sensors.find((s) => s.index === this.editIndex) ?? sensors[0];
+    if (!current) return html``;
+    return html`<h3>${this.tr('edSensor')}</h3>
+      <p>
+        <select
+          @change=${(e: Event) => (this.editIndex = Number((e.target as HTMLSelectElement).value))}
+        >
+          ${sensors.map(
+            (s) =>
+              html`<option value=${s.index} ?selected=${s.index === current.index}>
+                ${s.name}
+              </option>`,
+          )}
+        </select>
+      </p>
+      <tdc-curve-editor
+        .hass=${this.hass}
+        .signal=${current.signal}
+        .shapes=${this.info?.shapes ?? []}
+        @tdc-signal-change=${(e: CustomEvent<SignalDef>) => this.changeSignal(current.index, e)}
+      ></tdc-curve-editor>`;
   }
 
   /** Create the devices with the inputs of the form. */
@@ -172,8 +206,9 @@ export class CreationWizard extends TdcElement {
             </label>`
           : ''
       }
+      ${this.template === CUSTOM ? this.renderEditor() : ''}
       ${
-        sensor?.signal
+        sensor?.signal && this.template !== CUSTOM
           ? html`<p>
               <small>${this.tr('preview')}</small>
               <tdc-signal-preview
