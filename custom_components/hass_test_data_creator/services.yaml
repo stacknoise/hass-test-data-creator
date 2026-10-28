@@ -77,3 +77,59 @@ remove:
         text:
 
 remove_all:
+
+add_schedule:
+  fields:
+    name:
+      required: true
+      example: Evening toggles
+      selector:
+        text:
+    target:
+      required: true
+      example: '{"template": "plug_metering"}'
+      selector:
+        object:
+    entity:
+      required: true
+      example: state
+      selector:
+        text:
+    action:
+      required: true
+      example: toggle
+      selector:
+        text:
+    params:
+      selector:
+        object:
+    trigger:
+      required: true
+      example: '{"type": "random_window", "count": 3, "start": "18:00", "end": "23:00"}'
+      selector:
+        object:
+    seed:
+      selector:
+        text:
+    enabled:
+      default: true
+      selector:
+        boolean:
+
+remove_schedule:
+  fields:
+    schedule_id:
+      required: true
+      selector:
+        text:
+
+set_schedule_enabled:
+  fields:
+    schedule_id:
+      required: true
+      selector:
+        text:
+    enabled:
+      required: true
+      selector:
+        boolean:

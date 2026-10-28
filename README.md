@@ -6,10 +6,11 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Assign the devices to areas on creation.
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
 - Trigger actions by hand: switch, press a button, set or pulse a binary sensor.
+- Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English; services for scripts.
 
-Planned: scheduled and random events, faults, more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Planned: a schedule tab in the panel, faults, more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
 ## Status
 
@@ -31,6 +32,9 @@ Version 0.1.0, the first release. Requires Home Assistant 2026.9.0 or newer. The
 | `hass_test_data_creator.fire_event` | Run an action on one entity of a test device |
 | `hass_test_data_creator.remove` | Remove one device or one creation run |
 | `hass_test_data_creator.remove_all` | Remove everything the integration created |
+| `hass_test_data_creator.add_schedule` | Run an action on devices at fixed, repeating or random times |
+| `hass_test_data_creator.remove_schedule` | Delete a schedule (`schedule_id`) |
+| `hass_test_data_creator.set_schedule_enabled` | Switch a schedule on or off |
 
 ```yaml
 action: hass_test_data_creator.create_devices
@@ -44,6 +48,26 @@ data:
 Actions of `fire_event` per entity type: switch `turn_on`, `turn_off`, `toggle`; binary sensor `set_on`, `set_off`, `pulse` (optional `duration_s`); event `press` (optional `event_type`).
 
 Limits: at most 500 devices per call, 2000 devices and 40 entities per device in total.
+
+Schedules: the target is one of `device` (id or name), `template`, `run` or `all`. The trigger has a `type`:
+
+| Trigger | Fields | Example |
+| --- | --- | --- |
+| `times` | `times` (`HH:MM`), optional `weekdays` (0 = Monday) | `{type: times, times: ["07:00", "17:30"]}` |
+| `interval` | `every_s`, optional `start`, `end` | `{type: interval, every_s: 600, start: "08:00", end: "20:00"}` |
+| `once` | `at` (local date and time) | `{type: once, at: "2026-11-02T18:30"}` |
+| `random_window` | `count`, `start`, `end` | `{type: random_window, count: 3, start: "18:00", end: "23:00"}` |
+| `poisson` | `per_day` (average) | `{type: poisson, per_day: 24}` |
+
+```yaml
+action: hass_test_data_creator.add_schedule
+data:
+  name: Evening toggles
+  target: { template: plug_metering }
+  entity: state
+  action: toggle
+  trigger: { type: random_window, count: 3, start: "18:00", end: "23:00" }
+```
 
 Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](docs/concept.md) chapter 4.2.
 

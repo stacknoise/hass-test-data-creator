@@ -76,3 +76,28 @@ class RunRecord:
     def from_dict(cls, data: dict[str, Any]) -> RunRecord:
         """Return the run stored in `data`."""
         return cls(**data)
+
+
+@dataclass
+class ScheduleDef:
+    """An action that runs on devices at times given by a trigger (concept 6)."""
+
+    id: str
+    name: str
+    target: dict[str, Any]
+    entity: str
+    action: str
+    trigger: dict[str, Any]
+    seed: str
+    created_at: float
+    params: dict[str, Any] = field(default_factory=dict)
+    enabled: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the JSON-serialisable form."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ScheduleDef:
+        """Return the schedule stored in `data`."""
+        return cls(**data)

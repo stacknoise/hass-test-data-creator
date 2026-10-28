@@ -34,7 +34,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | Version | Content |
 | --- | --- |
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
-| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates |
+| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler (triggers, planner, services, commands) first; schedule tab in the panel, faults, shapes, scenarios and templates follow |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check |
 | v0.4 | Statistics backfill, time lapse, CSV replay, YAML import/export, sharing of templates |
 
@@ -178,11 +178,11 @@ Sensor values are computed, never stored. Discrete states (switch, binary sensor
 | --- | --- | --- |
 | `times` | list of times of day (optional weekdays) | v0.2 |
 | `interval` | every N seconds/minutes | v0.2 |
-| `once` | once, at a time or after a delay | v0.2 |
+| `once` | once, at a local date and time (`2026-11-02T18:30`) | v0.2 |
 | `random_window` | N times within a window, positions drawn from the seed | v0.2 |
 | `poisson` | on average N per hour/day, exponentially distributed gaps | v0.2 |
 | `manual`, `service` | button in the panel, service call | v0.1 |
-| `after` | delay after another action | v0.2 |
+| `after` | delay after another action | with the scenarios |
 
 ### 6.2 Actions (ActionFactory)
 

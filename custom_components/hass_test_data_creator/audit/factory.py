@@ -37,6 +37,18 @@ class AuditEntryFactory:
             logging.INFO, "action fired", {"device": device, "entity": key, "action": action}
         )
 
+    def schedule_ran(self, name: str, action: str) -> AuditEntry:
+        """Return the entry for a schedule that ran."""
+        return AuditEntry(logging.INFO, "schedule ran", {"schedule": name, "action": action})
+
+    def schedule_failed(self, name: str, device: str, code: str) -> AuditEntry:
+        """Return the warning for a run that failed on one device."""
+        return AuditEntry(
+            logging.WARNING,
+            "schedule failed",
+            {"schedule": name, "device": device, "code": code},
+        )
+
     def tick_slow(self, duration: float, interval: float) -> AuditEntry:
         """Return the warning for a tick that took too long (TDC-GEN-005)."""
         return AuditEntry(

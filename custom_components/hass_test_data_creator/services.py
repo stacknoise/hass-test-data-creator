@@ -10,12 +10,24 @@ from .const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from .core.runtime import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
 from .removal.planner import TARGET_ALL
+from .scheduler.schema import SCHEDULE_FIELDS
 
 SERVICE_CREATE = "create_devices"
 SERVICE_FIRE = "fire_event"
 SERVICE_REMOVE = "remove"
 SERVICE_REMOVE_ALL = "remove_all"
-SERVICES = (SERVICE_CREATE, SERVICE_FIRE, SERVICE_REMOVE, SERVICE_REMOVE_ALL)
+SERVICE_ADD_SCHEDULE = "add_schedule"
+SERVICE_REMOVE_SCHEDULE = "remove_schedule"
+SERVICE_ENABLE_SCHEDULE = "set_schedule_enabled"
+SERVICES = (
+    SERVICE_CREATE,
+    SERVICE_FIRE,
+    SERVICE_REMOVE,
+    SERVICE_REMOVE_ALL,
+    SERVICE_ADD_SCHEDULE,
+    SERVICE_REMOVE_SCHEDULE,
+    SERVICE_ENABLE_SCHEDULE,
+)
 
 
 async def _create(call: ServiceCall) -> dict[str, object]:
@@ -44,6 +56,26 @@ async def _remove_all(call: ServiceCall) -> dict[str, object]:
     """Remove everything the integration created."""
     data = get_data(call.hass)
     return await data.removal_runner.async_run(data.removal_planner.plan(TARGET_ALL, None))
+
+
+async def _add_schedule(call: ServiceCall) -> dict[str, object]:
+    """Add a schedule."""
+    data = get_data(call.hass)
+    seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
+    schedule = await data.schedules.async_add(dict(call.data), seed)
+    return {"id": schedule.id}
+
+
+async def _remove_schedule(call: ServiceCall) -> None:
+    """Delete a schedule."""
+    await get_data(call.hass).schedules.async_remove(call.data["schedule_id"])
+
+
+async def _set_schedule_enabled(call: ServiceCall) -> None:
+    """Switch a schedule on or off."""
+    await get_data(call.hass).schedules.async_set_enabled(
+        call.data["schedule_id"], call.data["enabled"]
+    )
 
 
 def async_register_services(hass: HomeAssistant) -> None:
@@ -75,6 +107,24 @@ def async_register_services(hass: HomeAssistant) -> None:
             SupportsResponse.OPTIONAL,
         ),
         (SERVICE_REMOVE_ALL, _remove_all, vol.Schema({}), SupportsResponse.OPTIONAL),
+        (
+            SERVICE_ADD_SCHEDULE,
+            _add_schedule,
+            vol.Schema(SCHEDULE_FIELDS),
+            SupportsResponse.OPTIONAL,
+        ),
+        (
+            SERVICE_REMOVE_SCHEDULE,
+            _remove_schedule,
+            vol.Schema({vol.Required("schedule_id"): str}),
+            SupportsResponse.NONE,
+        ),
+        (
+            SERVICE_ENABLE_SCHEDULE,
+            _set_schedule_enabled,
+            vol.Schema({vol.Required("schedule_id"): str, vol.Required("enabled"): bool}),
+            SupportsResponse.NONE,
+        ),
     )
     for name, handler, schema, response in definitions:
         async_register_admin_service(

@@ -11,6 +11,7 @@ from ..areas.assigner import AreaAssigner
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..outputs.adapter import OutputAdapterFactory
+from ..scheduler.manager import ScheduleManager
 from ..store.store import TdcStore
 from .planner import RemovalPlan
 
@@ -24,6 +25,7 @@ class RemovalRunner:
         store: TdcStore,
         outputs: OutputAdapterFactory,
         areas: AreaAssigner,
+        schedules: ScheduleManager,
         audit: AuditLog,
         audit_factory: AuditEntryFactory,
     ) -> None:
@@ -32,11 +34,13 @@ class RemovalRunner:
         self._store = store
         self._outputs = outputs
         self._areas = areas
+        self._schedules = schedules
         self._audit = audit
         self._audit_factory = audit_factory
 
     async def async_run(self, plan: RemovalPlan) -> dict[str, Any]:
-        """Execute `plan` and return what was removed."""
+        """Execute `plan` and return what was removed; schedules go first (concept 10.3)."""
+        self._schedules.forget(plan.schedules)
         for device in plan.devices:
             self._outputs.create(device.output).remove(device)
             self._store.remove_device(device.id)
@@ -51,4 +55,9 @@ class RemovalRunner:
         self._audit.record(
             self._audit_factory.removal_done(plan.target, len(plan.devices), len(areas))
         )
-        return {"devices": len(plan.devices), "orphans": len(plan.orphans), "areas": areas}
+        return {
+            "devices": len(plan.devices),
+            "orphans": len(plan.orphans),
+            "schedules": len(plan.schedules),
+            "areas": areas,
+        }

@@ -8,6 +8,13 @@ from homeassistant.core import HomeAssistant
 from .devices import ws_devices_create, ws_devices_fire, ws_devices_list
 from .info import ws_info, ws_templates_list
 from .removal import ws_removal_plan, ws_removal_run
+from .schedules import (
+    ws_schedules_add,
+    ws_schedules_enable,
+    ws_schedules_list,
+    ws_schedules_preview,
+    ws_schedules_remove,
+)
 
 COMMANDS = (
     ws_info,
@@ -17,6 +24,11 @@ COMMANDS = (
     ws_devices_fire,
     ws_removal_plan,
     ws_removal_run,
+    ws_schedules_list,
+    ws_schedules_add,
+    ws_schedules_remove,
+    ws_schedules_enable,
+    ws_schedules_preview,
 )
 
 

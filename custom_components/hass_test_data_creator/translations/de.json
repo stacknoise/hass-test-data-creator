@@ -77,6 +77,12 @@
     },
     "int_unexpected": {
       "message": "Ein unerwarteter Fehler ist aufgetreten. Details stehen im Home-Assistant-Protokoll"
+    },
+    "sch_invalid_trigger": {
+      "message": "Der Auslöser des Zeitplans ist ungültig"
+    },
+    "sch_not_found": {
+      "message": "Der Zeitplan wurde nicht gefunden"
     }
   },
   "services": {
@@ -161,6 +167,68 @@
     "remove_all": {
       "name": "Alles entfernen",
       "description": "Entfernt alles, was die Integration erzeugt hat."
+    },
+    "add_schedule": {
+      "name": "Zeitplan hinzufügen",
+      "description": "Führt eine Aktion auf Testgeräten zu festen, wiederkehrenden oder zufälligen Zeiten aus.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name des Zeitplans."
+        },
+        "target": {
+          "name": "Ziel",
+          "description": "Eines von device, template, run oder all, zum Beispiel template: plug_metering."
+        },
+        "entity": {
+          "name": "Entitätsschlüssel",
+          "description": "Schlüssel der Entität im Gerät."
+        },
+        "action": {
+          "name": "Aktion",
+          "description": "Zum Beispiel toggle, pulse oder press."
+        },
+        "params": {
+          "name": "Parameter",
+          "description": "Zusätzliche Parameter wie duration_s oder event_type."
+        },
+        "trigger": {
+          "name": "Auslöser",
+          "description": "Typ times, interval, once, random_window oder poisson mit seinen Feldern."
+        },
+        "seed": {
+          "name": "Seed",
+          "description": "Seed der Zufallszeiten; Standard ist der Seed der Integration."
+        },
+        "enabled": {
+          "name": "Aktiv",
+          "description": "Den Zeitplan eingeschaltet anlegen."
+        }
+      }
+    },
+    "remove_schedule": {
+      "name": "Zeitplan entfernen",
+      "description": "Löscht einen Zeitplan.",
+      "fields": {
+        "schedule_id": {
+          "name": "Id",
+          "description": "Id des Zeitplans."
+        }
+      }
+    },
+    "set_schedule_enabled": {
+      "name": "Zeitplan schalten",
+      "description": "Schaltet einen Zeitplan ein oder aus.",
+      "fields": {
+        "enabled": {
+          "name": "Aktiv",
+          "description": "Ein oder aus."
+        },
+        "schedule_id": {
+          "name": "Id",
+          "description": "Id des Zeitplans."
+        }
+      }
     }
   }
 }

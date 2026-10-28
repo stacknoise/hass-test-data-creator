@@ -22,6 +22,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN] = data
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data.tick.start()
+    data.schedules.async_start()
     async_register_services(hass)
     async_register_commands(hass)
     integration = await async_get_integration(hass, DOMAIN)
@@ -35,6 +36,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         data = hass.data.pop(DOMAIN)
         data.tick.stop()
+        data.schedules.async_stop()
         await data.store.async_save()
         async_remove_services(hass)
         async_remove_panel(hass)

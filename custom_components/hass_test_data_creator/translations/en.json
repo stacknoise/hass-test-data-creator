@@ -77,6 +77,12 @@
     },
     "int_unexpected": {
       "message": "An unexpected error occurred. See the Home Assistant log"
+    },
+    "sch_invalid_trigger": {
+      "message": "The trigger of the schedule is invalid"
+    },
+    "sch_not_found": {
+      "message": "The schedule was not found"
     }
   },
   "services": {
@@ -161,6 +167,68 @@
     "remove_all": {
       "name": "Remove all",
       "description": "Removes everything the integration created."
+    },
+    "add_schedule": {
+      "name": "Add schedule",
+      "description": "Runs an action on test devices at fixed, repeating or random times.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name of the schedule."
+        },
+        "target": {
+          "name": "Target",
+          "description": "One of device, template, run or all, for example template: plug_metering."
+        },
+        "entity": {
+          "name": "Entity key",
+          "description": "Key of the entity inside the device."
+        },
+        "action": {
+          "name": "Action",
+          "description": "For example toggle, pulse or press."
+        },
+        "params": {
+          "name": "Parameters",
+          "description": "Extra parameters such as duration_s or event_type."
+        },
+        "trigger": {
+          "name": "Trigger",
+          "description": "Type times, interval, once, random_window or poisson with its fields."
+        },
+        "seed": {
+          "name": "Seed",
+          "description": "Seed of the random times; defaults to the seed of the integration."
+        },
+        "enabled": {
+          "name": "Enabled",
+          "description": "Start the schedule switched on."
+        }
+      }
+    },
+    "remove_schedule": {
+      "name": "Remove schedule",
+      "description": "Deletes a schedule.",
+      "fields": {
+        "schedule_id": {
+          "name": "Id",
+          "description": "Id of the schedule."
+        }
+      }
+    },
+    "set_schedule_enabled": {
+      "name": "Switch schedule",
+      "description": "Switches a schedule on or off.",
+      "fields": {
+        "enabled": {
+          "name": "Enabled",
+          "description": "On or off."
+        },
+        "schedule_id": {
+          "name": "Id",
+          "description": "Id of the schedule."
+        }
+      }
     }
   }
 }
