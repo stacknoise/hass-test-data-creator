@@ -14,6 +14,7 @@ from ..const import CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS, DOMAIN
 from ..devices.manager import DevicesManager
 from ..engine.signal_factory import SignalFactory
 from ..engine.tick import Tick
+from ..faults.factory import FaultFactory
 from ..outputs.adapter import OutputAdapterFactory
 from ..platforms.entities import Live
 from ..platforms.factory import EntityFactory
@@ -62,7 +63,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     outputs = OutputAdapterFactory(hass, entry)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
-    actions = ActionFactory()
+    actions = ActionFactory(FaultFactory())
     action_runner = ActionRunner(store, live, actions, audit, audit_factory)
     triggers = TriggerFactory()
     schedules = ScheduleManager(

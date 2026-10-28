@@ -19,6 +19,7 @@ from ..model.models import DeviceDef
 def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any]]:
     """Return key, entity id and current state of every entity of `device`."""
     registry = er.async_get(hass)
+    live = get_data(hass).live
     result: list[dict[str, Any]] = []
     for definition in device.entities:
         entity_id = registry.async_get_entity_id(
@@ -33,6 +34,7 @@ def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any
                 "entity_id": entity_id,
                 "state": state.state if state else None,
                 "unit": definition.unit,
+                "fault": getattr(live.get((device.id, definition.key)), "fault_kind", None),
             }
         )
     return result

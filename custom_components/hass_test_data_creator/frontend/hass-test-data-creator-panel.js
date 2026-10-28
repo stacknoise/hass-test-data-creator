@@ -956,7 +956,7 @@ var ze = 200, Be = 1e4, Ve = {
 		}
 	}
 	values(e) {
-		return e.entities.filter((e) => e.platform === "sensor" || e.platform === "switch" || e.platform === "binary_sensor").slice(0, 4).map((e) => `${e.name}: ${e.state ?? "–"}${e.unit ? ` ${e.unit}` : ""}`).join(" · ");
+		return e.entities.filter((e) => e.platform === "sensor" || e.platform === "switch" || e.platform === "binary_sensor").slice(0, 4).map((e) => `${e.name}: ${e.state ?? "–"}${e.unit ? ` ${e.unit}` : ""}${e.fault ? ` ⚠ ${e.fault}` : ""}`).join(" · ");
 	}
 	renderRow(e) {
 		let t = e.entities.filter((e) => e.platform in Ve);

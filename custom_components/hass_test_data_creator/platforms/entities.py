@@ -19,6 +19,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 from ..const import DOMAIN, MANUFACTURER, SIGNAL_TICK
 from ..engine.signal_factory import Signal
 from ..engine.tick import signal_time
+from ..faults.factory import Fault
 from ..model.models import DeviceDef, EntityDef
 
 DEFAULT_PULSE_SECONDS = 30
@@ -27,10 +28,12 @@ Live = dict[tuple[str, str], Any]
 
 
 class TdcEntity:
-    """Mixin with what every generated entity has: ids, device info and the live registry."""
+    """Mixin with what every generated entity has: ids, device info, live registry and faults."""
 
     _attr_should_poll = False
     _attr_has_entity_name = True
+    _fault: Fault | None = None
+    _cancel_fault: CALLBACK_TYPE | None = None
 
     def __init__(self, device: DeviceDef, definition: EntityDef, live: Live) -> None:
         """Set unique id, name, device info and category from the definitions."""
@@ -56,9 +59,44 @@ class TdcEntity:
         self._live[(self._device_id, self._key)] = self
 
     async def async_will_remove_from_hass(self) -> None:
-        """Remove the entity from the live registry."""
+        """Cancel a running fault and remove the entity from the live registry."""
+        self._clear_fault_timer()
         self._live.pop((self._device_id, self._key), None)
         await super().async_will_remove_from_hass()  # type: ignore[misc]
+
+    @property
+    def fault_kind(self) -> str | None:
+        """The kind of the active fault, if there is one."""
+        return self._fault.kind if self._fault else None
+
+    def start_fault(self, fault: Fault) -> None:
+        """Make `fault` active; it ends by itself after its duration and replaces a running one."""
+        self._clear_fault_timer()
+        self._fault = fault
+        self._cancel_fault = async_call_later(self.hass, fault.duration_s, self._end_fault)  # type: ignore[attr-defined]
+        self._show_fault()
+
+    @callback
+    def _end_fault(self, _now: datetime) -> None:
+        """End the active fault."""
+        self._cancel_fault = None
+        self._fault = None
+        self._show_fault()
+
+    def _clear_fault_timer(self) -> None:
+        """Cancel the timer that ends the active fault."""
+        if self._cancel_fault:
+            self._cancel_fault()
+            self._cancel_fault = None
+
+    def _show_fault(self) -> None:
+        """Apply the active fault (or its end) to the state and write it."""
+        self._attr_available = not (self._fault and self._fault.unavailable)
+        self._apply_fault()
+        self.async_write_ha_state()  # type: ignore[attr-defined]
+
+    def _apply_fault(self) -> None:
+        """Change what the fault changes beyond availability; sensors recompute their value."""
 
 
 class TdcStatefulEntity(TdcEntity, RestoreEntity):
@@ -93,6 +131,17 @@ class TdcSensor(TdcEntity, SensorEntity):
         self._attr_state_class = definition.state_class
         self._attr_native_value = signal.value(self._last)
 
+    def _value(self, now: float) -> float:
+        """Return the value of the signal at `now` with the transformation of an active fault."""
+        value = self._signal.value(now)
+        transform = self._fault.transform if self._fault else None
+        return transform(value) if transform else value
+
+    def _apply_fault(self) -> None:
+        """Show the changed value at once, unless the sensor is frozen."""
+        if not (self._fault and self._fault.frozen):
+            self._attr_native_value = self._value(signal_time())
+
     async def async_added_to_hass(self) -> None:
         """Follow the tick."""
         await super().async_added_to_hass()
@@ -104,8 +153,10 @@ class TdcSensor(TdcEntity, SensorEntity):
         now = signal_time()
         if now - self._last < self._signal.spec.interval_s * INTERVAL_TOLERANCE:
             return
+        if self._fault and self._fault.frozen:
+            return
         self._last = now
-        self._attr_native_value = self._signal.value(now)
+        self._attr_native_value = self._value(now)
         self.async_write_ha_state()
 
 

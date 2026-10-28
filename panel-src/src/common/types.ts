@@ -59,6 +59,7 @@ export interface EntityState {
   entity_id: string | null;
   state: string | null;
   unit: string | null;
+  fault: string | null;
 }
 
 /** A generated device as listed by the backend. */

@@ -66,7 +66,10 @@ export class DeviceList extends TdcElement {
         (e) => e.platform === 'sensor' || e.platform === 'switch' || e.platform === 'binary_sensor',
       )
       .slice(0, 4)
-      .map((e) => `${e.name}: ${e.state ?? '–'}${e.unit ? ` ${e.unit}` : ''}`)
+      .map(
+        (e) =>
+          `${e.name}: ${e.state ?? '–'}${e.unit ? ` ${e.unit}` : ''}${e.fault ? ` ⚠ ${e.fault}` : ''}`,
+      )
       .join(' · ');
   }
 

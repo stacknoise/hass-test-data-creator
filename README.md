@@ -7,10 +7,11 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
 - Trigger actions by hand: switch, press a button, set or pulse a binary sensor.
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
+- Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`. The device list shows active faults.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours); services for scripts.
 
-Planned: faults, more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Planned: more fault kinds (`late`, `duplicate`), more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
 ## Status
 
@@ -58,6 +59,22 @@ Schedules: the target is one of `device` (id or name), `template`, `run` or `all
 | `once` | `at` (local date and time) | `{type: once, at: "2026-11-02T18:30"}` |
 | `random_window` | `count`, `start`, `end` | `{type: random_window, count: 3, start: "18:00", end: "23:00"}` |
 | `poisson` | `per_day` (average) | `{type: poisson, per_day: 24}` |
+
+Faults are actions named `fault_<kind>` (for `fire_event` and schedules); `params` takes `duration_s` (1 to 86400 seconds) and the extras of the kind. A new fault replaces a running one on the same entity and ends by itself.
+
+| Fault | Entities | Effect | Extra params (default duration) |
+| --- | --- | --- | --- |
+| `unavailable` | all | state `unavailable` | – (60 s) |
+| `dropout` | sensors | state `unavailable`, short | – (10 s) |
+| `frozen` | sensors | value stops changing | – (300 s) |
+| `spike` | sensors | value times `factor` | `factor` = 5 (30 s) |
+| `battery_low` | sensors | value fixed at `value` | `value` = 5 (3600 s) |
+| `linkquality_drop` | sensors | value fixed at `value` | `value` = 20 (600 s) |
+
+```yaml
+action: hass_test_data_creator.fire_event
+data: { device: Plug 01, entity: power, action: fault_spike, params: { factor: 3, duration_s: 20 } }
+```
 
 ```yaml
 action: hass_test_data_creator.add_schedule

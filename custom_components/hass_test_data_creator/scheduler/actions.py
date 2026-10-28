@@ -1,4 +1,4 @@
-"""Actions on entities and their factory (concept 6.2, 13.2); v0.1 has manual actions only."""
+"""Actions on entities and their factory (concept 6.2, 13.2); manual actions and faults."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from ..core.errors import ErrorCode, ScheduleError
+from ..faults.factory import ACTION_PREFIX, FaultFactory
 
 Action = Callable[[Any, dict[str, Any]], Awaitable[None]]
 
@@ -60,18 +61,37 @@ _ACTIONS: dict[tuple[str, str], Action] = {
 
 
 class ActionFactory:
-    """Creates the action for a platform and an action name."""
+    """Creates the action for a platform and an action name; faults are `fault_<kind>`."""
+
+    def __init__(self, faults: FaultFactory) -> None:
+        """Keep the factory that builds the faults."""
+        self._faults = faults
 
     def create(self, platform: str, action: str) -> Action:
         """Return the action or raise SCH_UNKNOWN_ACTION."""
         found = _ACTIONS.get((platform, action))
-        if found is None:
-            raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
-        return found
+        if found is not None:
+            return found
+        kind = action.removeprefix(ACTION_PREFIX)
+        if action.startswith(ACTION_PREFIX) and platform in self._faults.platforms(kind):
+            return self._fault_action(kind)
+        raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
     def names(self) -> dict[str, list[str]]:
         """Return the action names per platform."""
         result: dict[str, list[str]] = {}
         for platform, action in _ACTIONS:
             result.setdefault(platform, []).append(action)
+        for kind in self._faults.kinds():
+            for platform in self._faults.platforms(kind):
+                result.setdefault(platform, []).append(f"{ACTION_PREFIX}{kind}")
         return result
+
+    def _fault_action(self, kind: str) -> Action:
+        """Return the action that starts a fault of `kind` on an entity."""
+
+        async def start(entity: Any, params: dict[str, Any]) -> None:
+            """Start the fault; `duration_s` and the kind's parameters come from `params`."""
+            entity.start_fault(self._faults.create(kind, params))
+
+        return start
