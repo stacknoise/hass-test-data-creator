@@ -3698,14 +3698,14 @@ var Dr = [
 	"run"
 ], Or = 500, Y = class extends P {
 	constructor(...e) {
-		super(...e), this.actions = {}, this.templates = [], this.devices = [], this.error = "";
+		super(...e), this.actions = {}, this.templates = [], this.devices = [], this.loaded = !1, this.error = "";
 	}
 	connectedCallback() {
 		super.connectedCallback(), this.loadDevices();
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devices(0, Or)).devices, this.error = "";
+			this.devices = (await this.api.devices(0, Or)).devices, this.loaded = !0, this.error = "";
 		} catch (e) {
 			this.error = O(e);
 		}
@@ -3717,6 +3717,7 @@ var Dr = [
 		} }));
 	}
 	actionChoices() {
+		if (!this.loaded) return this.work.action ? [this.work.action] : [];
 		let e = this.hass?.language, t = xr(this.work.kind, this.work.targetIds, this.devices, this.templates);
 		return M(e, Sr(this.actions, t), (t) => A(e, t));
 	}
@@ -3725,7 +3726,7 @@ var Dr = [
 		return e.length > 1 ? e : [];
 	}
 	updated(e) {
-		super.updated(e);
+		if (super.updated(e), !this.loaded) return;
 		let t = this.actionChoices();
 		t.length && !t.includes(this.work.action) ? this.emit({
 			action: t[0],
@@ -3786,7 +3787,7 @@ var Dr = [
     `;
 	}
 };
-N([E({ attribute: !1 })], Y.prototype, "work", void 0), N([E({ attribute: !1 })], Y.prototype, "actions", void 0), N([E({ attribute: !1 })], Y.prototype, "templates", void 0), N([D()], Y.prototype, "devices", void 0), N([D()], Y.prototype, "error", void 0), Y = N([T("tdc-work-picker")], Y);
+N([E({ attribute: !1 })], Y.prototype, "work", void 0), N([E({ attribute: !1 })], Y.prototype, "actions", void 0), N([E({ attribute: !1 })], Y.prototype, "templates", void 0), N([D()], Y.prototype, "devices", void 0), N([D()], Y.prototype, "loaded", void 0), N([D()], Y.prototype, "error", void 0), Y = N([T("tdc-work-picker")], Y);
 // src/scenario/helpers.ts
 function kr(e) {
 	return {
