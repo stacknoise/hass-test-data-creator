@@ -16,6 +16,7 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
   binary_sensor: 'pulse',
   light: 'toggle',
 };
+const SWITCH_PLATFORMS = ['switch', 'light'];
 const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
@@ -24,11 +25,88 @@ export class DeviceList extends TdcElement {
   static override styles = [
     TdcElement.styles,
     css`
+      :host {
+        container-type: inline-size;
+      }
       tr.device {
         cursor: pointer;
       }
       tr.device:hover {
         background: var(--secondary-background-color);
+      }
+      button.switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 6px;
+        border: 0;
+        background: none;
+      }
+      .track {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border-radius: 10px;
+        background: var(--disabled-text-color);
+        transition: background 0.15s;
+      }
+      .on .track {
+        background: var(--primary-color);
+      }
+      .knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--card-background-color);
+        transition: transform 0.15s;
+      }
+      .on .knob {
+        transform: translateX(16px);
+      }
+      @container (max-width: 760px) {
+        thead {
+          display: none;
+        }
+        table,
+        tbody,
+        tr,
+        td {
+          display: block;
+        }
+        tr.device {
+          margin-top: 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          padding: 4px 8px;
+        }
+        tr.device td {
+          display: flex;
+          gap: 12px;
+          padding: 4px 0;
+          border-bottom: 0;
+        }
+        tr.device td::before {
+          content: attr(data-label);
+          flex: 0 0 90px;
+          color: var(--secondary-text-color);
+          font-size: 0.8em;
+          padding-top: 2px;
+        }
+        tr.device td.name {
+          font-weight: 500;
+        }
+        tr.device td.name::before {
+          content: none;
+        }
+        tr.device td.row {
+          flex-wrap: wrap;
+        }
+        tr.device td.row::before {
+          flex-basis: 100%;
+        }
       }
     `,
   ];
@@ -96,6 +174,38 @@ export class DeviceList extends TdcElement {
     }
   }
 
+  /** Render the switch of a switch or light entity; it shows the state and toggles it. */
+  private renderSwitch(device: DeviceInfo, entity: EntityState): TemplateResult {
+    const on = entity.state === 'on';
+    const name = entityName(this.hass?.language, entity.key, entity.name);
+    return html`<button
+      class=${on ? 'switch on' : 'switch'}
+      role="switch"
+      aria-checked=${on ? 'true' : 'false'}
+      ?disabled=${entity.state === 'unavailable'}
+      title=${name}
+      @click=${(event: Event) => {
+        event.stopPropagation();
+        void this.fire(device, entity);
+      }}
+    >
+      <span class="track"><span class="knob"></span></span>
+      ${name}
+    </button>`;
+  }
+
+  /** Render the button of an entity that has no state to switch, such as a motion pulse. */
+  private renderPress(device: DeviceInfo, entity: EntityState): TemplateResult {
+    return html`<button
+      @click=${(event: Event) => {
+        event.stopPropagation();
+        void this.fire(device, entity);
+      }}
+    >
+      ${entityName(this.hass?.language, entity.key, entity.name)}
+    </button>`;
+  }
+
   /** Return the current values of the first entities as one line. */
   private values(device: DeviceInfo): string {
     const lang = this.hass?.language;
@@ -121,22 +231,18 @@ export class DeviceList extends TdcElement {
     const actionable = device.entities.filter((e) => e.platform in ACTION_BY_PLATFORM);
     const open = this.expanded.has(device.id);
     return html`<tr class="device" @click=${() => this.toggle(device.id)}>
-        <td>${open ? '▾' : '▸'} ${device.name}</td>
-        <td>${this.templateName(device)}</td>
-        <td>${device.area ?? '–'}</td>
-        <td>${this.tr(OUTPUT_LABELS[device.output] ?? 'outputNative')}</td>
-        <td><small>${this.values(device)}</small></td>
-        <td class="row">
-          ${actionable.map(
-            (e) =>
-              html`<button
-                @click=${(event: Event) => {
-                  event.stopPropagation();
-                  void this.fire(device, e);
-                }}
-              >
-                ${entityName(this.hass?.language, e.key, e.name)}
-              </button>`,
+        <td class="name">${open ? '▾' : '▸'} ${device.name}</td>
+        <td data-label=${this.tr('colTemplate')}>${this.templateName(device)}</td>
+        <td data-label=${this.tr('colArea')}>${device.area ?? '–'}</td>
+        <td data-label=${this.tr('colOutput')}>
+          ${this.tr(OUTPUT_LABELS[device.output] ?? 'outputNative')}
+        </td>
+        <td data-label=${this.tr('colValues')}><small>${this.values(device)}</small></td>
+        <td class="row" data-label=${this.tr('colActions')}>
+          ${actionable.map((e) =>
+            SWITCH_PLATFORMS.includes(e.platform)
+              ? this.renderSwitch(device, e)
+              : this.renderPress(device, e),
           )}
           <button
             @click=${(event: Event) => {

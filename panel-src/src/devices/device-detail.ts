@@ -36,6 +36,7 @@ export class DeviceDetail extends TdcElement {
     css`
       :host {
         padding: 8px 0 12px;
+        container-type: inline-size;
       }
       td {
         vertical-align: middle;
@@ -54,6 +55,27 @@ export class DeviceDetail extends TdcElement {
       }
       .curve {
         padding: 4px 0 8px;
+      }
+      @container (max-width: 560px) {
+        table,
+        tbody {
+          display: block;
+        }
+        tr:first-child {
+          display: none;
+        }
+        tr {
+          display: flex;
+          flex-wrap: wrap;
+          column-gap: 12px;
+          border-bottom: 1px solid var(--divider-color);
+        }
+        td {
+          border-bottom: 0;
+        }
+        td:last-child {
+          flex: 1 1 100%;
+        }
       }
     `,
   ];

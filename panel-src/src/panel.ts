@@ -49,6 +49,7 @@ export class TdcPanel extends TdcElement {
       }
       nav {
         display: flex;
+        flex-wrap: wrap;
         gap: 4px;
         border-bottom: 1px solid var(--divider-color);
         margin-bottom: 16px;
