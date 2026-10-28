@@ -27,6 +27,19 @@ _GOLDEN = 0x9E3779B97F4A7C15
 _MIX_A = 0xBF58476D1CE4E5B9
 _MIX_B = 0x94D049BB133111EB
 SECONDS_PER_HOUR = 3600
+HALF = 0.5
+SMOOTHSTEP_LINEAR = 3.0
+PV_BELL_EXPONENT = 1.5
+DEFAULT_MAX = 100.0
+DEFAULT_PERIOD_S = 3600.0
+DEFAULT_INTERVAL_S = 10.0
+DEFAULT_STEP_S = 60.0
+# The shifts of the SplitMix64 mixer and the bits of the mantissa of a double.
+MIX_SHIFT_FIRST = 30
+MIX_SHIFT_SECOND = 27
+MIX_SHIFT_LAST = 31
+UNIT_SHIFT = 11
+UNIT_BITS = 53
 SECONDS_PER_DAY = 86400
 HOURS_PER_DAY = 24
 LOAD_BASE = 0.12
@@ -47,9 +60,9 @@ class SignalSpec:
 
     shape: str = "sine"
     min: float = 0.0
-    max: float = 100.0
-    period_s: float = 3600.0
-    interval_s: float = 10.0
+    max: float = DEFAULT_MAX
+    period_s: float = DEFAULT_PERIOD_S
+    interval_s: float = DEFAULT_INTERVAL_S
     noise: float = 0.0
     decimals: int = 1
     phase: float = 0.0
@@ -58,7 +71,7 @@ class SignalSpec:
     weights: tuple[float, ...] = ()
     states: tuple[tuple[str, float], ...] = ()
     file: str = ""
-    step_s: float = 60.0
+    step_s: float = DEFAULT_STEP_S
     table: tuple[tuple[float, float], ...] = ()
     loop_s: float = 0.0
     seed: int = 0
@@ -102,10 +115,10 @@ class SignalSpec:
 def hash01(seed: int, n: int) -> float:
     """Return a deterministic number in [0, 1) for the integers `seed` and `n` (SplitMix64)."""
     x = (seed * _GOLDEN + (n & _MASK) * _MIX_A + _MIX_B) & _MASK
-    x = ((x ^ (x >> 30)) * _MIX_A) & _MASK
-    x = ((x ^ (x >> 27)) * _MIX_B) & _MASK
-    x ^= x >> 31
-    return (x >> 11) / (1 << 53)
+    x = ((x ^ (x >> MIX_SHIFT_FIRST)) * _MIX_A) & _MASK
+    x = ((x ^ (x >> MIX_SHIFT_SECOND)) * _MIX_B) & _MASK
+    x ^= x >> MIX_SHIFT_LAST
+    return (x >> UNIT_SHIFT) / (1 << UNIT_BITS)
 
 
 def _cycle(spec: SignalSpec, t: float) -> float:
@@ -115,12 +128,12 @@ def _cycle(spec: SignalSpec, t: float) -> float:
 
 def _constant(spec: SignalSpec, t: float) -> float:
     """Return the middle of the range."""
-    return 0.5
+    return HALF
 
 
 def _sine(spec: SignalSpec, t: float) -> float:
     """Return a sine wave between 0 and 1."""
-    return 0.5 + 0.5 * math.sin(2 * math.pi * _cycle(spec, t))
+    return HALF + HALF * math.sin(2 * math.pi * _cycle(spec, t))
 
 
 def _saw(spec: SignalSpec, t: float) -> float:
@@ -130,7 +143,7 @@ def _saw(spec: SignalSpec, t: float) -> float:
 
 def _square(spec: SignalSpec, t: float) -> float:
     """Return a square wave: high in the first half of the period."""
-    return 1.0 if _cycle(spec, t) < 0.5 else 0.0
+    return 1.0 if _cycle(spec, t) < HALF else 0.0
 
 
 def _triangle(spec: SignalSpec, t: float) -> float:
@@ -147,7 +160,7 @@ def _smooth_noise(seed: int, x: float) -> float:
     """Return random points one unit apart, joined by a smooth curve."""
     index = math.floor(x)
     fraction = x - index
-    smooth = fraction * fraction * (3.0 - 2.0 * fraction)
+    smooth = fraction * fraction * (SMOOTHSTEP_LINEAR - 2.0 * fraction)
     low = hash01(seed, index)
     high = hash01(seed, index + 1)
     return low + (high - low) * smooth
@@ -167,14 +180,14 @@ def _peak(hour: float, centre: float, width: float) -> float:
     """Return a bell curve around `centre` hours that wraps around midnight."""
     distance = abs(hour - centre)
     distance = min(distance, HOURS_PER_DAY - distance)
-    return math.exp(-0.5 * (distance / width) ** 2)
+    return math.exp(-HALF * (distance / width) ** 2)
 
 
 def _household_load(spec: SignalSpec, t: float) -> float:
     """Return a household load: low at night, peaks in the morning, at noon and in the evening."""
     hour = _hour_of_day(t)
     level = LOAD_BASE + sum(weight * _peak(hour, c, w) for c, w, weight in LOAD_PEAKS)
-    variation = _smooth_noise(spec.seed, t / LOAD_VARIATION_PERIOD_S) - 0.5
+    variation = _smooth_noise(spec.seed, t / LOAD_VARIATION_PERIOD_S) - HALF
     return level + LOAD_VARIATION * variation
 
 
@@ -184,7 +197,7 @@ def _pv_day(spec: SignalSpec, t: float) -> float:
     if not 0.0 < x < 1.0:
         return 0.0
     clouds = 1.0 - CLOUD_DEPTH * _smooth_noise(spec.seed, t / CLOUD_PERIOD_S)
-    return math.sin(math.pi * x) ** 1.5 * clouds
+    return math.sin(math.pi * x) ** PV_BELL_EXPONENT * clouds
 
 
 def _steps(spec: SignalSpec, t: float) -> float:
@@ -289,6 +302,6 @@ def value_at(spec: SignalSpec, t: float) -> float | str:
         return round(_csv_value(spec, t), spec.decimals)
     base = SHAPES[spec.shape](spec, t)
     if spec.noise:
-        base += (hash01(spec.seed + 1, math.floor(t)) - 0.5) * 2.0 * spec.noise
+        base += (hash01(spec.seed + 1, math.floor(t)) - HALF) * 2.0 * spec.noise
     base = min(1.0, max(0.0, base))
     return round(spec.min + base * (spec.max - spec.min), spec.decimals)

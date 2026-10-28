@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Any
 
+from ...const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION, TEMPERATURE_STEP
 from ...core.errors import ErrorCode, OutputError
 from ...core.keys import (
     KEY_ACCESS,
@@ -245,7 +246,12 @@ class CoverProfile(Z2mProfile):
             KEY_VALUES: [VALUE_OPEN, VALUE_CLOSE, "STOP"],
         }
         position = numeric(
-            KEY_POSITION, "Position", READ_WRITE, unit="%", value_min=0, value_max=100
+            KEY_POSITION,
+            "Position",
+            READ_WRITE,
+            unit="%",
+            value_min=COVER_CLOSED_POSITION,
+            value_max=COVER_OPEN_POSITION,
         )
         return {KEY_TYPE: KEY_COVER, KEY_FEATURES: [state, position]}
 
@@ -279,7 +285,7 @@ class ClimateProfile(Z2mProfile):
             unit="°C",
             value_min=ClimateBehaviour.min_temp,
             value_max=ClimateBehaviour.max_temp,
-            value_step=0.5,
+            value_step=TEMPERATURE_STEP,
         )
         temperature = numeric(
             "local_temperature", "Local temperature", READ_ONLY | ACCESS_GET, unit="°C"

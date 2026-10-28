@@ -29,6 +29,7 @@ from .behaviours import (
 )
 from .signal_factory import Signal, SignalFactory
 
+SEED_BYTES = 4
 _SIMPLE: dict[str, type[Behaviour]] = {
     KEY_BINARY_SENSOR: BinarySensorBehaviour,
     KEY_SWITCH: OnOffBehaviour,
@@ -45,7 +46,7 @@ _WITH_SIGNAL: dict[str, type[SensorBehaviour] | type[ClimateBehaviour]] = {
 def entity_seed(device_seed: int, key: str) -> int:
     """Return the seed of one entity from the seed of its device and its key."""
     digest = hashlib.sha256(f"{device_seed}:{key}".encode()).digest()
-    return int.from_bytes(digest[:4], "big")
+    return int.from_bytes(digest[:SEED_BYTES], "big")
 
 
 class BehaviourFactory:

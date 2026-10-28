@@ -36,15 +36,28 @@ GROUP_PROPERTIES = (
     "occupied_heating_setpoint",
 )
 
+HEX_BASE = 16
+IEEE_HEX_DIGITS = 16
+NETWORK_HEX_DIGITS = 4
+# The fake Zigbee network of the bridge info.
+ZIGBEE_CHANNEL = 11
+PAN_ID = 6754
+EXTENDED_PAN_ID_BYTES = 8
+
 
 def ieee_address(device_id: str) -> str:
     """Return a stable fake IEEE address for a device id."""
-    return "0x" + hashlib.sha256(device_id.encode()).hexdigest()[:16]
+    return "0x" + hashlib.sha256(device_id.encode()).hexdigest()[:IEEE_HEX_DIGITS]
 
 
 def network_address(device_id: str) -> int:
     """Return a stable fake network address (16 bit) for a device id."""
-    return int(hashlib.sha256(device_id.encode()).hexdigest()[16:20], 16)
+    return int(
+        hashlib.sha256(device_id.encode()).hexdigest()[
+            IEEE_HEX_DIGITS : IEEE_HEX_DIGITS + NETWORK_HEX_DIGITS
+        ],
+        HEX_BASE,
+    )
 
 
 class Z2mPayloadFactory:
@@ -69,7 +82,11 @@ class Z2mPayloadFactory:
                     KEY_IEEE_ADDRESS: COORDINATOR_IEEE,
                     "meta": {"revision": DEFAULT_MQTT_BASE_TOPIC},
                 },
-                "network": {"channel": 11, "pan_id": 6754, "extended_pan_id": [0] * 8},
+                "network": {
+                    "channel": ZIGBEE_CHANNEL,
+                    "pan_id": PAN_ID,
+                    "extended_pan_id": [0] * EXTENDED_PAN_ID_BYTES,
+                },
                 "log_level": "info",
                 "permit_join": False,
                 "permit_join_end": None,

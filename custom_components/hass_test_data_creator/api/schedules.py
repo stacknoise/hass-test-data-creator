@@ -15,6 +15,7 @@ from ..core.runtime import get_data
 from ..scheduler.schema import SCHEDULE_FIELDS, SCHEDULE_UPDATE_FIELDS
 
 MAX_PREVIEW_HOURS = 72
+DEFAULT_PREVIEW_HOURS = 24
 
 
 @tdc_command(f"{DOMAIN}/schedules/list")
@@ -70,7 +71,11 @@ async def ws_schedules_enable(
 
 @tdc_command(
     f"{DOMAIN}/schedules/preview",
-    {vol.Optional("hours", default=24): vol.All(int, vol.Range(min=1, max=MAX_PREVIEW_HOURS))},
+    {
+        vol.Optional("hours", default=DEFAULT_PREVIEW_HOURS): vol.All(
+            int, vol.Range(min=1, max=MAX_PREVIEW_HOURS)
+        )
+    },
 )
 async def ws_schedules_preview(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]

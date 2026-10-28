@@ -9,6 +9,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from ..const import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 from ..core.errors import ErrorCode, ScheduleError
 from ..core.keys import (
     KEY_COUNT,
@@ -23,6 +24,8 @@ from ..core.keys import (
 from ..engine.signals import hash01
 
 SECONDS_PER_DAY = 86400
+TIME_PARTS = (2, 3)
+HMS_PARTS = 3
 MAX_EVENTS_PER_DAY = 5000
 
 
@@ -32,9 +35,13 @@ def parse_clock(text: str) -> int:
         parts = [int(part) for part in text.split(":")]
     except ValueError as err:
         raise ScheduleError(ErrorCode.SCH_INVALID_TRIGGER) from err
-    if len(parts) not in (2, 3) or any(part < 0 for part in parts):
+    if len(parts) not in TIME_PARTS or any(part < 0 for part in parts):
         raise ScheduleError(ErrorCode.SCH_INVALID_TRIGGER)
-    seconds = parts[0] * 3600 + parts[1] * 60 + (parts[2] if len(parts) == 3 else 0)
+    seconds = (
+        parts[0] * SECONDS_PER_HOUR
+        + parts[1] * SECONDS_PER_MINUTE
+        + (parts[2] if len(parts) == HMS_PARTS else 0)
+    )
     if seconds > SECONDS_PER_DAY:
         raise ScheduleError(ErrorCode.SCH_INVALID_TRIGGER)
     return seconds
@@ -90,7 +97,12 @@ class OnceTrigger(Trigger):
         """Return the time of day if `day` is the day of the moment."""
         if self._at.date() != day:
             return []
-        return [self._at.hour * 3600 + self._at.minute * 60 + self._at.second + 0.0]
+        return [
+            self._at.hour * SECONDS_PER_HOUR
+            + self._at.minute * SECONDS_PER_MINUTE
+            + self._at.second
+            + 0.0
+        ]
 
 
 class RandomWindowTrigger(Trigger):

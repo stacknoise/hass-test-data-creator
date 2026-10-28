@@ -34,6 +34,10 @@ class AuditEntry:
     fields: dict[str, Any] = field(default_factory=dict)
 
 
+# Decimals of a duration in seconds in the log.
+SECONDS_DECIMALS = 3
+
+
 class AuditEntryFactory:
     """Creates one audit entry per kind of action."""
 
@@ -106,5 +110,5 @@ class AuditEntryFactory:
         return AuditEntry(
             logging.WARNING,
             "TDC-GEN-005 tick took too long",
-            {"seconds": round(duration, 3), KEY_INTERVAL: interval},
+            {"seconds": round(duration, SECONDS_DECIMALS), KEY_INTERVAL: interval},
         )

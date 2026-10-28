@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import json
 from typing import Any
 
-from ...const import MANUFACTURER
+from ...const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION, MANUFACTURER, TEMPERATURE_STEP
 from ...core.errors import ErrorCode, OutputError
 from ...core.keys import (
     KEY_AVAILABILITY,
@@ -259,8 +259,8 @@ class CoverProfile(MqttProfile):
             "payload_open": VALUE_OPEN,
             "payload_close": VALUE_CLOSE,
             "payload_stop": "STOP",
-            "position_open": 100,
-            "position_closed": 0,
+            "position_open": COVER_OPEN_POSITION,
+            "position_closed": COVER_CLOSED_POSITION,
         }
 
     def states(self, behaviour: CoverBehaviour) -> dict[str, str]:
@@ -293,7 +293,7 @@ class ClimateProfile(MqttProfile):
             "current_temperature_topic": topics.facet("current_temperature"),
             "min_temp": ClimateBehaviour.min_temp,
             "max_temp": ClimateBehaviour.max_temp,
-            "temp_step": 0.5,
+            "temp_step": TEMPERATURE_STEP,
             "temperature_unit": "C",
         }
 

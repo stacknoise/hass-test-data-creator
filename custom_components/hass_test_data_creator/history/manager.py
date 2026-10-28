@@ -24,10 +24,13 @@ from .recorder import StatisticsClient
 Target = tuple[DeviceDef, EntityDef, str]
 
 
+HOURS_PER_DAY = 24
+
+
 def last_hours(days: int, now: datetime | None = None) -> list[datetime]:
     """Return the starts (UTC) of the `days` * 24 full hours before the current hour."""
     end = (now or dt_util.utcnow()).replace(minute=0, second=0, microsecond=0)
-    return [end - timedelta(hours=count) for count in range(days * 24, 0, -1)]
+    return [end - timedelta(hours=count) for count in range(days * HOURS_PER_DAY, 0, -1)]
 
 
 class HistoryManager:

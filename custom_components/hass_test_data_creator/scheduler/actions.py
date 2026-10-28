@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from ..const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION
 from ..core.errors import ErrorCode, ScheduleError
 from ..core.keys import (
     KEY_BINARY_SENSOR,
@@ -63,6 +64,9 @@ async def _press(behaviour: Any, params: dict[str, Any]) -> None:
     behaviour.press(event_type)
 
 
+MAX_BRIGHTNESS = 255
+
+
 def _number(params: dict[str, Any], key: str, low: float, high: float) -> float:
     """Return `params[key]` as a number within `low` and `high` or raise SCH_INVALID_PARAMS."""
     try:
@@ -76,7 +80,7 @@ def _number(params: dict[str, Any], key: str, low: float, high: float) -> float:
 
 async def _set_brightness(behaviour: Any, params: dict[str, Any]) -> None:
     """Set the brightness (0 to 255) of a light; 0 switches it off."""
-    brightness = int(_number(params, KEY_BRIGHTNESS, 0, 255))
+    brightness = int(_number(params, KEY_BRIGHTNESS, 0, MAX_BRIGHTNESS))
     if brightness == 0:
         behaviour.turn_off()
     else:
@@ -95,7 +99,9 @@ async def _close_cover(behaviour: Any, params: dict[str, Any]) -> None:
 
 async def _set_position(behaviour: Any, params: dict[str, Any]) -> None:
     """Move a cover to a position (0 closed, 100 open)."""
-    behaviour.set_position(int(_number(params, KEY_POSITION, 0, 100)))
+    behaviour.set_position(
+        int(_number(params, KEY_POSITION, COVER_CLOSED_POSITION, COVER_OPEN_POSITION))
+    )
 
 
 async def _set_temperature(behaviour: Any, params: dict[str, Any]) -> None:
