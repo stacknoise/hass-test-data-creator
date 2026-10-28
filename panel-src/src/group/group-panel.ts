@@ -9,6 +9,9 @@ import { TdcPollingElement } from '../common/polling';
 import type { DeviceInfo, GroupInfo } from '../common/types';
 import './group-form';
 import type { GroupForm, GroupRequest } from './group-form';
+import { LIST_SEPARATOR } from '../common/constants';
+
+const COLUMN_COUNT = 3;
 
 const DEVICE_LIMIT = 500;
 const Z2M_OUTPUT = 'z2m';
@@ -63,7 +66,7 @@ export class GroupPanel extends TdcPollingElement {
   /** Return the names of the members of a group, as one text. */
   private memberNames(item: GroupInfo): string {
     const names = new Map(this.devices.map((device) => [device.id, device.name]));
-    return item.members.map((id) => names.get(id) ?? id).join(', ');
+    return item.members.map((id) => names.get(id) ?? id).join(LIST_SEPARATOR);
   }
 
   /** Create the group that the new form describes and close the popup. */
@@ -115,7 +118,7 @@ export class GroupPanel extends TdcPollingElement {
       ${
         open
           ? this.editRow(
-              3,
+              COLUMN_COUNT,
               item.id,
               html`<tdc-group-form
                 .hass=${this.hass}

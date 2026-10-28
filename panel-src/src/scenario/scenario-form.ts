@@ -5,6 +5,7 @@ import type { Info, ScenarioInfo, ScenarioStep, TemplateInfo } from '../common/t
 import { type WorkForm } from '../schedule/helpers';
 import '../schedule/work-picker';
 import { buildSteps, defaultStep, stepFormOf, type StepForm } from './helpers';
+import { EVENT_SUBMIT, KIND_ALL } from '../common/constants';
 
 /** What the form hands to the parent: the name and the steps of the scenario. */
 export interface ScenarioRequest {
@@ -58,7 +59,7 @@ export class ScenarioForm extends TdcElement {
       Boolean(this.name.trim()) &&
       this.steps.length > 0 &&
       this.steps.every(
-        (s) => s.work.action && (s.work.kind === 'all' || s.work.targetIds.length > 0),
+        (s) => s.work.action && (s.work.kind === KIND_ALL || s.work.targetIds.length > 0),
       )
     );
   }
@@ -72,7 +73,7 @@ export class ScenarioForm extends TdcElement {
     }
     this.error = '';
     this.dispatchEvent(
-      new CustomEvent<ScenarioRequest>('tdc-submit', {
+      new CustomEvent<ScenarioRequest>(EVENT_SUBMIT, {
         detail: { name: this.name, steps },
         bubbles: true,
         composed: true,

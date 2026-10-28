@@ -6,6 +6,7 @@ import type { TextKey } from './i18n';
 import './multi-select';
 import { resolveTargetId, targetOptions, type TargetKind } from './targets';
 import type { DeviceInfo, TemplateInfo } from './types';
+import { KIND_DEVICE, KIND_TEMPLATE } from './constants';
 
 const DEVICE_LIMIT = 500;
 const KIND_LABELS: Record<TargetKind, TextKey> = {
@@ -17,7 +18,7 @@ const KIND_LABELS: Record<TargetKind, TextKey> = {
 /** A select of the devices, templates or creations to aim at; fires `tdc-target-change` with the ids. */
 @customElement('tdc-target-select')
 export class TargetSelect extends TdcElement {
-  @property() kind: TargetKind = 'device';
+  @property() kind: TargetKind = KIND_DEVICE;
   @property({ attribute: false }) values: string[] = [];
   @property({ type: Boolean }) multiple = false;
   @property({ attribute: false }) templates: TemplateInfo[] = [];
@@ -27,7 +28,7 @@ export class TargetSelect extends TdcElement {
 
   /** Load the devices when the kind needs them. */
   protected override willUpdate(changed: PropertyValues): void {
-    if (changed.has('kind') && this.kind !== 'template') void this.loadDevices();
+    if (changed.has('kind') && this.kind !== KIND_TEMPLATE) void this.loadDevices();
     super.willUpdate(changed);
   }
 
@@ -49,7 +50,7 @@ export class TargetSelect extends TdcElement {
   /** Take the only option, as there is nothing else to choose. */
   protected override updated(changed: PropertyValues): void {
     super.updated(changed);
-    if (this.multiple && this.kind === 'device') return;
+    if (this.multiple && this.kind === KIND_DEVICE) return;
     const options = this.options();
     if (options.length === 1 && this.values[0] !== options[0].value) this.emit([options[0].value]);
   }
@@ -96,7 +97,7 @@ export class TargetSelect extends TdcElement {
     return html`<label>
       ${this.tr(KIND_LABELS[this.kind])}
       ${
-        this.multiple && this.kind === 'device'
+        this.multiple && this.kind === KIND_DEVICE
           ? html`<tdc-multi-select
               .hass=${this.hass}
               .items=${options}

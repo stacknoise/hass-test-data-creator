@@ -1,11 +1,13 @@
 import { LitElement, css, html, svg, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { SignalDef } from '../common/types';
-import { optionsOf, specOf, valueAt } from './signals';
+import { DEFAULT_MAX, optionsOf, specOf, valueAt } from './signals';
+import { SHAPE_ENUM, SHAPE_STATE_MACHINE } from '../common/constants';
 
 const WIDTH = 320;
 const HEIGHT = 80;
 const POINTS = 96;
+const PADDING = 6;
 const DAY_SECONDS = 86400;
 
 /** Draws one day of a signal with the same functions the backend uses. */
@@ -48,7 +50,7 @@ export class SignalPreview extends LitElement {
     return values
       .map((v, i) => {
         const x = (i / POINTS) * WIDTH;
-        const y = HEIGHT - 6 - ((v - low) / span) * (HEIGHT - 12);
+        const y = HEIGHT - PADDING - ((v - low) / span) * (HEIGHT - 2 * PADDING);
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(' ');
@@ -57,10 +59,10 @@ export class SignalPreview extends LitElement {
   /** Render the element. */
   override render(): TemplateResult {
     if (!this.signal) return html``;
-    const discrete = this.signal.shape === 'enum' || this.signal.shape === 'state_machine';
+    const discrete = this.signal.shape === SHAPE_ENUM || this.signal.shape === SHAPE_STATE_MACHINE;
     const options = discrete ? optionsOf(specOf(this.signal)).join(' · ') : '';
     const min = this.signal.min ?? 0;
-    const max = this.signal.max ?? 100;
+    const max = this.signal.max ?? DEFAULT_MAX;
     return html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">
         ${svg`<polyline points=${this.points(this.signal)}></polyline>`}
       </svg>

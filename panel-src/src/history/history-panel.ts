@@ -7,12 +7,14 @@ import { entityName, sortedByLabel } from '../common/labels';
 import type { DeviceInfo } from '../common/types';
 import { MAX_DAYS, MIN_DAYS, clampDays, sensorEntities } from './helpers';
 
+const DEFAULT_DAYS = 7;
+
 const DEVICE_LIMIT = 500;
 
 /** Writes hourly statistics for the past days of the test sensors. */
 @customElement('tdc-history-panel')
 export class HistoryPanel extends TdcElement {
-  @state() private days = 7;
+  @state() private days = DEFAULT_DAYS;
   @state() private chosen: string[] = [];
   @state() private entity = '';
   @state() private devices: DeviceInfo[] = [];

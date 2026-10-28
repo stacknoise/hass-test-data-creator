@@ -18,6 +18,9 @@ import { describeTarget, formatWhen, summarizeTrigger, type TargetKind } from '.
 import '../common/dialog';
 import './schedule-form';
 import type { ScheduleForm } from './schedule-form';
+import { KIND_ALL, LIST_SEPARATOR } from '../common/constants';
+
+const COLUMN_COUNT = 6;
 
 const PREVIEW_HOURS = 24;
 const PREVIEW_ROWS = 50;
@@ -110,14 +113,14 @@ export class SchedulePanel extends TdcPollingElement {
   /** Return the text of a target: its kind, and the name of what it aims at. */
   private targetText(kind: TargetKind, ids: string[]): string {
     const label = this.tr(`schTarget_${kind}` as TextKey);
-    if (kind === 'all') return label;
+    if (kind === KIND_ALL) return label;
     const name = ids
       .map((id) =>
         targetName(kind, id, this.devices, this.templates, this.hass?.language, (count) =>
           this.tr('planDevices', { count }),
         ),
       )
-      .join(', ');
+      .join(LIST_SEPARATOR);
     return `${label}: ${name}`;
   }
 
@@ -179,7 +182,7 @@ export class SchedulePanel extends TdcPollingElement {
       ${
         open
           ? this.editRow(
-              6,
+              COLUMN_COUNT,
               item.id,
               html`<tdc-schedule-form
                 .hass=${this.hass}

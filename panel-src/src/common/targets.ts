@@ -1,5 +1,8 @@
 import { sortedByLabel, templateLabel } from './labels';
 import type { DeviceInfo, TemplateInfo } from './types';
+import { KIND_DEVICE, KIND_TEMPLATE } from './constants';
+
+const MS_PER_SECOND = 1000;
 
 /** The kinds of target that need an id: one device, a template, or one creation (a run). */
 export type TargetKind = 'template' | 'device' | 'run';
@@ -42,7 +45,7 @@ export function runsOf(devices: DeviceInfo[]): Run[] {
 
 /** Return seconds since 1970 as local `YYYY-MM-DD HH:mm`, so that texts sort by time. */
 export function formatCreated(seconds: number): string {
-  const date = new Date(seconds * 1000);
+  const date = new Date(seconds * MS_PER_SECOND);
   const two = (n: number): string => String(n).padStart(2, '0');
   const day = `${date.getFullYear()}-${two(date.getMonth() + 1)}-${two(date.getDate())}`;
   return `${day} ${two(date.getHours())}:${two(date.getMinutes())}`;
@@ -66,9 +69,9 @@ export function targetOptions(
   countText: (count: number) => string,
 ): TargetOption[] {
   const options: TargetOption[] =
-    kind === 'device'
+    kind === KIND_DEVICE
       ? devices.map((d) => ({ value: d.id, label: d.name }))
-      : kind === 'template'
+      : kind === KIND_TEMPLATE
         ? templates.map((t) => ({ value: t.id, label: templateLabel(lang, t.id, t.name) }))
         : runsOf(devices).map((r) => ({ value: r.id, label: runLabel(r, lang, countText) }));
   return sortedByLabel(lang, options, (option) => option.label);
@@ -83,7 +86,7 @@ export function targetName(
   lang: string | undefined,
   countText: (count: number) => string,
 ): string {
-  if (kind === 'device') return devices.find((d) => d.id === id || d.name === id)?.name ?? id;
+  if (kind === KIND_DEVICE) return devices.find((d) => d.id === id || d.name === id)?.name ?? id;
   const found = targetOptions(kind, devices, templates, lang, countText).find(
     (option) => option.value === id,
   );
@@ -92,6 +95,6 @@ export function targetName(
 
 /** Return the id that a stored value stands for: devices may be stored by name. */
 export function resolveTargetId(kind: TargetKind, value: string, devices: DeviceInfo[]): string {
-  if (kind !== 'device') return value;
+  if (kind !== KIND_DEVICE) return value;
   return devices.find((d) => d.id === value || d.name === value)?.id ?? value;
 }

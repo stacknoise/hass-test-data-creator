@@ -4,6 +4,7 @@ import { TdcElement } from '../common/base';
 import '../common/multi-select';
 import type { SelectItem } from '../common/multi-select';
 import type { GroupInfo } from '../common/types';
+import { EVENT_SUBMIT } from '../common/constants';
 
 /** What the form hands to the parent: the name and the ids of the members. */
 export interface GroupRequest {
@@ -43,7 +44,7 @@ export class GroupForm extends TdcElement {
   /** Tell the parent to save what the form describes. */
   private submit(): void {
     this.dispatchEvent(
-      new CustomEvent<GroupRequest>('tdc-submit', {
+      new CustomEvent<GroupRequest>(EVENT_SUBMIT, {
         detail: { name: this.name.trim(), members: this.members },
         bubbles: true,
         composed: true,

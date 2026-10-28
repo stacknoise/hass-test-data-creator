@@ -8,6 +8,7 @@ import './history/history-panel';
 import './removal/removal-panel';
 import './scenario/scenario-panel';
 import './schedule/schedule-panel';
+import { KIND_ALL, TAB_DEVICES, TAB_GROUPS } from './common/constants';
 
 /** The tabs of the panel. */
 type Tab = 'devices' | 'schedules' | 'scenarios' | 'groups' | 'history' | 'remove';
@@ -17,8 +18,8 @@ type Tab = 'devices' | 'schedules' | 'scenarios' | 'groups' | 'history' | 'remov
 export class TdcPanel extends TdcElement {
   @property({ type: Boolean }) narrow = false;
 
-  @state() private tab: Tab = 'devices';
-  @state() private removeTarget: RemovalTarget = 'all';
+  @state() private tab: Tab = TAB_DEVICES;
+  @state() private removeTarget: RemovalTarget = KIND_ALL;
   @state() private removeId = '';
   @state() private lapse = 1;
   @state() private mqtt = false;
@@ -82,7 +83,7 @@ export class TdcPanel extends TdcElement {
     } catch {
       this.lapse = 1;
     }
-    if (!this.mqtt && this.tab === 'groups') this.tab = 'devices';
+    if (!this.mqtt && this.tab === TAB_GROUPS) this.tab = TAB_DEVICES;
   }
 
   /** Switch to the removal tab with a preset target. */
@@ -118,15 +119,15 @@ export class TdcPanel extends TdcElement {
         }
       </header>
       <nav>
-        ${this.renderTab('devices', this.tr('tabDevices'))}
+        ${this.renderTab(TAB_DEVICES, this.tr('tabDevices'))}
         ${this.renderTab('schedules', this.tr('tabSchedules'))}
         ${this.renderTab('scenarios', this.tr('tabScenarios'))}
-        ${this.mqtt ? this.renderTab('groups', this.tr('tabGroups')) : ''}
+        ${this.mqtt ? this.renderTab(TAB_GROUPS, this.tr('tabGroups')) : ''}
         ${this.renderTab('history', this.tr('tabHistory'))}
         ${this.renderTab('remove', this.tr('tabRemove'))}
       </nav>
       ${
-        this.tab === 'devices'
+        this.tab === TAB_DEVICES
           ? html`<tdc-device-list
               .hass=${this.hass}
               @tdc-remove=${this.startRemoval}
@@ -143,7 +144,7 @@ export class TdcPanel extends TdcElement {
           ? html`<tdc-scenario-panel .hass=${this.hass}></tdc-scenario-panel>`
           : ''
       }
-      ${this.tab === 'groups' ? html`<tdc-group-panel .hass=${this.hass}></tdc-group-panel>` : ''}
+      ${this.tab === TAB_GROUPS ? html`<tdc-group-panel .hass=${this.hass}></tdc-group-panel>` : ''}
       ${
         this.tab === 'history'
           ? html`<tdc-history-panel .hass=${this.hass}></tdc-history-panel>`

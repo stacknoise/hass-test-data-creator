@@ -1,4 +1,5 @@
 import type { DeviceInfo, DeviceUsage } from '../common/types';
+import { TAB_GROUPS } from '../common/constants';
 
 /** An action that needs one number, with the name of its parameter and the allowed range. */
 export interface ValueAction {
@@ -65,7 +66,7 @@ export function knownAreas(
 }
 
 /** The kinds of user of a device, in the order that they are listed. */
-export const USAGE_KINDS = ['schedules', 'scenarios', 'groups'] as const;
+export const USAGE_KINDS = ['schedules', 'scenarios', TAB_GROUPS] as const;
 
 /** One user of a device: its kind and its name. */
 export interface UsageEntry {

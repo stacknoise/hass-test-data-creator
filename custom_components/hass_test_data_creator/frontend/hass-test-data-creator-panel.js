@@ -1807,110 +1807,8 @@ var At = class extends P {
 	}
 };
 N([E({ type: Boolean })], At.prototype, "open", void 0), N([E()], At.prototype, "heading", void 0), N([qe("dialog")], At.prototype, "dialog", void 0), At = N([T("tdc-dialog")], At);
-var jt = ["enum", "state_machine"], Mt = [
-	"sine",
-	"saw",
-	"square",
-	"triangle",
-	"random_walk",
-	"discharge"
-], Nt = [
-	"constant",
-	"household_load",
-	"pv_day"
-], Pt = 600;
-function Ft(e) {
-	return jt.includes(e);
-}
-function It(e) {
-	return e === "counter" ? ["rate_per_hour"] : e === "csv" ? ["step_s", "phase"] : e === "noise" ? ["interval_s", "noise"] : e === "steps" ? [
-		"period_s",
-		"interval_s",
-		"phase",
-		"noise"
-	] : e === "enum" ? ["interval_s"] : e === "state_machine" ? ["phase"] : Mt.includes(e) ? [
-		"period_s",
-		"phase",
-		"noise"
-	] : Nt.includes(e) ? ["noise"] : [];
-}
-function Lt(e) {
-	return e === "enum" ? ["values", "weights"] : e === "state_machine" ? ["states"] : [];
-}
-function Rt(e, t, n) {
-	let r = { ...e }, i = Number(n);
-	return n.trim() === "" || Number.isNaN(i) ? delete r[t] : r[t] = i, r;
-}
-function zt(e) {
-	return e.split(",").map((e) => e.trim()).filter(Boolean);
-}
-function Bt(e, t) {
-	return t === "states" ? (e.states ?? []).map((e) => `${e.value}:${e.duration_s}`).join(", ") : (e[t] ?? []).join(", ");
-}
-function Vt(e, t, n) {
-	let r = { ...e };
-	return t === "values" ? r.values = zt(n) : t === "weights" ? r.weights = zt(n).map(Number).filter((e) => !Number.isNaN(e)) : r.states = zt(n).flatMap((e) => {
-		let [t, n] = e.split(":").map((e) => e.trim()), r = Number(n);
-		return t && r > 0 ? [{
-			value: t,
-			duration_s: r
-		}] : [];
-	}), r;
-}
-function Ht(e) {
-	return e === "enum" ? {
-		values: ["on", "off"],
-		interval_s: Pt
-	} : e === "state_machine" ? { states: [{
-		value: "idle",
-		duration_s: Pt
-	}, {
-		value: "active",
-		duration_s: Pt
-	}] } : {};
-}
-function Ut(e, t) {
-	let n = /* @__PURE__ */ new Set([
-		"shape",
-		...It(t),
-		...Lt(t)
-	]);
-	t === "csv" && n.add("file"), Ft(t) || [
-		"min",
-		"max",
-		"decimals"
-	].forEach((e) => n.add(e));
-	let r = {
-		...Ht(t),
-		...e,
-		shape: t
-	};
-	return Object.fromEntries(Object.entries(r).filter(([e]) => n.has(e)));
-}
-function Wt(e) {
-	try {
-		let t = JSON.parse(e);
-		return Array.isArray(t) ? t : [];
-	} catch {
-		return [];
-	}
-}
-function Gt(e) {
-	return Wt(e).flatMap((e, t) => e.platform === "sensor" && e.signal ? [{
-		index: t,
-		name: String(e.name ?? e.key ?? t),
-		signal: e.signal
-	}] : []);
-}
-function Kt(e, t, n) {
-	let r = Wt(e);
-	return r[t] ? (r[t] = {
-		...r[t],
-		signal: n
-	}, JSON.stringify(r, null, 2)) : e;
-}
-// src/signals/signals.ts
-var qt = (1n << 64n) - 1n, Jt = 11400714819323198485n, Yt = 13787848793156543929n, Xt = 10723151780598845931n, Zt = 3600, Qt = 86400, $t = 24, en = .12, tn = [
+// src/common/constants.ts
+var jt = "device", Mt = "template", L = "times", R = "interval", Nt = "once", Pt = "random_window", Ft = "poisson", It = "enum", Lt = "state_machine", Rt = "noise", zt = "phase", Bt = "interval_s", Vt = "shape", Ht = "sensor", Ut = "devices", Wt = "groups", Gt = "tdc-submit", Kt = (1n << 64n) - 1n, qt = 11400714819323198485n, Jt = 13787848793156543929n, Yt = 10723151780598845931n, Xt = 3600, Zt = 3600, Qt = 10, $t = .5, en = 3, tn = 1.5, nn = 30n, rn = 27n, an = 31n, on = 11n, sn = 53, cn = 86400, ln = 24, un = .12, dn = [
 	[
 		7.5,
 		1.2,
@@ -1926,14 +1824,14 @@ var qt = (1n << 64n) - 1n, Jt = 11400714819323198485n, Yt = 13787848793156543929
 		2.2,
 		.55
 	]
-], nn = .12, rn = 600, an = 6, on = 900, sn = .3, cn = 2, ln = 3;
-function un(e, t = 0, n = 0) {
+], fn = .12, pn = 600, mn = 6, hn = 900, gn = .3, _n = 2, vn = 3;
+function yn(e, t = 0, n = 0) {
 	return {
 		shape: e.shape,
 		min: e.min ?? 0,
 		max: e.max ?? 100,
-		period_s: e.period_s ?? 3600,
-		interval_s: e.interval_s ?? 10,
+		period_s: e.period_s ?? Zt,
+		interval_s: e.interval_s ?? Qt,
 		noise: e.noise ?? 0,
 		decimals: e.decimals ?? 1,
 		phase: e.phase ?? 0,
@@ -1945,81 +1843,183 @@ function un(e, t = 0, n = 0) {
 		origin: n
 	};
 }
-function dn(e, t) {
-	let n = BigInt(e) * Jt + (BigInt(t) & qt) * Yt + Xt & qt;
-	return n = (n ^ n >> 30n) * Yt & qt, n = (n ^ n >> 27n) * Xt & qt, n ^= n >> 31n, Number(n >> 11n) / 2 ** 53;
+function bn(e, t) {
+	let n = BigInt(e) * qt + (BigInt(t) & Kt) * Jt + Yt & Kt;
+	return n = (n ^ n >> nn) * Jt & Kt, n = (n ^ n >> rn) * Yt & Kt, n ^= n >> an, Number(n >> on) / 2 ** sn;
 }
-function L(e, t) {
+function xn(e, t) {
 	let n = t / e.period_s + e.phase;
 	return n - Math.floor(n);
 }
-function fn(e, t) {
-	let n = Math.floor(t), r = t - n, i = r * r * (3 - 2 * r), a = dn(e, n);
-	return a + (dn(e, n + 1) - a) * i;
+function Sn(e, t) {
+	let n = Math.floor(t), r = t - n, i = r * r * (en - 2 * r), a = bn(e, n);
+	return a + (bn(e, n + 1) - a) * i;
 }
-function pn(e) {
-	return (e % Qt + Qt) % Qt / Zt;
+function Cn(e) {
+	return (e % cn + cn) % cn / Xt;
 }
-function mn(e, t, n) {
-	let r = Math.abs(e - t), i = Math.min(r, $t - r);
+function wn(e, t, n) {
+	let r = Math.abs(e - t), i = Math.min(r, ln - r);
 	return Math.exp(-.5 * (i / n) ** 2);
 }
-var hn = {
-	constant: () => .5,
-	sine: (e, t) => .5 + .5 * Math.sin(2 * Math.PI * L(e, t)),
-	saw: (e, t) => L(e, t),
-	square: (e, t) => +(L(e, t) < .5),
-	triangle: (e, t) => 1 - Math.abs(2 * L(e, t) - 1),
-	noise: (e, t) => dn(e.seed, Math.floor(t / e.interval_s)),
-	random_walk: (e, t) => fn(e.seed, t / e.period_s + e.phase),
+var Tn = {
+	constant: () => $t,
+	sine: (e, t) => $t + $t * Math.sin(2 * Math.PI * xn(e, t)),
+	saw: (e, t) => xn(e, t),
+	square: (e, t) => +(xn(e, t) < $t),
+	triangle: (e, t) => 1 - Math.abs(2 * xn(e, t) - 1),
+	noise: (e, t) => bn(e.seed, Math.floor(t / e.interval_s)),
+	random_walk: (e, t) => Sn(e.seed, t / e.period_s + e.phase),
 	household_load: (e, t) => {
-		let n = pn(t);
-		return tn.reduce((e, [t, r, i]) => e + i * mn(n, t, r), en) + nn * (fn(e.seed, t / rn) - .5);
+		let n = Cn(t);
+		return dn.reduce((e, [t, r, i]) => e + i * wn(n, t, r), un) + fn * (Sn(e.seed, t / pn) - $t);
 	},
 	pv_day: (e, t) => {
-		let n = (pn(t) - an) / 14;
+		let n = (Cn(t) - mn) / 14;
 		if (!(n > 0 && n < 1)) return 0;
-		let r = 1 - sn * fn(e.seed, t / on);
-		return Math.sin(Math.PI * n) ** 1.5 * r;
+		let r = 1 - gn * Sn(e.seed, t / hn);
+		return Math.sin(Math.PI * n) ** tn * r;
 	},
 	steps: (e, t) => {
-		let n = Math.max(cn, Math.round(e.period_s / e.interval_s));
-		return Math.min(1, Math.floor(L(e, t) * n) / (n - 1));
+		let n = Math.max(_n, Math.round(e.period_s / e.interval_s));
+		return Math.min(1, Math.floor(xn(e, t) * n) / (n - 1));
 	},
-	discharge: (e, t) => 1 - L(e, t) ** ln
+	discharge: (e, t) => 1 - xn(e, t) ** vn
 };
-function gn(e, t) {
-	let n = e.weights.length ? e.weights : e.values.map(() => 1), r = n.reduce((e, t) => e + t, 0), i = dn(e.seed, Math.floor(t / e.interval_s)) * r, a = 0;
+function En(e, t) {
+	let n = e.weights.length ? e.weights : e.values.map(() => 1), r = n.reduce((e, t) => e + t, 0), i = bn(e.seed, Math.floor(t / e.interval_s)) * r, a = 0;
 	for (let [t, r] of e.values.entries()) if (a += n[t], i < a) return r;
 	return e.values[e.values.length - 1];
 }
-function _n(e, t) {
+function Dn(e, t) {
 	let n = e.states.reduce((e, [, t]) => e + t, 0), r = ((t + e.phase * n) % n + n) % n, i = 0;
 	for (let [t, n] of e.states) if (i += n, r < i) return t;
 	return e.states[e.states.length - 1][0];
 }
-var vn = {
-	enum: gn,
-	state_machine: _n
+var On = {
+	enum: En,
+	state_machine: Dn
 };
-function yn(e) {
+function kn(e) {
 	let t = e.shape === "enum" ? e.values : e.states.map(([e]) => e);
 	return [...new Set(t)];
 }
-function bn(e, t) {
+function An(e, t) {
 	return Number(e.toFixed(t));
 }
-function xn(e, t) {
-	if (e.shape in vn) return vn[e.shape](e, t);
+function jn(e, t) {
+	if (e.shape in On) return On[e.shape](e, t);
 	if (e.shape === "counter") {
 		let n = Math.max(0, t - e.origin);
-		return bn(e.min + e.rate_per_hour * n / Zt, e.decimals);
+		return An(e.min + e.rate_per_hour * n / Xt, e.decimals);
 	}
-	let n = (hn[e.shape] ?? hn.constant)(e, t);
-	return e.noise && (n += (dn(e.seed + 1, Math.floor(t)) - .5) * 2 * e.noise), n = Math.min(1, Math.max(0, n)), bn(e.min + n * (e.max - e.min), e.decimals);
+	let n = (Tn[e.shape] ?? Tn.constant)(e, t);
+	return e.noise && (n += (bn(e.seed + 1, Math.floor(t)) - $t) * 2 * e.noise), n = Math.min(1, Math.max(0, n)), An(e.min + n * (e.max - e.min), e.decimals);
+}
+var Mn = [It, Lt], Nn = [
+	"sine",
+	"saw",
+	"square",
+	"triangle",
+	"random_walk",
+	"discharge"
+], Pn = [
+	"constant",
+	"household_load",
+	"pv_day"
+], Fn = 600;
+function In(e) {
+	return Mn.includes(e);
+}
+function Ln(e) {
+	return e === "counter" ? ["rate_per_hour"] : e === "csv" ? ["step_s", zt] : e === "noise" ? [Bt, Rt] : e === "steps" ? [
+		"period_s",
+		Bt,
+		zt,
+		Rt
+	] : e === "enum" ? [Bt] : e === "state_machine" ? [zt] : Nn.includes(e) ? [
+		"period_s",
+		zt,
+		Rt
+	] : Pn.includes(e) ? [Rt] : [];
+}
+function Rn(e) {
+	return e === "enum" ? ["values", "weights"] : e === "state_machine" ? ["states"] : [];
+}
+function zn(e, t, n) {
+	let r = { ...e }, i = Number(n);
+	return n.trim() === "" || Number.isNaN(i) ? delete r[t] : r[t] = i, r;
+}
+function Bn(e) {
+	return e.split(",").map((e) => e.trim()).filter(Boolean);
+}
+function Vn(e, t) {
+	return t === "states" ? (e.states ?? []).map((e) => `${e.value}:${e.duration_s}`).join(", ") : (e[t] ?? []).join(", ");
+}
+function Hn(e, t, n) {
+	let r = { ...e };
+	return t === "values" ? r.values = Bn(n) : t === "weights" ? r.weights = Bn(n).map(Number).filter((e) => !Number.isNaN(e)) : r.states = Bn(n).flatMap((e) => {
+		let [t, n] = e.split(":").map((e) => e.trim()), r = Number(n);
+		return t && r > 0 ? [{
+			value: t,
+			duration_s: r
+		}] : [];
+	}), r;
+}
+function Un(e) {
+	return e === "enum" ? {
+		values: ["on", "off"],
+		interval_s: Fn
+	} : e === "state_machine" ? { states: [{
+		value: "idle",
+		duration_s: Fn
+	}, {
+		value: "active",
+		duration_s: Fn
+	}] } : {};
+}
+function Wn(e, t) {
+	let n = /* @__PURE__ */ new Set([
+		Vt,
+		...Ln(t),
+		...Rn(t)
+	]);
+	t === "csv" && n.add("file"), In(t) || [
+		"min",
+		"max",
+		"decimals"
+	].forEach((e) => n.add(e));
+	let r = {
+		...Un(t),
+		...e,
+		shape: t
+	};
+	return Object.fromEntries(Object.entries(r).filter(([e]) => n.has(e)));
+}
+function Gn(e) {
+	try {
+		let t = JSON.parse(e);
+		return Array.isArray(t) ? t : [];
+	} catch {
+		return [];
+	}
+}
+function Kn(e) {
+	return Gn(e).flatMap((e, t) => e.platform === "sensor" && e.signal ? [{
+		index: t,
+		name: String(e.name ?? e.key ?? t),
+		signal: e.signal
+	}] : []);
+}
+function qn(e, t, n) {
+	let r = Gn(e);
+	return r[t] ? (r[t] = {
+		...r[t],
+		signal: n
+	}, JSON.stringify(r, null, 2)) : e;
 }
 // src/signals/signal-preview.ts
-var Sn = 320, Cn = 80, wn = 96, Tn = 86400, En = class extends w {
+var Jn = 320, Yn = 80, Xn = 96, Zn = 86400, Qn = class extends w {
 	constructor(...e) {
 		super(...e), this.unit = "";
 	}
@@ -2045,27 +2045,27 @@ var Sn = 320, Cn = 80, wn = 96, Tn = 86400, En = class extends w {
   `;
 	}
 	points(e) {
-		let t = un(e, 1, 0), n = yn(t), r = Array.from({ length: 97 }, (e, r) => {
-			let i = xn(t, r / wn * Tn);
+		let t = yn(e, 1, 0), n = kn(t), r = Array.from({ length: 97 }, (e, r) => {
+			let i = jn(t, r / Xn * Zn);
 			return typeof i == "string" ? n.indexOf(i) : i;
 		}), i = Math.min(...r), a = Math.max(...r) - i || 1;
 		return r.map((e, t) => {
-			let n = t / wn * Sn, r = 74 - (e - i) / a * 68;
+			let n = t / Xn * Jn, r = 74 - (e - i) / a * 68;
 			return `${n.toFixed(1)},${r.toFixed(1)}`;
 		}).join(" ");
 	}
 	render() {
 		if (!this.signal) return y``;
-		let e = this.signal.shape === "enum" || this.signal.shape === "state_machine", t = e ? yn(un(this.signal)).join(" · ") : "", n = this.signal.min ?? 0, r = this.signal.max ?? 100;
-		return y`<svg viewBox="0 0 ${Sn} ${Cn}" role="img">
+		let e = this.signal.shape === "enum" || this.signal.shape === "state_machine", t = e ? kn(yn(this.signal)).join(" · ") : "", n = this.signal.min ?? 0, r = this.signal.max ?? 100;
+		return y`<svg viewBox="0 0 ${Jn} ${Yn}" role="img">
         ${De`<polyline points=${this.points(this.signal)}></polyline>`}
       </svg>
       <div>${e ? t : `${n} – ${r} ${this.unit}`}</div>`;
 	}
 };
-N([E({ attribute: !1 })], En.prototype, "signal", void 0), N([E()], En.prototype, "unit", void 0), En = N([T("tdc-signal-preview")], En);
+N([E({ attribute: !1 })], Qn.prototype, "signal", void 0), N([E()], Qn.prototype, "unit", void 0), Qn = N([T("tdc-signal-preview")], Qn);
 // src/signals/curve-editor.ts
-var Dn = {
+var $n = {
 	min: "edMin",
 	max: "edMax",
 	decimals: "edDecimals",
@@ -2075,11 +2075,11 @@ var Dn = {
 	rate_per_hour: "edRate",
 	step_s: "edStep",
 	noise: "edNoise"
-}, On = {
+}, er = {
 	values: "edValues",
 	weights: "edWeights",
 	states: "edStates"
-}, R = class extends P {
+}, tr = class extends P {
 	constructor(...e) {
 		super(...e), this.shapes = [], this.unit = "", this.files = [];
 	}
@@ -2091,20 +2091,20 @@ var Dn = {
 	}
 	numberField(e) {
 		return y`<label style="flex: 1 1 120px"
-      >${this.tr(Dn[e])}
+      >${this.tr($n[e])}
       <input
         type="number"
         step="any"
         .value=${this.signal[e] === void 0 ? "" : String(this.signal[e])}
-        @input=${(t) => this.emit(Rt(this.signal, e, t.target.value))}
+        @input=${(t) => this.emit(zn(this.signal, e, t.target.value))}
       />
     </label>`;
 	}
 	listField(e) {
-		return this.textField(this.tr(On[e]), Bt(this.signal, e), (t) => this.emit(Vt(this.signal, e, t)), { flex: "1 1 240px" });
+		return this.textField(this.tr(er[e]), Vn(this.signal, e), (t) => this.emit(Hn(this.signal, e, t)), { flex: "1 1 240px" });
 	}
 	changeShape(e) {
-		let t = Ut(this.signal, e);
+		let t = Wn(this.signal, e);
 		this.emit(e === "csv" && !t.file && this.files[0] ? {
 			...t,
 			file: this.files[0]
@@ -2133,26 +2133,26 @@ var Dn = {
         <label style="flex: 1 1 180px"
           >${this.tr("edShape")}
           <select @change=${(e) => this.changeShape(e.target.value)}>
-            ${M(this.hass?.language, this.shapes, (e) => k(this.hass?.language, "shape", e)).map((e) => y`<option value=${e} ?selected=${e === this.signal.shape}>
-                  ${k(this.hass?.language, "shape", e)}
+            ${M(this.hass?.language, this.shapes, (e) => k(this.hass?.language, Vt, e)).map((e) => y`<option value=${e} ?selected=${e === this.signal.shape}>
+                  ${k(this.hass?.language, Vt, e)}
                 </option>`)}
           </select>
         </label>
-        ${Ft(this.signal.shape) ? "" : y`${this.numberField("min")} ${this.numberField("max")}
+        ${In(this.signal.shape) ? "" : y`${this.numberField("min")} ${this.numberField("max")}
               ${this.numberField("decimals")}`}
       </div>
       <div class="row form">
         ${this.signal.shape === "csv" ? this.renderFile() : ""}
-        ${It(this.signal.shape).map((e) => this.numberField(e))}
-        ${Lt(this.signal.shape).map((e) => this.listField(e))}
+        ${Ln(this.signal.shape).map((e) => this.numberField(e))}
+        ${Rn(this.signal.shape).map((e) => this.listField(e))}
       </div>
       ${this.signal.shape === "csv" ? y`<small>${this.tr("edCsvPreview")}</small>` : y`<tdc-signal-preview .signal=${this.signal} unit=${this.unit}></tdc-signal-preview>`}
     `;
 	}
 };
-N([E({ attribute: !1 })], R.prototype, "signal", void 0), N([E({ attribute: !1 })], R.prototype, "shapes", void 0), N([E()], R.prototype, "unit", void 0), N([D()], R.prototype, "files", void 0), R = N([T("tdc-curve-editor")], R);
+N([E({ attribute: !1 })], tr.prototype, "signal", void 0), N([E({ attribute: !1 })], tr.prototype, "shapes", void 0), N([E()], tr.prototype, "unit", void 0), N([D()], tr.prototype, "files", void 0), tr = N([T("tdc-curve-editor")], tr);
 // node_modules/lit-html/directives/live.js
-var kn = lt(class extends ut {
+var nr = lt(class extends ut {
 	constructor(e) {
 		if (super(e), e.type !== F.PROPERTY && e.type !== F.ATTRIBUTE && e.type !== F.BOOLEAN_ATTRIBUTE) throw Error("The `live` directive is not allowed on child or event bindings");
 		if (!pt(e)) throw Error("`live` bindings can only contain a single expression");
@@ -2172,7 +2172,7 @@ var kn = lt(class extends ut {
 	}
 });
 // src/common/multi-select.ts
-function An(e, t, n) {
+function rr(e, t, n) {
 	let r = t.trim();
 	if (!r) return e;
 	let i = e.filter((e) => e !== r);
@@ -2235,7 +2235,7 @@ var z = class extends Ot {
 		this.dispatchEvent(new CustomEvent("tdc-select-change", { detail: e }));
 	}
 	pick(e, t) {
-		if (!this.single) return this.emit(An(this.selected, e, t));
+		if (!this.single) return this.emit(rr(this.selected, e, t));
 		this.emit(t && e.trim() ? [e.trim()] : []), this.open = !1;
 	}
 	add() {
@@ -2251,7 +2251,7 @@ var z = class extends Ot {
 	renderAdd() {
 		return y`<div class="row add">
       <input
-        .value=${kn(this.draft)}
+        .value=${nr(this.draft)}
         placeholder=${this.tr("areasAdd")}
         @input=${(e) => this.draft = e.target.value}
         @keydown=${(e) => {
@@ -2291,7 +2291,7 @@ var z = class extends Ot {
 };
 N([E({ attribute: !1 })], z.prototype, "items", void 0), N([E({ attribute: !1 })], z.prototype, "selected", void 0), N([E({ type: Boolean })], z.prototype, "allowAdd", void 0), N([E({ type: Boolean })], z.prototype, "single", void 0), N([E()], z.prototype, "empty", void 0), N([D()], z.prototype, "draft", void 0), z = N([T("tdc-multi-select")], z);
 // src/devices/helpers.ts
-var jn = {
+var ir = {
 	set_brightness: {
 		param: "brightness",
 		min: 0,
@@ -2310,49 +2310,50 @@ var jn = {
 		max: 30,
 		start: 21
 	}
-}, Mn = "fault_";
-function Nn(e, t) {
+}, ar = "fault_";
+function or(e, t) {
 	let n = e[t] ?? [];
 	return {
-		plain: n.filter((e) => !e.startsWith("fault_") && !(e in jn)),
-		withValue: n.filter((e) => e in jn),
-		faults: n.filter((e) => e.startsWith(Mn)).map((e) => e.slice(6))
+		plain: n.filter((e) => !e.startsWith("fault_") && !(e in ir)),
+		withValue: n.filter((e) => e in ir),
+		faults: n.filter((e) => e.startsWith(ar)).map((e) => e.slice(6))
 	};
 }
-function Pn(e, t) {
-	let n = jn[e], r = Number(t);
+function sr(e, t) {
+	let n = ir[e], r = Number(t);
 	if (n && t.trim() !== "" && !Number.isNaN(r) && !(r < n.min || r > n.max)) return { [n.param]: r };
 }
-function Fn(e) {
+function cr(e) {
 	let t = Number(e);
 	return e.trim() !== "" && t > 0 ? { duration_s: t } : void 0;
 }
-function In(e, t) {
+function lr(e, t) {
 	let n = [...Object.values(e ?? {}).map((e) => e.name), ...t.flatMap((e) => e.area ? [e.area] : [])];
 	return [...new Set(n)].sort((e, t) => e.localeCompare(t));
 }
-var Ln = [
+var ur = [
 	"schedules",
 	"scenarios",
-	"groups"
+	Wt
 ];
-function Rn(e) {
-	return Ln.flatMap((t) => (e?.[t] ?? []).map((e) => ({
+function dr(e) {
+	return ur.flatMap((t) => (e?.[t] ?? []).map((e) => ({
 		kind: t,
 		name: e.name
 	})));
 }
 // src/wizard/helpers.ts
-function zn(e, t) {
-	return Math.round(e / Math.max(1, t) * 10) / 10;
+var fr = 10;
+function pr(e, t) {
+	return Math.round(e / Math.max(1, t) * fr) / fr;
 }
 // src/wizard/creation-wizard.ts
-var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
+var mr = 10, hr = 10, B = "custom", gr = 50, _r = ["even", "random"], vr = {
 	even: "modeEven",
 	random: "modeRandom"
-}, Un = JSON.stringify([{
+}, yr = JSON.stringify([{
 	key: "level",
-	platform: "sensor",
+	platform: Ht,
 	name: "Level",
 	unit: "%",
 	signal: {
@@ -2362,7 +2363,7 @@ var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
 	}
 }], null, 2), V = class extends P {
 	constructor(...e) {
-		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = [], this.mode = "even", this.seed = "", this.output = "native", this.custom = Un, this.editIndex = -1, this.busy = !1, this.message = "", this.error = "";
+		super(...e), this.templates = [], this.template = "", this.count = mr, this.pattern = "{template} {nn}", this.areas = [], this.mode = "even", this.seed = "", this.output = "native", this.custom = yr, this.editIndex = -1, this.busy = !1, this.message = "", this.error = "";
 	}
 	async connectedCallback() {
 		super.connectedCallback();
@@ -2381,10 +2382,10 @@ var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
 		return this.templates.find((e) => e.id === this.template)?.entities ?? [];
 	}
 	changeSignal(e, t) {
-		this.custom = Kt(this.custom, e, t.detail);
+		this.custom = qn(this.custom, e, t.detail);
 	}
 	renderEditor() {
-		let e = Gt(this.custom), t = e.find((e) => e.index === this.editIndex) ?? e[0];
+		let e = Kn(this.custom), t = e.find((e) => e.index === this.editIndex) ?? e[0];
 		return t ? y`<h3>${this.tr("edSensor")}</h3>
       <p>
         <select
@@ -2423,13 +2424,13 @@ var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
 		this.busy = !1;
 	}
 	renderEstimate() {
-		let e = this.entities(), t = zn(e.filter((e) => e.platform === "sensor").length * this.count, this.info?.tick_seconds ?? 10);
+		let e = this.entities(), t = pr(e.filter((e) => e.platform === Ht).length * this.count, this.info?.tick_seconds ?? hr);
 		return y`<p>
       <small>${this.tr("estimate", {
 			entities: e.length * this.count,
 			rate: t
 		})}</small>
-      ${t > Bn ? y`<br /><span class="warning">${this.tr("rateWarning")}</span>` : ""}
+      ${t > gr ? y`<br /><span class="warning">${this.tr("rateWarning")}</span>` : ""}
     </p>`;
 	}
 	templateOptions() {
@@ -2447,7 +2448,7 @@ var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
 		return y`
       <div class="row form">
         <label style="flex: 1 1 220px"
-          >${this.tr("template")}
+          >${this.tr(Mt)}
           <select @change=${(e) => this.template = e.target.value}>
             ${this.templateOptions().map((e) => y`<option value=${e.id} ?selected=${e.id === this.template}>
                   ${e.label}
@@ -2477,7 +2478,7 @@ var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
           >${this.tr("areas")}
           <tdc-multi-select
             .hass=${this.hass}
-            .items=${In(this.hass?.areas, []).map((e) => ({
+            .items=${lr(this.hass?.areas, []).map((e) => ({
 			value: e,
 			label: e
 		}))}
@@ -2492,8 +2493,8 @@ var B = "custom", Bn = 50, Vn = ["even", "random"], Hn = {
           <select
             @change=${(e) => this.mode = e.target.value}
           >
-            ${M(this.hass?.language, Vn, (e) => this.tr(Hn[e])).map((e) => y`<option value=${e} ?selected=${e === this.mode}>
-                  ${this.tr(Hn[e])}
+            ${M(this.hass?.language, _r, (e) => this.tr(vr[e])).map((e) => y`<option value=${e} ?selected=${e === this.mode}>
+                  ${this.tr(vr[e])}
                 </option>`)}
           </select>
         </label>
@@ -2664,18 +2665,18 @@ var H = class extends P {
     </div>`;
 	}
 	menuItems(e) {
-		let t = this.hass?.language, n = Nn(this.actions, e.platform);
+		let t = this.hass?.language, n = or(this.actions, e.platform);
 		return M(t, [
 			...n.plain,
 			...n.withValue,
-			...n.faults.map((e) => `${Mn}${e}`)
+			...n.faults.map((e) => `${ar}${e}`)
 		], (e) => A(t, e)).map((e) => ({
 			value: e,
 			label: A(t, e)
 		}));
 	}
 	pick(e, t) {
-		t in jn || t.startsWith("fault_") ? this.picked = {
+		t in ir || t.startsWith("fault_") ? this.picked = {
 			...this.picked,
 			[e.key]: t
 		} : this.fire(e, t);
@@ -2687,7 +2688,7 @@ var H = class extends P {
 	renderPicked(e) {
 		let t = this.picked[e.key];
 		if (!t) return "";
-		let n = jn[t], r = `${e.key}:${t}`, i = this.inputs[r] ?? String(n ? n.start : 60), a = n ? Pn(t, i) : Fn(i);
+		let n = ir[t], r = `${e.key}:${t}`, i = this.inputs[r] ?? String(n ? n.start : 60), a = n ? sr(t, i) : cr(i);
 		return y`<span class="row">
       <strong>${A(this.hass?.language, t)}</strong>
       <input
@@ -2722,7 +2723,7 @@ var H = class extends P {
         <tdc-curve-editor
           .hass=${this.hass}
           .signal=${this.curves[e.key]}
-          .shapes=${this.shapes.filter((e) => !Ft(e))}
+          .shapes=${this.shapes.filter((e) => !In(e))}
           unit=${e.unit ?? ""}
           @tdc-signal-change=${(t) => this.curves = {
 			...this.curves,
@@ -2745,7 +2746,7 @@ var H = class extends P {
     </tr>`;
 	}
 	renderEntity(e) {
-		let t = this.hass?.language, n = this.menuItems(e), r = e.signal != null && !Ft(e.signal.shape);
+		let t = this.hass?.language, n = this.menuItems(e), r = e.signal != null && !In(e.signal.shape);
 		return y`<tr>
         <td>
           ${j(t, e.key, e.name)}<br /><small
@@ -2775,7 +2776,7 @@ var H = class extends P {
       ${e.key in this.curves ? this.renderCurve(e) : ""}`;
 	}
 	renderUsage() {
-		let e = Rn(this.device.used_by);
+		let e = dr(this.device.used_by);
 		return e.length === 0 ? y`<p class="usage"><small>${this.tr("useNone")}</small></p>` : y`<details class="usage">
       <summary>${this.tr("useTitle", { count: e.length })}</summary>
       <ul>
@@ -2801,13 +2802,13 @@ var H = class extends P {
 };
 N([E({ attribute: !1 })], H.prototype, "device", void 0), N([E({ attribute: !1 })], H.prototype, "actions", void 0), N([E({ attribute: !1 })], H.prototype, "areas", void 0), N([E({ attribute: !1 })], H.prototype, "shapes", void 0), N([D()], H.prototype, "areaDraft", void 0), N([D()], H.prototype, "picked", void 0), N([D()], H.prototype, "inputs", void 0), N([D()], H.prototype, "curves", void 0), N([D()], H.prototype, "busy", void 0), N([D()], H.prototype, "error", void 0), H = N([T("tdc-device-detail")], H);
 // src/devices/device-list.ts
-var Wn = 200, Gn = 1e4, Kn = {
+var br = 4, xr = 6, Sr = 200, Cr = 1e4, wr = {
 	switch: "toggle",
 	event: "press",
 	binary_sensor: "pulse",
 	light: "toggle"
-}, qn = "fire:", Jn = "remove", Yn = [
-	"sensor",
+}, Tr = "fire:", Er = "remove", Dr = [
+	Ht,
 	"switch",
 	"binary_sensor",
 	"light",
@@ -2849,7 +2850,7 @@ var Wn = 200, Gn = 1e4, Kn = {
 		];
 	}
 	connectedCallback() {
-		super.connectedCallback(), this.loadInfo(), this.refresh(), this.timer = window.setInterval(() => void this.refresh(), Gn);
+		super.connectedCallback(), this.loadInfo(), this.refresh(), this.timer = window.setInterval(() => void this.refresh(), Cr);
 	}
 	disconnectedCallback() {
 		window.clearInterval(this.timer), super.disconnectedCallback();
@@ -2865,7 +2866,7 @@ var Wn = 200, Gn = 1e4, Kn = {
 		this.expanded = st(this.expanded, e);
 	}
 	async refresh(e = !1) {
-		let t = Math.max(Wn, this.devices.length + (e ? Wn : 0));
+		let t = Math.max(Sr, this.devices.length + (e ? Sr : 0));
 		try {
 			let e = await this.api.devices(0, t);
 			this.devices = e.devices, this.total = e.total, this.error = "";
@@ -2876,37 +2877,37 @@ var Wn = 200, Gn = 1e4, Kn = {
 	}
 	async fire(e, t) {
 		try {
-			await this.api.fire(e.id, t.key, Kn[t.platform]), await this.refresh();
+			await this.api.fire(e.id, t.key, wr[t.platform]), await this.refresh();
 		} catch (e) {
 			this.error = O(e);
 		}
 	}
 	menuItems(e) {
 		let t = this.hass?.language;
-		return M(t, [...e.entities.filter((e) => e.platform in Kn).map((e) => ({
-			value: `${qn}${e.key}`,
-			label: `${j(t, e.key, e.name)} – ${A(t, Kn[e.platform])}`
+		return M(t, [...e.entities.filter((e) => e.platform in wr).map((e) => ({
+			value: `${Tr}${e.key}`,
+			label: `${j(t, e.key, e.name)} – ${A(t, wr[e.platform])}`
 		})), {
-			value: Jn,
+			value: Er,
 			label: this.tr("remove"),
-			disabled: Rn(e.used_by).length > 0,
+			disabled: dr(e.used_by).length > 0,
 			hint: this.tr("removeBlocked")
 		}], (e) => e.label);
 	}
 	pick(e, t) {
-		if (t === Jn) {
+		if (t === Er) {
 			this.dispatchEvent(new CustomEvent("tdc-remove", { detail: {
-				target: "device",
+				target: jt,
 				id: e.id
 			} }));
 			return;
 		}
-		let n = e.entities.find((e) => `${qn}${e.key}` === t);
+		let n = e.entities.find((e) => `${Tr}${e.key}` === t);
 		n && this.fire(e, n);
 	}
 	values(e) {
 		let t = this.hass?.language;
-		return e.entities.filter((e) => Yn.includes(e.platform)).slice(0, 4).map((e) => {
+		return e.entities.filter((e) => Dr.includes(e.platform)).slice(0, br).map((e) => {
 			let n = e.unit ? ` ${e.unit}` : "", r = e.fault ? ` ⚠ ${k(t, "fault", e.fault)}` : "";
 			return `${j(t, e.key, e.name)}: ${at(t, e.state)}${n}${r}`;
 		}).join(" · ");
@@ -2936,12 +2937,12 @@ var Wn = 200, Gn = 1e4, Kn = {
           ></tdc-menu-button>
         </td>
       </tr>
-      ${t ? this.detailRow(6, y`<tdc-device-detail
+      ${t ? this.detailRow(xr, y`<tdc-device-detail
                 .hass=${this.hass}
                 .device=${e}
                 .actions=${this.info?.actions ?? {}}
                 .shapes=${this.info?.shapes ?? []}
-                .areas=${In(this.hass.areas, this.devices)}
+                .areas=${lr(this.hass.areas, this.devices)}
                 @tdc-changed=${() => void this.refresh()}
               ></tdc-device-detail>`) : ""}`;
 	}
@@ -3001,12 +3002,12 @@ var Wn = 200, Gn = 1e4, Kn = {
 };
 N([D()], U.prototype, "devices", void 0), N([D()], U.prototype, "total", void 0), N([D()], U.prototype, "loaded", void 0), N([D()], U.prototype, "error", void 0), N([D()], U.prototype, "creating", void 0), N([D()], U.prototype, "info", void 0), N([D()], U.prototype, "expanded", void 0), U = N([T("tdc-device-list")], U);
 // src/common/polling.ts
-var Xn = 1e4, W = class extends P {
+var Or = 1e4, W = class extends P {
 	constructor(...e) {
 		super(...e), this.templates = [], this.message = "", this.error = "", this.busy = !1, this.expanded = /* @__PURE__ */ new Set(), this.creating = !1;
 	}
 	connectedCallback() {
-		super.connectedCallback(), this.loadOptions(), this.refresh(), this.timer = window.setInterval(() => void this.refresh(), Xn);
+		super.connectedCallback(), this.loadOptions(), this.refresh(), this.timer = window.setInterval(() => void this.refresh(), Or);
 	}
 	disconnectedCallback() {
 		window.clearInterval(this.timer), super.disconnectedCallback();
@@ -3081,7 +3082,7 @@ var G = class extends P {
 		this.name = "", this.members = [];
 	}
 	submit() {
-		this.dispatchEvent(new CustomEvent("tdc-submit", {
+		this.dispatchEvent(new CustomEvent(Gt, {
 			detail: {
 				name: this.name.trim(),
 				members: this.members
@@ -3118,7 +3119,7 @@ var G = class extends P {
 };
 N([E({ attribute: !1 })], G.prototype, "devices", void 0), N([E({ attribute: !1 })], G.prototype, "group", void 0), N([E()], G.prototype, "submitLabel", void 0), N([E({ type: Boolean })], G.prototype, "busy", void 0), N([D()], G.prototype, "name", void 0), N([D()], G.prototype, "members", void 0), G = N([T("tdc-group-form")], G);
 // src/group/group-panel.ts
-var Zn = 500, Qn = "z2m", $n = class extends W {
+var kr = 3, Ar = 500, jr = "z2m", Mr = class extends W {
 	constructor(...e) {
 		super(...e), this.groups = [], this.devices = [];
 	}
@@ -3141,14 +3142,14 @@ var Zn = 500, Qn = "z2m", $n = class extends W {
 	}
 	async refresh() {
 		try {
-			let [e, t] = await Promise.all([this.api.groups(), this.api.devices(0, Zn)]);
+			let [e, t] = await Promise.all([this.api.groups(), this.api.devices(0, Ar)]);
 			this.groups = e, this.devices = t.devices;
 		} catch (e) {
 			this.error = O(e);
 		}
 	}
 	members() {
-		return this.devices.filter((e) => e.output === Qn).map((e) => ({
+		return this.devices.filter((e) => e.output === jr).map((e) => ({
 			value: e.id,
 			label: e.name
 		}));
@@ -3190,7 +3191,7 @@ var Zn = 500, Qn = "z2m", $n = class extends W {
           ${this.removeButton(() => this.api.removeGroup(e.id))}
         </td>
       </tr>
-      ${t ? this.editRow(3, e.id, y`<tdc-group-form
+      ${t ? this.editRow(kr, e.id, y`<tdc-group-form
                 .hass=${this.hass}
                 .devices=${this.members()}
                 .group=${e}
@@ -3212,16 +3213,16 @@ var Zn = 500, Qn = "z2m", $n = class extends W {
     `;
 	}
 };
-N([D()], $n.prototype, "groups", void 0), N([D()], $n.prototype, "devices", void 0), N([qe("tdc-group-form#new")], $n.prototype, "newForm", void 0), $n = N([T("tdc-group-panel")], $n);
-function er(e) {
+N([D()], Mr.prototype, "groups", void 0), N([D()], Mr.prototype, "devices", void 0), N([qe("tdc-group-form#new")], Mr.prototype, "newForm", void 0), Mr = N([T("tdc-group-panel")], Mr);
+function Nr(e) {
 	return Math.min(365, Math.max(1, Math.round(e) || 1));
 }
-function tr(e, t) {
+function Pr(e, t) {
 	let [n, ...r] = (t.length ? e.filter((e) => t.includes(e.id)) : e).map((e) => {
 		let t = /* @__PURE__ */ new Map();
 		for (let n of e.entities) {
 			let e = n.signal?.shape;
-			n.platform === "sensor" && n.state_class && e && !Ft(e) && t.set(n.key, {
+			n.platform === "sensor" && n.state_class && e && !In(e) && t.set(n.key, {
 				key: n.key,
 				name: n.name
 			});
@@ -3231,27 +3232,27 @@ function tr(e, t) {
 	return n ? [...n.values()].filter((e) => r.every((t) => t.has(e.key))) : [];
 }
 // src/history/history-panel.ts
-var nr = 500, K = class extends P {
+var Fr = 7, Ir = 500, K = class extends P {
 	constructor(...e) {
-		super(...e), this.days = 7, this.chosen = [], this.entity = "", this.devices = [], this.busy = !1, this.message = "", this.error = "";
+		super(...e), this.days = Fr, this.chosen = [], this.entity = "", this.devices = [], this.busy = !1, this.message = "", this.error = "";
 	}
 	connectedCallback() {
 		super.connectedCallback(), this.loadDevices();
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devices(0, nr)).devices;
+			this.devices = (await this.api.devices(0, Ir)).devices;
 		} catch (e) {
 			this.error = O(e);
 		}
 	}
 	pick(e) {
-		this.chosen = e, tr(this.devices, e).some((e) => e.key === this.entity) || (this.entity = "");
+		this.chosen = e, Pr(this.devices, e).some((e) => e.key === this.entity) || (this.entity = "");
 	}
 	async importHistory() {
 		this.busy = !0, this.message = "", this.error = "";
 		try {
-			let e = await this.api.importHistory(er(this.days), this.chosen.length > 1 ? this.chosen : this.chosen[0], this.entity || void 0);
+			let e = await this.api.importHistory(Nr(this.days), this.chosen.length > 1 ? this.chosen : this.chosen[0], this.entity || void 0);
 			this.message = this.tr("histDone", { ...e });
 		} catch (e) {
 			this.error = O(e);
@@ -3274,7 +3275,7 @@ var nr = 500, K = class extends P {
 		let e = this.hass?.language, t = this.devices.map((e) => ({
 			value: e.id,
 			label: e.name
-		})), n = tr(this.devices, this.chosen).map((t) => ({
+		})), n = Pr(this.devices, this.chosen).map((t) => ({
 			value: t.key,
 			label: j(e, t.key, t.name)
 		}));
@@ -3314,7 +3315,8 @@ var nr = 500, K = class extends P {
 };
 N([D()], K.prototype, "days", void 0), N([D()], K.prototype, "chosen", void 0), N([D()], K.prototype, "entity", void 0), N([D()], K.prototype, "devices", void 0), N([D()], K.prototype, "busy", void 0), N([D()], K.prototype, "message", void 0), N([D()], K.prototype, "error", void 0), K = N([T("tdc-history-panel")], K);
 // src/common/targets.ts
-function rr(e) {
+var Lr = 1e3;
+function Rr(e) {
 	let t = /* @__PURE__ */ new Map();
 	for (let n of e) {
 		let e = t.get(n.run_id);
@@ -3328,46 +3330,46 @@ function rr(e) {
 	}
 	return [...t.values()];
 }
-function ir(e) {
-	let t = /* @__PURE__ */ new Date(e * 1e3), n = (e) => String(e).padStart(2, "0");
+function zr(e) {
+	let t = /* @__PURE__ */ new Date(e * Lr), n = (e) => String(e).padStart(2, "0");
 	return `${`${t.getFullYear()}-${n(t.getMonth() + 1)}-${n(t.getDate())}`} ${n(t.getHours())}:${n(t.getMinutes())}`;
 }
-function ar(e, t, n) {
-	return `${ir(e.created)} · ${it(t, e.template, e.model)} · ${n(e.count)}`;
+function Br(e, t, n) {
+	return `${zr(e.created)} · ${it(t, e.template, e.model)} · ${n(e.count)}`;
 }
-function or(e, t, n, r, i) {
+function Vr(e, t, n, r, i) {
 	return M(r, e === "device" ? t.map((e) => ({
 		value: e.id,
 		label: e.name
 	})) : e === "template" ? n.map((e) => ({
 		value: e.id,
 		label: it(r, e.id, e.name)
-	})) : rr(t).map((e) => ({
+	})) : Rr(t).map((e) => ({
 		value: e.id,
-		label: ar(e, r, i)
+		label: Br(e, r, i)
 	})), (e) => e.label);
 }
-function sr(e, t, n, r, i, a) {
-	return e === "device" ? n.find((e) => e.id === t || e.name === t)?.name ?? t : or(e, n, r, i, a).find((e) => e.value === t)?.label ?? t;
+function Hr(e, t, n, r, i, a) {
+	return e === "device" ? n.find((e) => e.id === t || e.name === t)?.name ?? t : Vr(e, n, r, i, a).find((e) => e.value === t)?.label ?? t;
 }
-function cr(e, t, n) {
+function Ur(e, t, n) {
 	return e === "device" ? n.find((e) => e.id === t || e.name === t)?.id ?? t : t;
 }
 // src/common/target-select.ts
-var lr = 500, ur = {
+var Wr = 500, Gr = {
 	device: "schTarget_device",
 	template: "schTarget_template",
 	run: "schTarget_run"
 }, q = class extends P {
 	constructor(...e) {
-		super(...e), this.kind = "device", this.values = [], this.multiple = !1, this.templates = [], this.devices = [], this.error = "";
+		super(...e), this.kind = jt, this.values = [], this.multiple = !1, this.templates = [], this.devices = [], this.error = "";
 	}
 	willUpdate(e) {
 		e.has("kind") && this.kind !== "template" && this.loadDevices(), super.willUpdate(e);
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devices(0, lr)).devices, this.error = "";
+			this.devices = (await this.api.devices(0, Wr)).devices, this.error = "";
 		} catch (e) {
 			this.error = O(e);
 		}
@@ -3381,7 +3383,7 @@ var lr = 500, ur = {
 		t.length === 1 && this.values[0] !== t[0].value && this.emit([t[0].value]);
 	}
 	options() {
-		return or(this.kind, this.devices, this.templates, this.hass?.language, (e) => this.tr("planDevices", { count: e }));
+		return Vr(this.kind, this.devices, this.templates, this.hass?.language, (e) => this.tr("planDevices", { count: e }));
 	}
 	renderSingle(e, t) {
 		let n = t === "" || e.some((e) => e.value === t);
@@ -3400,9 +3402,9 @@ var lr = 500, ur = {
     </select>`;
 	}
 	render() {
-		let e = this.options(), t = this.values.map((e) => cr(this.kind, e, this.devices));
+		let e = this.options(), t = this.values.map((e) => Ur(this.kind, e, this.devices));
 		return y`<label>
-      ${this.tr(ur[this.kind])}
+      ${this.tr(Gr[this.kind])}
       ${this.multiple && this.kind === "device" ? y`<tdc-multi-select
               .hass=${this.hass}
               .items=${e}
@@ -3416,7 +3418,7 @@ var lr = 500, ur = {
 };
 N([E()], q.prototype, "kind", void 0), N([E({ attribute: !1 })], q.prototype, "values", void 0), N([E({ type: Boolean })], q.prototype, "multiple", void 0), N([E({ attribute: !1 })], q.prototype, "templates", void 0), N([D()], q.prototype, "devices", void 0), N([D()], q.prototype, "error", void 0), q = N([T("tdc-target-select")], q);
 // src/removal/removal-panel.ts
-var dr = {
+var Kr = 20, qr = {
 	all: "targetAll",
 	device: "targetDevice",
 	run: "targetRun"
@@ -3466,14 +3468,14 @@ var dr = {
       </ul>
       <p>
         <small
-          >${e.devices.slice(0, 20).map((e) => e.name).join(", ")}${e.devices.length > 20 ? " …" : ""}</small
+          >${e.devices.slice(0, Kr).map((e) => e.name).join(", ")}${e.devices.length > Kr ? " …" : ""}</small
         >
       </p>
       ${e.in_use.length ? y`<p class="error">${this.tr("inUseWarning")}</p>
               <ul>
                 ${e.in_use.map((e) => y`<li>
                       ${e.device}:
-                      ${Rn(e.usage).map((e) => `${this.tr(`use_${e.kind}`)} ${e.name}`).join(", ")}
+                      ${dr(e.usage).map((e) => `${this.tr(`use_${e.kind}`)} ${e.name}`).join(", ")}
                     </li>`)}
               </ul>` : ""}
       <button
@@ -3494,8 +3496,8 @@ var dr = {
 			this.target = e.target.value, this.plan = void 0;
 		}}
           >
-            ${M(this.hass?.language, Object.keys(dr), (e) => this.tr(dr[e])).map((e) => y`<option value=${e} ?selected=${this.target === e}>
-                  ${this.tr(dr[e])}
+            ${M(this.hass?.language, Object.keys(qr), (e) => this.tr(qr[e])).map((e) => y`<option value=${e} ?selected=${this.target === e}>
+                  ${this.tr(qr[e])}
                 </option>`)}
           </select>
         </label>
@@ -3523,68 +3525,69 @@ var dr = {
 };
 N([E()], J.prototype, "target", void 0), N([E()], J.prototype, "targetId", void 0), N([D()], J.prototype, "plan", void 0), N([D()], J.prototype, "busy", void 0), N([D()], J.prototype, "message", void 0), N([D()], J.prototype, "error", void 0), J = N([T("tdc-removal-panel")], J);
 // src/schedule/helpers.ts
-function fr() {
+var Jr = 60, Yr = 3, Xr = 24, Zr = 16;
+function Qr() {
 	return {
-		type: "times",
+		type: L,
 		times: "08:00, 18:30",
 		weekdays: [],
-		everyS: 60,
+		everyS: Jr,
 		start: "00:00",
 		end: "24:00",
 		at: "",
-		count: 3,
-		perDay: 24
+		count: Yr,
+		perDay: Xr
 	};
 }
-function pr(e) {
+function $r(e) {
 	return e.split(",").map((e) => e.trim()).filter(Boolean);
 }
-function mr(e) {
+function ei(e) {
 	switch (e.type) {
-		case "times": return e.weekdays.length ? {
-			type: "times",
-			times: pr(e.times),
+		case L: return e.weekdays.length ? {
+			type: L,
+			times: $r(e.times),
 			weekdays: [...e.weekdays].sort()
 		} : {
-			type: "times",
-			times: pr(e.times)
+			type: L,
+			times: $r(e.times)
 		};
-		case "interval": return {
-			type: "interval",
+		case R: return {
+			type: R,
 			every_s: e.everyS,
 			start: e.start,
 			end: e.end
 		};
-		case "once": return {
-			type: "once",
+		case Nt: return {
+			type: Nt,
 			at: e.at
 		};
-		case "random_window": return {
-			type: "random_window",
+		case Pt: return {
+			type: Pt,
 			count: e.count,
 			start: e.start,
 			end: e.end
 		};
-		case "poisson": return {
-			type: "poisson",
+		case Ft: return {
+			type: Ft,
 			per_day: e.perDay
 		};
 	}
 }
-function hr(e, t) {
+function ti(e, t) {
 	switch (e) {
 		case "all": return { all: !0 };
-		case "template": return { template: t[0] ?? "" };
-		case "device": return { device: t.length === 1 ? t[0] : t };
+		case Mt: return { template: t[0] ?? "" };
+		case jt: return { device: t.length === 1 ? t[0] : t };
 		case "run": return { run: t[0] ?? "" };
 	}
 }
-function gr(e) {
+function ni(e) {
 	return "template" in e ? {
-		kind: "template",
+		kind: Mt,
 		ids: [e.template]
 	} : "device" in e ? {
-		kind: "device",
+		kind: jt,
 		ids: typeof e.device == "string" ? [e.device] : e.device
 	} : "run" in e ? {
 		kind: "run",
@@ -3594,30 +3597,30 @@ function gr(e) {
 		ids: []
 	};
 }
-function _r(e) {
+function ri(e) {
 	switch (e.type) {
-		case "times": return e.times.join(", ");
-		case "interval": return `${e.every_s} s (${e.start}–${e.end})`;
-		case "once": return e.at.replace("T", " ");
-		case "random_window": return `${e.count}× ${e.start}–${e.end}`;
-		case "poisson": return `Ø ${e.per_day}/d`;
+		case L: return e.times.join(", ");
+		case R: return `${e.every_s} s (${e.start}–${e.end})`;
+		case Nt: return e.at.replace("T", " ");
+		case Pt: return `${e.count}× ${e.start}–${e.end}`;
+		case Ft: return `Ø ${e.per_day}/d`;
 	}
 }
-function vr(e) {
-	return e.slice(0, 16).replace("T", " ");
+function ii(e) {
+	return e.slice(0, Zr).replace("T", " ");
 }
-function yr(e) {
+function ai(e) {
 	return [...new Set(Object.values(e).flat())];
 }
-function br(e) {
+function oi(e) {
 	return {
 		kind: "all",
 		targetIds: [],
-		action: yr(e)[0] ?? "",
+		action: ai(e)[0] ?? "",
 		entity: ""
 	};
 }
-function xr(e, t, n, r) {
+function si(e, t, n, r) {
 	let i = (e) => new Set(e.map((e) => e.platform));
 	if (e === "all") return n.length ? n.map((e) => i(e.entities)) : void 0;
 	if (t.length === 0) return;
@@ -3628,61 +3631,61 @@ function xr(e, t, n, r) {
 	let a = e === "device" ? n.filter((e) => t.includes(e.id) || t.includes(e.name)) : n.filter((e) => e.run_id === t[0]);
 	return a.length ? a.map((e) => i(e.entities)) : void 0;
 }
-function Sr(e, t) {
-	let n = yr(e);
+function ci(e, t) {
+	let n = ai(e);
 	if (!t) return [];
 	let r = t.map((t) => new Set(Object.entries(e).filter(([e]) => t.has(e)).flatMap(([, e]) => e)));
 	return n.filter((e) => r.every((t) => t.has(e)));
 }
-function Cr(e, t, n, r, i, a) {
+function li(e, t, n, r, i, a) {
 	let o = t.length === 1 ? e === "template" ? r.find((e) => e.id === t[0])?.entities ?? [] : e === "device" ? n.find((e) => e.id === t[0] || e.name === t[0])?.entities ?? [] : [] : [], s = new Set(Object.entries(i).filter(([, e]) => e.includes(a)).map(([e]) => e));
 	return o.filter((e) => s.has(e.platform)).map(({ key: e, name: t }) => ({
 		key: e,
 		name: t
 	}));
 }
-function wr(e) {
+function ui(e) {
 	return {
-		target: hr(e.kind, e.targetIds),
+		target: ti(e.kind, e.targetIds),
 		entity: e.entity,
 		action: e.action
 	};
 }
-function Tr(e) {
+function di(e) {
 	let t = {
-		...fr(),
+		...Qr(),
 		type: e.type
 	};
 	switch (e.type) {
-		case "times": return {
+		case L: return {
 			...t,
 			times: e.times.join(", "),
 			weekdays: e.weekdays ?? []
 		};
-		case "interval": return {
+		case R: return {
 			...t,
 			everyS: e.every_s,
 			start: e.start,
 			end: e.end
 		};
-		case "once": return {
+		case Nt: return {
 			...t,
 			at: e.at
 		};
-		case "random_window": return {
+		case Pt: return {
 			...t,
 			count: e.count,
 			start: e.start,
 			end: e.end
 		};
-		case "poisson": return {
+		case Ft: return {
 			...t,
 			perDay: e.per_day
 		};
 	}
 }
-function Er(e) {
-	let { kind: t, ids: n } = gr(e.target);
+function fi(e) {
+	let { kind: t, ids: n } = ni(e.target);
 	return {
 		kind: t,
 		targetIds: n,
@@ -3691,12 +3694,12 @@ function Er(e) {
 	};
 }
 // src/schedule/work-picker.ts
-var Dr = [
+var pi = [
 	"all",
-	"template",
-	"device",
+	Mt,
+	jt,
 	"run"
-], Or = 500, Y = class extends P {
+], mi = 500, Y = class extends P {
 	constructor(...e) {
 		super(...e), this.actions = {}, this.templates = [], this.devices = [], this.loaded = !1, this.error = "";
 	}
@@ -3705,7 +3708,7 @@ var Dr = [
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devices(0, Or)).devices, this.loaded = !0, this.error = "";
+			this.devices = (await this.api.devices(0, mi)).devices, this.loaded = !0, this.error = "";
 		} catch (e) {
 			this.error = O(e);
 		}
@@ -3718,11 +3721,11 @@ var Dr = [
 	}
 	actionChoices() {
 		if (!this.loaded) return this.work.action ? [this.work.action] : [];
-		let e = this.hass?.language, t = xr(this.work.kind, this.work.targetIds, this.devices, this.templates);
-		return M(e, Sr(this.actions, t), (t) => A(e, t));
+		let e = this.hass?.language, t = si(this.work.kind, this.work.targetIds, this.devices, this.templates);
+		return M(e, ci(this.actions, t), (t) => A(e, t));
 	}
 	entities() {
-		let e = Cr(this.work.kind, this.work.targetIds, this.devices, this.templates, this.actions, this.work.action);
+		let e = li(this.work.kind, this.work.targetIds, this.devices, this.templates, this.actions, this.work.action);
 		return e.length > 1 ? e : [];
 	}
 	updated(e) {
@@ -3764,7 +3767,7 @@ var Dr = [
 		let e = this.hass?.language, t = this.entities();
 		return y`
       <div class="fields">
-        ${this.select(this.tr("schTarget"), Dr, this.work.kind, (e) => this.tr(`schTarget_${e}`), (e) => this.emit({
+        ${this.select(this.tr("schTarget"), pi, this.work.kind, (e) => this.tr(`schTarget_${e}`), (e) => this.emit({
 			kind: e,
 			targetIds: [],
 			entity: ""
@@ -3772,7 +3775,7 @@ var Dr = [
         ${this.work.kind === "all" ? x : y`<tdc-target-select
                 .hass=${this.hass}
                 kind=${this.work.kind}
-                ?multiple=${this.work.kind === "device"}
+                ?multiple=${this.work.kind === jt}
                 .values=${this.work.targetIds}
                 .templates=${this.templates}
                 @tdc-target-change=${(e) => this.emit({
@@ -3789,14 +3792,14 @@ var Dr = [
 };
 N([E({ attribute: !1 })], Y.prototype, "work", void 0), N([E({ attribute: !1 })], Y.prototype, "actions", void 0), N([E({ attribute: !1 })], Y.prototype, "templates", void 0), N([D()], Y.prototype, "devices", void 0), N([D()], Y.prototype, "loaded", void 0), N([D()], Y.prototype, "error", void 0), Y = N([T("tdc-work-picker")], Y);
 // src/scenario/helpers.ts
-function kr(e) {
+function hi(e) {
 	return {
 		afterS: 0,
-		work: br(e),
+		work: oi(e),
 		params: ""
 	};
 }
-function Ar(e) {
+function gi(e) {
 	if (e.trim() === "") return {};
 	try {
 		let t = JSON.parse(e);
@@ -3805,23 +3808,23 @@ function Ar(e) {
 		return;
 	}
 }
-function jr(e) {
+function _i(e) {
 	let t = [];
 	for (let n of e) {
-		let e = Ar(n.params);
+		let e = gi(n.params);
 		if (e === void 0) return;
 		t.push({
 			after_s: Math.max(0, n.afterS || 0),
-			...wr(n.work),
+			...ui(n.work),
 			params: e
 		});
 	}
 	return t;
 }
-function Mr(e) {
+function vi(e) {
 	return {
 		afterS: e.after_s,
-		work: Er(e),
+		work: fi(e),
 		params: Object.keys(e.params).length ? JSON.stringify(e.params) : ""
 	};
 }
@@ -3832,10 +3835,10 @@ var X = class extends P {
 	}
 	willUpdate(e) {
 		let t = this.info?.actions;
-		this.scenario && t && this.loadedId !== this.scenario.id ? (this.loadedId = this.scenario.id, this.name = this.scenario.name, this.steps = this.scenario.steps.map(Mr)) : !this.scenario && t && this.steps.length === 0 && (this.steps = [kr(t)]), super.willUpdate(e);
+		this.scenario && t && this.loadedId !== this.scenario.id ? (this.loadedId = this.scenario.id, this.name = this.scenario.name, this.steps = this.scenario.steps.map(vi)) : !this.scenario && t && this.steps.length === 0 && (this.steps = [hi(t)]), super.willUpdate(e);
 	}
 	reset() {
-		this.name = "", this.error = "", this.steps = [kr(this.info?.actions ?? {})];
+		this.name = "", this.error = "", this.steps = [hi(this.info?.actions ?? {})];
 	}
 	setStep(e, t) {
 		this.steps = this.steps.map((n, r) => r === e ? {
@@ -3847,8 +3850,8 @@ var X = class extends P {
 		return !!this.name.trim() && this.steps.length > 0 && this.steps.every((e) => e.work.action && (e.work.kind === "all" || e.work.targetIds.length > 0));
 	}
 	submit() {
-		let e = jr(this.steps);
-		e ? (this.error = "", this.dispatchEvent(new CustomEvent("tdc-submit", {
+		let e = _i(this.steps);
+		e ? (this.error = "", this.dispatchEvent(new CustomEvent(Gt, {
 			detail: {
 				name: this.name,
 				steps: e
@@ -3902,7 +3905,7 @@ var X = class extends P {
 			editing: !!this.scenario,
 			submit: () => this.submit(),
 			extra: y`<button
-          @click=${() => this.steps = [...this.steps, kr(this.info?.actions ?? {})]}
+          @click=${() => this.steps = [...this.steps, hi(this.info?.actions ?? {})]}
         >
           ${this.tr("scnAddStep")}
         </button>`
@@ -3913,7 +3916,7 @@ var X = class extends P {
 };
 N([E({ attribute: !1 })], X.prototype, "info", void 0), N([E({ attribute: !1 })], X.prototype, "templates", void 0), N([E({ attribute: !1 })], X.prototype, "scenario", void 0), N([E()], X.prototype, "submitLabel", void 0), N([E({ type: Boolean })], X.prototype, "busy", void 0), N([D()], X.prototype, "name", void 0), N([D()], X.prototype, "steps", void 0), N([D()], X.prototype, "error", void 0), X = N([T("tdc-scenario-form")], X);
 // src/scenario/scenario-panel.ts
-var Nr = class extends W {
+var yi = 3, bi = class extends W {
 	constructor(...e) {
 		super(...e), this.scenarios = [];
 	}
@@ -3969,7 +3972,7 @@ var Nr = class extends W {
       ></tdc-scenario-form>`);
 	}
 	renderRow(e) {
-		let t = e.steps[0], { kind: n } = t ? gr(t.target) : { kind: "all" }, r = this.hass?.language, i = this.expanded.has(e.id);
+		let t = e.steps[0], { kind: n } = t ? ni(t.target) : { kind: "all" }, r = this.hass?.language, i = this.expanded.has(e.id);
 		return y`<tr class="scenario card" @click=${() => this.toggle(e.id)}>
         ${this.nameCell(e.id, e.name)}
         <td data-label=${this.tr("scnSteps")}>
@@ -3990,7 +3993,7 @@ var Nr = class extends W {
           ${this.removeButton(() => this.api.removeScenario(e.id).then(() => void 0))}
         </td>
       </tr>
-      ${i ? this.editRow(3, e.id, y`<tdc-scenario-form
+      ${i ? this.editRow(yi, e.id, y`<tdc-scenario-form
                 .scenario=${e}
                 .hass=${this.hass}
                 ?busy=${this.busy}
@@ -4013,15 +4016,15 @@ var Nr = class extends W {
     `;
 	}
 };
-N([D()], Nr.prototype, "scenarios", void 0), N([qe("tdc-scenario-form#new")], Nr.prototype, "newForm", void 0), Nr = N([T("tdc-scenario-panel")], Nr);
+N([D()], bi.prototype, "scenarios", void 0), N([qe("tdc-scenario-form#new")], bi.prototype, "newForm", void 0), bi = N([T("tdc-scenario-panel")], bi);
 // src/schedule/schedule-form.ts
-var Pr = [
-	"times",
-	"interval",
-	"once",
-	"random_window",
-	"poisson"
-], Fr = [
+var xi = [
+	L,
+	R,
+	Nt,
+	Pt,
+	Ft
+], Si = [
 	"weekdayMon",
 	"weekdayTue",
 	"weekdayWed",
@@ -4031,11 +4034,11 @@ var Pr = [
 	"weekdaySun"
 ], Z = class extends P {
 	constructor(...e) {
-		super(...e), this.templates = [], this.scenarios = [], this.submitLabel = "", this.busy = !1, this.name = "", this.scenarioId = "", this.work = br({}), this.seed = "", this.form = fr(), this.started = !1;
+		super(...e), this.templates = [], this.scenarios = [], this.submitLabel = "", this.busy = !1, this.name = "", this.scenarioId = "", this.work = oi({}), this.seed = "", this.form = Qr(), this.started = !1;
 	}
 	willUpdate(e) {
 		let t = this.info?.actions;
-		this.schedule && t && this.loadedId !== this.schedule.id ? (this.loadedId = this.schedule.id, this.name = this.schedule.name, this.scenarioId = this.schedule.scenario ?? "", this.work = Er(this.schedule), this.form = Tr(this.schedule.trigger)) : !this.schedule && t && !this.started && (this.started = !0, this.work = br(t)), super.willUpdate(e);
+		this.schedule && t && this.loadedId !== this.schedule.id ? (this.loadedId = this.schedule.id, this.name = this.schedule.name, this.scenarioId = this.schedule.scenario ?? "", this.work = fi(this.schedule), this.form = di(this.schedule.trigger)) : !this.schedule && t && !this.started && (this.started = !0, this.work = oi(t)), super.willUpdate(e);
 	}
 	reset() {
 		this.name = "";
@@ -4050,11 +4053,11 @@ var Pr = [
 		};
 	}
 	request() {
-		let e = this.scenarioId ? { scenario: this.scenarioId } : wr(this.work), t = this.schedule && "action" in e && e.action === this.schedule.action;
+		let e = this.scenarioId ? { scenario: this.scenarioId } : ui(this.work), t = this.schedule && "action" in e && e.action === this.schedule.action;
 		return {
 			name: this.name,
 			...e,
-			trigger: mr(this.form),
+			trigger: ei(this.form),
 			seed: this.seed || void 0,
 			...this.schedule ? {
 				params: t ? this.schedule.params : {},
@@ -4066,7 +4069,7 @@ var Pr = [
 		return !!this.work.action && (this.work.kind === "all" || this.work.targetIds.length > 0);
 	}
 	submit() {
-		this.dispatchEvent(new CustomEvent("tdc-submit", {
+		this.dispatchEvent(new CustomEvent(Gt, {
 			detail: this.request(),
 			bubbles: !0,
 			composed: !0
@@ -4088,7 +4091,7 @@ var Pr = [
 	}
 	renderWeekdays() {
 		return y`<div class="row wide">
-      ${Fr.map((e, t) => y`<label style="flex-direction: row; align-items: center">
+      ${Si.map((e, t) => y`<label style="flex-direction: row; align-items: center">
             <input
               type="checkbox"
               style="width: auto; min-height: 0"
@@ -4100,13 +4103,13 @@ var Pr = [
 	}
 	renderTriggerFields() {
 		switch (this.form.type) {
-			case "times": return y`${this.field(this.tr("schTimes"), "times")} ${this.renderWeekdays()}`;
-			case "interval": return y`${this.field(this.tr("schEveryS"), "everyS", "number")}
+			case L: return y`${this.field(this.tr("schTimes"), L)} ${this.renderWeekdays()}`;
+			case R: return y`${this.field(this.tr("schEveryS"), "everyS", "number")}
         ${this.field(this.tr("schFrom"), "start")} ${this.field(this.tr("schTo"), "end")}`;
-			case "once": return this.field(this.tr("schAt"), "at", "datetime-local");
-			case "random_window": return y`${this.field(this.tr("schCount"), "count", "number")}
+			case Nt: return this.field(this.tr("schAt"), "at", "datetime-local");
+			case Pt: return y`${this.field(this.tr("schCount"), "count", "number")}
         ${this.field(this.tr("schFrom"), "start")} ${this.field(this.tr("schTo"), "end")}`;
-			case "poisson": return this.field(this.tr("schPerDay"), "perDay", "number");
+			case Ft: return this.field(this.tr("schPerDay"), "perDay", "number");
 		}
 	}
 	render() {
@@ -4115,7 +4118,7 @@ var Pr = [
         ${this.textField(this.tr("schName"), this.name, (e) => this.name = e)}
       </div>
       <div class="fields">
-        ${this.select(this.tr("schTrigger"), Pr, this.form.type, (e) => this.tr(`schTrigger_${e}`), (e) => this.setForm({ type: e }))}
+        ${this.select(this.tr("schTrigger"), xi, this.form.type, (e) => this.tr(`schTrigger_${e}`), (e) => this.setForm({ type: e }))}
         ${this.select(this.tr("schRuns"), ["", ...this.scenarios.map((e) => e.id)], this.scenarioId, (e) => e ? this.tr("schScenario", { id: this.scenarioName(e) }) : this.tr("schRunsAction"), (e) => this.scenarioId = e)}
       </div>
       ${this.scenarioId ? x : y`<tdc-work-picker
@@ -4144,7 +4147,7 @@ var Pr = [
 };
 N([E({ attribute: !1 })], Z.prototype, "info", void 0), N([E({ attribute: !1 })], Z.prototype, "templates", void 0), N([E({ attribute: !1 })], Z.prototype, "scenarios", void 0), N([E({ attribute: !1 })], Z.prototype, "schedule", void 0), N([E()], Z.prototype, "submitLabel", void 0), N([E({ type: Boolean })], Z.prototype, "busy", void 0), N([D()], Z.prototype, "name", void 0), N([D()], Z.prototype, "scenarioId", void 0), N([D()], Z.prototype, "work", void 0), N([D()], Z.prototype, "seed", void 0), N([D()], Z.prototype, "form", void 0), Z = N([T("tdc-schedule-form")], Z);
 // src/schedule/schedule-panel.ts
-var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
+var Ci = 6, wi = 24, Ti = 50, Ei = 500, Q = class extends W {
 	constructor(...e) {
 		super(...e), this.schedules = [], this.runs = [], this.scenarios = [], this.devices = [], this.previewOpen = !1;
 	}
@@ -4179,9 +4182,9 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
 			let e;
 			[this.schedules, this.runs, this.scenarios, e] = await Promise.all([
 				this.api.schedules(),
-				this.api.schedulePreview(Ir),
+				this.api.schedulePreview(wi),
 				this.api.scenarios(),
-				this.api.devices(0, Rr)
+				this.api.devices(0, Ei)
 			]), this.devices = e.devices, this.error = "";
 		} catch (e) {
 			this.error = O(e);
@@ -4208,7 +4211,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
 	}
 	targetText(e, t) {
 		let n = this.tr(`schTarget_${e}`);
-		return e === "all" ? n : `${n}: ${t.map((t) => sr(e, t, this.devices, this.templates, this.hass?.language, (e) => this.tr("planDevices", { count: e }))).join(", ")}`;
+		return e === "all" ? n : `${n}: ${t.map((t) => Hr(e, t, this.devices, this.templates, this.hass?.language, (e) => this.tr("planDevices", { count: e }))).join(", ")}`;
 	}
 	renderNew() {
 		return this.newPopup(this.tr("schNew"), y`<tdc-schedule-form
@@ -4223,7 +4226,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
       ></tdc-schedule-form>`);
 	}
 	renderRow(e) {
-		let { kind: t, ids: n } = gr(e.target), r = this.hass?.language, i = this.expanded.has(e.id);
+		let { kind: t, ids: n } = ni(e.target), r = this.hass?.language, i = this.expanded.has(e.id);
 		return y`<tr class="schedule card" @click=${() => this.toggle(e.id)}>
         ${this.nameCell(e.id, e.name)}
         <td data-label=${this.tr("schTarget")}>
@@ -4234,7 +4237,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
         </td>
         <td data-label=${this.tr("schTrigger")}>
           ${this.tr(`schTrigger_${e.trigger.type}`)}<br /><small
-            >${_r(e.trigger)}</small
+            >${ri(e.trigger)}</small
           >
         </td>
         <td data-label=${this.tr("schEnabled")}>
@@ -4252,7 +4255,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
           ${this.removeButton(() => this.api.removeSchedule(e.id))}
         </td>
       </tr>
-      ${i ? this.editRow(6, e.id, y`<tdc-schedule-form
+      ${i ? this.editRow(Ci, e.id, y`<tdc-schedule-form
                 .hass=${this.hass}
                 .info=${this.info}
                 .templates=${this.templates}
@@ -4284,13 +4287,13 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
           <th>${this.tr("schWhen")}</th>
           <th>${this.tr("schName")}</th>
         </tr>
-        ${this.runs.slice(0, Lr).map((e) => y`<tr>
-              <td>${vr(e.when)}</td>
+        ${this.runs.slice(0, Ti).map((e) => y`<tr>
+              <td>${ii(e.when)}</td>
               <td>${e.name}</td>
             </tr>`)}
       </table>
-      ${this.runs.length > Lr ? y`<p>
-              <small>${this.tr("schMoreRuns", { count: this.runs.length - Lr })}</small>
+      ${this.runs.length > Ti ? y`<p>
+              <small>${this.tr("schMoreRuns", { count: this.runs.length - Ti })}</small>
             </p>` : x}`;
 	}
 	render() {
@@ -4302,7 +4305,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
         @toggle=${(e) => this.previewOpen = e.target.open}
       >
         <summary>
-          ${this.tr("schPreview", { hours: Ir })} · ${this.actionCount()}
+          ${this.tr("schPreview", { hours: wi })} · ${this.actionCount()}
         </summary>
         ${this.renderPreview()}
       </details>
@@ -4316,7 +4319,7 @@ N([D()], Q.prototype, "schedules", void 0), N([D()], Q.prototype, "runs", void 0
 // src/panel.ts
 var $ = class extends P {
 	constructor(...e) {
-		super(...e), this.narrow = !1, this.tab = "devices", this.removeTarget = "all", this.removeId = "", this.lapse = 1, this.mqtt = !1;
+		super(...e), this.narrow = !1, this.tab = Ut, this.removeTarget = "all", this.removeId = "", this.lapse = 1, this.mqtt = !1;
 	}
 	static {
 		this.styles = [P.styles, o`
@@ -4370,7 +4373,7 @@ var $ = class extends P {
 		} catch {
 			this.lapse = 1;
 		}
-		!this.mqtt && this.tab === "groups" && (this.tab = "devices");
+		!this.mqtt && this.tab === "groups" && (this.tab = Ut);
 	}
 	startRemoval(e) {
 		this.removeTarget = e.detail.target, this.removeId = e.detail.id, this.tab = "remove";
@@ -4393,10 +4396,10 @@ var $ = class extends P {
         ${this.lapse > 1 ? y`<span class="badge">${this.tr("badgeLapse", { factor: this.lapse })}</span>` : ""}
       </header>
       <nav>
-        ${this.renderTab("devices", this.tr("tabDevices"))}
+        ${this.renderTab(Ut, this.tr("tabDevices"))}
         ${this.renderTab("schedules", this.tr("tabSchedules"))}
         ${this.renderTab("scenarios", this.tr("tabScenarios"))}
-        ${this.mqtt ? this.renderTab("groups", this.tr("tabGroups")) : ""}
+        ${this.mqtt ? this.renderTab(Wt, this.tr("tabGroups")) : ""}
         ${this.renderTab("history", this.tr("tabHistory"))}
         ${this.renderTab("remove", this.tr("tabRemove"))}
       </nav>

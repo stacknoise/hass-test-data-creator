@@ -1,3 +1,6 @@
+// Rounds to one decimal.
+const ROUNDING = 10;
+
 /** Parse a comma separated list of area names. */
 export function parseAreas(text: string): string[] {
   return text
@@ -8,5 +11,5 @@ export function parseAreas(text: string): string[] {
 
 /** Return the estimated state changes per second for `sensors` sensors at `tick` seconds. */
 export function stateRate(sensors: number, tick: number): number {
-  return Math.round((sensors / Math.max(1, tick)) * 10) / 10;
+  return Math.round((sensors / Math.max(1, tick)) * ROUNDING) / ROUNDING;
 }
