@@ -11,6 +11,7 @@ from ..engine.behaviours import Live
 from ..model.models import DeviceDef
 from ..store.store import TdcStore
 from .actions import ActionFactory
+from .schema import device_references
 
 
 class ActionRunner:
@@ -41,7 +42,8 @@ class ActionRunner:
         if "all" in target:
             return devices
         if "device" in target:
-            return [d for d in devices if target["device"] in (d.id, d.name)]
+            wanted = device_references(target["device"])
+            return [d for d in devices if d.id in wanted or d.name in wanted]
         if "template" in target:
             return [d for d in devices if d.template == target["template"]]
         return [d for d in devices if d.run_id == target.get("run")]
@@ -54,7 +56,7 @@ class ActionRunner:
         params: dict[str, Any],
         label: str,
     ) -> None:
-        """Run `action` on entity `key` of every device; a failure is logged and the rest goes on."""
+        """Run `action` on entity `key` (all that fit if empty) of every device; a failure is logged."""
         for device in devices:
             try:
                 await self.async_run(device.id, key, action, params)
@@ -73,10 +75,29 @@ class ActionRunner:
     async def async_run(
         self, reference: str, key: str, action: str, params: dict[str, Any] | None = None
     ) -> None:
-        """Run `action` on entity `key` of the device `reference` (id or name)."""
+        """Run `action` on entity `key` of the device `reference` (id or name).
+
+        An empty `key` means every entity of the device that can do the action; TDC-SCH-001 is
+        raised if there is none.
+        """
         device_id = self.find_device_id(reference)
-        behaviour = self._live.get((device_id, key))
-        if behaviour is None:
-            raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
-        await self._actions.create(behaviour.platform, action)(behaviour, params or {})
-        self._audit.record(self._audit_factory.action_fired(reference, key, action))
+        for entity in self._keys(device_id, key, action):
+            behaviour = self._live.get((device_id, entity))
+            if behaviour is None:
+                raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+            await self._actions.create(behaviour.platform, action)(behaviour, params or {})
+            self._audit.record(self._audit_factory.action_fired(reference, entity, action))
+
+    def _keys(self, device_id: str, key: str, action: str) -> list[str]:
+        """Return the keys of the entities that an action runs on: the one named, or all that fit."""
+        if key:
+            return [key]
+        device = self._store.device(device_id)
+        keys = [
+            item.key
+            for item in (device.entities if device else [])
+            if self._actions.supports(item.platform, action)
+        ]
+        if not keys:
+            raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
+        return keys

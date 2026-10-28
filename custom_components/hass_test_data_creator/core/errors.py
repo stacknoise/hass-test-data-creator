@@ -99,6 +99,9 @@ class ErrorCode(StrEnum):
     REM_FAILED = "TDC-REM-001"
     """A step of a removal failed; the removal can be run again."""
 
+    REM_IN_USE = "TDC-REM-002"
+    """A device that a schedule, scenario or group names cannot be removed until it is not used."""
+
     WS_INVALID_REQUEST = "TDC-WS-001"
     """The request does not match the schema of the command."""
 

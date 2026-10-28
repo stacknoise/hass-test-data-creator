@@ -11,6 +11,7 @@ from homeassistant.helpers import device_registry as dr
 from ..areas.assigner import AreaAssigner
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
+from ..core.errors import ErrorCode, RemovalError
 from ..history.manager import HistoryManager
 from ..outputs.adapter import OutputAdapterFactory
 from ..scenarios.manager import ScenarioManager
@@ -55,9 +56,12 @@ class RemovalRunner:
     async def async_run(self, plan: RemovalPlan) -> dict[str, Any]:
         """Execute `plan` and return what was removed (concept 10.3).
 
-        A missing MQTT connection or recorder stops the removal before anything is gone; the
-        retained topics are deleted last, when nothing publishes any more.
+        A device that is still used, a missing MQTT connection or a missing recorder stops the
+        removal before anything is gone; the retained topics are deleted last, when nothing
+        publishes any more.
         """
+        if plan.in_use:
+            raise RemovalError(ErrorCode.REM_IN_USE, usage=plan.describe_in_use())
         self._outputs.check_clearable(plan.topics)
         self._history.check_clearable(plan.statistics)
         self._schedules.forget(plan.schedules)

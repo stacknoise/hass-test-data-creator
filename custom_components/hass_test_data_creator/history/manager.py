@@ -15,6 +15,7 @@ from ..const import MAX_HISTORY_ROWS
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..devices.entity_ids import entity_id_of
 from ..model.models import DeviceDef, EntityDef
+from ..scheduler.schema import device_references
 from ..store.store import TdcStore
 from .factory import Series, SeriesFactory
 from .recorder import StatisticsClient
@@ -49,11 +50,11 @@ class HistoryManager:
         self._audit_factory = audit_factory
 
     async def async_import(
-        self, days: int, device: str | None = None, entity: str | None = None
+        self, days: int, device: str | list[str] | None = None, entity: str | None = None
     ) -> dict[str, Any]:
         """Write `days` of hourly statistics for the sensors with a state class and return counts.
 
-        `device` (id or name) and `entity` (key) narrow the sensors; the statistics of those
+        `device` (an id or name, or a list of them) and `entity` (key) narrow the sensors; the statistics of those
         hours that already exist are replaced.
         """
         self._client.check()
@@ -87,9 +88,16 @@ class HistoryManager:
             for owner, definition, entity_id in targets
         ]
 
-    def _targets(self, device: str | None, entity: str | None) -> tuple[list[Target], int]:
+    def _targets(
+        self, device: str | list[str] | None, entity: str | None
+    ) -> tuple[list[Target], int]:
         """Return the sensors to import and the number of sensors that cannot be imported."""
-        devices = [item for item in self._store.devices() if device in (None, item.id, item.name)]
+        wanted = device_references(device)
+        devices = [
+            item
+            for item in self._store.devices()
+            if device is None or wanted & {item.id, item.name}
+        ]
         if device is not None and not devices:
             raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
         registry = er.async_get(self._hass)

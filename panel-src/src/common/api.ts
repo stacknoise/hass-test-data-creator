@@ -9,6 +9,7 @@ import type {
   GroupInfo,
   HistoryResult,
   RemovalTarget,
+  SignalDef,
   ScenarioInfo,
   ScenarioStep,
   ScheduleInfo,
@@ -44,8 +45,23 @@ export class TdcApi {
   }
 
   /** Run an action on one entity of a device. */
-  fire(device: string, entity: string, action: string): Promise<Record<string, never>> {
-    return this.call('devices/fire', { device, entity, action });
+  fire(
+    device: string,
+    entity: string,
+    action: string,
+    params?: Record<string, unknown>,
+  ): Promise<Record<string, never>> {
+    return this.call('devices/fire', { device, entity, action, params });
+  }
+
+  /** Put a device into an area (created if new), or into none if `area` is null. */
+  updateDevice(device: string, area: string | null): Promise<{ id: string; area: string | null }> {
+    return this.call('devices/update', { device, area });
+  }
+
+  /** Give a sensor of a device another curve. */
+  setSignal(device: string, entity: string, signal: SignalDef): Promise<{ entity: string }> {
+    return this.call('devices/signal', { device, entity, signal });
   }
 
   /** Return what a removal of the target would delete. */
@@ -66,6 +82,11 @@ export class TdcApi {
   /** Add a schedule. */
   addSchedule(request: ScheduleRequest): Promise<ScheduleInfo> {
     return this.call('schedules/add', { ...request });
+  }
+
+  /** Change a schedule; what the request leaves out stays. */
+  updateSchedule(scheduleId: string, request: ScheduleRequest): Promise<ScheduleInfo> {
+    return this.call('schedules/update', { schedule_id: scheduleId, ...request });
   }
 
   /** Delete a schedule. */
@@ -93,6 +114,11 @@ export class TdcApi {
     return this.call('scenarios/add', { name, steps });
   }
 
+  /** Change a scenario: its name and steps are replaced. */
+  updateScenario(scenarioId: string, name: string, steps: ScenarioStep[]): Promise<ScenarioInfo> {
+    return this.call('scenarios/update', { scenario_id: scenarioId, name, steps });
+  }
+
   /** Delete a scenario. */
   removeScenario(scenarioId: string): Promise<Record<string, never>> {
     return this.call('scenarios/remove', { scenario_id: scenarioId });
@@ -113,13 +139,18 @@ export class TdcApi {
     return this.call('groups/add', { name, members });
   }
 
+  /** Rename a group and replace its members (device ids). */
+  updateGroup(groupId: string, name: string, members: string[]): Promise<GroupInfo> {
+    return this.call('groups/update', { group_id: groupId, name, members });
+  }
+
   /** Delete a group. */
   removeGroup(groupId: string): Promise<Record<string, never>> {
     return this.call('groups/remove', { group_id: groupId });
   }
 
   /** Write hourly statistics for the past days; `device` (id or name) and `entity` (key) narrow it. */
-  importHistory(days: number, device?: string, entity?: string): Promise<HistoryResult> {
+  importHistory(days: number, device?: string | string[], entity?: string): Promise<HistoryResult> {
     return this.call('history/import', { days, device, entity });
   }
 

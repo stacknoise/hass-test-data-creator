@@ -18,7 +18,7 @@ from .behaviours import (
     Scheduler,
     SensorBehaviour,
 )
-from .signal_factory import SignalFactory
+from .signal_factory import Signal, SignalFactory
 
 _SIMPLE: dict[str, type[Behaviour]] = {
     "binary_sensor": BinarySensorBehaviour,
@@ -47,11 +47,15 @@ class BehaviourFactory:
         self._signals = signals
         self._scheduler = scheduler
 
+    def signal_for(self, device: DeviceDef, definition: EntityDef) -> Signal:
+        """Return the signal of `definition` of `device`, with the seed and origin of the entity."""
+        seed = entity_seed(device.seed, definition.key)
+        origin = self._scheduler.at(dt_util.utc_from_timestamp(device.created_at))
+        return self._signals.create(definition.signal or {}, seed, origin)
+
     def create(self, device: DeviceDef, definition: EntityDef) -> Behaviour:
         """Return the behaviour for `definition` of `device`."""
         if definition.platform in _WITH_SIGNAL:
-            seed = entity_seed(device.seed, definition.key)
-            origin = self._scheduler.at(dt_util.utc_from_timestamp(device.created_at))
-            signal = self._signals.create(definition.signal or {}, seed, origin)
+            signal = self.signal_for(device, definition)
             return _WITH_SIGNAL[definition.platform](device.id, definition, self._scheduler, signal)
         return _SIMPLE[definition.platform](device.id, definition, self._scheduler)

@@ -1,8 +1,35 @@
-import { LitElement, css, html, type CSSResultGroup, type TemplateResult } from 'lit';
+import { LitElement, css, html, nothing, type CSSResultGroup, type TemplateResult } from 'lit';
 import { property } from 'lit/decorators.js';
 import { TdcApi } from './api';
 import { languageOf, t, type TextKey } from './i18n';
+import { sortedByLabel } from './labels';
 import type { Hass } from './types';
+
+/** Lets a component answer container queries; only for blocks that fill their row, never inline items. */
+export const containerHost = css`
+  :host {
+    container-type: inline-size;
+  }
+`;
+
+/** Return `ids` with `id` added, or removed if it is in. */
+export function toggled(ids: Set<string>, id: string): Set<string> {
+  const next = new Set(ids);
+  if (!next.delete(id)) next.add(id);
+  return next;
+}
+
+/** What the buttons under a form need. */
+export interface SubmitRowOptions {
+  enabled: boolean;
+  busy: boolean;
+  label: string;
+  /** Whether an existing object is changed; then a cancel button is shown too. */
+  editing: boolean;
+  submit: () => void;
+  /** Buttons in front of the save button. */
+  extra?: TemplateResult;
+}
 
 /** The look that buttons and form fields share. */
 const controlStyle = css`
@@ -53,6 +80,10 @@ export abstract class TdcElement extends LitElement {
       padding: 6px 8px;
       ${controlStyle}
     }
+    input,
+    select {
+      min-height: 36px;
+    }
     label {
       display: flex;
       flex-direction: column;
@@ -84,6 +115,84 @@ export abstract class TdcElement extends LitElement {
     }
     .warning {
       color: var(--warning-color);
+    }
+    @container (max-width: 760px) {
+      table.cards thead,
+      table.cards tr:has(> th) {
+        display: none;
+      }
+      table.cards,
+      table.cards tbody,
+      table.cards tr,
+      table.cards td {
+        display: block;
+      }
+      table.cards tbody {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+      table.cards tr:not(.card) {
+        grid-column: 1 / -1;
+      }
+      table.cards tr.card {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 4px 8px;
+      }
+      table.cards tr.card > td {
+        display: flex;
+        gap: 12px;
+        padding: 4px 0;
+        border-bottom: 0;
+      }
+      table.cards tr.card > td[data-label]::before {
+        content: attr(data-label);
+        flex: 0 0 90px;
+        color: var(--secondary-text-color);
+        font-size: 0.8em;
+        padding-top: 2px;
+      }
+      table.cards tr.card > td.name {
+        font-weight: 500;
+      }
+      table.cards tr.card > td.row {
+        flex-wrap: wrap;
+      }
+      table.cards tr.card > td.row::before {
+        flex-basis: 100%;
+      }
+    }
+    .row.form {
+      align-items: flex-start;
+    }
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px 12px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+    .end {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .fields.bottom {
+      align-items: end;
+    }
+    fieldset {
+      margin: 0 0 12px;
+      padding: 8px 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+    }
+    legend {
+      padding: 0 6px;
+      color: var(--secondary-text-color);
+    }
+    .fields > .wide {
+      grid-column: 1 / -1;
     }
     .row {
       display: flex;
@@ -118,7 +227,8 @@ export abstract class TdcElement extends LitElement {
     </label>`;
   }
 
-  /** Render a labelled select; `text` returns the label of a value. */
+  /** Render a labelled select; `text` returns the label of a value, and the options are sorted by it.
+   * With a single value there is nothing to choose, so the select is locked on it. */
   protected select(
     label: string,
     values: string[],
@@ -128,13 +238,49 @@ export abstract class TdcElement extends LitElement {
   ): TemplateResult {
     return html`<label style="flex: 1 1 180px"
       >${label}
-      <select @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}>
-        ${values.map(
+      <select
+        ?disabled=${values.length === 1}
+        @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}
+      >
+        ${sortedByLabel(this.hass?.language, values, text).map(
           (value) =>
-            html`<option value=${value} ?selected=${value === current}>${text(value)}</option>`,
+            html`<option value=${value} ?selected=${value === current || values.length === 1}>
+              ${text(value)}
+            </option>`,
         )}
       </select>
     </label>`;
+  }
+
+  /** Render a table row that spans the table and holds the details of the row above it. */
+  protected detailRow(columns: number, content: TemplateResult): TemplateResult {
+    return html`<tr>
+      <td colspan=${columns}>${content}</td>
+    </tr>`;
+  }
+
+  /** Render the buttons under a form: save and, when an object is changed, cancel. */
+  protected submitRow(options: SubmitRowOptions): TemplateResult {
+    return html`<p class="row">
+      ${options.extra ?? nothing}
+      <button
+        class="primary"
+        ?disabled=${!options.enabled || options.busy}
+        @click=${options.submit}
+      >
+        ${options.label}
+      </button>
+      ${
+        options.editing
+          ? html`<button
+              ?disabled=${options.busy}
+              @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel', { bubbles: true, composed: true }))}
+            >
+              ${this.tr('detCancel')}
+            </button>`
+          : nothing
+      }
+    </p>`;
   }
 
   /** The text `key` in the language of Home Assistant. */

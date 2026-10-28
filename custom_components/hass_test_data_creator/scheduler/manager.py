@@ -18,6 +18,7 @@ from ..scenarios.manager import ScenarioManager
 from ..store.store import TdcStore
 from .planner import PlannedRun, SchedulePlanner
 from .runner import ActionRunner
+from .schema import device_references
 from .triggers import TriggerFactory
 
 TARGET_KEYS = ("device", "template", "run", "all")
@@ -25,7 +26,7 @@ MIDNIGHT_SECOND = 5
 
 
 class ScheduleManager:
-    """Adds, removes and enables schedules and fires them with a single timer."""
+    """Adds, changes, removes and enables schedules and fires them with a single timer."""
 
     def __init__(
         self,
@@ -98,6 +99,29 @@ class ScheduleManager:
         self._replan()
         return schedule
 
+    async def async_update(self, schedule_id: str, data: dict[str, Any]) -> ScheduleDef:
+        """Replace the work, trigger and name of a schedule; a wrong request changes nothing.
+
+        The id, the creation time, the seed (unless given) and `enabled` (unless given) stay.
+        """
+        schedule = self.get(schedule_id)
+        self._triggers.create(data["trigger"])
+        self._check_work(data)
+        schedule.name = data["name"]
+        schedule.target = data.get("target", {})
+        schedule.entity = data.get("entity", "")
+        schedule.action = data.get("action", "")
+        schedule.scenario = data.get("scenario")
+        schedule.params = data.get("params", {})
+        schedule.trigger = data["trigger"]
+        schedule.seed = data.get("seed", schedule.seed)
+        schedule.enabled = data.get("enabled", schedule.enabled)
+        self._store.put_schedule(schedule)
+        await self._store.async_save()
+        self._replan()
+        self._audit.record(self._audit_factory.schedule_changed(schedule.name))
+        return schedule
+
     async def async_remove(self, schedule_id: str) -> None:
         """Delete a schedule."""
         self.get(schedule_id)
@@ -129,20 +153,23 @@ class ScheduleManager:
         ]
 
     def _check_work(self, data: dict[str, Any]) -> None:
-        """Raise unless `data` names an existing scenario or a target with a known action."""
+        """Raise unless `data` names an existing scenario or a target with a known action.
+
+        The entity is optional: without one the action runs on every entity that can do it.
+        """
         if data.get("scenario") is not None:
             self._scenarios.get(data["scenario"])
-        elif not all(key in data for key in ("target", "entity", "action")):
+        elif not all(key in data for key in ("target", "action")):
             raise ScheduleError(ErrorCode.SCH_INVALID_PARAMS)
         elif not any(data["action"] in names for names in self._runner.actions().values()):
             raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
     def ids_targeting(self, device: DeviceDef) -> list[str]:
-        """Return the ids of the schedules that target exactly this device."""
+        """Return the ids of the schedules that name this device, alone or in a list."""
         return [
             item.id
             for item in self._store.schedules()
-            if item.target.get("device") in (device.id, device.name)
+            if device_references(item.target.get("device")) & {device.id, device.name}
         ]
 
     def forget(self, schedule_ids: list[str]) -> None:

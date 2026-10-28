@@ -3,19 +3,22 @@ import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
+import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
 import type { CreateRequest, EntityDef, Info, SignalDef, TemplateInfo } from '../common/types';
 import { editableSensors, withSignal } from '../signals/editor-helpers';
 import '../signals/curve-editor';
 import '../signals/signal-preview';
-import { parseAreas, stateRate } from './helpers';
+import '../common/multi-select';
+import { knownAreas } from '../devices/helpers';
+import { stateRate } from './helpers';
 
 const CUSTOM = 'custom';
-const OUTPUT_LABELS: Record<string, TextKey> = {
-  native: 'outputNative',
-  mqtt: 'outputMqtt',
-  z2m: 'outputZ2m',
-};
 const RATE_WARNING = 50;
+const MODES = ['even', 'random'] as const;
+const MODE_LABELS: Record<(typeof MODES)[number], TextKey> = {
+  even: 'modeEven',
+  random: 'modeRandom',
+};
 const SAMPLE_ENTITIES = JSON.stringify(
   [
     {
@@ -38,7 +41,7 @@ export class CreationWizard extends TdcElement {
   @state() private template = '';
   @state() private count = 10;
   @state() private pattern = '{template} {nn}';
-  @state() private areas = '';
+  @state() private areas: string[] = [];
   @state() private mode: 'even' | 'random' = 'even';
   @state() private seed = '';
   @state() private output = 'native';
@@ -86,7 +89,7 @@ export class CreationWizard extends TdcElement {
         <select
           @change=${(e: Event) => (this.editIndex = Number((e.target as HTMLSelectElement).value))}
         >
-          ${sensors.map(
+          ${sortedByLabel(this.hass?.language, sensors, (s) => s.name).map(
             (s) =>
               html`<option value=${s.index} ?selected=${s.index === current.index}>
                 ${s.name}
@@ -111,7 +114,7 @@ export class CreationWizard extends TdcElement {
       template: this.template,
       count: this.count,
       name_pattern: this.pattern,
-      areas: parseAreas(this.areas),
+      areas: this.areas,
       area_mode: this.mode,
       output: this.output,
       ...(this.seed ? { seed: this.seed } : {}),
@@ -122,6 +125,7 @@ export class CreationWizard extends TdcElement {
     try {
       const run = await this.api.create(request);
       this.message = this.tr('created', { count: run.devices });
+      this.dispatchEvent(new CustomEvent('tdc-created'));
     } catch (err) {
       this.error = describeError(err);
     }
@@ -139,21 +143,30 @@ export class CreationWizard extends TdcElement {
     </p>`;
   }
 
+  /** Return the templates and the custom device as `{id, label}`, sorted by label. */
+  private templateOptions(): { id: string; label: string }[] {
+    const lang = this.hass?.language;
+    const options = [
+      ...this.templates.map((t) => ({ id: t.id, label: templateLabel(lang, t.id, t.name) })),
+      { id: CUSTOM, label: this.tr('customTemplate') },
+    ];
+    return sortedByLabel(lang, options, (option) => option.label);
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     const sensor = this.entities().find((e) => e.platform === 'sensor' && e.signal);
     return html`
-      <div class="row">
+      <div class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr('template')}
           <select @change=${(e: Event) => (this.template = (e.target as HTMLSelectElement).value)}>
-            ${this.templates.map(
-              (t) =>
-                html`<option value=${t.id} ?selected=${t.id === this.template}>${t.name}</option>`,
+            ${this.templateOptions().map(
+              (option) =>
+                html`<option value=${option.id} ?selected=${option.id === this.template}>
+                  ${option.label}
+                </option>`,
             )}
-            <option value=${CUSTOM} ?selected=${this.template === CUSTOM}>
-              ${this.tr('customTemplate')}
-            </option>
           </select>
         </label>
         <label style="flex: 0 0 100px"
@@ -166,7 +179,7 @@ export class CreationWizard extends TdcElement {
           />
         </label>
       </div>
-      <p class="row">
+      <p class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr('namePattern')}
           <input
@@ -177,10 +190,13 @@ export class CreationWizard extends TdcElement {
         </label>
         <label style="flex: 1 1 220px"
           >${this.tr('areas')}
-          <input
-            .value=${this.areas}
-            @input=${(e: Event) => (this.areas = (e.target as HTMLInputElement).value)}
-          />
+          <tdc-multi-select
+            .hass=${this.hass}
+            .items=${knownAreas(this.hass?.areas, []).map((name) => ({ value: name, label: name }))}
+            allowAdd
+            .selected=${this.areas}
+            @tdc-select-change=${(e: CustomEvent<string[]>) => (this.areas = e.detail)}
+          ></tdc-multi-select>
           <small>${this.tr('areasHint')}</small>
         </label>
         <label style="flex: 0 0 160px"
@@ -189,8 +205,12 @@ export class CreationWizard extends TdcElement {
             @change=${(e: Event) =>
               (this.mode = (e.target as HTMLSelectElement).value as 'even' | 'random')}
           >
-            <option value="even">${this.tr('modeEven')}</option>
-            <option value="random">${this.tr('modeRandom')}</option>
+            ${sortedByLabel(this.hass?.language, MODES, (mode) => this.tr(MODE_LABELS[mode])).map(
+              (mode) =>
+                html`<option value=${mode} ?selected=${mode === this.mode}>
+                  ${this.tr(MODE_LABELS[mode])}
+                </option>`,
+            )}
           </select>
         </label>
         ${this.select(

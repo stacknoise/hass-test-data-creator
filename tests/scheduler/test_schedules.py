@@ -10,7 +10,11 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
 from custom_components.hass_test_data_creator.const import DOMAIN
-from custom_components.hass_test_data_creator.core.errors import ErrorCode, ScheduleError
+from custom_components.hass_test_data_creator.core.errors import (
+    ErrorCode,
+    RemovalError,
+    ScheduleError,
+)
 from custom_components.hass_test_data_creator.core.runtime import get_data
 
 from ..conftest import create_devices, state_of
@@ -120,21 +124,40 @@ async def test_random_times_are_reproducible_with_the_same_seed(
     assert len(manager.preview(12)) == 4
 
 
-async def test_removing_devices_removes_the_schedules_aimed_at_them(
+async def test_a_device_that_a_schedule_names_cannot_be_removed(
     hass: HomeAssistant, noon: FrozenDateTimeFactory, entry: MockConfigEntry
 ) -> None:
     await create_devices(hass, count=2)
-    first = await add_schedule(hass, target={"device": "Plug 01"})
-    other = await add_schedule(hass, target={"template": "plug_metering"})
+    named = await add_schedule(hass, name="Named", target={"device": "Plug 01"})
+    indirect = await add_schedule(hass, name="By template", target={"template": "plug_metering"})
     data = get_data(hass)
     device = next(item for item in data.store.devices() if item.name == "Plug 01")
 
     plan = data.removal_planner.plan("device", device.id)
-    assert plan.schedules == [first]
-    await data.removal_runner.async_run(plan)
-    assert [item.id for item in data.schedules.all_schedules()] == [other]
+    assert [item["device"] for item in plan.in_use] == ["Plug 01"]
+    with pytest.raises(RemovalError) as error:
+        await data.removal_runner.async_run(plan)
+    assert error.value.code is ErrorCode.REM_IN_USE
+    assert len(data.store.devices()) == 2
+
+    await data.schedules.async_remove(named)
+    await data.removal_runner.async_run(data.removal_planner.plan("device", device.id))
+    assert [item.id for item in data.schedules.all_schedules()] == [indirect]
 
     await hass.services.async_call(DOMAIN, "remove_all", {}, blocking=True)
+    assert data.schedules.all_schedules() == []
+
+
+async def test_removing_a_creation_removes_the_schedules_aimed_at_it(
+    hass: HomeAssistant, noon: FrozenDateTimeFactory, entry: MockConfigEntry
+) -> None:
+    run = await create_devices(hass, count=2)
+    await add_schedule(hass, target={"run": run["run_id"]})
+    data = get_data(hass)
+
+    plan = data.removal_planner.plan("run", run["run_id"])
+    assert len(plan.schedules) == 1
+    await data.removal_runner.async_run(plan)
     assert data.schedules.all_schedules() == []
 
 

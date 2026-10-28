@@ -1,4 +1,11 @@
-import type { ScheduleTarget, TemplateInfo, Trigger, TriggerType } from '../common/types';
+import type {
+  DeviceInfo,
+  ScheduleInfo,
+  ScheduleTarget,
+  TemplateInfo,
+  Trigger,
+  TriggerType,
+} from '../common/types';
 
 /** The raw inputs of the trigger part of the schedule form. */
 export interface TriggerForm {
@@ -57,29 +64,34 @@ export function buildTrigger(form: TriggerForm): Trigger {
   }
 }
 
-/** Return the target for a kind and an id; the id is ignored for "all". */
-export function buildTarget(kind: TargetKind, id: string): ScheduleTarget {
+/** Return the target for a kind and its ids; devices may be several, the others take the first id. */
+export function buildTarget(kind: TargetKind, ids: string[]): ScheduleTarget {
   switch (kind) {
     case 'all':
       return { all: true };
     case 'template':
-      return { template: id };
+      return { template: ids[0] ?? '' };
     case 'device':
-      return { device: id };
+      return { device: ids.length === 1 ? ids[0] : ids };
     case 'run':
-      return { run: id };
+      return { run: ids[0] ?? '' };
   }
 }
 
-/** Return the kind and id of a target, for the list. */
+/** Return the kind and the ids of a target, for the list and the form. */
 export function describeTarget(target: ScheduleTarget | Record<string, never>): {
   kind: TargetKind;
-  id: string;
+  ids: string[];
 } {
-  if ('template' in target) return { kind: 'template', id: target.template };
-  if ('device' in target) return { kind: 'device', id: target.device };
-  if ('run' in target) return { kind: 'run', id: target.run };
-  return { kind: 'all', id: '' };
+  if ('template' in target) return { kind: 'template', ids: [target.template] };
+  if ('device' in target) {
+    return {
+      kind: 'device',
+      ids: typeof target.device === 'string' ? [target.device] : target.device,
+    };
+  }
+  if ('run' in target) return { kind: 'run', ids: [target.run] };
+  return { kind: 'all', ids: [] };
 }
 
 /** Return a short text for a trigger, for the list. */
@@ -103,43 +115,144 @@ export function formatWhen(iso: string): string {
   return iso.slice(0, 16).replace('T', ' ');
 }
 
-/** The inputs that say what runs where: the target, the action and the entity. */
+/** The inputs that say what runs where: the target and the action (by name).
+ * The entity is empty, so the action runs on every entity that can do it; a stored one is kept. */
 export interface WorkForm {
   kind: TargetKind;
-  targetId: string;
-  actionKey: string;
+  targetIds: string[];
+  action: string;
   entity: string;
 }
 
-/** Return the actions as `platform/action` for a select. */
-export function actionKeys(actions: Record<string, string[]>): string[] {
-  return Object.entries(actions).flatMap(([platform, names]) =>
-    names.map((name) => `${platform}/${name}`),
-  );
+/** Return the distinct action names of all platforms, in the order that they are first listed. */
+export function actionNames(actions: Record<string, string[]>): string[] {
+  return [...new Set(Object.values(actions).flat())];
 }
 
 /** Return a form for all devices with the first action. */
 export function defaultWork(actions: Record<string, string[]>): WorkForm {
-  return { kind: 'all', targetId: '', actionKey: actionKeys(actions)[0] ?? '', entity: '' };
+  return { kind: 'all', targetIds: [], action: actionNames(actions)[0] ?? '', entity: '' };
 }
 
-/** Return the keys of the template entities that the action `actionKey` works on. */
-export function entityKeysFor(templates: TemplateInfo[], actionKey: string): string[] {
-  const platform = actionKey.split('/')[0];
-  const keys = templates.flatMap((tpl) =>
-    tpl.entities.filter((e) => e.platform === platform).map((e) => e.key),
-  );
-  return [...new Set(keys)];
-}
-
-/** Return the target, entity and action that the form describes. */
-export function resolveWork(
-  work: WorkForm,
+/**
+ * Return the platforms that each chosen device has, or undefined while nothing is chosen yet.
+ *
+ * A template gives one set, a device or a device set one set per device, and "all devices" one set
+ * per device that exists; with no device at all nothing limits the actions.
+ */
+export function platformSetsOfTarget(
+  kind: TargetKind,
+  ids: string[],
+  devices: DeviceInfo[],
   templates: TemplateInfo[],
-): { target: ScheduleTarget; entity: string; action: string } {
+): Set<string>[] | undefined {
+  const of = (entities: { platform: string }[]): Set<string> =>
+    new Set(entities.map((entity) => entity.platform));
+  if (kind === 'all') return devices.length ? devices.map((d) => of(d.entities)) : undefined;
+  if (ids.length === 0) return undefined;
+  if (kind === 'template') {
+    const tpl = templates.find((t) => t.id === ids[0]);
+    return tpl ? [of(tpl.entities)] : undefined;
+  }
+  const chosen =
+    kind === 'device'
+      ? devices.filter((d) => ids.includes(d.id) || ids.includes(d.name))
+      : devices.filter((d) => d.run_id === ids[0]);
+  return chosen.length ? chosen.map((d) => of(d.entities)) : undefined;
+}
+
+/**
+ * Return the actions that every chosen device can do (the smallest common denominator).
+ *
+ * A device can do an action if one of its entities can. If the common set cannot be found (no target
+ * is chosen yet, the target is gone, or there is no device), nothing is offered.
+ */
+export function availableActions(
+  actions: Record<string, string[]>,
+  sets: Set<string>[] | undefined,
+): string[] {
+  const all = actionNames(actions);
+  if (!sets) return [];
+  const doable = (platforms: Set<string>): Set<string> =>
+    new Set(
+      Object.entries(actions)
+        .filter(([platform]) => platforms.has(platform))
+        .flatMap(([, names]) => names),
+    );
+  const per = sets.map(doable);
+  return all.filter((action) => per.every((names) => names.has(action)));
+}
+
+/** An entity that an action can run on: its key and the name it has. */
+export interface EntityChoice {
+  key: string;
+  name: string;
+}
+
+/**
+ * Return the entities of a single device or a template that can do the action.
+ *
+ * Only one device or one template has one set of entities; for several devices, a device set or all
+ * devices there is nothing to choose from, and the list is empty.
+ */
+export function entityChoices(
+  kind: TargetKind,
+  ids: string[],
+  devices: DeviceInfo[],
+  templates: TemplateInfo[],
+  actions: Record<string, string[]>,
+  action: string,
+): EntityChoice[] {
+  const entities =
+    ids.length !== 1
+      ? []
+      : kind === 'template'
+        ? (templates.find((t) => t.id === ids[0])?.entities ?? [])
+        : kind === 'device'
+          ? (devices.find((d) => d.id === ids[0] || d.name === ids[0])?.entities ?? [])
+          : [];
+  const platforms = new Set(
+    Object.entries(actions)
+      .filter(([, names]) => names.includes(action))
+      .map(([platform]) => platform),
+  );
+  return entities
+    .filter((entity) => platforms.has(entity.platform))
+    .map(({ key, name }) => ({ key, name }));
+}
+
+/** Return the target, entity and action that the form describes; an empty entity means all that fit. */
+export function resolveWork(work: WorkForm): {
+  target: ScheduleTarget;
+  entity: string;
+  action: string;
+} {
   return {
-    target: buildTarget(work.kind, work.targetId),
-    entity: work.entity || entityKeysFor(templates, work.actionKey)[0] || '',
-    action: work.actionKey.split('/')[1] ?? '',
+    target: buildTarget(work.kind, work.targetIds),
+    entity: work.entity,
+    action: work.action,
   };
+}
+
+/** Return the form values of an existing trigger; fields that its type lacks keep their defaults. */
+export function triggerFormOf(trigger: Trigger): TriggerForm {
+  const base = { ...defaultTriggerForm(), type: trigger.type };
+  switch (trigger.type) {
+    case 'times':
+      return { ...base, times: trigger.times.join(', '), weekdays: trigger.weekdays ?? [] };
+    case 'interval':
+      return { ...base, everyS: trigger.every_s, start: trigger.start, end: trigger.end };
+    case 'once':
+      return { ...base, at: trigger.at };
+    case 'random_window':
+      return { ...base, count: trigger.count, start: trigger.start, end: trigger.end };
+    case 'poisson':
+      return { ...base, perDay: trigger.per_day };
+  }
+}
+
+/** Return the work form of an existing schedule or step. */
+export function workOf(schedule: Pick<ScheduleInfo, 'target' | 'entity' | 'action'>): WorkForm {
+  const { kind, ids } = describeTarget(schedule.target);
+  return { kind, targetIds: ids, action: schedule.action, entity: schedule.entity };
 }

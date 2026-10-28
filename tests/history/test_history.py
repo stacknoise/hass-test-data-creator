@@ -261,3 +261,15 @@ async def test_the_panel_command_imports_and_reports_errors(
     reply = await client.receive_json()
     assert not reply["success"]
     assert reply["error"]["code"] == ErrorCode.SCH_TARGET_NOT_FOUND
+
+
+async def test_import_takes_a_list_of_devices(hass: HomeAssistant, entry: MockConfigEntry) -> None:
+    await create_devices(hass, count=3)
+    third = get_data(hass).store.devices()[2]
+
+    result = await _import(hass, days=1, device=["Plug 01", third.id], entity="power")
+
+    assert result == {"series": 2, "rows": 48, "skipped": 0}
+    stored = get_data(hass).store.statistics()
+    assert len(stored) == 2
+    assert _entity_id(hass, "Plug 02", "power") not in stored

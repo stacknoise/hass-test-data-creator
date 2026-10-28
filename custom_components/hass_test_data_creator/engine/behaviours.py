@@ -146,6 +146,13 @@ class SensorBehaviour(Behaviour):
         transform = self._fault.transform if self._fault else None
         return transform(value) if transform and not isinstance(value, str) else value
 
+    def replace_signal(self, signal: Signal) -> None:
+        """Follow another curve from now on and show its value at once, unless the sensor is frozen."""
+        self.signal = signal
+        self._last = self._scheduler.now()
+        self._fault_changed()
+        self.on_change()
+
     def _fault_changed(self) -> None:
         """Show the changed value at once, unless the sensor is frozen."""
         if not (self._fault and self._fault.frozen):
@@ -297,6 +304,11 @@ class ClimateBehaviour(Behaviour):
     def current_temperature(self, now: float) -> float | str:
         """The measured temperature at signal time `now`."""
         return self.signal.value(now)
+
+    def replace_signal(self, signal: Signal) -> None:
+        """Measure another curve from now on."""
+        self.signal = signal
+        self.on_change()
 
     def measured(self) -> float | str:
         """The measured temperature now."""

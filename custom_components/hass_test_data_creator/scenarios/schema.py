@@ -17,7 +17,7 @@ STEP_SCHEMA = vol.Schema(
             vol.Coerce(float), vol.Range(min=0, max=MAX_STEP_DELAY_SECONDS)
         ),
         vol.Required("target"): TARGET_SCHEMA,
-        vol.Required("entity"): str,
+        vol.Optional("entity", default=""): str,
         vol.Required("action"): str,
         vol.Optional("params", default=dict): dict,
     }

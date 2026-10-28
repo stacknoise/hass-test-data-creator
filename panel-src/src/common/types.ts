@@ -1,6 +1,7 @@
 /** The part of Home Assistant's `hass` object that the panel uses. */
 export interface Hass {
   language: string;
+  areas?: Record<string, { name: string }>;
   callWS<T>(message: Record<string, unknown>): Promise<T>;
 }
 
@@ -52,6 +53,7 @@ export interface Info {
   actions: Record<string, string[]>;
   tick_seconds: number;
   time_lapse: number;
+  mqtt: boolean;
   device_count: number;
 }
 
@@ -59,10 +61,12 @@ export interface Info {
 export interface EntityState {
   key: string;
   name: string;
+  signal?: SignalDef | null;
   platform: string;
   entity_id: string | null;
   state: string | null;
   unit: string | null;
+  state_class?: string | null;
   fault: string | null;
 }
 
@@ -77,6 +81,14 @@ export interface DeviceInfo {
   run_id: string;
   created_at: number;
   entities: EntityState[];
+  used_by: DeviceUsage;
+}
+
+/** The schedules, scenarios and groups that name a device. */
+export interface DeviceUsage {
+  schedules: { id: string; name: string }[];
+  scenarios: { id: string; name: string }[];
+  groups: { id: string; name: string }[];
 }
 
 /** One page of devices. */
@@ -110,6 +122,7 @@ export interface RemovalPlan {
   groups: string[];
   topics: string[];
   statistics: string[];
+  in_use: { device: string; usage: DeviceUsage }[];
 }
 
 /** What a statistics import wrote. */
@@ -131,7 +144,7 @@ export type RemovalTarget = 'all' | 'run' | 'device';
 
 /** What a schedule runs on: exactly one of the keys is set. */
 export type ScheduleTarget =
-  { device: string } | { template: string } | { run: string } | { all: true };
+  { device: string | string[] } | { template: string } | { run: string } | { all: true };
 
 /** The trigger of a schedule, as the backend validates it. */
 export type Trigger =
@@ -168,6 +181,8 @@ export interface ScheduleRequest {
   scenario?: string;
   trigger: Trigger;
   seed?: string;
+  params?: Record<string, unknown>;
+  enabled?: boolean;
 }
 
 /** One planned run of a schedule. */

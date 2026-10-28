@@ -127,6 +127,13 @@ class ActionFactory:
             return self._fault_action(kind)
         raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
+    def supports(self, platform: str, action: str) -> bool:
+        """Whether entities of `platform` can do `action`, a plain action or a fault."""
+        if (platform, action) in _ACTIONS:
+            return True
+        kind = action.removeprefix(ACTION_PREFIX)
+        return action.startswith(ACTION_PREFIX) and platform in self._faults.platforms(kind)
+
     def names(self) -> dict[str, list[str]]:
         """Return the action names per platform."""
         result: dict[str, list[str]] = {}

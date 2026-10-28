@@ -12,7 +12,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.hass_test_data_creator.const import DOMAIN
-from custom_components.hass_test_data_creator.core.errors import ErrorCode, OutputError
+from custom_components.hass_test_data_creator.core.errors import (
+    ErrorCode,
+    OutputError,
+    RemovalError,
+)
 from custom_components.hass_test_data_creator.core.runtime import get_data
 
 from ..conftest import create_devices
@@ -111,27 +115,30 @@ async def test_removing_a_group_deletes_its_topic_and_updates_the_bridge(
     assert len(get_data(hass).store.devices()) == 2
 
 
-async def test_removing_a_member_shrinks_the_group_and_the_last_one_ends_it(
+async def test_a_device_in_a_group_cannot_be_removed_until_the_group_is_gone(
     hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
 ) -> None:
     await lamps(hass)
-    await group(hass)
+    response = await group(hass)
     first, second = get_data(hass).store.devices()
 
+    with pytest.raises(RemovalError) as error:
+        await hass.services.async_call(
+            DOMAIN, "remove", {"target": "device", "target_id": first.id}, blocking=True
+        )
+    assert error.value.code is ErrorCode.REM_IN_USE
+    assert error.value.translation_placeholders == {"usage": "Lamp 01: Lights"}
+    assert len(get_data(hass).store.devices()) == 2
+    assert get_data(hass).store.groups()[0].members == [first.id, second.id]
+
+    await hass.services.async_call(
+        DOMAIN, "remove_group", {"group_id": response["id"]}, blocking=True
+    )
     await hass.services.async_call(
         DOMAIN, "remove", {"target": "device", "target_id": first.id}, blocking=True
     )
     await hass.async_block_till_done()
-    assert get_data(hass).store.groups()[0].members == [second.id]
-    assert len(json_of(mqtt_mock, f"{BASE}/bridge/groups")[0]["members"]) == 1
-
-    await hass.services.async_call(
-        DOMAIN, "remove", {"target": "device", "target_id": second.id}, blocking=True
-    )
-    await hass.async_block_till_done()
-    assert get_data(hass).store.groups() == []
-    assert sent(mqtt_mock)[f"{BASE}/Lights"] == ""
-    assert json_of(mqtt_mock, f"{BASE}/bridge/groups") == []
+    assert [device.name for device in get_data(hass).store.devices()] == ["Lamp 02"]
 
 
 async def test_remove_all_deletes_the_groups_too(
@@ -210,3 +217,86 @@ async def test_the_commands_list_add_and_remove(
     assert [item["id"] for item in (await client.receive_json())["result"]] == [added["id"]]
     await client.send_json_auto_id({"type": f"{DOMAIN}/groups/remove", "group_id": added["id"]})
     assert (await client.receive_json())["success"]
+
+
+async def test_changing_a_group_renames_it_and_replaces_its_members(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass, count=3)
+    response = await group(hass)
+    data = get_data(hass)
+    original = data.store.groups()[0]
+    third = data.store.devices()[2]
+
+    updated = await data.groups.async_update(response["id"], "Evening", ["Lamp 01", third.id])
+
+    assert (updated.id, updated.number, updated.name) == (original.id, original.number, "Evening")
+    assert updated.members == [data.store.devices()[0].id, third.id]
+    assert sent(mqtt_mock)[f"{BASE}/Lights"] == ""
+    assert json_of(mqtt_mock, f"{BASE}/Evening")["state"] == "OFF"
+    listed = json_of(mqtt_mock, f"{BASE}/bridge/groups")
+    assert [(item["friendly_name"], len(item["members"])) for item in listed] == [("Evening", 2)]
+    assert f"{BASE}/Lights" not in data.store.topics({response["id"]})
+
+
+async def test_changing_only_the_members_keeps_the_state_topic(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass, count=3)
+    response = await group(hass)
+    await get_data(hass).groups.async_update(response["id"], "Lights", ["Lamp 03"])
+    assert sent(mqtt_mock)[f"{BASE}/Lights"] != ""
+    assert len(get_data(hass).store.groups()[0].members) == 1
+
+
+async def test_a_wrong_change_leaves_the_group_as_it_was(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass)
+    await create_devices(hass, template="light", count=1, name_pattern="Native {nn}")
+    response = await group(hass)
+    other = await group(hass, "Other", "Lamp 01")
+    data = get_data(hass)
+
+    cases = (
+        (response["id"], "Other", ["Lamp 01"], ErrorCode.OUT_GROUP_INVALID),
+        (response["id"], "Lamp 02", ["Lamp 01"], ErrorCode.OUT_GROUP_INVALID),
+        (response["id"], "Fine", [], ErrorCode.OUT_GROUP_INVALID),
+        (response["id"], "Fine", ["Native 01"], ErrorCode.OUT_GROUP_INVALID),
+        ("missing", "Fine", ["Lamp 01"], ErrorCode.OUT_GROUP_NOT_FOUND),
+    )
+    for group_id, name, members, code in cases:
+        with pytest.raises(OutputError) as error:
+            await data.groups.async_update(group_id, name, members)
+        assert error.value.code is code
+
+    assert [(item.name, len(item.members)) for item in data.store.groups()] == [
+        ("Lights", 2),
+        ("Other", 1),
+    ]
+    assert other["id"] != response["id"]
+
+
+async def test_the_panel_command_changes_a_group(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    mqtt_mock: MagicMock,
+    entry: MockConfigEntry,
+) -> None:
+    await lamps(hass)
+    response = await group(hass)
+    client = await hass_ws_client(hass)
+
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/groups/update",
+            "group_id": response["id"],
+            "name": "Via panel",
+            "members": ["Lamp 02"],
+        }
+    )
+    reply = await client.receive_json()
+
+    assert reply["success"]
+    assert reply["result"]["name"] == "Via panel"
+    assert len(reply["result"]["members"]) == 1

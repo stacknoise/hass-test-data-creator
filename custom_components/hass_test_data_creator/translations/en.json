@@ -115,6 +115,9 @@
     "out_group_not_found": {
       "message": "The group was not found"
     },
+    "rem_in_use": {
+      "message": "A device that is still used cannot be removed. Take it out of the schedules, scenarios and groups first: {usage}"
+    },
     "rem_failed": {
       "message": "The removal was interrupted. Run it again to finish it"
     },
@@ -171,7 +174,7 @@
         },
         "label": {
           "name": "Label",
-          "description": "Name of the creation run."
+          "description": "Name of the device set."
         },
         "output": {
           "name": "Output",
@@ -207,7 +210,7 @@
     },
     "remove": {
       "name": "Remove",
-      "description": "Removes one test device or one creation run.",
+      "description": "Removes one test device or one device set.",
       "fields": {
         "target": {
           "name": "Target",
@@ -237,7 +240,7 @@
         },
         "entity": {
           "name": "Entity key",
-          "description": "Key of the entity inside the device."
+          "description": "Key of the entity inside the device. Empty: the action runs on every entity that can do it."
         },
         "action": {
           "name": "Action",
@@ -258,6 +261,10 @@
         "enabled": {
           "name": "Enabled",
           "description": "Start the schedule switched on."
+        },
+        "scenario": {
+          "name": "Scenario",
+          "description": "Id of a scenario to run instead of an action."
         }
       }
     },
@@ -295,12 +302,91 @@
         },
         "device": {
           "name": "Device",
-          "description": "Id or name of one device; all devices if empty."
+          "description": "Id or name of a device, or a list of them; all devices if empty."
         },
         "entity": {
           "name": "Entity",
           "description": "Key of one entity, for example power; all sensors if empty."
         }
+      }
+    },
+    "add_scenario": {
+      "name": "Add scenario",
+      "description": "Stores a named list of timed steps.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name of the scenario."
+        },
+        "steps": {
+          "name": "Steps",
+          "description": "List of steps with target, entity, action, optional params and after_s, the wait in seconds after the step before."
+        }
+      }
+    },
+    "remove_scenario": {
+      "name": "Remove scenario",
+      "description": "Deletes a scenario.",
+      "fields": {
+        "scenario_id": {
+          "name": "Id",
+          "description": "Id of the scenario."
+        }
+      }
+    },
+    "run_scenario": {
+      "name": "Run scenario",
+      "description": "Starts a scenario and returns the number of its steps.",
+      "fields": {
+        "scenario_id": {
+          "name": "Id",
+          "description": "Id of the scenario."
+        }
+      }
+    },
+    "add_group": {
+      "name": "Add group",
+      "description": "Groups Zigbee2MQTT devices under a name.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "Name of the group, without a slash."
+        },
+        "members": {
+          "name": "Members",
+          "description": "Names or ids of the devices; they must use the Zigbee2MQTT output."
+        }
+      }
+    },
+    "remove_group": {
+      "name": "Remove group",
+      "description": "Deletes a group.",
+      "fields": {
+        "group_id": {
+          "name": "Id",
+          "description": "Id of the group."
+        }
+      }
+    }
+  },
+  "selector": {
+    "area_mode": {
+      "options": {
+        "even": "In turn",
+        "random": "Random"
+      }
+    },
+    "output": {
+      "options": {
+        "mqtt": "MQTT discovery",
+        "native": "Home Assistant (native)",
+        "z2m": "Zigbee2MQTT"
+      }
+    },
+    "remove_target": {
+      "options": {
+        "device": "One device",
+        "run": "One device set"
       }
     }
   }

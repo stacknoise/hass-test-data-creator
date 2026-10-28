@@ -2,6 +2,7 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
+import { labelOf, sortedByLabel } from '../common/labels';
 import type { SignalDef } from '../common/types';
 import {
   fieldsFor,
@@ -71,17 +72,19 @@ export class CurveEditor extends TdcElement {
   /** Render the element. */
   override render(): TemplateResult {
     return html`
-      <div class="row">
+      <div class="row form">
         <label style="flex: 1 1 180px"
           >${this.tr('edShape')}
           <select
             @change=${(e: Event) =>
               this.emit(withShape(this.signal, (e.target as HTMLSelectElement).value))}
           >
-            ${this.shapes.map(
+            ${sortedByLabel(this.hass?.language, this.shapes, (s) =>
+              labelOf(this.hass?.language, 'shape', s),
+            ).map(
               (shape) =>
                 html`<option value=${shape} ?selected=${shape === this.signal.shape}>
-                  ${shape}
+                  ${labelOf(this.hass?.language, 'shape', shape)}
                 </option>`,
             )}
           </select>
@@ -93,7 +96,7 @@ export class CurveEditor extends TdcElement {
               ${this.numberField('decimals')}`
         }
       </div>
-      <div class="row">
+      <div class="row form">
         ${fieldsFor(this.signal.shape).map((field) => this.numberField(field))}
         ${textFieldsFor(this.signal.shape).map((field) => this.listField(field))}
       </div>

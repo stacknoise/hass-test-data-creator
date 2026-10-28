@@ -19,9 +19,9 @@ from ..const import (
     MAX_ENTITIES_PER_DEVICE,
     OUTPUT_NATIVE,
 )
-from ..core.errors import ErrorCode, GenerationError
+from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..core.ids import new_id
-from ..model.models import RunRecord
+from ..model.models import DeviceDef, RunRecord
 from ..outputs.adapter import OutputAdapterFactory
 from ..store.store import TdcStore
 from ..templates.device_factory import DeviceFactory, device_seed
@@ -67,6 +67,19 @@ class DevicesManager:
         self._areas = areas
         self._audit = audit
         self._audit_factory = audit_factory
+
+    async def async_set_area(self, device_id: str, area: str | None) -> DeviceDef:
+        """Put the device into the area `area` (created if new), or into none; return the device."""
+        device = self._store.device(device_id)
+        if device is None:
+            raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+        device.area = area or None
+        self._store.add_device(device)
+        self._areas.move(device, device.area)
+        self._areas.delete_empty_created()
+        await self._store.async_save()
+        self._audit.record(self._audit_factory.device_moved(device.name, device.area))
+        return device
 
     def _template_for(self, job: CreationJob) -> Template:
         """Return the template of `job`: a stored one, or one built from its custom entities."""

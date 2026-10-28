@@ -35,6 +35,16 @@ class AuditEntryFactory:
         """Return the entry for a finished statistics import."""
         return AuditEntry(logging.INFO, "history imported", {"series": series, "rows": rows})
 
+    def device_moved(self, device: str, area: str | None) -> AuditEntry:
+        """Return the entry for a device that was put into another area."""
+        return AuditEntry(logging.INFO, "device moved", {"device": device, "area": area or ""})
+
+    def signal_changed(self, device: str, key: str, shape: str) -> AuditEntry:
+        """Return the entry for a sensor that got another curve."""
+        return AuditEntry(
+            logging.INFO, "signal changed", {"device": device, "entity": key, "shape": shape}
+        )
+
     def action_fired(self, device: str, key: str, action: str) -> AuditEntry:
         """Return the entry for an action on one entity."""
         return AuditEntry(
@@ -45,9 +55,17 @@ class AuditEntryFactory:
         """Return the entry for a schedule that ran."""
         return AuditEntry(logging.INFO, "schedule ran", {"schedule": name, "action": action})
 
+    def schedule_changed(self, name: str) -> AuditEntry:
+        """Return the entry for a schedule that was changed."""
+        return AuditEntry(logging.INFO, "schedule changed", {"schedule": name})
+
     def scenario_started(self, name: str, steps: int) -> AuditEntry:
         """Return the entry for a scenario that was started."""
         return AuditEntry(logging.INFO, "scenario started", {"scenario": name, "steps": steps})
+
+    def scenario_changed(self, name: str) -> AuditEntry:
+        """Return the entry for a scenario that was changed."""
+        return AuditEntry(logging.INFO, "scenario changed", {"scenario": name})
 
     def mqtt_failed(self, topic: str, reason: str) -> AuditEntry:
         """Return the warning for an MQTT message that could not be sent or applied."""

@@ -26,6 +26,7 @@ create_devices:
       selector:
         select:
           options: [even, random]
+          translation_key: area_mode
     seed:
       example: tdc-0042
       selector:
@@ -37,7 +38,8 @@ create_devices:
       default: native
       selector:
         select:
-          options: [native]
+          options: [native, mqtt, z2m]
+          translation_key: output
     entities:
       example: '[{"key": "level", "platform": "sensor", "name": "Level", "signal": {"shape": "sine", "min": 0, "max": 100}}]'
       selector:
@@ -71,6 +73,7 @@ remove:
       selector:
         select:
           options: [device, run]
+          translation_key: remove_target
     target_id:
       required: true
       selector:
