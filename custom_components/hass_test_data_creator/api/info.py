@@ -35,6 +35,7 @@ async def ws_info(
     The MQTT and Zigbee2MQTT outputs are listed only while the MQTT integration is connected.
     """
     data = get_data(hass)
+    await data.csv.async_refresh()
     mqtt = data.mqtt.available()
     integration = await async_get_integration(hass, DOMAIN)
     return {
@@ -54,6 +55,7 @@ async def ws_info(
         "actions": data.action_runner.actions(),
         "tick_seconds": data.tick.seconds,
         "time_lapse": data.clock.factor,
+        "csv_files": data.csv.names(),
         "device_count": data.store.device_count(),
     }
 

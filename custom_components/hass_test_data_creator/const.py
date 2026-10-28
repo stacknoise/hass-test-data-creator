@@ -12,6 +12,7 @@ LABEL_NAME: Final = "test data"
 API_VERSION: Final = 1
 FEATURES: Final = (
     "areas",
+    "csv_replay",
     "faults",
     "mqtt_discovery",
     "native_output",

@@ -26,6 +26,7 @@ export class WorkPicker extends TdcElement {
   @property({ attribute: false }) templates: TemplateInfo[] = [];
 
   @state() private devices: DeviceInfo[] = [];
+  @state() private loaded = false;
   @state() private error = '';
 
   /** Load the devices that the target can be chosen from and that decide which actions fit. */
@@ -38,6 +39,7 @@ export class WorkPicker extends TdcElement {
   private async loadDevices(): Promise<void> {
     try {
       this.devices = (await this.api.devices(0, DEVICE_LIMIT)).devices;
+      this.loaded = true;
       this.error = '';
     } catch (err) {
       this.error = describeError(err);
@@ -49,8 +51,13 @@ export class WorkPicker extends TdcElement {
     this.dispatchEvent(new CustomEvent('tdc-work-change', { detail: { ...this.work, ...patch } }));
   }
 
-  /** Return the actions that every device of the chosen target can do, sorted by their text. */
+  /**
+   * Return the actions that every device of the chosen target can do, sorted by their text.
+   *
+   * As long as the devices are not known, the chosen action is kept as it is.
+   */
   private actionChoices(): string[] {
+    if (!this.loaded) return this.work.action ? [this.work.action] : [];
     const lang = this.hass?.language;
     const sets = platformSetsOfTarget(
       this.work.kind,
@@ -79,6 +86,7 @@ export class WorkPicker extends TdcElement {
   /** Move the action to one that fits, when the target changed under it. */
   protected override updated(changed: PropertyValues): void {
     super.updated(changed);
+    if (!this.loaded) return;
     const actions = this.actionChoices();
     if (actions.length && !actions.includes(this.work.action)) {
       this.emit({ action: actions[0], entity: '' });

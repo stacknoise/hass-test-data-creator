@@ -21,6 +21,8 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-SIG-001 | The signal shape is unknown | The signal shape is not registered in the SignalFactory. |
 | TDC-SIG-002 | The minimum must not be greater than the maximum | The minimum of a signal is greater than its maximum. |
 | TDC-SIG-003 | The states of the signal are invalid | The states, weights or durations of an enum or state machine signal are invalid. |
+| TDC-SIG-004 | The replay file {file} was not found in the csv folder | The replay file of a csv signal is not in the csv folder. |
+| TDC-SIG-005 | The replay file {file} cannot be used: {reason} | The replay file is too large or does not match the format. |
 | TDC-SCH-001 | This action is not available for this entity | The platform of the entity does not support the requested action. |
 | TDC-SCH-002 | The device or entity was not found | The device or entity of an action does not exist or is not loaded. |
 | TDC-SCH-003 | The trigger of the schedule is invalid | The trigger of a schedule does not match the schema of its type. |

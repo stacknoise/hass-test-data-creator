@@ -57,6 +57,12 @@ class ErrorCode(StrEnum):
     SIG_INVALID_STATES = "TDC-SIG-003"
     """The states, weights or durations of an enum or state machine signal are invalid."""
 
+    SIG_CSV_NOT_FOUND = "TDC-SIG-004"
+    """The replay file of a csv signal is not in the csv folder."""
+
+    SIG_CSV_INVALID = "TDC-SIG-005"
+    """The replay file is too large or does not match the format."""
+
     SCH_UNKNOWN_ACTION = "TDC-SCH-001"
     """The platform of the entity does not support the requested action."""
 

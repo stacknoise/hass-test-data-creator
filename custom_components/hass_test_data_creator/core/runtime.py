@@ -47,6 +47,7 @@ from ..platforms.factory import EntityFactory
 from ..platforms.scheduler import HassScheduler
 from ..removal.planner import RemovalPlanner
 from ..removal.runner import Forgetters, RemovalRunner
+from ..replay.library import CsvLibrary
 from ..scenarios.manager import ScenarioManager
 from ..scheduler.actions import ActionFactory
 from ..scheduler.manager import ScheduleManager
@@ -85,6 +86,7 @@ class TdcData:
     clock: Clock
     signal_editor: SignalEditor
     usage: DeviceUsage
+    csv: CsvLibrary
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -98,7 +100,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     template_factory = TemplateFactory()
     registry = TemplateRegistry(template_factory)
     mqtt = MqttClient(hass, store)
-    signals = SignalFactory()
+    csv = CsvLibrary(hass)
+    signals = SignalFactory(csv)
     clock = Clock(entry.options.get(CONF_TIME_LAPSE, DEFAULT_TIME_LAPSE))
     behaviours = BehaviourFactory(signals, HassScheduler(hass, clock))
     parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
@@ -178,6 +181,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         clock=clock,
         usage=usage,
         signal_editor=SignalEditor(store, live, behaviours, audit, audit_factory),
+        csv=csv,
         live=live,
     )
 

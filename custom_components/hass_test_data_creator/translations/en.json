@@ -91,6 +91,12 @@
     "sig_invalid_states": {
       "message": "The states of the signal are invalid"
     },
+    "sig_csv_not_found": {
+      "message": "The replay file {file} was not found in the csv folder"
+    },
+    "sig_csv_invalid": {
+      "message": "The replay file {file} cannot be used: {reason}"
+    },
     "sch_unknown_action": {
       "message": "This action is not available for this entity"
     },
