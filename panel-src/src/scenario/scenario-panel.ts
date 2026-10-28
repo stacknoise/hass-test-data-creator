@@ -124,10 +124,10 @@ export class ScenarioPanel extends TdcPollingElement {
               item.id,
               html`<tdc-scenario-form
                 .scenario=${item}
-                ?busy=${this.busy}
                 .hass=${this.hass}
-                .info=${this.info}
+                ?busy=${this.busy}
                 .templates=${this.templates}
+                .info=${this.info}
               ></tdc-scenario-form>`,
               (request: ScenarioRequest) => void this.save(item, request),
             )
