@@ -1,7 +1,7 @@
 {
   "domain": "hass_test_data_creator",
   "name": "HASS Test Data Creator",
-  "after_dependencies": ["mqtt"],
+  "after_dependencies": ["mqtt", "recorder"],
   "codeowners": ["@stacknoise"],
   "config_flow": true,
   "dependencies": ["http", "frontend", "panel_custom"],

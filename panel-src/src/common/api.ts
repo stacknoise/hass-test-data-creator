@@ -7,6 +7,7 @@ import type {
   RemovalPlan,
   RemovalResult,
   GroupInfo,
+  HistoryResult,
   RemovalTarget,
   ScenarioInfo,
   ScenarioStep,
@@ -115,6 +116,11 @@ export class TdcApi {
   /** Delete a group. */
   removeGroup(groupId: string): Promise<Record<string, never>> {
     return this.call('groups/remove', { group_id: groupId });
+  }
+
+  /** Write hourly statistics for the past days; `device` (id or name) and `entity` (key) narrow it. */
+  importHistory(days: number, device?: string, entity?: string): Promise<HistoryResult> {
+    return this.call('history/import', { days, device, entity });
   }
 
   /** Send a command with its defined fields to the backend. */

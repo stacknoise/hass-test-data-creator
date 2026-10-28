@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 
 from .devices import ws_devices_create, ws_devices_fire, ws_devices_list
 from .groups import ws_groups_add, ws_groups_list, ws_groups_remove
+from .history import ws_history_import
 from .info import ws_info, ws_templates_list
 from .removal import ws_removal_plan, ws_removal_run
 from .scenarios import (
@@ -43,6 +44,7 @@ COMMANDS = (
     ws_groups_list,
     ws_groups_add,
     ws_groups_remove,
+    ws_history_import,
 )
 
 

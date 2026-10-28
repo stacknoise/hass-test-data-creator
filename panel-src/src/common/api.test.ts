@@ -27,4 +27,21 @@ describe('TdcApi', () => {
     await new TdcApi(hass).removalPlan('all');
     expect(sent[0]).toEqual({ type: 'hass_test_data_creator/removal/plan', target: 'all' });
   });
+
+  it('sends the history import with only the fields that are set', async () => {
+    const sent: Record<string, unknown>[] = [];
+    const hass = {
+      language: 'en',
+      callWS: async (message: Record<string, unknown>) => {
+        sent.push(message);
+        return { series: 1, rows: 24, skipped: 0 };
+      },
+    } as unknown as Hass;
+    await new TdcApi(hass).importHistory(3, 'Plug 01');
+    expect(sent[0]).toEqual({
+      type: 'hass_test_data_creator/history/import',
+      days: 3,
+      device: 'Plug 01',
+    });
+  });
 });

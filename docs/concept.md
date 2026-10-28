@@ -36,7 +36,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
 | v0.2 | Scheduler (fixed, interval, random window, Poisson), scenarios, faults (without `late` and `duplicate`, which need the MQTT output), the shapes `household_load`, `pv_day`, `steps` and `discharge`, the curve editor, light/cover/thermostat templates, and the schedule and scenario tabs. The shapes `enum` and `state_machine` and the faults `late` and `duplicate` moved to v0.3 (text states, the MQTT output) |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check; the shapes `enum` and `state_machine` (washer template); the faults `late` and `duplicate`; scheduling a scenario in the panel; the Groups tab. Native Home Assistant groups are not part of it |
-| v0.4 | Statistics backfill, time lapse, CSV replay, YAML import/export, sharing of templates |
+| v0.4 | Statistics backfill (done, 5.3a), time lapse, CSV replay, YAML import/export, sharing of templates |
 
 ## 2. Architecture
 
@@ -165,6 +165,10 @@ A shape is created only by `SignalFactory` (13.2). Adding a shape is a new entry
 ### 5.3 Tick
 
 One `Tick` per config entry calls `async_dispatcher_send` every `tick_seconds` (default 10, minimum 1). Entities subscribe to it and compute their own value. An entity whose interval is longer than the tick skips ticks. The tick measures its own duration; if it takes longer than 50 % of the interval, a warning with code `TDC-GEN-005` is shown once (12).
+
+### 5.3a Statistics backfill (v0.4)
+
+`import_history` (service) and `history/import` (command) write hourly long-term statistics with `async_import_statistics` (source `recorder`, statistic id = entity id) for the `days` (1 to 365, default 7) full hours before the current one; the current hour is left to the recorder. Per hour the signal is sampled 12 times. `measurement` sensors get mean, minimum and maximum, `total` and `total_increasing` sensors get the state at the end of the hour and a running sum that starts at 0 (a drop of a `total_increasing` value counts as a reset). A `counter` gets its origin at the beginning of the period if the device is younger, so the past shows consumption. Sensors without a state class, state shapes and non-sensors are skipped and counted. Statistics of the same hours are replaced, so the import can be repeated. A request for more than `MAX_HISTORY_ROWS` (500 000) rows fails with `TDC-GEN-006`; without a recorder it fails with `TDC-CFG-003`. The imported statistic ids are stored in `created_statistics` (id to device); removal clears them in the recorder, and a missing recorder stops the removal before anything is gone.
 
 ### 5.4 Entity state
 

@@ -12,9 +12,9 @@ import voluptuous as vol
 from ..const import CONF_SEED, DEFAULT_PAGE_SIZE, DEFAULT_SEED, DOMAIN, MAX_PAGE_SIZE
 from ..core.command import tdc_command
 from ..core.runtime import get_data
+from ..devices.entity_ids import entity_id_of
 from ..devices.schema import CREATE_FIELDS, job_from_request
 from ..model.models import DeviceDef
-from ..outputs.mqtt.profiles import mqtt_unique_id
 
 
 def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any]]:
@@ -23,11 +23,7 @@ def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any
     live = get_data(hass).live
     result: list[dict[str, Any]] = []
     for definition in device.entities:
-        entity_id = registry.async_get_entity_id(
-            definition.platform, DOMAIN, f"{device.id}_{definition.key}"
-        ) or registry.async_get_entity_id(
-            definition.platform, "mqtt", mqtt_unique_id(device.id, definition.key)
-        )
+        entity_id = entity_id_of(registry, device, definition)
         state = hass.states.get(entity_id) if entity_id else None
         result.append(
             {

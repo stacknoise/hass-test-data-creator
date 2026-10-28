@@ -50,6 +50,12 @@
     "cfg_not_loaded": {
       "message": "HASS Test Data Creator is not loaded"
     },
+    "cfg_no_recorder": {
+      "message": "The recorder is not loaded, so statistics cannot be imported or removed"
+    },
+    "gen_history_limit": {
+      "message": "The import would write too many statistics rows. Choose fewer days or fewer entities"
+    },
     "tpl_not_found": {
       "message": "The template does not exist"
     },
@@ -274,6 +280,24 @@
         "schedule_id": {
           "name": "Id",
           "description": "Id of the schedule."
+        }
+      }
+    },
+    "import_history": {
+      "name": "Import history",
+      "description": "Writes hourly long-term statistics for the past days of test sensors that have a state class.",
+      "fields": {
+        "days": {
+          "name": "Days",
+          "description": "How many full days back from the last full hour, at most 365."
+        },
+        "device": {
+          "name": "Device",
+          "description": "Id or name of one device; all devices if empty."
+        },
+        "entity": {
+          "name": "Entity",
+          "description": "Key of one entity, for example power; all sensors if empty."
         }
       }
     }

@@ -10,6 +10,7 @@ from .const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from .core.runtime import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
 from .groups.schema import GROUP_FIELDS
+from .history.schema import HISTORY_FIELDS
 from .removal.planner import TARGET_ALL
 from .scenarios.schema import SCENARIO_FIELDS
 from .scheduler.schema import SCHEDULE_FIELDS
@@ -26,6 +27,7 @@ SERVICE_REMOVE_SCENARIO = "remove_scenario"
 SERVICE_RUN_SCENARIO = "run_scenario"
 SERVICE_ADD_GROUP = "add_group"
 SERVICE_REMOVE_GROUP = "remove_group"
+SERVICE_IMPORT_HISTORY = "import_history"
 SERVICES = (
     SERVICE_CREATE,
     SERVICE_FIRE,
@@ -39,6 +41,7 @@ SERVICES = (
     SERVICE_RUN_SCENARIO,
     SERVICE_ADD_GROUP,
     SERVICE_REMOVE_GROUP,
+    SERVICE_IMPORT_HISTORY,
 )
 
 
@@ -117,6 +120,13 @@ async def _remove_group(call: ServiceCall) -> None:
     await get_data(call.hass).groups.async_remove(call.data["group_id"])
 
 
+async def _import_history(call: ServiceCall) -> dict[str, object]:
+    """Write hourly statistics for the past days of the test sensors."""
+    return await get_data(call.hass).history.async_import(
+        call.data["days"], call.data.get("device"), call.data.get("entity")
+    )
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     """Register the services as administrator services."""
     definitions = (
@@ -188,6 +198,12 @@ def async_register_services(hass: HomeAssistant) -> None:
             _remove_group,
             vol.Schema({vol.Required("group_id"): str}),
             SupportsResponse.NONE,
+        ),
+        (
+            SERVICE_IMPORT_HISTORY,
+            _import_history,
+            vol.Schema(HISTORY_FIELDS),
+            SupportsResponse.OPTIONAL,
         ),
     )
     for name, handler, schema, response in definitions:

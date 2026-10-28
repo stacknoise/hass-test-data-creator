@@ -57,6 +57,11 @@ export class RemovalPanel extends TdcElement {
             : ''
         }
         ${
+          plan.statistics.length
+            ? html`<li>${this.tr('planStatistics', { count: plan.statistics.length })}</li>`
+            : ''
+        }
+        ${
           plan.scenarios.length
             ? html`<li>${this.tr('planScenarios', { count: plan.scenarios.length })}</li>`
             : ''

@@ -18,6 +18,9 @@ class ErrorCode(StrEnum):
     CFG_NOT_LOADED = "TDC-CFG-002"
     """A command arrived while the integration is not loaded."""
 
+    CFG_NO_RECORDER = "TDC-CFG-003"
+    """The recorder is not loaded, so statistics can be neither imported nor removed."""
+
     TPL_NOT_FOUND = "TDC-TPL-001"
     """The requested template does not exist."""
 
@@ -41,6 +44,9 @@ class ErrorCode(StrEnum):
 
     GEN_TICK_SLOW = "TDC-GEN-005"
     """One tick took longer than half of the tick interval."""
+
+    GEN_HISTORY_LIMIT = "TDC-GEN-006"
+    """A statistics import would write more than MAX_HISTORY_ROWS rows."""
 
     SIG_UNKNOWN_SHAPE = "TDC-SIG-001"
     """The signal shape is not registered in the SignalFactory."""
