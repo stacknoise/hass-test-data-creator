@@ -28,6 +28,7 @@ class RemovalPlan:
     devices: list[DeviceDef] = field(default_factory=list)
     orphans: list[dict[str, str]] = field(default_factory=list)
     runs: list[str] = field(default_factory=list)
+    schedules: list[str] = field(default_factory=list)
     areas: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -37,6 +38,7 @@ class RemovalPlan:
             "devices": [{"id": item.id, "name": item.name} for item in self.devices],
             "orphans": self.orphans,
             "runs": self.runs,
+            "schedules": self.schedules,
             "areas": self.areas,
         }
 
@@ -70,10 +72,23 @@ class RemovalPlanner:
             if device is None:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             plan.devices = [device]
+        plan.schedules = self._schedule_ids(plan)
         plan.areas = self._empty_areas(
             {item.id for item in plan.devices} | {item["identifier"] for item in plan.orphans}
         )
         return plan
+
+    def _schedule_ids(self, plan: RemovalPlan) -> list[str]:
+        """Return the ids of the schedules that go with the plan: all, or those aimed at it."""
+        schedules = self._store.schedules()
+        if plan.target == TARGET_ALL:
+            return [item.id for item in schedules]
+        names = {name for device in plan.devices for name in (device.id, device.name)}
+        return [
+            item.id
+            for item in schedules
+            if item.target.get("device") in names or item.target.get("run") in plan.runs
+        ]
 
     def _orphans(self, known: set[str]) -> list[dict[str, str]]:
         """Return registry devices of this entry that the store does not know (damaged store)."""

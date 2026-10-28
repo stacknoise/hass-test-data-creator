@@ -21,6 +21,7 @@ from ..const import (
 from ..core.command import tdc_command
 from ..core.runtime import get_data
 from ..engine.signals import SHAPE_NAMES
+from ..scheduler.triggers import TRIGGER_TYPES
 
 
 @tdc_command(f"{DOMAIN}/info")
@@ -41,6 +42,7 @@ async def ws_info(
         },
         "outputs": [OUTPUT_NATIVE],
         "shapes": list(SHAPE_NAMES),
+        "triggers": list(TRIGGER_TYPES),
         "platforms": list(PLATFORMS),
         "actions": data.action_runner.actions(),
         "tick_seconds": data.tick.seconds,

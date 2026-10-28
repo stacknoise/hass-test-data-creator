@@ -54,6 +54,12 @@ class ErrorCode(StrEnum):
     SCH_TARGET_NOT_FOUND = "TDC-SCH-002"
     """The device or entity of an action does not exist or is not loaded."""
 
+    SCH_INVALID_TRIGGER = "TDC-SCH-003"
+    """The trigger of a schedule does not match the schema of its type."""
+
+    SCH_NOT_FOUND = "TDC-SCH-004"
+    """The schedule does not exist."""
+
     OUT_UNSUPPORTED = "TDC-OUT-001"
     """The requested output is not available in this version."""
 

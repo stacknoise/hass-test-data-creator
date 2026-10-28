@@ -98,3 +98,38 @@ async def test_only_administrators_may_use_the_commands(
     reply = await call(client, "info")
     assert not reply["success"]
     assert reply["error"]["code"] == "unauthorized"
+
+
+async def test_schedule_commands(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    fields = {
+        "name": "Evening",
+        "target": {"template": "plug_metering"},
+        "entity": "state",
+        "action": "toggle",
+        "trigger": {"type": "random_window", "count": 3, "start": "18:00", "end": "23:00"},
+    }
+    added = await call(client, "schedules/add", **fields)
+    assert added["success"]
+    schedule_id = added["result"]["id"]
+    assert added["result"]["enabled"] is True
+
+    listed = await call(client, "schedules/list")
+    assert [item["name"] for item in listed["result"]] == ["Evening"]
+
+    off = await call(client, "schedules/enable", schedule_id=schedule_id, enabled=False)
+    assert off["result"]["enabled"] is False
+
+    preview = await call(client, "schedules/preview", hours=48)
+    assert preview["success"]
+    assert preview["result"] == []
+
+    bad = await call(client, "schedules/add", **{**fields, "trigger": {"type": "times"}})
+    assert bad["error"]["code"] == "TDC-SCH-003"
+
+    removed = await call(client, "schedules/remove", schedule_id=schedule_id)
+    assert removed["success"]
+    again = await call(client, "schedules/remove", schedule_id=schedule_id)
+    assert again["error"]["code"] == "TDC-SCH-004"

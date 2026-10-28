@@ -8,12 +8,12 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from ..const import SAVE_DELAY_SECONDS, STORE_KEY, STORE_VERSION
-from ..model.models import DeviceDef, RunRecord
+from ..model.models import DeviceDef, RunRecord, ScheduleDef
 
 
 def _empty() -> dict[str, Any]:
     """Return the content of a new store."""
-    return {"devices": {}, "runs": {}, "created_areas": [], "counters": {}}
+    return {"devices": {}, "runs": {}, "schedules": {}, "created_areas": [], "counters": {}}
 
 
 class TdcStore:
@@ -63,6 +63,23 @@ class TdcStore:
     def add_run(self, run: RunRecord) -> None:
         """Store `run`."""
         self._data["runs"][run.id] = run.to_dict()
+
+    def schedules(self) -> list[ScheduleDef]:
+        """Return all schedules in creation order."""
+        return [ScheduleDef.from_dict(item) for item in self._data["schedules"].values()]
+
+    def schedule(self, schedule_id: str) -> ScheduleDef | None:
+        """Return the schedule with `schedule_id`, or None."""
+        item = self._data["schedules"].get(schedule_id)
+        return ScheduleDef.from_dict(item) if item else None
+
+    def put_schedule(self, schedule: ScheduleDef) -> None:
+        """Store `schedule`, replacing one with the same id."""
+        self._data["schedules"][schedule.id] = schedule.to_dict()
+
+    def remove_schedule(self, schedule_id: str) -> None:
+        """Delete the schedule `schedule_id`."""
+        self._data["schedules"].pop(schedule_id, None)
 
     def remove_run(self, run_id: str) -> None:
         """Delete the run record `run_id`."""

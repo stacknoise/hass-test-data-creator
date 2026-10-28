@@ -20,7 +20,10 @@ from ..platforms.factory import EntityFactory
 from ..removal.planner import RemovalPlanner
 from ..removal.runner import RemovalRunner
 from ..scheduler.actions import ActionFactory
+from ..scheduler.manager import ScheduleManager
+from ..scheduler.planner import SchedulePlanner
 from ..scheduler.runner import ActionRunner
+from ..scheduler.triggers import TriggerFactory
 from ..store.store import TdcStore
 from ..templates.device_factory import DeviceFactory
 from ..templates.factory import TemplateFactory
@@ -39,6 +42,7 @@ class TdcData:
     tick: Tick
     manager: DevicesManager
     action_runner: ActionRunner
+    schedules: ScheduleManager
     removal_planner: RemovalPlanner
     removal_runner: RemovalRunner
     template_registry: TemplateRegistry
@@ -58,6 +62,19 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     outputs = OutputAdapterFactory(hass, entry)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
+    actions = ActionFactory()
+    action_runner = ActionRunner(store, live, actions, audit, audit_factory)
+    triggers = TriggerFactory()
+    schedules = ScheduleManager(
+        hass,
+        store,
+        triggers,
+        SchedulePlanner(triggers),
+        actions,
+        action_runner,
+        audit,
+        audit_factory,
+    )
     return TdcData(
         entry=entry,
         store=store,
@@ -74,9 +91,10 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
             audit,
             audit_factory,
         ),
-        action_runner=ActionRunner(store, live, ActionFactory(), audit, audit_factory),
+        action_runner=action_runner,
+        schedules=schedules,
         removal_planner=RemovalPlanner(hass, entry, store),
-        removal_runner=RemovalRunner(hass, store, outputs, areas, audit, audit_factory),
+        removal_runner=RemovalRunner(hass, store, outputs, areas, schedules, audit, audit_factory),
         template_registry=registry,
         entity_factory=EntityFactory(SignalFactory(), live),
         live=live,
