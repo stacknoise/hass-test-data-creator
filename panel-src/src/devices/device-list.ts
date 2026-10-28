@@ -26,7 +26,6 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
   binary_sensor: 'pulse',
   light: 'toggle',
 };
-const SWITCH_PLATFORMS = ['switch', 'light'];
 const FIRE_PREFIX = 'fire:';
 const REMOVE = 'remove';
 const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
@@ -41,40 +40,25 @@ export class DeviceList extends TdcElement {
       tr.device {
         cursor: pointer;
       }
+      td.nowrap {
+        white-space: nowrap;
+      }
+      td.nowrap.row {
+        flex-wrap: nowrap;
+      }
+      td.values {
+        width: 100%;
+      }
+      @container (max-width: 760px) {
+        table.cards tr.card > td.nowrap {
+          white-space: normal;
+        }
+        td.values {
+          width: auto;
+        }
+      }
       tr.device:hover {
         background: var(--secondary-background-color);
-      }
-      button.switch {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 2px 6px;
-        border: 0;
-        background: none;
-      }
-      .track {
-        position: relative;
-        width: 36px;
-        height: 20px;
-        border-radius: 10px;
-        background: var(--disabled-text-color);
-        transition: background 0.15s;
-      }
-      .on .track {
-        background: var(--primary-color);
-      }
-      .knob {
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: var(--card-background-color);
-        transition: transform 0.15s;
-      }
-      .on .knob {
-        transform: translateX(16px);
       }
     `,
   ];
@@ -142,31 +126,11 @@ export class DeviceList extends TdcElement {
     }
   }
 
-  /** Render the switch of a switch or light entity; it shows the state and toggles it. */
-  private renderSwitch(device: DeviceInfo, entity: EntityState): TemplateResult {
-    const on = entity.state === 'on';
-    const name = entityName(this.hass?.language, entity.key, entity.name);
-    return html`<button
-      class=${on ? 'switch on' : 'switch'}
-      role="switch"
-      aria-checked=${on ? 'true' : 'false'}
-      ?disabled=${entity.state === 'unavailable'}
-      title=${name}
-      @click=${(event: Event) => {
-        event.stopPropagation();
-        void this.fire(device, entity);
-      }}
-    >
-      <span class="track"><span class="knob"></span></span>
-      ${name}
-    </button>`;
-  }
-
-  /** Return the entries of the actions menu: the actions of entities without a state, and remove. */
+  /** Return the entries of the actions menu: the main action of every entity, and remove. */
   private menuItems(device: DeviceInfo): MenuItem[] {
     const lang = this.hass?.language;
     const items = device.entities
-      .filter((e) => e.platform in ACTION_BY_PLATFORM && !SWITCH_PLATFORMS.includes(e.platform))
+      .filter((e) => e.platform in ACTION_BY_PLATFORM)
       .map((e) => ({
         value: `${FIRE_PREFIX}${e.key}`,
         label: `${entityName(lang, e.key, e.name)} – ${actionLabel(lang, ACTION_BY_PLATFORM[e.platform])}`,
@@ -212,20 +176,18 @@ export class DeviceList extends TdcElement {
 
   /** Render the table row of one device. */
   private renderRow(device: DeviceInfo): TemplateResult {
-    const actionable = device.entities.filter((e) => e.platform in ACTION_BY_PLATFORM);
     const open = this.expanded.has(device.id);
     return html`<tr class="device card" @click=${() => this.toggle(device.id)}>
-        <td class="name">${open ? '▾' : '▸'} ${device.name}</td>
-        <td data-label=${this.tr('colTemplate')}>${this.templateName(device)}</td>
-        <td data-label=${this.tr('colArea')}>${device.area ?? '–'}</td>
-        <td data-label=${this.tr('colOutput')}>
+        <td class="name nowrap">${open ? '▾' : '▸'} ${device.name}</td>
+        <td class="nowrap" data-label=${this.tr('colTemplate')}>${this.templateName(device)}</td>
+        <td class="nowrap" data-label=${this.tr('colArea')}>${device.area ?? '–'}</td>
+        <td class="nowrap" data-label=${this.tr('colOutput')}>
           ${this.tr(OUTPUT_LABELS[device.output] ?? 'outputNative')}
         </td>
-        <td data-label=${this.tr('colValues')}><small>${this.values(device)}</small></td>
-        <td class="row" data-label=${this.tr('colActions')}>
-          ${actionable
-            .filter((e) => SWITCH_PLATFORMS.includes(e.platform))
-            .map((e) => this.renderSwitch(device, e))}
+        <td class="values" data-label=${this.tr('colValues')}>
+          <small>${this.values(device)}</small>
+        </td>
+        <td class="row nowrap" data-label=${this.tr('colActions')}>
           <tdc-menu-button
             .hass=${this.hass}
             label=${this.tr('colActions')}
