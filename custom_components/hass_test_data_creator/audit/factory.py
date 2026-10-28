@@ -63,6 +63,10 @@ class AuditEntryFactory:
         """Return the entry for a scenario that was started."""
         return AuditEntry(logging.INFO, "scenario started", {"scenario": name, "steps": steps})
 
+    def scenario_changed(self, name: str) -> AuditEntry:
+        """Return the entry for a scenario that was changed."""
+        return AuditEntry(logging.INFO, "scenario changed", {"scenario": name})
+
     def mqtt_failed(self, topic: str, reason: str) -> AuditEntry:
         """Return the warning for an MQTT message that could not be sent or applied."""
         return AuditEntry(logging.WARNING, "mqtt failed", {"topic": topic, "reason": reason})

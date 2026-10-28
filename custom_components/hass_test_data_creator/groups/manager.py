@@ -18,7 +18,7 @@ MAX_NAME_LENGTH = 64
 
 
 class GroupManager:
-    """Adds and removes groups and keeps the Zigbee2MQTT bridge up to date."""
+    """Adds, changes and removes groups and keeps the Zigbee2MQTT bridge up to date."""
 
     def __init__(self, store: TdcStore, client: MqttClient, z2m: Z2mDevices) -> None:
         """Keep the store, the MQTT client and the Zigbee2MQTT runtime."""
@@ -59,6 +59,25 @@ class GroupManager:
         await self._z2m.async_groups_changed(self._store.groups())
         return group
 
+    async def async_update(self, group_id: str, name: str, members: list[str]) -> GroupDef:
+        """Rename a group and replace its members; the retained state under the old name goes.
+
+        The id and the number stay. A wrong request raises TDC-OUT-005 and changes nothing.
+        """
+        group = self.get(group_id)
+        await self._z2m.async_check()
+        devices = [self._member(reference) for reference in members]
+        if not devices or not self._name_is_free(name, group.id):
+            raise OutputError(ErrorCode.OUT_GROUP_INVALID)
+        old_topics = self._store.topics({group.id}) if name != group.name else []
+        group.name = name
+        group.members = list(dict.fromkeys(device.id for device in devices))
+        self._store.put_group(group)
+        await self._store.async_save()
+        await self._client.async_clear(old_topics)
+        await self._z2m.async_groups_changed(self._store.groups())
+        return group
+
     async def async_remove(self, group_id: str) -> None:
         """Delete a group and its retained topics."""
         group = self.get(group_id)
@@ -84,9 +103,9 @@ class GroupManager:
                 return device
         raise OutputError(ErrorCode.OUT_GROUP_INVALID)
 
-    def _name_is_free(self, name: str) -> bool:
-        """Whether `name` can be a group name: not reserved and used by no device or group."""
+    def _name_is_free(self, name: str, own_id: str | None = None) -> bool:
+        """Whether `name` can be a group name: not reserved and used by no device or other group."""
         taken = {device.name for device in self._store.devices()}
-        taken |= {group.name for group in self._store.groups()}
+        taken |= {group.name for group in self._store.groups() if group.id != own_id}
         taken |= set(RESERVED_NAMES)
         return 0 < len(name) <= MAX_NAME_LENGTH and "/" not in name and name not in taken

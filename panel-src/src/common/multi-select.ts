@@ -136,7 +136,7 @@ export class MultiSelect extends PopoverElement {
       </button>
       ${
         this.open
-          ? html`<div class="popover" role="listbox" aria-multiselectable="true">
+          ? html`<div class="popover" popover="manual" role="listbox" aria-multiselectable="true">
               ${this.allowAdd ? this.renderAdd() : ''}
               ${options.map(
                 (item) =>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TemplateInfo } from '../common/types';
 import { actionKeys, allEntities, entityKeysFor, resolveWork } from '../schedule/helpers';
-import { buildSteps, defaultStep, parseParams } from './helpers';
+import { buildSteps, defaultStep, parseParams, stepFormOf } from './helpers';
 
 const ACTIONS = { switch: ['toggle', 'turn_on'], light: ['set_brightness'] };
 const TEMPLATES: TemplateInfo[] = [
@@ -74,5 +74,40 @@ describe('scenario helpers', () => {
       },
     ]);
     expect(buildSteps([{ ...first, params: '{ nope' }])).toBeUndefined();
+  });
+});
+
+describe('editing a step', () => {
+  it('turns a stored step back into its form and builds the same step again', () => {
+    const step = {
+      after_s: 30,
+      target: { device: ['d1', 'd2'] },
+      entity: 'light',
+      action: 'set_brightness',
+      params: { brightness: 128 },
+    };
+    const form = stepFormOf(step, ACTIONS, TEMPLATES);
+    expect(form).toEqual({
+      afterS: 30,
+      work: {
+        kind: 'device',
+        targetIds: ['d1', 'd2'],
+        actionKey: 'light/set_brightness',
+        entity: 'light',
+      },
+      params: '{"brightness":128}',
+    });
+    expect(buildSteps([form])).toEqual([step]);
+  });
+
+  it('shows no parameters as an empty text', () => {
+    const step = {
+      after_s: 0,
+      target: { all: true as const },
+      entity: 'state',
+      action: 'toggle',
+      params: {},
+    };
+    expect(stepFormOf(step, ACTIONS, TEMPLATES).params).toBe('');
   });
 });

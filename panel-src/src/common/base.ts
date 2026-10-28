@@ -155,6 +155,23 @@ export abstract class TdcElement extends LitElement {
       align-items: start;
       margin-bottom: 8px;
     }
+    .end {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .fields.bottom {
+      align-items: end;
+    }
+    fieldset {
+      margin: 0 0 12px;
+      padding: 8px 12px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+    }
+    legend {
+      padding: 0 6px;
+      color: var(--secondary-text-color);
+    }
     .fields > .wide {
       grid-column: 1 / -1;
     }

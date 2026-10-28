@@ -31,6 +31,15 @@ async def ws_scenarios_add(
     return scenario.to_dict()
 
 
+@tdc_command(f"{DOMAIN}/scenarios/update", {vol.Required("scenario_id"): str, **SCENARIO_FIELDS})
+async def ws_scenarios_update(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Change a scenario and return it."""
+    scenario = await get_data(hass).scenarios.async_update(msg["scenario_id"], msg)
+    return scenario.to_dict()
+
+
 @tdc_command(f"{DOMAIN}/scenarios/remove", {vol.Required("scenario_id"): str})
 async def ws_scenarios_remove(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]

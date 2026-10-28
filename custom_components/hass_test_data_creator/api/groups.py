@@ -31,6 +31,15 @@ async def ws_groups_add(
     return group.to_dict()
 
 
+@tdc_command(f"{DOMAIN}/groups/update", {vol.Required("group_id"): str, **GROUP_FIELDS})
+async def ws_groups_update(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Rename a group and replace its members; return it."""
+    group = await get_data(hass).groups.async_update(msg["group_id"], msg["name"], msg["members"])
+    return group.to_dict()
+
+
 @tdc_command(f"{DOMAIN}/groups/remove", {vol.Required("group_id"): str})
 async def ws_groups_remove(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]

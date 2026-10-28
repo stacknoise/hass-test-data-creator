@@ -740,6 +740,7 @@ Lists every module, class and function of the integration with signature, file a
 | `AuditEntryFactory.schedule_ran` | `def schedule_ran(self, name: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a schedule that ran. |
 | `AuditEntryFactory.schedule_changed` | `def schedule_changed(self, name: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a schedule that was changed. |
 | `AuditEntryFactory.scenario_started` | `def scenario_started(self, name: str, steps: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a scenario that was started. |
+| `AuditEntryFactory.scenario_changed` | `def scenario_changed(self, name: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a scenario that was changed. |
 | `AuditEntryFactory.mqtt_failed` | `def mqtt_failed(self, topic: str, reason: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the warning for an MQTT message that could not be sent or applied. |
 | `AuditEntryFactory.schedule_failed` | `def schedule_failed(self, name: str, device: str, code: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the warning for a run that failed on one device. |
 | `AuditEntryFactory.tick_slow` | `def tick_slow(self, duration: float, interval: float) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the warning for a tick that took too long (TDC-GEN-005). |
@@ -764,6 +765,7 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.api.groups` | `module` | `custom_components/hass_test_data_creator/api/groups.py` | Commands about groups (concept 8.2). |
 | `ws_groups_list` | `async def ws_groups_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/groups.py` | Return all groups. |
 | `ws_groups_add` | `async def ws_groups_add(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Add a group and return it. |
+| `ws_groups_update` | `async def ws_groups_update(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Rename a group and replace its members; return it. |
 | `ws_groups_remove` | `async def ws_groups_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Delete a group. |
 | `hass_test_data_creator.api.history` | `module` | `custom_components/hass_test_data_creator/api/history.py` | Commands about the statistics backfill (concept 8.2). |
 | `ws_history_import` | `async def ws_history_import(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/history.py` | Write hourly statistics for the past days and return how many were written. |
@@ -776,6 +778,7 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.api.scenarios` | `module` | `custom_components/hass_test_data_creator/api/scenarios.py` | Commands about scenarios (concept 8.2). |
 | `ws_scenarios_list` | `async def ws_scenarios_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Return all scenarios. |
 | `ws_scenarios_add` | `async def ws_scenarios_add(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Add a scenario and return it. |
+| `ws_scenarios_update` | `async def ws_scenarios_update(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Change a scenario and return it. |
 | `ws_scenarios_remove` | `async def ws_scenarios_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Delete a scenario. |
 | `ws_scenarios_run` | `async def ws_scenarios_run(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Start a scenario and return the number of its steps. |
 | `hass_test_data_creator.api.schedules` | `module` | `custom_components/hass_test_data_creator/api/schedules.py` | Commands about schedules (concept 8.2). |
@@ -809,16 +812,17 @@ Lists every module, class and function of the integration with signature, file a
 | --- | --- | --- | --- |
 | `hass_test_data_creator.groups.__init__` | `module` | `custom_components/hass_test_data_creator/groups/__init__.py` | Groups of the Zigbee2MQTT emulation (concept 7.4). |
 | `hass_test_data_creator.groups.manager` | `module` | `custom_components/hass_test_data_creator/groups/manager.py` | Groups of Zigbee2MQTT devices: a named list of members (concept 7.4). |
-| `GroupManager` | `class GroupManager` | `custom_components/hass_test_data_creator/groups/manager.py` | Adds and removes groups and keeps the Zigbee2MQTT bridge up to date. |
+| `GroupManager` | `class GroupManager` | `custom_components/hass_test_data_creator/groups/manager.py` | Adds, changes and removes groups and keeps the Zigbee2MQTT bridge up to date. |
 | `GroupManager.__init__` | `def __init__(self, store: TdcStore, client: MqttClient, z2m: Z2mDevices) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Keep the store, the MQTT client and the Zigbee2MQTT runtime. |
 | `GroupManager.all_groups` | `def all_groups(self) -> list[GroupDef]` | `custom_components/hass_test_data_creator/groups/manager.py` | Return all groups. |
 | `GroupManager.load` | `def load(self) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Hand the stored groups to the runtime, before the stored devices start. |
 | `GroupManager.get` | `def get(self, group_id: str) -> GroupDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Return the group or raise TDC-OUT-006. |
 | `GroupManager.async_add` | `async def async_add(self, name: str, members: list[str]) -> GroupDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Add a group of Zigbee2MQTT devices given by id or name and publish it. |
+| `GroupManager.async_update` | `async def async_update(self, group_id: str, name: str, members: list[str]) -> GroupDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Rename a group and replace its members; the retained state under the old name goes. |
 | `GroupManager.async_remove` | `async def async_remove(self, group_id: str) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Delete a group and its retained topics. |
 | `GroupManager.async_drop` | `async def async_drop(self, group_ids: list[str], device_ids: set[str]) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Delete groups and take removed devices out of the others; the topics are cleared later. |
 | `GroupManager._member` | `def _member(self, reference: str) -> DeviceDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Return the Zigbee2MQTT device with this id or name, or raise TDC-OUT-005. |
-| `GroupManager._name_is_free` | `def _name_is_free(self, name: str) -> bool` | `custom_components/hass_test_data_creator/groups/manager.py` | Whether `name` can be a group name: not reserved and used by no device or group. |
+| `GroupManager._name_is_free` | `def _name_is_free(self, name: str, own_id: str \| None=None) -> bool` | `custom_components/hass_test_data_creator/groups/manager.py` | Whether `name` can be a group name: not reserved and used by no device or other group. |
 | `hass_test_data_creator.groups.schema` | `module` | `custom_components/hass_test_data_creator/groups/schema.py` | Request fields of a group, shared by the services and the WebSocket commands. |
 
 ## history
@@ -861,12 +865,14 @@ Lists every module, class and function of the integration with signature, file a
 | --- | --- | --- | --- |
 | `hass_test_data_creator.scenarios.__init__` | `module` | `custom_components/hass_test_data_creator/scenarios/__init__.py` | Scenarios: named lists of timed steps (concept 6.2). |
 | `hass_test_data_creator.scenarios.manager` | `module` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Stores scenarios and runs their steps one after the other (concept 6.2). |
-| `ScenarioManager` | `class ScenarioManager` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Adds and removes scenarios and runs one: each step waits `after_s` after the step before. |
+| `ScenarioManager` | `class ScenarioManager` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Adds, changes and removes scenarios and runs one: each step waits `after_s` after the step before. |
 | `ScenarioManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, actions: ActionFactory, runner: ActionRunner, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Keep the collaborators. |
 | `ScenarioManager.async_stop` | `def async_stop(self) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Cancel the steps that still wait. |
 | `ScenarioManager.all_scenarios` | `def all_scenarios(self) -> list[ScenarioDef]` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Return all scenarios. |
 | `ScenarioManager.get` | `def get(self, scenario_id: str) -> ScenarioDef` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Return the scenario or raise SCH_SCENARIO_NOT_FOUND. |
+| `ScenarioManager._check_steps` | `def _check_steps(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Raise TDC-SCH-001 unless every step names an action that exists. |
 | `ScenarioManager.async_add` | `async def async_add(self, data: dict[str, Any]) -> ScenarioDef` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Validate and store a scenario; `data` has a name and the list of steps. |
+| `ScenarioManager.async_update` | `async def async_update(self, scenario_id: str, data: dict[str, Any]) -> ScenarioDef` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Replace the name and the steps of a scenario; a wrong request changes nothing. |
 | `ScenarioManager.async_remove` | `async def async_remove(self, scenario_id: str) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Delete a scenario. |
 | `ScenarioManager.forget` | `def forget(self, scenario_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Delete scenarios without saving; the removal saves the store afterwards. |
 | `ScenarioManager.async_run` | `async def async_run(self, scenario_id: str) -> int` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Start the scenario and return the number of steps; waiting steps run in the background. |

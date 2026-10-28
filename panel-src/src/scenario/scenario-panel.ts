@@ -1,26 +1,41 @@
-import { html, type TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { css, html, nothing, type TemplateResult } from 'lit';
+import { customElement, query, state } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
+import '../common/dialog';
 import { describeError } from '../common/api';
 import { actionLabel, labelOf } from '../common/labels';
 import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
-import type { Info, ScenarioInfo } from '../common/types';
-import { describeTarget, type WorkForm } from '../schedule/helpers';
-import '../schedule/work-picker';
-import { buildSteps, defaultStep, type StepForm } from './helpers';
+import type { ScenarioInfo } from '../common/types';
+import { describeTarget } from '../schedule/helpers';
+import './scenario-form';
+import type { ScenarioForm, ScenarioRequest } from './scenario-form';
 
-/** Lists, creates, starts and removes scenarios: named lists of timed steps. */
+/** Creates, lists, changes, starts and removes scenarios: named lists of timed steps. */
 @customElement('tdc-scenario-panel')
 export class ScenarioPanel extends TdcPollingElement {
-  static override styles = [TdcElement.styles, containerHost];
+  static override styles = [
+    TdcElement.styles,
+    containerHost,
+    css`
+      tr.scenario {
+        cursor: pointer;
+      }
+      tr.scenario:hover {
+        background: var(--secondary-background-color);
+      }
+    `,
+  ];
 
   @state() private scenarios: ScenarioInfo[] = [];
-  @state() private name = '';
-  @state() private steps: StepForm[] = [];
+  @state() private expanded = new Set<string>();
+  @state() private creating = false;
 
-  /** Start the form with one step. */
-  protected optionsLoaded(info: Info): void {
-    this.steps = [defaultStep(info.actions)];
+  @query('tdc-scenario-form#new') private newForm?: ScenarioForm;
+
+  /** Nothing to prepare: the forms start themselves when the actions are known. */
+  protected optionsLoaded(): void {
+    this.error = '';
   }
 
   /** Reload the scenarios. */
@@ -32,17 +47,20 @@ export class ScenarioPanel extends TdcPollingElement {
     }
   }
 
-  /** Create the scenario that the form describes. */
-  private async add(): Promise<void> {
-    const steps = buildSteps(this.steps);
-    if (!steps) {
-      this.error = this.tr('scnBadParams');
-      return;
-    }
+  /** Create the scenario that the new form describes and close the popup. */
+  private async add(request: ScenarioRequest): Promise<void> {
     await this.run(async () => {
-      await this.api.addScenario(this.name, steps);
-      this.name = '';
-      this.steps = [defaultStep(this.info?.actions ?? {})];
+      await this.api.addScenario(request.name, request.steps);
+      this.newForm?.reset();
+      this.creating = false;
+    });
+  }
+
+  /** Save the changes of a scenario and close its form. */
+  private async save(item: ScenarioInfo, request: ScenarioRequest): Promise<void> {
+    await this.run(async () => {
+      await this.api.updateScenario(item.id, request.name, request.steps);
+      this.toggle(item.id);
     });
   }
 
@@ -54,102 +72,103 @@ export class ScenarioPanel extends TdcPollingElement {
     });
   }
 
-  /** Change one field of a step of the form. */
-  private setStep(index: number, patch: Partial<StepForm>): void {
-    this.steps = this.steps.map((step, i) => (i === index ? { ...step, ...patch } : step));
+  /** Open or close the form of a scenario. */
+  private toggle(id: string): void {
+    const next = new Set(this.expanded);
+    if (!next.delete(id)) next.add(id);
+    this.expanded = next;
   }
 
-  /** Render the inputs of one step of the form. */
-  private renderStep(step: StepForm, index: number): TemplateResult {
-    return html`<fieldset>
-      <legend>${this.tr('scnStep', { number: index + 1 })}</legend>
-      <div class="row">
-        <label style="flex: 1 1 180px"
-          >${this.tr('scnAfter')}
-          <input
-            type="number"
-            min="0"
-            .value=${String(step.afterS)}
-            @input=${(e: Event) =>
-              this.setStep(index, { afterS: Number((e.target as HTMLInputElement).value) })}
-          />
-        </label>
-        ${this.textField(
-          this.tr('scnParams'),
-          step.params,
-          (v) => this.setStep(index, { params: v }),
-          { placeholder: this.tr('scnParamsHint') },
-        )}
-        <button
-          ?disabled=${this.steps.length < 2}
-          @click=${() => (this.steps = this.steps.filter((_, i) => i !== index))}
-        >
-          ${this.tr('remove')}
-        </button>
-      </div>
-      <tdc-work-picker
-        .hass=${this.hass}
-        .work=${step.work}
-        .actions=${this.info?.actions ?? {}}
-        .templates=${this.templates}
-        @tdc-work-change=${(e: CustomEvent<WorkForm>) => this.setStep(index, { work: e.detail })}
-      ></tdc-work-picker>
-    </fieldset>`;
-  }
-
-  /** Render the form for a new scenario. */
-  private renderForm(): TemplateResult {
+  /** Render the button that opens the popup with the form for a new scenario. */
+  private renderNew(): TemplateResult {
     return html`
-      <h3>${this.tr('scnNew')}</h3>
-      <div class="row">
-        ${this.textField(this.tr('schName'), this.name, (v) => (this.name = v))}
-      </div>
-      ${this.steps.map((step, index) => this.renderStep(step, index))}
-      <p class="row">
-        <button
-          @click=${() => (this.steps = [...this.steps, defaultStep(this.info?.actions ?? {})])}
-        >
-          ${this.tr('scnAddStep')}
-        </button>
-        <button
-          class="primary"
-          ?disabled=${this.busy || !this.name.trim() || this.steps.length === 0 || this.steps.some((s) => s.work.kind !== 'all' && s.work.targetIds.length === 0)}
-          @click=${() => void this.add()}
-        >
-          ${this.tr('scnCreate')}
+      <p>
+        <button class="primary" @click=${() => (this.creating = true)}>
+          + ${this.tr('scnNew')}
         </button>
       </p>
+      <tdc-dialog
+        .hass=${this.hass}
+        heading=${this.tr('scnNew')}
+        ?open=${this.creating}
+        @tdc-close=${() => (this.creating = false)}
+      >
+        <tdc-scenario-form
+          id="new"
+          .hass=${this.hass}
+          .info=${this.info}
+          .templates=${this.templates}
+          submitLabel=${this.tr('scnCreate')}
+          ?busy=${this.busy}
+          @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.add(e.detail)}
+        ></tdc-scenario-form>
+      </tdc-dialog>
     `;
   }
 
-  /** Render the table row of one scenario. */
+  /** Render the table row of one scenario and, if open, its form. */
   private renderRow(item: ScenarioInfo): TemplateResult {
     const first = item.steps[0];
     const { kind } = first ? describeTarget(first.target) : { kind: 'all' as const };
-    return html`<tr class="card">
-      <td class="name">${item.name}</td>
-      <td data-label=${this.tr('scnSteps')}>
-        ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
-          >${first ? `${labelOf(this.hass?.language, 'entity', first.entity)}: ${actionLabel(this.hass?.language, first.action)} · ${this.tr(`schTarget_${kind}`)}` : ''}</small
-        >
-      </td>
-      <td data-label=${this.tr('colActions')}>
-        <button class="primary" ?disabled=${this.busy} @click=${() => void this.start(item)}>
-          ${this.tr('scnRun')}
-        </button>
-        <button
-          ?disabled=${this.busy}
-          @click=${() => void this.run(() => this.api.removeScenario(item.id).then(() => undefined))}
-        >
-          ${this.tr('remove')}
-        </button>
-      </td>
-    </tr>`;
+    const lang = this.hass?.language;
+    const open = this.expanded.has(item.id);
+    return html`<tr class="scenario card" @click=${() => this.toggle(item.id)}>
+        <td class="name">${open ? '▾' : '▸'} ${item.name}</td>
+        <td data-label=${this.tr('scnSteps')}>
+          ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
+            >${
+              first
+                ? `${labelOf(lang, 'entity', first.entity)}: ${actionLabel(lang, first.action)} · ${this.tr(`schTarget_${kind}`)}`
+                : ''
+            }</small
+          >
+        </td>
+        <td data-label=${this.tr('colActions')}>
+          <button
+            class="primary"
+            ?disabled=${this.busy}
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              void this.start(item);
+            }}
+          >
+            ${this.tr('scnRun')}
+          </button>
+          <button
+            ?disabled=${this.busy}
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              void this.run(() => this.api.removeScenario(item.id).then(() => undefined));
+            }}
+          >
+            ${this.tr('remove')}
+          </button>
+        </td>
+      </tr>
+      ${
+        open
+          ? html`<tr>
+              <td colspan="3">
+                <tdc-scenario-form
+                  .hass=${this.hass}
+                  .info=${this.info}
+                  .templates=${this.templates}
+                  .scenario=${item}
+                  submitLabel=${this.tr('schSave')}
+                  ?busy=${this.busy}
+                  @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.save(item, e.detail)}
+                  @tdc-cancel=${() => this.toggle(item.id)}
+                ></tdc-scenario-form>
+              </td>
+            </tr>`
+          : nothing
+      }`;
   }
 
   /** Render the element. */
   override render(): TemplateResult {
     return html`
+      ${this.renderNew()}
       ${
         this.scenarios.length === 0
           ? html`<p>${this.tr('scnNone')}</p>`
@@ -159,10 +178,13 @@ export class ScenarioPanel extends TdcPollingElement {
                 <th>${this.tr('scnSteps')}</th>
                 <th>${this.tr('colActions')}</th>
               </tr>
-              ${this.scenarios.map((item) => this.renderRow(item))}
+              ${repeat(
+                this.scenarios,
+                (item) => item.id,
+                (item) => this.renderRow(item),
+              )}
             </table>`
       }
-      ${this.renderForm()}
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;
   }

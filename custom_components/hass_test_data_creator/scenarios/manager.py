@@ -20,7 +20,7 @@ from ..store.store import TdcStore
 
 
 class ScenarioManager:
-    """Adds and removes scenarios and runs one: each step waits `after_s` after the step before."""
+    """Adds, changes and removes scenarios and runs one: each step waits `after_s` after the step before."""
 
     def __init__(
         self,
@@ -57,11 +57,15 @@ class ScenarioManager:
             raise ScheduleError(ErrorCode.SCH_SCENARIO_NOT_FOUND)
         return scenario
 
-    async def async_add(self, data: dict[str, Any]) -> ScenarioDef:
-        """Validate and store a scenario; `data` has a name and the list of steps."""
+    def _check_steps(self, data: dict[str, Any]) -> None:
+        """Raise TDC-SCH-001 unless every step names an action that exists."""
         known = {name for names in self._actions.names().values() for name in names}
         if any(step["action"] not in known for step in data["steps"]):
             raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
+
+    async def async_add(self, data: dict[str, Any]) -> ScenarioDef:
+        """Validate and store a scenario; `data` has a name and the list of steps."""
+        self._check_steps(data)
         scenario = ScenarioDef(
             id=new_id(),
             name=data["name"],
@@ -70,6 +74,17 @@ class ScenarioManager:
         )
         self._store.put_scenario(scenario)
         await self._store.async_save()
+        return scenario
+
+    async def async_update(self, scenario_id: str, data: dict[str, Any]) -> ScenarioDef:
+        """Replace the name and the steps of a scenario; a wrong request changes nothing."""
+        scenario = self.get(scenario_id)
+        self._check_steps(data)
+        scenario.name = data["name"]
+        scenario.steps = data["steps"]
+        self._store.put_scenario(scenario)
+        await self._store.async_save()
+        self._audit.record(self._audit_factory.scenario_changed(scenario.name))
         return scenario
 
     async def async_remove(self, scenario_id: str) -> None:

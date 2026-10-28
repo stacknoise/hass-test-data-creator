@@ -210,3 +210,86 @@ async def test_the_commands_list_add_and_remove(
     assert [item["id"] for item in (await client.receive_json())["result"]] == [added["id"]]
     await client.send_json_auto_id({"type": f"{DOMAIN}/groups/remove", "group_id": added["id"]})
     assert (await client.receive_json())["success"]
+
+
+async def test_changing_a_group_renames_it_and_replaces_its_members(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass, count=3)
+    response = await group(hass)
+    data = get_data(hass)
+    original = data.store.groups()[0]
+    third = data.store.devices()[2]
+
+    updated = await data.groups.async_update(response["id"], "Evening", ["Lamp 01", third.id])
+
+    assert (updated.id, updated.number, updated.name) == (original.id, original.number, "Evening")
+    assert updated.members == [data.store.devices()[0].id, third.id]
+    assert sent(mqtt_mock)[f"{BASE}/Lights"] == ""
+    assert json_of(mqtt_mock, f"{BASE}/Evening")["state"] == "OFF"
+    listed = json_of(mqtt_mock, f"{BASE}/bridge/groups")
+    assert [(item["friendly_name"], len(item["members"])) for item in listed] == [("Evening", 2)]
+    assert f"{BASE}/Lights" not in data.store.topics({response["id"]})
+
+
+async def test_changing_only_the_members_keeps_the_state_topic(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass, count=3)
+    response = await group(hass)
+    await get_data(hass).groups.async_update(response["id"], "Lights", ["Lamp 03"])
+    assert sent(mqtt_mock)[f"{BASE}/Lights"] != ""
+    assert len(get_data(hass).store.groups()[0].members) == 1
+
+
+async def test_a_wrong_change_leaves_the_group_as_it_was(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass)
+    await create_devices(hass, template="light", count=1, name_pattern="Native {nn}")
+    response = await group(hass)
+    other = await group(hass, "Other", "Lamp 01")
+    data = get_data(hass)
+
+    cases = (
+        (response["id"], "Other", ["Lamp 01"], ErrorCode.OUT_GROUP_INVALID),
+        (response["id"], "Lamp 02", ["Lamp 01"], ErrorCode.OUT_GROUP_INVALID),
+        (response["id"], "Fine", [], ErrorCode.OUT_GROUP_INVALID),
+        (response["id"], "Fine", ["Native 01"], ErrorCode.OUT_GROUP_INVALID),
+        ("missing", "Fine", ["Lamp 01"], ErrorCode.OUT_GROUP_NOT_FOUND),
+    )
+    for group_id, name, members, code in cases:
+        with pytest.raises(OutputError) as error:
+            await data.groups.async_update(group_id, name, members)
+        assert error.value.code is code
+
+    assert [(item.name, len(item.members)) for item in data.store.groups()] == [
+        ("Lights", 2),
+        ("Other", 1),
+    ]
+    assert other["id"] != response["id"]
+
+
+async def test_the_panel_command_changes_a_group(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    mqtt_mock: MagicMock,
+    entry: MockConfigEntry,
+) -> None:
+    await lamps(hass)
+    response = await group(hass)
+    client = await hass_ws_client(hass)
+
+    await client.send_json_auto_id(
+        {
+            "type": f"{DOMAIN}/groups/update",
+            "group_id": response["id"],
+            "name": "Via panel",
+            "members": ["Lamp 02"],
+        }
+    )
+    reply = await client.receive_json()
+
+    assert reply["success"]
+    assert reply["result"]["name"] == "Via panel"
+    assert len(reply["result"]["members"]) == 1

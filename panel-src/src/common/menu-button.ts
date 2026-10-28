@@ -62,7 +62,7 @@ export class MenuButton extends PopoverElement {
       </button>
       ${
         this.open
-          ? html`<div class="popover" role="menu">
+          ? html`<div class="popover" popover="manual" role="menu">
               ${this.items.map(
                 (item) =>
                   html`<button role="menuitem" @click=${() => this.pick(item.value)}>

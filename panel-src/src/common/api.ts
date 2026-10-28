@@ -114,6 +114,11 @@ export class TdcApi {
     return this.call('scenarios/add', { name, steps });
   }
 
+  /** Change a scenario: its name and steps are replaced. */
+  updateScenario(scenarioId: string, name: string, steps: ScenarioStep[]): Promise<ScenarioInfo> {
+    return this.call('scenarios/update', { scenario_id: scenarioId, name, steps });
+  }
+
   /** Delete a scenario. */
   removeScenario(scenarioId: string): Promise<Record<string, never>> {
     return this.call('scenarios/remove', { scenario_id: scenarioId });
@@ -132,6 +137,11 @@ export class TdcApi {
   /** Add a group of Zigbee2MQTT devices given by name or id. */
   addGroup(name: string, members: string[]): Promise<GroupInfo> {
     return this.call('groups/add', { name, members });
+  }
+
+  /** Rename a group and replace its members (device ids). */
+  updateGroup(groupId: string, name: string, members: string[]): Promise<GroupInfo> {
+    return this.call('groups/update', { group_id: groupId, name, members });
   }
 
   /** Delete a group. */
