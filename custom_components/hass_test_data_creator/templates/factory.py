@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
@@ -37,6 +37,7 @@ class Template:
     model: str
     entities: list[EntityDef]
     bundled: bool = True
+    z2m: dict[str, str] = field(default_factory=dict)
 
     def to_summary(self) -> dict[str, Any]:
         """Return the description sent to the panel."""
@@ -69,7 +70,14 @@ class TemplateFactory:
             raise TemplateError(ErrorCode.TPL_INVALID, file=str(err)) from err
         entities = [self.entity(item) for item in checked["entities"]]
         self._check_unique(entities)
-        return Template(checked["id"], checked["name"], checked["model"], entities, bundled)
+        return Template(
+            checked["id"],
+            checked["name"],
+            checked["model"],
+            entities,
+            bundled,
+            dict(checked.get("z2m", {})),
+        )
 
     def custom(self, entities: list[dict[str, Any]]) -> Template:
         """Return a template for a device whose entities the user defined by hand."""

@@ -7,11 +7,12 @@ from abc import ABC, abstractmethod
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from ..const import OUTPUT_MQTT, OUTPUT_NATIVE
+from ..const import OUTPUT_MQTT, OUTPUT_NATIVE, OUTPUT_Z2M
 from ..core.errors import ErrorCode, OutputError
 from ..model.models import DeviceDef
 from .mqtt.client import MqttClient
 from .mqtt.devices import MqttDevices
+from .z2m.devices import Z2mDevices
 
 
 class OutputAdapter(ABC):
@@ -34,13 +35,19 @@ class OutputAdapterFactory:
     """Creates the adapter for the output of a device."""
 
     def __init__(
-        self, hass: HomeAssistant, entry: ConfigEntry, mqtt: MqttClient, devices: MqttDevices
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        mqtt: MqttClient,
+        devices: MqttDevices,
+        z2m_devices: Z2mDevices,
     ) -> None:
-        """Keep the instance, the config entry, the MQTT client and the MQTT devices."""
+        """Keep the instance, the config entry, the MQTT client and the runtimes of the outputs."""
         self._hass = hass
         self._entry = entry
         self._mqtt = mqtt
         self._mqtt_devices = devices
+        self._z2m_devices = z2m_devices
 
     def check_clearable(self, topics: list[str]) -> None:
         """Raise TDC-OUT-002 if there are topics to clear and MQTT is not usable."""
@@ -53,7 +60,7 @@ class OutputAdapterFactory:
             await self._mqtt.async_clear(topics)
 
     def create(self, output: str) -> OutputAdapter:
-        """Return the adapter for `output`; the Zigbee2MQTT output follows."""
+        """Return the adapter for `output`; native, MQTT discovery or Zigbee2MQTT."""
         if output == OUTPUT_NATIVE:
             from .native.adapter import NativeAdapter  # noqa: PLC0415
 
@@ -62,4 +69,8 @@ class OutputAdapterFactory:
             from .mqtt.adapter import MqttAdapter  # noqa: PLC0415
 
             return MqttAdapter(self._mqtt_devices)
+        if output == OUTPUT_Z2M:
+            from .mqtt.adapter import MqttAdapter  # noqa: PLC0415
+
+            return MqttAdapter(self._z2m_devices)
         raise OutputError(ErrorCode.OUT_UNSUPPORTED)

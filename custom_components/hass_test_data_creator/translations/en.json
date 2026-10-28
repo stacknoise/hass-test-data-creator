@@ -23,6 +23,26 @@
       "single_instance_allowed": "Already configured. Only one instance is possible"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "MQTT base topics",
+        "data": {
+          "mqtt_base_topic": "Base topic of the MQTT discovery output",
+          "z2m_base_topic": "Base topic of the Zigbee2MQTT output",
+          "z2m_confirm_default_topic": "The base topic zigbee2mqtt may be used"
+        },
+        "data_description": {
+          "z2m_confirm_default_topic": "Only confirm this if no real Zigbee2MQTT publishes under this topic"
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Use a topic without wildcards (+, #) and without a slash at the start or the end",
+      "same_topic": "The two base topics must differ",
+      "unconfirmed_default_topic": "Confirm that the base topic zigbee2mqtt may be used"
+    }
+  },
   "exceptions": {
     "cfg_not_test_env": {
       "message": "Confirm that this is a test environment"
@@ -74,6 +94,12 @@
     },
     "out_mqtt_unavailable": {
       "message": "MQTT is not set up or not connected"
+    },
+    "out_foreign_bridge": {
+      "message": "The Zigbee2MQTT base topic is used by another bridge"
+    },
+    "out_z2m_default_topic": {
+      "message": "Confirm in the options that the base topic zigbee2mqtt may be used"
     },
     "rem_failed": {
       "message": "The removal was interrupted. Run it again to finish it"

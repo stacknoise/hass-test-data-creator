@@ -1,6 +1,7 @@
 id: motion_sensor
 name: Motion sensor
 model: Motion sensor
+z2m: { vendor: TDC, model: TDC-MOTION-01, description: "Motion sensor with illuminance", power_source: "Battery", type: EndDevice }
 entities:
   - { key: motion, platform: binary_sensor, name: Motion, device_class: motion, pulse_s: 30 }
   - { key: illuminance, platform: sensor, name: Illuminance, device_class: illuminance, unit: lx, state_class: measurement,

@@ -692,6 +692,7 @@ var ze = {
 		planTopics: "{count} MQTT topics with retained messages",
 		outputNative: "Home Assistant (native)",
 		outputMqtt: "MQTT discovery",
+		outputZ2m: "Zigbee2MQTT",
 		tabScenarios: "Scenarios",
 		scnNone: "No scenarios yet. Add one below.",
 		scnNew: "New scenario",
@@ -814,6 +815,7 @@ var ze = {
 		planTopics: "{count} MQTT-Topics mit retained Nachrichten",
 		outputNative: "Home Assistant (nativ)",
 		outputMqtt: "MQTT-Discovery",
+		outputZ2m: "Zigbee2MQTT",
 		tabScenarios: "Szenarien",
 		scnNone: "Noch keine Szenarien. Lege unten eines an.",
 		scnNew: "Neues Szenario",
@@ -2019,7 +2021,11 @@ function cn(e, t) {
 	return Math.round(e / Math.max(1, t) * 10) / 10;
 }
 // src/wizard/creation-wizard.ts
-var Z = "custom", ln = 50, un = JSON.stringify([{
+var Z = "custom", ln = {
+	native: "outputNative",
+	mqtt: "outputMqtt",
+	z2m: "outputZ2m"
+}, un = 50, dn = JSON.stringify([{
 	key: "level",
 	platform: "sensor",
 	name: "Level",
@@ -2031,7 +2037,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
 	}
 }], null, 2), Q = class extends R {
 	constructor(...e) {
-		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = "", this.mode = "even", this.seed = "", this.output = "native", this.custom = un, this.editIndex = -1, this.busy = !1, this.message = "", this.error = "";
+		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = "", this.mode = "even", this.seed = "", this.output = "native", this.custom = dn, this.editIndex = -1, this.busy = !1, this.message = "", this.error = "";
 	}
 	async connectedCallback() {
 		super.connectedCallback();
@@ -2098,7 +2104,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
 			entities: e.length * this.count,
 			rate: t
 		})}</small>
-      ${t > ln ? w`<br /><span class="warning">${this.tr("rateWarning")}</span>` : ""}
+      ${t > un ? w`<br /><span class="warning">${this.tr("rateWarning")}</span>` : ""}
     </p>`;
 	}
 	render() {
@@ -2150,7 +2156,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
             <option value="random">${this.tr("modeRandom")}</option>
           </select>
         </label>
-        ${this.select(this.tr("colOutput"), this.info?.outputs ?? ["native"], this.output, (e) => this.tr(e === "mqtt" ? "outputMqtt" : "outputNative"), (e) => this.output = e)}
+        ${this.select(this.tr("colOutput"), this.info?.outputs ?? ["native"], this.output, (e) => this.tr(ln[e] ?? "outputNative"), (e) => this.output = e)}
         <label style="flex: 0 0 160px"
           >${this.tr("seed")}
           <input

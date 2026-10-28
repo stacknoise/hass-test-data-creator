@@ -59,6 +59,15 @@ TEMPLATE_SCHEMA = vol.Schema(
         vol.Required("name"): vol.All(str, vol.Length(min=1, max=64)),
         vol.Required("model"): vol.All(str, vol.Length(min=1, max=64)),
         vol.Required("entities"): vol.All([dict], vol.Length(min=1, max=MAX_ENTITIES_PER_DEVICE)),
+        vol.Optional("z2m"): vol.Schema(
+            {
+                vol.Optional("vendor"): str,
+                vol.Optional("model"): str,
+                vol.Optional("description"): str,
+                vol.Optional("power_source"): str,
+                vol.Optional("type"): vol.In(["Router", "EndDevice"]),
+            }
+        ),
     },
     extra=vol.PREVENT_EXTRA,
 )

@@ -27,7 +27,7 @@ async def test_info_and_templates(
     assert info["success"]
     assert info["result"]["api_version"] == API_VERSION
     assert info["result"]["version"] == "0.2.0"
-    assert info["result"]["outputs"] == ["native", "mqtt"]
+    assert info["result"]["outputs"] == ["native", "mqtt", "z2m"]
     assert "sine" in info["result"]["shapes"]
 
     templates = await call(client, "templates/list")
@@ -79,10 +79,8 @@ async def test_errors_carry_the_tdc_code(
     no_template = await call(client, "devices/create", template="nope", count=1)
     assert no_template["error"]["code"] == "TDC-TPL-001"
 
-    bad_output = await call(
-        client, "devices/create", template="plug_metering", count=1, output="z2m"
-    )
-    assert bad_output["error"]["code"] == "TDC-OUT-001"
+    no_mqtt = await call(client, "devices/create", template="plug_metering", count=1, output="z2m")
+    assert no_mqtt["error"]["code"] == "TDC-OUT-002"
 
     unknown_device = await call(client, "devices/fire", device="x", entity="y", action="turn_on")
     assert unknown_device["error"]["code"] == "TDC-SCH-002"

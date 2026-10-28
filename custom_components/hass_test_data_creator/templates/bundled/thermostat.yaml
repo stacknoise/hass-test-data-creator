@@ -1,6 +1,7 @@
 id: thermostat
 name: Thermostat
 model: Radiator thermostat
+z2m: { vendor: TDC, model: TDC-TRV-01, description: "Radiator thermostat", power_source: "Battery", type: EndDevice }
 entities:
   - { key: thermostat, platform: climate, name: Thermostat,
       signal: { shape: sine, min: 18, max: 23, period_s: 86400, noise: 0.02, decimals: 1 } }

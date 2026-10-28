@@ -23,6 +23,26 @@
       "single_instance_allowed": "Bereits eingerichtet. Es ist nur eine Instanz möglich"
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "title": "MQTT-Basis-Topics",
+        "data": {
+          "mqtt_base_topic": "Basis-Topic des MQTT-Discovery-Ausgangs",
+          "z2m_base_topic": "Basis-Topic des Zigbee2MQTT-Ausgangs",
+          "z2m_confirm_default_topic": "Das Basis-Topic zigbee2mqtt darf benutzt werden"
+        },
+        "data_description": {
+          "z2m_confirm_default_topic": "Bestätige das nur, wenn kein echtes Zigbee2MQTT unter diesem Topic veröffentlicht"
+        }
+      }
+    },
+    "error": {
+      "invalid_topic": "Nutze ein Topic ohne Platzhalter (+, #) und ohne Schrägstrich am Anfang oder Ende",
+      "same_topic": "Die beiden Basis-Topics müssen sich unterscheiden",
+      "unconfirmed_default_topic": "Bestätige, dass das Basis-Topic zigbee2mqtt benutzt werden darf"
+    }
+  },
   "exceptions": {
     "cfg_not_test_env": {
       "message": "Bestätige, dass das eine Testumgebung ist"
@@ -74,6 +94,12 @@
     },
     "out_mqtt_unavailable": {
       "message": "MQTT ist nicht eingerichtet oder nicht verbunden"
+    },
+    "out_foreign_bridge": {
+      "message": "Das Zigbee2MQTT-Basis-Topic wird von einer anderen Bridge benutzt"
+    },
+    "out_z2m_default_topic": {
+      "message": "Bestätige in den Optionen, dass das Basis-Topic zigbee2mqtt benutzt werden darf"
     },
     "rem_failed": {
       "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"

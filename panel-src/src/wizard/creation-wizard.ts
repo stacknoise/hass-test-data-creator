@@ -2,6 +2,7 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
+import type { TextKey } from '../common/i18n';
 import type { CreateRequest, EntityDef, Info, SignalDef, TemplateInfo } from '../common/types';
 import { editableSensors, withSignal } from '../signals/editor-helpers';
 import '../signals/curve-editor';
@@ -9,6 +10,11 @@ import '../signals/signal-preview';
 import { parseAreas, stateRate } from './helpers';
 
 const CUSTOM = 'custom';
+const OUTPUT_LABELS: Record<string, TextKey> = {
+  native: 'outputNative',
+  mqtt: 'outputMqtt',
+  z2m: 'outputZ2m',
+};
 const RATE_WARNING = 50;
 const SAMPLE_ENTITIES = JSON.stringify(
   [
@@ -191,7 +197,7 @@ export class CreationWizard extends TdcElement {
           this.tr('colOutput'),
           this.info?.outputs ?? ['native'],
           this.output,
-          (output) => this.tr(output === 'mqtt' ? 'outputMqtt' : 'outputNative'),
+          (output) => this.tr(OUTPUT_LABELS[output] ?? 'outputNative'),
           (output) => (this.output = output),
         )}
         <label style="flex: 0 0 160px"

@@ -1,6 +1,7 @@
 id: plug_metering
 name: Plug with metering
 model: Plug (metering)
+z2m: { vendor: TDC, model: TDC-PLUG-01, description: "Smart plug with metering", power_source: "Mains (single phase)", type: Router }
 entities:
   - { key: state, platform: switch, name: Switch }
   - { key: power, platform: sensor, name: Power, device_class: power, unit: W, state_class: measurement,

@@ -1,6 +1,7 @@
 id: wall_button
 name: Wall button
 model: Wall button
+z2m: { vendor: TDC, model: TDC-BTN-01, description: "Wall button with single, double and hold", power_source: "Battery", type: EndDevice }
 entities:
   - { key: action, platform: event, name: Action, device_class: button, event_types: [single, double, hold] }
   - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,

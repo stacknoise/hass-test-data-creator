@@ -17,6 +17,7 @@ from ..const import (
     MAX_ENTITIES_PER_DEVICE,
     OUTPUT_MQTT,
     OUTPUT_NATIVE,
+    OUTPUT_Z2M,
     PLATFORMS,
 )
 from ..core.command import tdc_command
@@ -41,7 +42,7 @@ async def ws_info(
             "max_batch": MAX_BATCH,
             "max_entities_per_device": MAX_ENTITIES_PER_DEVICE,
         },
-        "outputs": [OUTPUT_NATIVE, OUTPUT_MQTT],
+        "outputs": [OUTPUT_NATIVE, OUTPUT_MQTT, OUTPUT_Z2M],
         "shapes": list(SHAPE_NAMES),
         "triggers": list(TRIGGER_TYPES),
         "platforms": list(PLATFORMS),

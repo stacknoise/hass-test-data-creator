@@ -199,7 +199,7 @@ async def test_the_tick_publishes_new_sensor_values(
     topic = f"tdc/{device_id}/energy/state"
     before = float(sent(mqtt_mock)[topic])
     with patch(
-        "custom_components.hass_test_data_creator.outputs.mqtt.devices.signal_time",
+        "custom_components.hass_test_data_creator.outputs.mqtt.runtime.signal_time",
         lambda: signal_time() + 36000,
     ):
         async_dispatcher_send(hass, SIGNAL_TICK)

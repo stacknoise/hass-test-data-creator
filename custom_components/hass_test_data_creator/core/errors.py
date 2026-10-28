@@ -78,6 +78,12 @@ class ErrorCode(StrEnum):
     OUT_MQTT_UNAVAILABLE = "TDC-OUT-002"
     """The MQTT integration is not set up or not connected to its broker."""
 
+    OUT_FOREIGN_BRIDGE = "TDC-OUT-003"
+    """The Zigbee2MQTT base topic already carries a retained bridge state of someone else."""
+
+    OUT_Z2M_DEFAULT_TOPIC = "TDC-OUT-004"
+    """The base topic zigbee2mqtt is used without the confirmation in the options."""
+
     REM_FAILED = "TDC-REM-001"
     """A step of a removal failed; the removal can be run again."""
 

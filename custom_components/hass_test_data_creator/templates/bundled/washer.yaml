@@ -1,6 +1,7 @@
 id: washer
 name: Washing machine
 model: Washing machine
+z2m: { vendor: TDC, model: TDC-WASHER-01, description: "Washing machine", power_source: "Mains (single phase)", type: Router }
 entities:
   - { key: program, platform: sensor, name: Program, entity_category: diagnostic,
       signal: { shape: state_machine, phase: 0.0,

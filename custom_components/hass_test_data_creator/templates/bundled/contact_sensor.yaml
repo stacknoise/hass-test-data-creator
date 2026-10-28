@@ -1,6 +1,7 @@
 id: contact_sensor
 name: Contact sensor
 model: Contact sensor
+z2m: { vendor: TDC, model: TDC-CONTACT-01, description: "Door and window contact sensor", power_source: "Battery", type: EndDevice }
 entities:
   - { key: contact, platform: binary_sensor, name: Contact, device_class: door }
   - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,
