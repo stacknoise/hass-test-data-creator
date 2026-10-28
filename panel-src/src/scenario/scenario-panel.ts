@@ -1,73 +1,31 @@
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
-import { TdcElement } from '../common/base';
-import type { Info, ScenarioInfo, TemplateInfo } from '../common/types';
+import { TdcPollingElement } from '../common/polling';
+import type { Info, ScenarioInfo } from '../common/types';
 import { describeTarget, type WorkForm } from '../schedule/helpers';
 import '../schedule/work-picker';
 import { buildSteps, defaultStep, type StepForm } from './helpers';
 
-const REFRESH_MS = 10_000;
-
 /** Lists, creates, starts and removes scenarios: named lists of timed steps. */
 @customElement('tdc-scenario-panel')
-export class ScenarioPanel extends TdcElement {
+export class ScenarioPanel extends TdcPollingElement {
   @state() private scenarios: ScenarioInfo[] = [];
-  @state() private info?: Info;
-  @state() private templates: TemplateInfo[] = [];
   @state() private name = '';
   @state() private steps: StepForm[] = [];
-  @state() private message = '';
-  @state() private error = '';
-  @state() private busy = false;
 
-  private timer?: number;
-
-  /** Load the data when the element is added to the page. */
-  override connectedCallback(): void {
-    super.connectedCallback();
-    void this.loadOptions();
-    void this.refresh();
-    this.timer = window.setInterval(() => void this.refresh(), REFRESH_MS);
-  }
-
-  /** Stop the refresh timer when the element is removed. */
-  override disconnectedCallback(): void {
-    window.clearInterval(this.timer);
-    super.disconnectedCallback();
-  }
-
-  /** Load the actions and the templates that the form offers and start with one step. */
-  private async loadOptions(): Promise<void> {
-    try {
-      [this.info, this.templates] = await Promise.all([this.api.info(), this.api.templates()]);
-      this.steps = [defaultStep(this.info.actions)];
-    } catch (err) {
-      this.error = describeError(err);
-    }
+  /** Start the form with one step. */
+  protected optionsLoaded(info: Info): void {
+    this.steps = [defaultStep(info.actions)];
   }
 
   /** Reload the scenarios. */
-  private async refresh(): Promise<void> {
+  protected async refresh(): Promise<void> {
     try {
       this.scenarios = await this.api.scenarios();
     } catch (err) {
       this.error = describeError(err);
     }
-  }
-
-  /** Run a call, then reload; show an error as text. */
-  private async run(call: () => Promise<string | void>): Promise<void> {
-    this.busy = true;
-    this.message = '';
-    this.error = '';
-    try {
-      this.message = (await call()) ?? '';
-      await this.refresh();
-    } catch (err) {
-      this.error = describeError(err);
-    }
-    this.busy = false;
   }
 
   /** Create the scenario that the form describes. */

@@ -1,9 +1,9 @@
 import { html, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
-import { TdcElement } from '../common/base';
+import { TdcPollingElement } from '../common/polling';
 import type { TextKey } from '../common/i18n';
-import type { Info, PlannedRun, ScheduleInfo, TemplateInfo, TriggerType } from '../common/types';
+import type { Info, PlannedRun, ScheduleInfo, TriggerType } from '../common/types';
 import './work-picker';
 import {
   buildTrigger,
@@ -17,7 +17,6 @@ import {
   type WorkForm,
 } from './helpers';
 
-const REFRESH_MS = 10_000;
 const PREVIEW_HOURS = 24;
 const PREVIEW_ROWS = 50;
 const TRIGGER_TYPES: TriggerType[] = ['times', 'interval', 'once', 'random_window', 'poisson'];
@@ -33,46 +32,21 @@ const WEEKDAYS = [
 
 /** Lists, creates, switches and removes schedules and previews their next runs. */
 @customElement('tdc-schedule-panel')
-export class SchedulePanel extends TdcElement {
+export class SchedulePanel extends TdcPollingElement {
   @state() private schedules: ScheduleInfo[] = [];
   @state() private runs: PlannedRun[] = [];
-  @state() private info?: Info;
-  @state() private templates: TemplateInfo[] = [];
-  @state() private error = '';
-  @state() private busy = false;
   @state() private name = '';
   @state() private work: WorkForm = defaultWork({});
   @state() private seed = '';
   @state() private form: TriggerForm = defaultTriggerForm();
 
-  private timer?: number;
-
-  /** Load the data when the element is added to the page. */
-  override connectedCallback(): void {
-    super.connectedCallback();
-    void this.loadOptions();
-    void this.refresh();
-    this.timer = window.setInterval(() => void this.refresh(), REFRESH_MS);
-  }
-
-  /** Stop the refresh timer when the element is removed. */
-  override disconnectedCallback(): void {
-    window.clearInterval(this.timer);
-    super.disconnectedCallback();
-  }
-
-  /** Load the actions and the templates that the form offers. */
-  private async loadOptions(): Promise<void> {
-    try {
-      [this.info, this.templates] = await Promise.all([this.api.info(), this.api.templates()]);
-      this.work = defaultWork(this.info.actions);
-    } catch (err) {
-      this.error = describeError(err);
-    }
+  /** Start the form with the first action. */
+  protected optionsLoaded(info: Info): void {
+    this.work = defaultWork(info.actions);
   }
 
   /** Reload the schedules and the planned runs. */
-  private async refresh(): Promise<void> {
+  protected async refresh(): Promise<void> {
     try {
       [this.schedules, this.runs] = await Promise.all([
         this.api.schedules(),
@@ -82,18 +56,6 @@ export class SchedulePanel extends TdcElement {
     } catch (err) {
       this.error = describeError(err);
     }
-  }
-
-  /** Run a call, then reload; show an error as text. */
-  private async run(call: () => Promise<unknown>): Promise<void> {
-    this.busy = true;
-    try {
-      await call();
-      await this.refresh();
-    } catch (err) {
-      this.error = describeError(err);
-    }
-    this.busy = false;
   }
 
   /** Create the schedule that the form describes. */
