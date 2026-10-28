@@ -12,6 +12,7 @@ from homeassistant.helpers import area_registry as ar, device_registry as dr, en
 from ..const import DOMAIN
 from ..core.errors import ErrorCode, ScheduleError
 from ..model.models import DeviceDef
+from ..scheduler.schema import device_references
 from ..store.store import TdcStore
 
 TARGET_ALL = "all"
@@ -105,11 +106,19 @@ class RemovalPlanner:
         if plan.target == TARGET_ALL:
             return [item.id for item in schedules]
         names = {name for device in plan.devices for name in (device.id, device.name)}
+        existing = {name for device in self._store.devices() for name in (device.id, device.name)}
         return [
             item.id
             for item in schedules
-            if item.target.get("device") in names or item.target.get("run") in plan.runs
+            if self._aims_only_at(item.target.get("device"), names, existing)
+            or item.target.get("run") in plan.runs
         ]
+
+    @staticmethod
+    def _aims_only_at(device: str | list[str] | None, names: set[str], existing: set[str]) -> bool:
+        """Whether a target names devices that still exist and all of them are being removed."""
+        alive = device_references(device) & existing
+        return bool(alive) and alive <= names
 
     def _orphans(self, known: set[str]) -> list[dict[str, str]]:
         """Return registry devices of this entry that the store does not know (damaged store)."""

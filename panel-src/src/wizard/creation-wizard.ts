@@ -125,6 +125,7 @@ export class CreationWizard extends TdcElement {
     try {
       const run = await this.api.create(request);
       this.message = this.tr('created', { count: run.devices });
+      this.dispatchEvent(new CustomEvent('tdc-created'));
     } catch (err) {
       this.error = describeError(err);
     }
@@ -191,7 +192,8 @@ export class CreationWizard extends TdcElement {
           >${this.tr('areas')}
           <tdc-multi-select
             .hass=${this.hass}
-            .options=${knownAreas(this.hass?.areas, [])}
+            .items=${knownAreas(this.hass?.areas, []).map((name) => ({ value: name, label: name }))}
+            allowAdd
             .selected=${this.areas}
             @tdc-select-change=${(e: CustomEvent<string[]>) => (this.areas = e.detail)}
           ></tdc-multi-select>

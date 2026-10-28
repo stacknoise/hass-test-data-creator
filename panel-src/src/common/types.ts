@@ -133,7 +133,7 @@ export type RemovalTarget = 'all' | 'run' | 'device';
 
 /** What a schedule runs on: exactly one of the keys is set. */
 export type ScheduleTarget =
-  { device: string } | { template: string } | { run: string } | { all: true };
+  { device: string | string[] } | { template: string } | { run: string } | { all: true };
 
 /** The trigger of a schedule, as the backend validates it. */
 export type Trigger =

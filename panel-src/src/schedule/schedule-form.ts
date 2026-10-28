@@ -83,9 +83,7 @@ export class ScheduleForm extends TdcElement {
 
   /** Return the request that the form describes. */
   private request(): ScheduleRequest {
-    const work = this.scenarioId
-      ? { scenario: this.scenarioId }
-      : resolveWork(this.work, this.templates);
+    const work = this.scenarioId ? { scenario: this.scenarioId } : resolveWork(this.work);
     const keepParams = this.schedule && 'action' in work && work.action === this.schedule.action;
     return {
       name: this.name,
@@ -96,6 +94,13 @@ export class ScheduleForm extends TdcElement {
         ? { params: keepParams ? this.schedule.params : {}, enabled: this.schedule.enabled }
         : {}),
     };
+  }
+
+  /** Whether the action, and the target if it needs one, are chosen. */
+  private complete(): boolean {
+    return (
+      Boolean(this.work.actionKey) && (this.work.kind === 'all' || this.work.targetIds.length > 0)
+    );
   }
 
   /** Tell the parent to save what the form describes. */
@@ -125,7 +130,7 @@ export class ScheduleForm extends TdcElement {
 
   /** Render the check boxes of the weekdays. */
   private renderWeekdays(): TemplateResult {
-    return html`<div class="row">
+    return html`<div class="row wide">
       ${WEEKDAYS.map(
         (key, day) =>
           html`<label style="flex-direction: row; align-items: center">
@@ -166,7 +171,7 @@ export class ScheduleForm extends TdcElement {
   /** Render the element. */
   override render(): TemplateResult {
     return html`
-      <div class="row form">
+      <div class="fields">
         ${this.textField(this.tr('schName'), this.name, (v) => (this.name = v))}
         ${this.select(
           this.tr('schTrigger'),
@@ -195,7 +200,7 @@ export class ScheduleForm extends TdcElement {
               @tdc-work-change=${(e: CustomEvent<WorkForm>) => (this.work = e.detail)}
             ></tdc-work-picker>`
       }
-      <div class="row form">
+      <div class="fields">
         ${this.renderTriggerFields()}
         ${this.textField(this.tr('seed'), this.seed, (v) => (this.seed = v), {
           flex: '1 1 140px',
@@ -205,7 +210,7 @@ export class ScheduleForm extends TdcElement {
       <p class="row">
         <button
           class="primary"
-          ?disabled=${this.busy || !this.name.trim() || !(this.scenarioId || this.work.actionKey)}
+          ?disabled=${this.busy || !this.name.trim() || !(this.scenarioId || this.complete())}
           @click=${() => this.submit()}
         >
           ${this.submitLabel}

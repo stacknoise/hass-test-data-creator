@@ -148,6 +148,16 @@ export abstract class TdcElement extends LitElement {
     .row.form {
       align-items: flex-start;
     }
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 8px 12px;
+      align-items: start;
+      margin-bottom: 8px;
+    }
+    .fields > .wide {
+      grid-column: 1 / -1;
+    }
     .row {
       display: flex;
       gap: 8px;

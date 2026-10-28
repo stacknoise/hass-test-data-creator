@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TemplateInfo } from '../common/types';
-import { actionKeys, entityKeysFor, resolveWork } from '../schedule/helpers';
+import { actionKeys, allEntities, entityKeysFor, resolveWork } from '../schedule/helpers';
 import { buildSteps, defaultStep, parseParams } from './helpers';
 
 const ACTIONS = { switch: ['toggle', 'turn_on'], light: ['set_brightness'] };
@@ -28,18 +28,19 @@ describe('scenario helpers', () => {
       'switch/turn_on',
       'light/set_brightness',
     ]);
-    expect(entityKeysFor(TEMPLATES, 'light/set_brightness')).toEqual(['light']);
-    expect(entityKeysFor(TEMPLATES, 'cover/open')).toEqual([]);
+    const refs = allEntities(TEMPLATES);
+    expect(entityKeysFor(refs, 'light/set_brightness')).toEqual(['light']);
+    expect(entityKeysFor(refs, 'cover/open')).toEqual([]);
   });
 
   it('resolves the work of a form', () => {
     const work = {
       kind: 'template' as const,
-      targetId: 'plug',
+      targetIds: ['plug'],
       actionKey: 'switch/toggle',
-      entity: '',
+      entity: 'state',
     };
-    expect(resolveWork(work, TEMPLATES)).toEqual({
+    expect(resolveWork(work)).toEqual({
       target: { template: 'plug' },
       entity: 'state',
       action: 'toggle',
@@ -54,14 +55,15 @@ describe('scenario helpers', () => {
   });
 
   it('builds steps and refuses invalid parameters', () => {
-    const first = defaultStep(ACTIONS);
+    const base = defaultStep(ACTIONS);
+    const first = { ...base, work: { ...base.work, entity: 'state' } };
     const second = {
       ...first,
       afterS: 30,
-      work: { ...first.work, actionKey: 'light/set_brightness' },
+      work: { ...first.work, actionKey: 'light/set_brightness', entity: 'light' },
       params: '{"brightness": 128}',
     };
-    expect(buildSteps([first, second], TEMPLATES)).toEqual([
+    expect(buildSteps([first, second])).toEqual([
       { after_s: 0, target: { all: true }, entity: 'state', action: 'toggle', params: {} },
       {
         after_s: 30,
@@ -71,6 +73,6 @@ describe('scenario helpers', () => {
         params: { brightness: 128 },
       },
     ]);
-    expect(buildSteps([{ ...first, params: '{ nope' }], TEMPLATES)).toBeUndefined();
+    expect(buildSteps([{ ...first, params: '{ nope' }])).toBeUndefined();
   });
 });

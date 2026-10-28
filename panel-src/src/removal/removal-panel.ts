@@ -2,6 +2,7 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
+import '../common/target-select';
 import type { TextKey } from '../common/i18n';
 import { sortedByLabel } from '../common/labels';
 import type { RemovalPlan, RemovalTarget } from '../common/types';
@@ -130,11 +131,22 @@ export class RemovalPanel extends TdcElement {
         ${
           this.target === 'all'
             ? ''
-            : this.textField(this.tr('targetId'), this.targetId, (v) => (this.targetId = v), {
-                flex: '1 1 260px',
-              })
+            : html`<tdc-target-select
+                .hass=${this.hass}
+                kind=${this.target}
+                .values=${this.targetId ? [this.targetId] : []}
+                @tdc-target-change=${(e: CustomEvent<string[]>) => {
+                  this.targetId = e.detail[0] ?? '';
+                  this.plan = undefined;
+                }}
+              ></tdc-target-select>`
         }
-        <button @click=${() => void this.showPlan()}>${this.tr('showPlan')}</button>
+        <button
+          ?disabled=${this.target !== 'all' && !this.targetId}
+          @click=${() => void this.showPlan()}
+        >
+          ${this.tr('showPlan')}
+        </button>
       </div>
       ${this.plan ? this.renderPlan(this.plan) : ''}
       <p>${this.message}<span class="error">${this.error}</span></p>

@@ -1,4 +1,4 @@
-import { css, html, type TemplateResult } from 'lit';
+import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { describeError } from '../common/api';
@@ -15,6 +15,8 @@ import {
   stateLabel,
   templateLabel,
 } from '../common/labels';
+import '../common/dialog';
+import '../wizard/creation-wizard';
 import './device-detail';
 import { knownAreas } from './helpers';
 
@@ -67,6 +69,7 @@ export class DeviceList extends TdcElement {
   @state() private total = 0;
   @state() private loaded = false;
   @state() private error = '';
+  @state() private creating = false;
   @state() private info?: Info;
   @state() private expanded = new Set<string>();
 
@@ -215,11 +218,40 @@ export class DeviceList extends TdcElement {
       }`;
   }
 
+  /** Render the button that opens the popup with the form for new devices. */
+  private renderNew(): TemplateResult {
+    return html`
+      <p>
+        <button class="primary" @click=${() => (this.creating = true)}>
+          + ${this.tr('create')}
+        </button>
+      </p>
+      <tdc-dialog
+        .hass=${this.hass}
+        heading=${this.tr('create')}
+        ?open=${this.creating}
+        @tdc-close=${() => (this.creating = false)}
+      >
+        ${
+          this.creating
+            ? html`<tdc-creation-wizard
+                .hass=${this.hass}
+                @tdc-created=${() => {
+                  this.creating = false;
+                  void this.refresh();
+                }}
+              ></tdc-creation-wizard>`
+            : nothing
+        }
+      </tdc-dialog>
+    `;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     if (!this.loaded) return html`${this.tr('loading')}`;
     return html`
-      ${this.error ? html`<p class="error">${this.error}</p>` : ''}
+      ${this.renderNew()} ${this.error ? html`<p class="error">${this.error}</p>` : ''}
       ${
         this.devices.length === 0
           ? html`<p>${this.tr('noDevices')}</p>`

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { Trigger } from '../common/types';
+import type { DeviceInfo, Trigger } from '../common/types';
 import {
   buildTarget,
+  allEntities,
+  availableActionKeys,
   buildTrigger,
   defaultTriggerForm,
   describeTarget,
+  entitiesOfTarget,
   formatWhen,
   parseTimes,
   summarizeTrigger,
@@ -45,10 +48,16 @@ describe('schedule helpers', () => {
 
   it('round-trips targets', () => {
     for (const kind of ['template', 'device', 'run'] as const) {
-      expect(describeTarget(buildTarget(kind, 'x'))).toEqual({ kind, id: 'x' });
+      expect(describeTarget(buildTarget(kind, ['x']))).toEqual({ kind, ids: ['x'] });
     }
-    expect(buildTarget('all', 'ignored')).toEqual({ all: true });
-    expect(describeTarget({ all: true })).toEqual({ kind: 'all', id: '' });
+    expect(buildTarget('all', ['ignored'])).toEqual({ all: true });
+    expect(describeTarget({ all: true })).toEqual({ kind: 'all', ids: [] });
+  });
+
+  it('aims at several devices with a list, and at one with a text', () => {
+    expect(buildTarget('device', ['a', 'b'])).toEqual({ device: ['a', 'b'] });
+    expect(buildTarget('device', ['a'])).toEqual({ device: 'a' });
+    expect(describeTarget({ device: ['a', 'b'] })).toEqual({ kind: 'device', ids: ['a', 'b'] });
   });
 
   it('summarizes triggers and times', () => {
@@ -103,7 +112,7 @@ describe('editing an existing schedule', () => {
     );
     expect(work).toEqual({
       kind: 'device',
-      targetId: 'Lamp 01',
+      targetIds: ['Lamp 01'],
       actionKey: 'light/toggle',
       entity: 'light',
     });
@@ -124,5 +133,69 @@ describe('editing an existing schedule', () => {
     expect(other.actionKey).toBe('switch/toggle');
     const gone = workOf({ target: { all: true }, entity: 'x', action: 'gone' }, actions, templates);
     expect(gone.actionKey).toBe('');
+  });
+});
+
+describe('what fits a target', () => {
+  const actions = {
+    switch: ['toggle', 'turn_on'],
+    light: ['toggle', 'set_brightness'],
+    cover: ['open'],
+  };
+  const entity = (
+    key: string,
+    platform: string,
+  ): { key: string; platform: string; name: string } => ({
+    key,
+    platform,
+    name: key,
+  });
+  const templates = [
+    { id: 'lamp', name: 'Lamp', model: 'x', bundled: true, entities: [entity('light', 'light')] },
+    { id: 'plug', name: 'Plug', model: 'x', bundled: true, entities: [entity('state', 'switch')] },
+  ];
+  const device = (id: string, run: string, ...entities: ReturnType<typeof entity>[]): DeviceInfo =>
+    ({ id, name: id.toUpperCase(), run_id: run, entities }) as unknown as DeviceInfo;
+  const devices = [
+    device('p1', 'r1', entity('state', 'switch')),
+    device('p2', 'r1', entity('state', 'switch')),
+    device('l1', 'r2', entity('light', 'light')),
+  ];
+
+  it('takes the entities of the chosen devices, by id or name', () => {
+    expect(entitiesOfTarget('device', ['p1', 'P2'], devices, templates)).toEqual([
+      { platform: 'switch', key: 'state' },
+    ]);
+    expect(entitiesOfTarget('device', ['p1', 'l1'], devices, templates)).toHaveLength(2);
+  });
+
+  it('takes the entities of a template, of a creation, and of all devices', () => {
+    expect(entitiesOfTarget('template', ['lamp'], devices, templates)).toEqual([
+      { platform: 'light', key: 'light' },
+    ]);
+    expect(entitiesOfTarget('run', ['r2'], devices, templates)).toEqual([
+      { platform: 'light', key: 'light' },
+    ]);
+    expect(entitiesOfTarget('all', [], devices, templates)).toHaveLength(2);
+    expect(entitiesOfTarget('all', [], [], templates)).toEqual(allEntities(templates));
+  });
+
+  it('knows nothing while no target is chosen, or the target is gone', () => {
+    expect(entitiesOfTarget('device', [], devices, templates)).toBeUndefined();
+    expect(entitiesOfTarget('device', ['gone'], devices, templates)).toBeUndefined();
+    expect(entitiesOfTarget('template', ['gone'], devices, templates)).toBeUndefined();
+  });
+
+  it('offers only the actions of the platforms that the target has', () => {
+    const plugs = entitiesOfTarget('device', ['p1'], devices, templates);
+    expect(availableActionKeys(actions, plugs)).toEqual(['switch/toggle', 'switch/turn_on']);
+    const both = entitiesOfTarget('device', ['p1', 'l1'], devices, templates);
+    expect(availableActionKeys(actions, both)).toEqual([
+      'switch/toggle',
+      'switch/turn_on',
+      'light/toggle',
+      'light/set_brightness',
+    ]);
+    expect(availableActionKeys(actions, undefined)).toHaveLength(5);
   });
 });

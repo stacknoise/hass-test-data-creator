@@ -18,6 +18,7 @@ from ..scenarios.manager import ScenarioManager
 from ..store.store import TdcStore
 from .planner import PlannedRun, SchedulePlanner
 from .runner import ActionRunner
+from .schema import device_references
 from .triggers import TriggerFactory
 
 TARGET_KEYS = ("device", "template", "run", "all")
@@ -161,11 +162,11 @@ class ScheduleManager:
             raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
     def ids_targeting(self, device: DeviceDef) -> list[str]:
-        """Return the ids of the schedules that target exactly this device."""
+        """Return the ids of the schedules that name this device, alone or in a list."""
         return [
             item.id
             for item in self._store.schedules()
-            if item.target.get("device") in (device.id, device.name)
+            if device_references(item.target.get("device")) & {device.id, device.name}
         ]
 
     def forget(self, schedule_ids: list[str]) -> None:

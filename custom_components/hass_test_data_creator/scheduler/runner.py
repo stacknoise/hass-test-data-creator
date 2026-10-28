@@ -11,6 +11,7 @@ from ..engine.behaviours import Live
 from ..model.models import DeviceDef
 from ..store.store import TdcStore
 from .actions import ActionFactory
+from .schema import device_references
 
 
 class ActionRunner:
@@ -41,7 +42,8 @@ class ActionRunner:
         if "all" in target:
             return devices
         if "device" in target:
-            return [d for d in devices if target["device"] in (d.id, d.name)]
+            wanted = device_references(target["device"])
+            return [d for d in devices if d.id in wanted or d.name in wanted]
         if "template" in target:
             return [d for d in devices if d.template == target["template"]]
         return [d for d in devices if d.run_id == target.get("run")]

@@ -1,4 +1,5 @@
 import type {
+  DeviceInfo,
   ScheduleInfo,
   ScheduleTarget,
   TemplateInfo,
@@ -63,29 +64,34 @@ export function buildTrigger(form: TriggerForm): Trigger {
   }
 }
 
-/** Return the target for a kind and an id; the id is ignored for "all". */
-export function buildTarget(kind: TargetKind, id: string): ScheduleTarget {
+/** Return the target for a kind and its ids; devices may be several, the others take the first id. */
+export function buildTarget(kind: TargetKind, ids: string[]): ScheduleTarget {
   switch (kind) {
     case 'all':
       return { all: true };
     case 'template':
-      return { template: id };
+      return { template: ids[0] ?? '' };
     case 'device':
-      return { device: id };
+      return { device: ids.length === 1 ? ids[0] : ids };
     case 'run':
-      return { run: id };
+      return { run: ids[0] ?? '' };
   }
 }
 
-/** Return the kind and id of a target, for the list. */
+/** Return the kind and the ids of a target, for the list and the form. */
 export function describeTarget(target: ScheduleTarget | Record<string, never>): {
   kind: TargetKind;
-  id: string;
+  ids: string[];
 } {
-  if ('template' in target) return { kind: 'template', id: target.template };
-  if ('device' in target) return { kind: 'device', id: target.device };
-  if ('run' in target) return { kind: 'run', id: target.run };
-  return { kind: 'all', id: '' };
+  if ('template' in target) return { kind: 'template', ids: [target.template] };
+  if ('device' in target) {
+    return {
+      kind: 'device',
+      ids: typeof target.device === 'string' ? [target.device] : target.device,
+    };
+  }
+  if ('run' in target) return { kind: 'run', ids: [target.run] };
+  return { kind: 'all', ids: [] };
 }
 
 /** Return a short text for a trigger, for the list. */
@@ -112,9 +118,15 @@ export function formatWhen(iso: string): string {
 /** The inputs that say what runs where: the target, the action and the entity. */
 export interface WorkForm {
   kind: TargetKind;
-  targetId: string;
+  targetIds: string[];
   actionKey: string;
   entity: string;
+}
+
+/** An entity that a target has: its platform and its key. */
+export interface EntityRef {
+  platform: string;
+  key: string;
 }
 
 /** Return the actions as `platform/action` for a select. */
@@ -126,26 +138,71 @@ export function actionKeys(actions: Record<string, string[]>): string[] {
 
 /** Return a form for all devices with the first action. */
 export function defaultWork(actions: Record<string, string[]>): WorkForm {
-  return { kind: 'all', targetId: '', actionKey: actionKeys(actions)[0] ?? '', entity: '' };
+  return { kind: 'all', targetIds: [], actionKey: actionKeys(actions)[0] ?? '', entity: '' };
 }
 
-/** Return the keys of the template entities that the action `actionKey` works on. */
-export function entityKeysFor(templates: TemplateInfo[], actionKey: string): string[] {
+/** Return `refs` without doubles. */
+function unique(refs: EntityRef[]): EntityRef[] {
+  const seen = new Map(refs.map((ref) => [`${ref.platform}/${ref.key}`, ref]));
+  return [...seen.values()].map(({ platform, key }) => ({ platform, key }));
+}
+
+/** Return every entity that the templates define; what could exist at all. */
+export function allEntities(templates: TemplateInfo[]): EntityRef[] {
+  return unique(templates.flatMap((tpl) => tpl.entities));
+}
+
+/**
+ * Return the entities that the chosen target has, or undefined while nothing is chosen yet.
+ *
+ * A template is taken from the templates, everything else from the devices that exist; with no
+ * device at all, "all devices" falls back to what the templates would create.
+ */
+export function entitiesOfTarget(
+  kind: TargetKind,
+  ids: string[],
+  devices: DeviceInfo[],
+  templates: TemplateInfo[],
+): EntityRef[] | undefined {
+  if (kind === 'all') {
+    return devices.length ? unique(devices.flatMap((d) => d.entities)) : allEntities(templates);
+  }
+  if (ids.length === 0) return undefined;
+  if (kind === 'template') {
+    const tpl = templates.find((t) => t.id === ids[0]);
+    return tpl ? unique(tpl.entities) : undefined;
+  }
+  const chosen =
+    kind === 'device'
+      ? devices.filter((d) => ids.includes(d.id) || ids.includes(d.name))
+      : devices.filter((d) => d.run_id === ids[0]);
+  return chosen.length ? unique(chosen.flatMap((d) => d.entities)) : undefined;
+}
+
+/** Return the actions that fit the entities; all of them while no target is chosen. */
+export function availableActionKeys(
+  actions: Record<string, string[]>,
+  refs: EntityRef[] | undefined,
+): string[] {
+  const platforms = refs ? new Set(refs.map((ref) => ref.platform)) : undefined;
+  return actionKeys(actions).filter((key) => !platforms || platforms.has(key.split('/')[0]));
+}
+
+/** Return the keys of the entities that the action `actionKey` works on. */
+export function entityKeysFor(refs: EntityRef[], actionKey: string): string[] {
   const platform = actionKey.split('/')[0];
-  const keys = templates.flatMap((tpl) =>
-    tpl.entities.filter((e) => e.platform === platform).map((e) => e.key),
-  );
-  return [...new Set(keys)];
+  return [...new Set(refs.filter((ref) => ref.platform === platform).map((ref) => ref.key))];
 }
 
 /** Return the target, entity and action that the form describes. */
-export function resolveWork(
-  work: WorkForm,
-  templates: TemplateInfo[],
-): { target: ScheduleTarget; entity: string; action: string } {
+export function resolveWork(work: WorkForm): {
+  target: ScheduleTarget;
+  entity: string;
+  action: string;
+} {
   return {
-    target: buildTarget(work.kind, work.targetId),
-    entity: work.entity || entityKeysFor(templates, work.actionKey)[0] || '',
+    target: buildTarget(work.kind, work.targetIds),
+    entity: work.entity,
     action: work.actionKey.split('/')[1] ?? '',
   };
 }
@@ -173,7 +230,7 @@ export function workOf(
   actions: Record<string, string[]>,
   templates: TemplateInfo[],
 ): WorkForm {
-  const { kind, id } = describeTarget(schedule.target);
+  const { kind, ids } = describeTarget(schedule.target);
   const platforms = Object.entries(actions)
     .filter(([, names]) => names.includes(schedule.action))
     .map(([platform]) => platform);
@@ -185,7 +242,7 @@ export function workOf(
     ) ?? platforms[0];
   return {
     kind,
-    targetId: id,
+    targetIds: ids,
     actionKey: platform ? `${platform}/${schedule.action}` : '',
     entity: schedule.entity,
   };

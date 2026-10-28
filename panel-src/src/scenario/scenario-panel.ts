@@ -34,7 +34,7 @@ export class ScenarioPanel extends TdcPollingElement {
 
   /** Create the scenario that the form describes. */
   private async add(): Promise<void> {
-    const steps = buildSteps(this.steps, this.templates);
+    const steps = buildSteps(this.steps);
     if (!steps) {
       this.error = this.tr('scnBadParams');
       return;
@@ -113,7 +113,7 @@ export class ScenarioPanel extends TdcPollingElement {
         </button>
         <button
           class="primary"
-          ?disabled=${this.busy || !this.name.trim() || this.steps.length === 0}
+          ?disabled=${this.busy || !this.name.trim() || this.steps.length === 0 || this.steps.some((s) => s.work.kind !== 'all' && s.work.targetIds.length === 0)}
           @click=${() => void this.add()}
         >
           ${this.tr('scnCreate')}

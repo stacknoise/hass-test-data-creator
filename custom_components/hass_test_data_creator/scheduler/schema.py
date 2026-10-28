@@ -6,12 +6,26 @@ from typing import Any
 
 import voluptuous as vol
 
+MAX_TARGET_DEVICES = 500
+
 TARGET_SCHEMA = vol.Any(
-    {vol.Required("device"): str},
+    {
+        vol.Required("device"): vol.Any(
+            str, vol.All([str], vol.Length(min=1, max=MAX_TARGET_DEVICES))
+        )
+    },
     {vol.Required("template"): str},
     {vol.Required("run"): str},
     {vol.Required("all"): True},
 )
+
+
+def device_references(value: str | list[str] | None) -> set[str]:
+    """Return the ids or names that the `device` part of a target names: one text or a list."""
+    if value is None:
+        return set()
+    return {value} if isinstance(value, str) else set(value)
+
 
 SCHEDULE_FIELDS: dict[Any, Any] = {
     vol.Required("name"): vol.All(str, vol.Length(min=1, max=64)),

@@ -5,19 +5,27 @@ import { TdcElement } from './base';
 import { sortedByLabel } from './labels';
 import { PopoverElement, popoverStyles } from './popover';
 
-/** Returns `selected` with `name` added or removed; a blank name changes nothing. */
-export function toggled(selected: string[], name: string, on: boolean): string[] {
-  const clean = name.trim();
+/** One option of a select: the value that is kept and the text that is shown. */
+export interface SelectItem {
+  value: string;
+  label: string;
+}
+
+/** Returns `selected` with `value` added or removed; a blank value changes nothing. */
+export function toggled(selected: string[], value: string, on: boolean): string[] {
+  const clean = value.trim();
   if (!clean) return selected;
   const rest = selected.filter((item) => item !== clean);
   return on ? [...rest, clean] : rest;
 }
 
-/** A dropdown with a check box per option and a field to add an option of one's own. */
+/** A dropdown with a check box per option; with `allowAdd` the user can add an option of their own. */
 @customElement('tdc-multi-select')
 export class MultiSelect extends PopoverElement {
-  @property({ attribute: false }) options: string[] = [];
+  @property({ attribute: false }) items: SelectItem[] = [];
   @property({ attribute: false }) selected: string[] = [];
+  @property({ type: Boolean }) allowAdd = false;
+  @property() empty = '';
 
   @state() private draft = '';
 
@@ -74,18 +82,43 @@ export class MultiSelect extends PopoverElement {
     this.dispatchEvent(new CustomEvent('tdc-select-change', { detail: selected }));
   }
 
-  /** Add the name in the field to the selection and clear the field. */
+  /** Add the value in the field to the selection and clear the field. */
   private add(): void {
     this.emit(toggled(this.selected, this.draft, true));
     this.draft = '';
   }
 
+  /** Return the options and the selected values that have no option, sorted by their text. */
+  private options(): SelectItem[] {
+    const known = new Set(this.items.map((item) => item.value));
+    const extra = this.selected
+      .filter((value) => !known.has(value))
+      .map((value) => ({ value, label: value }));
+    return sortedByLabel(this.hass?.language, [...this.items, ...extra], (item) => item.label);
+  }
+
+  /** Render the field to add a value of one's own. */
+  private renderAdd(): TemplateResult {
+    return html`<div class="row add">
+      <input
+        .value=${live(this.draft)}
+        placeholder=${this.tr('areasAdd')}
+        @input=${(e: Event) => (this.draft = (e.target as HTMLInputElement).value)}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.key === 'Enter') this.add();
+        }}
+      />
+      <button ?disabled=${!this.draft.trim()} @click=${() => this.add()}>
+        ${this.tr('areasAddButton')}
+      </button>
+    </div>`;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
-    const names = sortedByLabel(
-      this.hass?.language,
-      [...new Set([...this.options, ...this.selected])],
-      (name) => name,
+    const options = this.options();
+    const shown = this.selected.map(
+      (value) => options.find((item) => item.value === value)?.label ?? value,
     );
     return html`
       <button
@@ -95,40 +128,32 @@ export class MultiSelect extends PopoverElement {
         @click=${() => (this.open = !this.open)}
       >
         ${
-          this.selected.length
-            ? html`<span class="summary">${this.selected.join(', ')}</span>`
-            : html`<span class="summary empty">${this.tr('areasNone')}</span>`
+          shown.length
+            ? html`<span class="summary">${shown.join(', ')}</span>`
+            : html`<span class="summary empty">${this.empty || this.tr('areasNone')}</span>`
         }
         <span>▾</span>
       </button>
       ${
         this.open
           ? html`<div class="popover" role="listbox" aria-multiselectable="true">
-              <div class="row add">
-                <input
-                  .value=${live(this.draft)}
-                  placeholder=${this.tr('areasAdd')}
-                  @input=${(e: Event) => (this.draft = (e.target as HTMLInputElement).value)}
-                  @keydown=${(e: KeyboardEvent) => {
-                    if (e.key === 'Enter') this.add();
-                  }}
-                />
-                <button ?disabled=${!this.draft.trim()} @click=${() => this.add()}>
-                  ${this.tr('areasAddButton')}
-                </button>
-              </div>
-              ${names.map(
-                (name) =>
+              ${this.allowAdd ? this.renderAdd() : ''}
+              ${options.map(
+                (item) =>
                   html`<label class="option">
                     <input
                       type="checkbox"
-                      .checked=${this.selected.includes(name)}
+                      .checked=${this.selected.includes(item.value)}
                       @change=${(e: Event) =>
                         this.emit(
-                          toggled(this.selected, name, (e.target as HTMLInputElement).checked),
+                          toggled(
+                            this.selected,
+                            item.value,
+                            (e.target as HTMLInputElement).checked,
+                          ),
                         )}
                     />
-                    ${name}
+                    ${item.label}
                   </label>`,
               )}
             </div>`
