@@ -1,6 +1,7 @@
 id: cover
 name: Blind
 model: Blind
+z2m: { vendor: TDC, model: TDC-COVER-01, description: "Blind motor", power_source: "Battery", type: EndDevice }
 entities:
   - { key: cover, platform: cover, name: Blind, device_class: blind, initial_on: true }
   - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,

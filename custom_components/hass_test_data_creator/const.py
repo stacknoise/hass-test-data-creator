@@ -19,6 +19,7 @@ FEATURES: Final = (
     "scenarios",
     "schedules",
     "templates",
+    "z2m_bridge",
 )
 
 # Storage (concept 4.3).
@@ -31,6 +32,8 @@ CONF_IS_TEST_ENVIRONMENT: Final = "is_test_environment"
 CONF_SEED: Final = "seed"
 CONF_TICK_SECONDS: Final = "tick_seconds"
 CONF_MQTT_BASE_TOPIC: Final = "mqtt_base_topic"
+CONF_Z2M_BASE_TOPIC: Final = "z2m_base_topic"
+CONF_Z2M_CONFIRM_DEFAULT: Final = "z2m_confirm_default_topic"
 DEFAULT_SEED: Final = "tdc-0042"
 DEFAULT_TICK_SECONDS: Final = 10
 MIN_TICK_SECONDS: Final = 1
@@ -62,6 +65,7 @@ PLATFORMS: Final = (
 
 # Outputs (concept 7). Only the native output exists in v0.1.
 DEFAULT_MQTT_BASE_TOPIC: Final = "tdc"
+DEFAULT_Z2M_BASE_TOPIC: Final = "tdc_z2m"
 DISCOVERY_PREFIX: Final = "homeassistant"
 OUTPUT_NATIVE: Final = "native"
 OUTPUT_MQTT: Final = "mqtt"

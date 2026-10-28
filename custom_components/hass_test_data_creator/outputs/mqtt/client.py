@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Callable
 
 from homeassistant.components import mqtt
@@ -12,6 +13,7 @@ from ...core.errors import ErrorCode, OutputError
 from ...store.store import TdcStore
 
 MESSAGE_CALLBACK = Callable[[str, str], None]
+RETAINED_WAIT_SECONDS = 1.0
 
 
 class MqttClient:
@@ -32,6 +34,30 @@ class MqttClient:
     async def async_wait(self) -> bool:
         """Wait until the MQTT integration is connected; False if it is not set up."""
         return await async_wait_for_mqtt_client(self._hass)
+
+    def is_ours(self, topic: str) -> bool:
+        """Whether this integration has published `topic` as a retained topic."""
+        return topic in self._store.topics()
+
+    async def async_retained(self, topic: str) -> str | None:
+        """Return the retained payload on `topic`, or None if there is none after a short wait."""
+        self.require()
+        found: asyncio.Future[str] = self._hass.loop.create_future()
+
+        @hass_callback
+        def received(message: mqtt.ReceiveMessage) -> None:
+            """Take the first retained message."""
+            if message.retain and not found.done() and message.payload:
+                found.set_result(str(message.payload))
+
+        unsubscribe = await mqtt.async_subscribe(self._hass, topic, received)
+        try:
+            async with asyncio.timeout(RETAINED_WAIT_SECONDS):
+                return await found
+        except TimeoutError:
+            return None
+        finally:
+            unsubscribe()
 
     async def async_publish(
         self, topic: str, payload: str, *, retain: bool = True, device_id: str | None = None

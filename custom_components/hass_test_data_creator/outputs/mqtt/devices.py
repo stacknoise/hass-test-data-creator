@@ -5,17 +5,13 @@ from __future__ import annotations
 import json
 from typing import cast
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 
-from ...audit.factory import AuditEntryFactory
-from ...audit.log import AuditLog
 from ...const import DISCOVERY_PREFIX
-from ...engine.behaviour_factory import BehaviourFactory
-from ...engine.behaviours import Behaviour, Live
+from ...engine.behaviours import Behaviour
 from ...model.models import DeviceDef, EntityDef
-from .client import MqttClient
 from .profiles import OFFLINE, ONLINE, SET, MqttProfile, MqttProfileFactory, Topics
-from .runtime import BehaviourRuntime, RuntimeEntry
+from .runtime import BehaviourRuntime, RuntimeEntry, RuntimeParts
 
 COMMAND_PARTS = 4
 
@@ -40,19 +36,9 @@ class _Entry(RuntimeEntry):
 class MqttDevices(BehaviourRuntime):
     """Runs the behaviours of the devices with the output `mqtt` and talks to the broker for them."""
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: MqttClient,
-        behaviours: BehaviourFactory,
-        live: Live,
-        profiles: MqttProfileFactory,
-        base_topic: str,
-        audit: AuditLog,
-        audit_factory: AuditEntryFactory,
-    ) -> None:
+    def __init__(self, parts: RuntimeParts, profiles: MqttProfileFactory, base_topic: str) -> None:
         """Keep the profiles and the base topic."""
-        super().__init__(hass, client, behaviours, live, audit, audit_factory)
+        super().__init__(parts)
         self._profiles = profiles
         self._base = base_topic
 

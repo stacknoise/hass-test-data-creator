@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
+from dataclasses import dataclass
 import logging
 from typing import Any
 
@@ -33,25 +34,29 @@ class RuntimeEntry:
         self.behaviour = behaviour
 
 
+@dataclass(frozen=True)
+class RuntimeParts:
+    """What every MQTT output needs: the instance, the client, the factories and the audit log."""
+
+    hass: HomeAssistant
+    client: MqttClient
+    behaviours: BehaviourFactory
+    live: Live
+    audit: AuditLog
+    audit_factory: AuditEntryFactory
+
+
 class BehaviourRuntime(ABC):
     """Starts the behaviours of devices, follows the tick and calls the output to publish."""
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        client: MqttClient,
-        behaviours: BehaviourFactory,
-        live: Live,
-        audit: AuditLog,
-        audit_factory: AuditEntryFactory,
-    ) -> None:
-        """Keep the collaborators."""
-        self._hass = hass
-        self._client = client
-        self._behaviours = behaviours
-        self._live = live
-        self._audit = audit
-        self._audit_factory = audit_factory
+    def __init__(self, parts: RuntimeParts) -> None:
+        """Keep the parts."""
+        self._hass = parts.hass
+        self._client = parts.client
+        self._behaviours = parts.behaviours
+        self._live = parts.live
+        self._audit = parts.audit
+        self._audit_factory = parts.audit_factory
         self._entries: dict[tuple[str, str], RuntimeEntry] = {}
         self._unsubscribe: Callable[[], None] | None = None
         self._unsubscribe_tick: CALLBACK_TYPE | None = None
@@ -59,6 +64,10 @@ class BehaviourRuntime(ABC):
     def require_connection(self) -> None:
         """Raise TDC-OUT-002 unless MQTT is usable."""
         self._client.require()
+
+    async def async_check(self) -> None:
+        """Raise unless the output may be used now; the default is a usable MQTT connection."""
+        self.require_connection()
 
     async def async_start(self, devices: list[DeviceDef]) -> None:
         """Start the stored devices after a restart once MQTT is connected."""

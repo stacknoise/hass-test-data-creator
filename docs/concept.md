@@ -239,6 +239,17 @@ The integration behaves like a Zigbee2MQTT bridge under a configurable base topi
 | `<friendly_name>/action` | button events as plain string |
 | `<group name>` and `<group name>/set` | group state derived from the members; a set is passed to all members |
 
+Implemented in the first part (devices, without groups):
+
+- The bridge is published when the first device starts: `bridge/state`, `bridge/info`, `bridge/devices` (the coordinator and every device with `definition.exposes`). `bridge/devices` is published again whenever a device is added or removed. Home Assistant's MQTT client owns the connection, so there is no last will of our own; the bridge and every device are set to `offline` when the integration is unloaded.
+- A device is published under its name as the friendly name: the state `<base>/<name>` (JSON, retained) holds all properties, `<name>/availability` is `{"state": ...}`. A fault that makes any entity of the device unavailable marks the whole device offline.
+- Properties follow Zigbee2MQTT: entity keys for sensors, `occupancy` for motion and `contact` (true while closed) for door sensors, `state` and `brightness` (0 to 254) for lights, `state` and `position` for covers, `system_mode`, `occupied_heating_setpoint` and `local_temperature` for thermostats. Buttons publish plain text on `<name>/action` (not retained).
+- `<name>/set` takes a JSON object; every entity applies the properties that belong to it. An invalid payload or an unknown name is ignored and logged.
+- The model catalogue is the optional `z2m` block of a template (`vendor`, `model`, `description`, `power_source`, `type`); a custom device gets vendor `TDC`.
+- The base topic is the option `z2m_base_topic` (default `tdc_z2m`); `zigbee2mqtt` needs the confirmation `z2m_confirm_default_topic` (`TDC-OUT-004`). If the base topic already holds a retained `bridge/state` that this integration did not publish, the output refuses to start (`TDC-OUT-003`). The options flow checks both base topics.
+- Home Assistant discovery is not published in the Zigbee2MQTT format; the devices are for consumers of the Zigbee2MQTT topics. Use the output `mqtt` to get Home Assistant entities.
+- Groups follow in the next part.
+
 Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the model catalogue come from the templates; the network map is not implemented. At startup the adapter checks if the base topic already carries a retained `bridge/state` of a foreign publisher and refuses to start (`TDC-OUT-003`).
 
 ## 8. Services and WebSocket API
@@ -326,6 +337,7 @@ Objects whose kind depends on a type or on runtime data are created only by a fa
 | `OutputAdapterFactory` | the output adapter per device (native, mqtt, z2m) |
 | `MqttProfileFactory` | the discovery payload, state payloads and commands per platform |
 | `Z2mPayloadFactory` | bridge, device, group and state payloads |
+| `Z2mProfileFactory` | the exposes, state properties and commands per platform in the Zigbee2MQTT format |
 | `AuditEntryFactory` | audit entry per kind of action |
 | `ResponseFactory` | WebSocket result, error and event replies |
 | `ErrorFactory` | `TdcError` from any caught exception |

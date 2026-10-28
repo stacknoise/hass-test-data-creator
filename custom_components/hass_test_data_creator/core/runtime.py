@@ -13,8 +13,11 @@ from ..audit.log import AuditLog
 from ..const import (
     CONF_MQTT_BASE_TOPIC,
     CONF_TICK_SECONDS,
+    CONF_Z2M_BASE_TOPIC,
+    CONF_Z2M_CONFIRM_DEFAULT,
     DEFAULT_MQTT_BASE_TOPIC,
     DEFAULT_TICK_SECONDS,
+    DEFAULT_Z2M_BASE_TOPIC,
     DOMAIN,
 )
 from ..devices.manager import DevicesManager
@@ -27,6 +30,10 @@ from ..outputs.adapter import OutputAdapterFactory
 from ..outputs.mqtt.client import MqttClient
 from ..outputs.mqtt.devices import MqttDevices
 from ..outputs.mqtt.profiles import MqttProfileFactory
+from ..outputs.mqtt.runtime import RuntimeParts
+from ..outputs.z2m.devices import Z2mDevices, Z2mSettings
+from ..outputs.z2m.payloads import Z2mPayloadFactory
+from ..outputs.z2m.profiles import Z2mProfileFactory
 from ..platforms.factory import EntityFactory
 from ..platforms.scheduler import HassScheduler
 from ..removal.planner import RemovalPlanner
@@ -63,6 +70,7 @@ class TdcData:
     entity_factory: EntityFactory
     mqtt: MqttClient
     mqtt_devices: MqttDevices
+    z2m_devices: Z2mDevices
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -77,17 +85,23 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     registry = TemplateRegistry(template_factory)
     mqtt = MqttClient(hass, store)
     behaviours = BehaviourFactory(SignalFactory(), HassScheduler(hass))
+    parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
     mqtt_devices = MqttDevices(
-        hass,
-        mqtt,
-        behaviours,
-        live,
+        parts,
         MqttProfileFactory(),
         entry.options.get(CONF_MQTT_BASE_TOPIC, DEFAULT_MQTT_BASE_TOPIC),
-        audit,
-        audit_factory,
     )
-    outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices)
+    z2m_devices = Z2mDevices(
+        parts,
+        Z2mProfileFactory(),
+        Z2mPayloadFactory(),
+        registry,
+        Z2mSettings(
+            entry.options.get(CONF_Z2M_BASE_TOPIC, DEFAULT_Z2M_BASE_TOPIC),
+            entry.options.get(CONF_Z2M_CONFIRM_DEFAULT, False),
+        ),
+    )
+    outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices, z2m_devices)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
     actions = ActionFactory(FaultFactory())
@@ -131,6 +145,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         entity_factory=EntityFactory(behaviours, live),
         mqtt=mqtt,
         mqtt_devices=mqtt_devices,
+        z2m_devices=z2m_devices,
         live=live,
     )
 

@@ -1,6 +1,7 @@
 id: climate_sensor
 name: Climate sensor
 model: Climate sensor
+z2m: { vendor: TDC, model: TDC-CLIMATE-01, description: "Temperature, humidity and pressure sensor", power_source: "Battery", type: EndDevice }
 entities:
   - { key: temperature, platform: sensor, name: Temperature, device_class: temperature, unit: "°C", state_class: measurement,
       signal: { shape: sine, min: 18, max: 26, period_s: 86400, noise: 0.02, decimals: 1 } }
