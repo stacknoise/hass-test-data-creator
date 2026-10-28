@@ -72,6 +72,9 @@
     "out_unsupported": {
       "message": "This output is not available in this version"
     },
+    "out_mqtt_unavailable": {
+      "message": "MQTT is not set up or not connected"
+    },
     "rem_failed": {
       "message": "The removal was interrupted. Run it again to finish it"
     },

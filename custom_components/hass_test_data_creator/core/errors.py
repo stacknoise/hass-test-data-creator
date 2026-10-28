@@ -75,6 +75,9 @@ class ErrorCode(StrEnum):
     OUT_UNSUPPORTED = "TDC-OUT-001"
     """The requested output is not available in this version."""
 
+    OUT_MQTT_UNAVAILABLE = "TDC-OUT-002"
+    """The MQTT integration is not set up or not connected to its broker."""
+
     REM_FAILED = "TDC-REM-001"
     """A step of a removal failed; the removal can be run again."""
 

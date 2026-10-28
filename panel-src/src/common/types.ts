@@ -105,6 +105,7 @@ export interface RemovalPlan {
   areas: string[];
   schedules: string[];
   scenarios: string[];
+  topics: string[];
 }
 
 /** What a removal deleted. */

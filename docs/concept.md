@@ -210,6 +210,8 @@ Entity platforms are set up once by the single config entry and receive devices 
 
 Publishes discovery configs under `homeassistant/<component>/<node>/<object>/config` and states on topics below the integration's own base topic. Home Assistant creates the entities through the MQTT integration. All discovery and state topics are recorded in `published_topics`.
 
+The MQTT outputs share one `MqttClient` (`outputs/mqtt/client.py`). It uses the MQTT integration of the instance (an `after_dependency`, not a requirement), publishes, subscribes and records every retained topic in `published_topics` (a map from topic to the device it belongs to; shared topics such as the bridge have none). Without a connected MQTT integration it raises `TDC-OUT-002`. A removal deletes the retained messages of its topics first; if MQTT is not usable it stops before anything else is removed, so nothing is left half done. Removing the config entry clears the topics if MQTT is connected.
+
 ### 7.4 Zigbee2MQTT emulation (v0.3)
 
 The integration behaves like a Zigbee2MQTT bridge under a configurable base topic (default `tdc_z2m`, never `zigbee2mqtt` without an explicit confirmation).

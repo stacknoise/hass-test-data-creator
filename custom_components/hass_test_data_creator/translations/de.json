@@ -72,6 +72,9 @@
     "out_unsupported": {
       "message": "Dieser Ausgang ist in dieser Version nicht verfügbar"
     },
+    "out_mqtt_unavailable": {
+      "message": "MQTT ist nicht eingerichtet oder nicht verbunden"
+    },
     "rem_failed": {
       "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"
     },

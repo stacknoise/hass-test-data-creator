@@ -30,6 +30,7 @@ class RemovalPlan:
     runs: list[str] = field(default_factory=list)
     schedules: list[str] = field(default_factory=list)
     scenarios: list[str] = field(default_factory=list)
+    topics: list[str] = field(default_factory=list)
     areas: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -41,6 +42,7 @@ class RemovalPlan:
             "runs": self.runs,
             "schedules": self.schedules,
             "scenarios": self.scenarios,
+            "topics": self.topics,
             "areas": self.areas,
         }
 
@@ -76,6 +78,8 @@ class RemovalPlanner:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             plan.devices = [device]
         plan.schedules = self._schedule_ids(plan)
+        owners = None if target == TARGET_ALL else {d.id for d in plan.devices}
+        plan.topics = self._store.topics(owners)
         plan.areas = self._empty_areas(
             {item.id for item in plan.devices} | {item["identifier"] for item in plan.orphans}
         )
