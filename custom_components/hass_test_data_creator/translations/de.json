@@ -89,6 +89,9 @@
     },
     "sch_invalid_params": {
       "message": "Ein Parameter der Aktion fehlt oder liegt außerhalb des Bereichs"
+    },
+    "sch_scenario_not_found": {
+      "message": "Das Szenario wurde nicht gefunden"
     }
   },
   "services": {

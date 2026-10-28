@@ -33,6 +33,9 @@ Lists every module, class and function of the integration with signature, file a
 | `_add_schedule` | `async def _add_schedule(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Add a schedule. |
 | `_remove_schedule` | `async def _remove_schedule(call: ServiceCall) -> None` | `custom_components/hass_test_data_creator/services.py` | Delete a schedule. |
 | `_set_schedule_enabled` | `async def _set_schedule_enabled(call: ServiceCall) -> None` | `custom_components/hass_test_data_creator/services.py` | Switch a schedule on or off. |
+| `_add_scenario` | `async def _add_scenario(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Add a scenario. |
+| `_remove_scenario` | `async def _remove_scenario(call: ServiceCall) -> None` | `custom_components/hass_test_data_creator/services.py` | Delete a scenario. |
+| `_run_scenario` | `async def _run_scenario(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Start a scenario. |
 | `async_register_services` | `def async_register_services(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/services.py` | Register the services as administrator services. |
 | `async_remove_services` | `def async_remove_services(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/services.py` | Remove the services when the entry is unloaded. |
 | `hass_test_data_creator.switch` | `module` | `custom_components/hass_test_data_creator/switch.py` | The switch platform of the generated devices. |
@@ -91,6 +94,9 @@ Lists every module, class and function of the integration with signature, file a
 | `ScheduleDef` | `class ScheduleDef` | `custom_components/hass_test_data_creator/model/models.py` | An action that runs on devices at times given by a trigger (concept 6). |
 | `ScheduleDef.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the JSON-serialisable form. |
 | `ScheduleDef.from_dict` | `def from_dict(cls, data: dict[str, Any]) -> ScheduleDef` | `custom_components/hass_test_data_creator/model/models.py` | Return the schedule stored in `data`. |
+| `ScenarioDef` | `class ScenarioDef` | `custom_components/hass_test_data_creator/model/models.py` | A named list of steps; each step runs an action `after_s` seconds after the step before. |
+| `ScenarioDef.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the JSON-serialisable form. |
+| `ScenarioDef.from_dict` | `def from_dict(cls, data: dict[str, Any]) -> ScenarioDef` | `custom_components/hass_test_data_creator/model/models.py` | Return the scenario stored in `data`. |
 
 ## store
 
@@ -113,6 +119,10 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.schedule` | `def schedule(self, schedule_id: str) -> ScheduleDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the schedule with `schedule_id`, or None. |
 | `TdcStore.put_schedule` | `def put_schedule(self, schedule: ScheduleDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `schedule`, replacing one with the same id. |
 | `TdcStore.remove_schedule` | `def remove_schedule(self, schedule_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the schedule `schedule_id`. |
+| `TdcStore.scenarios` | `def scenarios(self) -> list[ScenarioDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all scenarios in creation order. |
+| `TdcStore.scenario` | `def scenario(self, scenario_id: str) -> ScenarioDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the scenario with `scenario_id`, or None. |
+| `TdcStore.put_scenario` | `def put_scenario(self, scenario: ScenarioDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `scenario`, replacing one with the same id. |
+| `TdcStore.remove_scenario` | `def remove_scenario(self, scenario_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the scenario `scenario_id`. |
 | `TdcStore.remove_run` | `def remove_run(self, run_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the run record `run_id`. |
 | `TdcStore.next_index` | `def next_index(self, template_id: str, count: int) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Reserve `count` device numbers of a template and return the first one (from 1). |
 | `TdcStore.created_areas` | `def created_areas(self) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the ids of the areas the integration created itself. |
@@ -334,16 +344,16 @@ Lists every module, class and function of the integration with signature, file a
 | `ActionFactory._fault_action.start` | `async def start(entity: Any, params: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/actions.py` | Start the fault; `duration_s` and the kind's parameters come from `params`. |
 | `hass_test_data_creator.scheduler.manager` | `module` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Stores schedules and runs their actions at the planned moments (concept 6). |
 | `ScheduleManager` | `class ScheduleManager` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Adds, removes and enables schedules and fires them with a single timer. |
-| `ScheduleManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, triggers: TriggerFactory, planner: SchedulePlanner, actions: ActionFactory, runner: ActionRunner, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Keep the collaborators. |
+| `ScheduleManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, triggers: TriggerFactory, planner: SchedulePlanner, runner: ActionRunner, scenarios: ScenarioManager, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Keep the collaborators. |
 | `ScheduleManager.async_start` | `def async_start(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the rest of today, arm the timer and replan after every midnight. |
 | `ScheduleManager.async_stop` | `def async_stop(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Cancel the timers. |
 | `ScheduleManager.all_schedules` | `def all_schedules(self) -> list[ScheduleDef]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return all schedules. |
 | `ScheduleManager.get` | `def get(self, schedule_id: str) -> ScheduleDef` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the schedule or raise SCH_NOT_FOUND. |
-| `ScheduleManager.async_add` | `async def async_add(self, data: dict[str, Any], default_seed: str) -> ScheduleDef` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Validate and store a new schedule; `data` has name, target, entity, action, trigger. |
+| `ScheduleManager.async_add` | `async def async_add(self, data: dict[str, Any], default_seed: str) -> ScheduleDef` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Validate and store a schedule: a scenario, or a target with entity and action. |
 | `ScheduleManager.async_remove` | `async def async_remove(self, schedule_id: str) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Delete a schedule. |
 | `ScheduleManager.async_set_enabled` | `async def async_set_enabled(self, schedule_id: str, enabled: bool) -> ScheduleDef` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Switch a schedule on or off. |
 | `ScheduleManager.preview` | `def preview(self, hours: int) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the planned runs of the next `hours` hours with the schedule names. |
-| `ScheduleManager.devices_for` | `def devices_for(self, target: dict[str, Any]) -> list[DeviceDef]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the devices a target selects: a device, a template, a run or all. |
+| `ScheduleManager._check_work` | `def _check_work(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Raise unless `data` names an existing scenario or a target with a known action. |
 | `ScheduleManager.ids_targeting` | `def ids_targeting(self, device: DeviceDef) -> list[str]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the ids of the schedules that target exactly this device. |
 | `ScheduleManager.forget` | `def forget(self, schedule_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Delete schedules without saving; the removal saves the store afterwards. |
 | `ScheduleManager._cancel` | `def _cancel(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Cancel the timer of the next run. |
@@ -351,6 +361,7 @@ Lists every module, class and function of the integration with signature, file a
 | `ScheduleManager._replan` | `def _replan(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the rest of today and arm the timer for the first run. |
 | `ScheduleManager._fire` | `async def _fire(self, now: datetime) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Run every planned run that is due, then arm the timer for the next one. |
 | `ScheduleManager._execute` | `async def _execute(self, run: PlannedRun) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Run the action of one planned run on all devices of its target. |
+| `ScheduleManager._run_scenario` | `async def _run_scenario(self, schedule: ScheduleDef) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Start the scenario of a schedule; a missing scenario is logged. |
 | `hass_test_data_creator.scheduler.planner` | `module` | `custom_components/hass_test_data_creator/scheduler/planner.py` | Plans the runs of schedules for a time range (concept 6.4). |
 | `PlannedRun` | `class PlannedRun` | `custom_components/hass_test_data_creator/scheduler/planner.py` | One planned run: the moment and the schedule it belongs to. |
 | `day_seed` | `def day_seed(schedule: ScheduleDef, day_text: str) -> int` | `custom_components/hass_test_data_creator/scheduler/planner.py` | Return the seed of one schedule on one day; the same input always gives the same seed. |
@@ -361,6 +372,8 @@ Lists every module, class and function of the integration with signature, file a
 | `ActionRunner` | `class ActionRunner` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Finds the live entity for an action and runs it. |
 | `ActionRunner.__init__` | `def __init__(self, store: TdcStore, live: Live, actions: ActionFactory, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Keep the collaborators. |
 | `ActionRunner.actions` | `def actions(self) -> dict[str, list[str]]` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Return the available action names per platform. |
+| `ActionRunner.devices_for` | `def devices_for(self, target: dict[str, Any]) -> list[DeviceDef]` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Return the devices a target selects: a device, a template, a run or all. |
+| `ActionRunner.async_run_on` | `async def async_run_on(self, devices: list[DeviceDef], key: str, action: str, params: dict[str, Any], label: str) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Run `action` on entity `key` of every device; a failure is logged and the rest goes on. |
 | `ActionRunner.find_device_id` | `def find_device_id(self, reference: str) -> str` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Return the id of the device whose id or name is `reference`. |
 | `ActionRunner.async_run` | `async def async_run(self, reference: str, key: str, action: str, params: dict[str, Any] \| None=None) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Run `action` on entity `key` of the device `reference` (id or name). |
 | `hass_test_data_creator.scheduler.schema` | `module` | `custom_components/hass_test_data_creator/scheduler/schema.py` | Request fields of a schedule, shared by the services and the WebSocket commands. |
@@ -405,7 +418,7 @@ Lists every module, class and function of the integration with signature, file a
 | `RemovalPlanner._empty_areas` | `def _empty_areas(self, removed: set[str]) -> list[str]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the names of created areas that would be empty after removing `removed`. |
 | `hass_test_data_creator.removal.runner` | `module` | `custom_components/hass_test_data_creator/removal/runner.py` | Runs a removal plan step by step; every step can be repeated (concept 10.3). |
 | `RemovalRunner` | `class RemovalRunner` | `custom_components/hass_test_data_creator/removal/runner.py` | Removes devices, run records and empty created areas. |
-| `RemovalRunner.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, outputs: OutputAdapterFactory, areas: AreaAssigner, schedules: ScheduleManager, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/removal/runner.py` | Keep the collaborators. |
+| `RemovalRunner.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, outputs: OutputAdapterFactory, areas: AreaAssigner, schedules: ScheduleManager, scenarios: ScenarioManager, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/removal/runner.py` | Keep the collaborators. |
 | `RemovalRunner.async_run` | `async def async_run(self, plan: RemovalPlan) -> dict[str, Any]` | `custom_components/hass_test_data_creator/removal/runner.py` | Execute `plan` and return what was removed; schedules go first (concept 10.3). |
 
 ## audit
@@ -420,6 +433,7 @@ Lists every module, class and function of the integration with signature, file a
 | `AuditEntryFactory.removal_done` | `def removal_done(self, target: str, devices: int, areas: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a finished removal. |
 | `AuditEntryFactory.action_fired` | `def action_fired(self, device: str, key: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for an action on one entity. |
 | `AuditEntryFactory.schedule_ran` | `def schedule_ran(self, name: str, action: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a schedule that ran. |
+| `AuditEntryFactory.scenario_started` | `def scenario_started(self, name: str, steps: int) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the entry for a scenario that was started. |
 | `AuditEntryFactory.schedule_failed` | `def schedule_failed(self, name: str, device: str, code: str) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the warning for a run that failed on one device. |
 | `AuditEntryFactory.tick_slow` | `def tick_slow(self, duration: float, interval: float) -> AuditEntry` | `custom_components/hass_test_data_creator/audit/factory.py` | Return the warning for a tick that took too long (TDC-GEN-005). |
 | `hass_test_data_creator.audit.log` | `module` | `custom_components/hass_test_data_creator/audit/log.py` | The audit log: the only place where actions are logged (concept 13.4). |
@@ -444,6 +458,11 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.api.removal` | `module` | `custom_components/hass_test_data_creator/api/removal.py` | Commands about removal (concept 8.2, 10). |
 | `ws_removal_plan` | `async def ws_removal_plan(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/removal.py` | Return what a removal of the target would delete. |
 | `ws_removal_run` | `async def ws_removal_run(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/removal.py` | Remove the target and return what was removed. |
+| `hass_test_data_creator.api.scenarios` | `module` | `custom_components/hass_test_data_creator/api/scenarios.py` | Commands about scenarios (concept 8.2). |
+| `ws_scenarios_list` | `async def ws_scenarios_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Return all scenarios. |
+| `ws_scenarios_add` | `async def ws_scenarios_add(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Add a scenario and return it. |
+| `ws_scenarios_remove` | `async def ws_scenarios_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Delete a scenario. |
+| `ws_scenarios_run` | `async def ws_scenarios_run(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/scenarios.py` | Start a scenario and return the number of its steps. |
 | `hass_test_data_creator.api.schedules` | `module` | `custom_components/hass_test_data_creator/api/schedules.py` | Commands about schedules (concept 8.2). |
 | `ws_schedules_list` | `async def ws_schedules_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/schedules.py` | Return all schedules. |
 | `ws_schedules_add` | `async def ws_schedules_add(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/schedules.py` | Add a schedule and return it. |
@@ -467,3 +486,23 @@ Lists every module, class and function of the integration with signature, file a
 | `FaultFactory.kinds` | `def kinds(self) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the names of all kinds of fault. |
 | `FaultFactory.platforms` | `def platforms(self, kind: str) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the platforms a kind of fault applies to; empty if the kind is unknown. |
 | `FaultFactory.create` | `def create(self, kind: str, params: dict[str, Any]) -> Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fault or raise SCH_INVALID_FAULT for unknown kinds and bad parameters. |
+
+## scenarios
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.scenarios.__init__` | `module` | `custom_components/hass_test_data_creator/scenarios/__init__.py` | Scenarios: named lists of timed steps (concept 6.2). |
+| `hass_test_data_creator.scenarios.manager` | `module` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Stores scenarios and runs their steps one after the other (concept 6.2). |
+| `ScenarioManager` | `class ScenarioManager` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Adds and removes scenarios and runs one: each step waits `after_s` after the step before. |
+| `ScenarioManager.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, actions: ActionFactory, runner: ActionRunner, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Keep the collaborators. |
+| `ScenarioManager.async_stop` | `def async_stop(self) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Cancel the steps that still wait. |
+| `ScenarioManager.all_scenarios` | `def all_scenarios(self) -> list[ScenarioDef]` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Return all scenarios. |
+| `ScenarioManager.get` | `def get(self, scenario_id: str) -> ScenarioDef` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Return the scenario or raise SCH_SCENARIO_NOT_FOUND. |
+| `ScenarioManager.async_add` | `async def async_add(self, data: dict[str, Any]) -> ScenarioDef` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Validate and store a scenario; `data` has a name and the list of steps. |
+| `ScenarioManager.async_remove` | `async def async_remove(self, scenario_id: str) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Delete a scenario. |
+| `ScenarioManager.forget` | `def forget(self, scenario_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Delete scenarios without saving; the removal saves the store afterwards. |
+| `ScenarioManager.async_run` | `async def async_run(self, scenario_id: str) -> int` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Start the scenario and return the number of steps; waiting steps run in the background. |
+| `ScenarioManager._run_later` | `def _run_later(self, delay: float, name: str, step: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Run `step` after `delay` seconds. |
+| `ScenarioManager._run_later.fire` | `async def fire(_now: datetime) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Run the step and forget its timer. |
+| `ScenarioManager._run_step` | `async def _run_step(self, name: str, step: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Run the action of one step on all devices of its target. |
+| `hass_test_data_creator.scenarios.schema` | `module` | `custom_components/hass_test_data_creator/scenarios/schema.py` | Request fields of a scenario, shared by the services and the WebSocket commands. |

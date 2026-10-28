@@ -92,6 +92,7 @@ class ScheduleDef:
     created_at: float
     params: dict[str, Any] = field(default_factory=dict)
     enabled: bool = True
+    scenario: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Return the JSON-serialisable form."""
@@ -100,4 +101,23 @@ class ScheduleDef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ScheduleDef:
         """Return the schedule stored in `data`."""
+        return cls(**data)
+
+
+@dataclass
+class ScenarioDef:
+    """A named list of steps; each step runs an action `after_s` seconds after the step before."""
+
+    id: str
+    name: str
+    steps: list[dict[str, Any]]
+    created_at: float
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the JSON-serialisable form."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> ScenarioDef:
+        """Return the scenario stored in `data`."""
         return cls(**data)

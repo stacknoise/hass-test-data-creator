@@ -15,9 +15,10 @@ TARGET_SCHEMA = vol.Any(
 
 SCHEDULE_FIELDS: dict[Any, Any] = {
     vol.Required("name"): vol.All(str, vol.Length(min=1, max=64)),
-    vol.Required("target"): TARGET_SCHEMA,
-    vol.Required("entity"): str,
-    vol.Required("action"): str,
+    vol.Optional("target"): TARGET_SCHEMA,
+    vol.Optional("entity"): str,
+    vol.Optional("action"): str,
+    vol.Optional("scenario"): str,
     vol.Optional("params", default=dict): dict,
     vol.Required("trigger"): dict,
     vol.Optional("seed"): vol.All(str, vol.Length(min=1, max=64)),

@@ -10,6 +10,7 @@ from .const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from .core.runtime import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
 from .removal.planner import TARGET_ALL
+from .scenarios.schema import SCENARIO_FIELDS
 from .scheduler.schema import SCHEDULE_FIELDS
 
 SERVICE_CREATE = "create_devices"
@@ -19,6 +20,9 @@ SERVICE_REMOVE_ALL = "remove_all"
 SERVICE_ADD_SCHEDULE = "add_schedule"
 SERVICE_REMOVE_SCHEDULE = "remove_schedule"
 SERVICE_ENABLE_SCHEDULE = "set_schedule_enabled"
+SERVICE_ADD_SCENARIO = "add_scenario"
+SERVICE_REMOVE_SCENARIO = "remove_scenario"
+SERVICE_RUN_SCENARIO = "run_scenario"
 SERVICES = (
     SERVICE_CREATE,
     SERVICE_FIRE,
@@ -27,6 +31,9 @@ SERVICES = (
     SERVICE_ADD_SCHEDULE,
     SERVICE_REMOVE_SCHEDULE,
     SERVICE_ENABLE_SCHEDULE,
+    SERVICE_ADD_SCENARIO,
+    SERVICE_REMOVE_SCENARIO,
+    SERVICE_RUN_SCENARIO,
 )
 
 
@@ -78,6 +85,22 @@ async def _set_schedule_enabled(call: ServiceCall) -> None:
     )
 
 
+async def _add_scenario(call: ServiceCall) -> dict[str, object]:
+    """Add a scenario."""
+    scenario = await get_data(call.hass).scenarios.async_add(dict(call.data))
+    return {"id": scenario.id}
+
+
+async def _remove_scenario(call: ServiceCall) -> None:
+    """Delete a scenario."""
+    await get_data(call.hass).scenarios.async_remove(call.data["scenario_id"])
+
+
+async def _run_scenario(call: ServiceCall) -> dict[str, object]:
+    """Start a scenario."""
+    return {"steps": await get_data(call.hass).scenarios.async_run(call.data["scenario_id"])}
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     """Register the services as administrator services."""
     definitions = (
@@ -124,6 +147,24 @@ def async_register_services(hass: HomeAssistant) -> None:
             _set_schedule_enabled,
             vol.Schema({vol.Required("schedule_id"): str, vol.Required("enabled"): bool}),
             SupportsResponse.NONE,
+        ),
+        (
+            SERVICE_ADD_SCENARIO,
+            _add_scenario,
+            vol.Schema(SCENARIO_FIELDS),
+            SupportsResponse.OPTIONAL,
+        ),
+        (
+            SERVICE_REMOVE_SCENARIO,
+            _remove_scenario,
+            vol.Schema({vol.Required("scenario_id"): str}),
+            SupportsResponse.NONE,
+        ),
+        (
+            SERVICE_RUN_SCENARIO,
+            _run_scenario,
+            vol.Schema({vol.Required("scenario_id"): str}),
+            SupportsResponse.OPTIONAL,
         ),
     )
     for name, handler, schema, response in definitions:

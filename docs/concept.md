@@ -34,7 +34,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | Version | Content |
 | --- | --- |
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
-| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler with its panel tab, the faults (without `late` and `duplicate`) and the shapes `household_load`, `pv_day`, `steps` and `discharge` and the templates `light`, `cover` and `thermostat` (platforms `light`, `cover`, `climate`; a cover moves at once, the thermostat measures a signal and takes a target temperature) are done; `enum` and `state_machine` (they need text states and value lists), the curve editor and scenarios follow |
+| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler with its panel tab, the faults (without `late` and `duplicate`), the scenarios (without a panel tab) and the shapes `household_load`, `pv_day`, `steps` and `discharge` and the templates `light`, `cover` and `thermostat` (platforms `light`, `cover`, `climate`; a cover moves at once, the thermostat measures a signal and takes a target temperature) are done; `enum` and `state_machine` (they need text states and value lists), the curve editor and the scenario tab follow |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check |
 | v0.4 | Statistics backfill, time lapse, CSV replay, YAML import/export, sharing of templates |
 
@@ -182,11 +182,11 @@ Sensor values are computed, never stored. Discrete states (switch, binary sensor
 | `random_window` | N times within a window, positions drawn from the seed | v0.2 |
 | `poisson` | on average N per hour/day, exponentially distributed gaps | v0.2 |
 | `manual`, `service` | button in the panel, service call | v0.1 |
-| `after` | delay after another action | with the scenarios |
+| `after` | delay after another action | v0.2, as `after_s` of a scenario step |
 
 ### 6.2 Actions (ActionFactory)
 
-Switch on/off/toggle, button press (`single`, `double`, `hold`), motion for N seconds, contact open/close, set value, run a scene (list of steps), and faults (6.3). An action is created per entity platform; code outside the factory does not branch on the platform.
+Switch on/off/toggle, button press (`single`, `double`, `hold`), motion for N seconds, contact open/close, set value, run a scene (list of steps), and faults (6.3). A scene is stored as a scenario: a named list of steps, each with a target, an entity, an action, parameters and `after_s`, the wait after the step before (the delays add up). A scenario starts by service, command or a schedule with `scenario` instead of target, entity and action; a step that fails on a device is logged and the rest goes on. `remove_all` deletes the scenarios. An action is created per entity platform; code outside the factory does not branch on the platform.
 
 ### 6.3 Faults (FaultFactory)
 
@@ -232,11 +232,11 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.1 Services
 
-`hass_test_data_creator.create_devices`, `fire_event`, `inject_fault`, `import_history` (v0.4), `remove` (target: device, template, run or all) and `remove_all`. Services are described in `services.yaml` and have schemas.
+`hass_test_data_creator.create_devices`, `fire_event`, `add_schedule`, `remove_schedule`, `set_schedule_enabled`, `add_scenario`, `remove_scenario`, `run_scenario`, `inject_fault`, `import_history` (v0.4), `remove` (target: device, template, run or all) and `remove_all`. Services are described in `services.yaml` and have schemas.
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, save, preview), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, add, remove, enable, preview), `scenarios/*` (list, add, remove, run), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 

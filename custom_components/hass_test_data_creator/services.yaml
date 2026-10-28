@@ -86,18 +86,18 @@ add_schedule:
       selector:
         text:
     target:
-      required: true
       example: '{"template": "plug_metering"}'
       selector:
         object:
     entity:
-      required: true
       example: state
       selector:
         text:
     action:
-      required: true
       example: toggle
+      selector:
+        text:
+    scenario:
       selector:
         text:
     params:
@@ -133,3 +133,30 @@ set_schedule_enabled:
       required: true
       selector:
         boolean:
+
+add_scenario:
+  fields:
+    name:
+      required: true
+      example: Leaving home
+      selector:
+        text:
+    steps:
+      required: true
+      example: '[{"target": {"template": "light"}, "entity": "light", "action": "turn_off"}, {"after_s": 30, "target": {"all": true}, "entity": "state", "action": "turn_off"}]'
+      selector:
+        object:
+
+remove_scenario:
+  fields:
+    scenario_id:
+      required: true
+      selector:
+        text:
+
+run_scenario:
+  fields:
+    scenario_id:
+      required: true
+      selector:
+        text:

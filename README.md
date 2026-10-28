@@ -8,6 +8,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
 - Trigger actions by hand: switch, press a button, set or pulse a binary sensor, dim a light (`set_brightness` 0 to 255), move a blind (`open`, `close`, `set_position` 0 to 100), set a thermostat (`set_temperature`, `turn_on`, `turn_off`). A blind moves at once. Wrong parameters give error `TDC-SCH-006`.
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
+- Scenarios: a named list of steps, each with a target, an entity, an action and `after_s`, the wait after the step before. Start one by hand or from a schedule (`scenario: <id>` instead of target, entity and action).
 - Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`. The device list shows active faults.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours); services for scripts.
@@ -37,6 +38,9 @@ Version 0.1.0, the first release. Requires Home Assistant 2026.9.0 or newer. The
 | `hass_test_data_creator.add_schedule` | Run an action on devices at fixed, repeating or random times |
 | `hass_test_data_creator.remove_schedule` | Delete a schedule (`schedule_id`) |
 | `hass_test_data_creator.set_schedule_enabled` | Switch a schedule on or off |
+| `hass_test_data_creator.add_scenario` | Store a named list of timed steps |
+| `hass_test_data_creator.run_scenario` | Start a scenario (`scenario_id`) |
+| `hass_test_data_creator.remove_scenario` | Delete a scenario (`scenario_id`) |
 
 ```yaml
 action: hass_test_data_creator.create_devices
@@ -75,6 +79,17 @@ Faults are actions named `fault_<kind>` (for `fire_event` and schedules); `param
 ```yaml
 action: hass_test_data_creator.fire_event
 data: { device: Plug 01, entity: power, action: fault_spike, params: { factor: 3, duration_s: 20 } }
+```
+
+A scenario is stored once and then run by service or schedule; `remove_all` deletes the scenarios too:
+
+```yaml
+action: hass_test_data_creator.add_scenario
+data:
+  name: Leaving home
+  steps:
+    - { target: { template: light }, entity: light, action: turn_off }
+    - { after_s: 30, target: { all: true }, entity: state, action: turn_off }
 ```
 
 ```yaml

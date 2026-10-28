@@ -89,6 +89,9 @@
     },
     "sch_invalid_params": {
       "message": "A parameter of the action is missing or out of range"
+    },
+    "sch_scenario_not_found": {
+      "message": "The scenario was not found"
     }
   },
   "services": {

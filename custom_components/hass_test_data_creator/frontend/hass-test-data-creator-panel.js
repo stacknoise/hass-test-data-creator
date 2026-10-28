@@ -673,6 +673,8 @@ var Le = {
 		schNoRuns: "Nothing planned.",
 		schMoreRuns: "… and {count} more",
 		planSchedules: "{count} schedules",
+		planScenarios: "{count} scenarios",
+		schScenario: "Scenario {id}",
 		loading: "Loading …",
 		noDevices: "No test devices yet. Open \"Create\" to generate some.",
 		colName: "Name",
@@ -761,6 +763,8 @@ var Le = {
 		schNoRuns: "Nichts geplant.",
 		schMoreRuns: "… und {count} weitere",
 		planSchedules: "{count} Zeitpläne",
+		planScenarios: "{count} Szenarien",
+		schScenario: "Szenario {id}",
 		loading: "Lade …",
 		noDevices: "Noch keine Testgeräte. Öffne „Erstellen“, um welche zu erzeugen.",
 		colName: "Name",
@@ -1046,6 +1050,7 @@ var H = class extends B {
 	renderPlan(e) {
 		return e.devices.length + e.orphans.length === 0 && e.runs.length === 0 ? E`<p>${this.tr("planNothing")}</p>` : E`<ul>
         <li>${this.tr("planDevices", { count: e.devices.length })}</li>
+        ${e.scenarios.length ? E`<li>${this.tr("planScenarios", { count: e.scenarios.length })}</li>` : ""}
         ${e.schedules.length ? E`<li>${this.tr("planSchedules", { count: e.schedules.length })}</li>` : ""}
         ${e.orphans.length ? E`<li>${this.tr("planOrphans", { count: e.orphans.length })}</li>` : ""}
         ${e.areas.length ? E`<li>${this.tr("planAreas", { names: e.areas.join(", ") })}</li>` : ""}
@@ -1143,18 +1148,18 @@ function Je(e, t) {
 	}
 }
 function Ye(e) {
-	return "all" in e ? {
-		kind: "all",
-		id: ""
-	} : "template" in e ? {
+	return "template" in e ? {
 		kind: "template",
 		id: e.template
 	} : "device" in e ? {
 		kind: "device",
 		id: e.device
-	} : {
+	} : "run" in e ? {
 		kind: "run",
 		id: e.run
+	} : {
+		kind: "all",
+		id: ""
 	};
 }
 function Xe(e) {
@@ -1329,8 +1334,12 @@ var Qe = 1e4, $e = 24, U = 50, et = [
 		let { kind: t, id: n } = Ye(e.target);
 		return E`<tr>
       <td>${e.name}</td>
-      <td>${this.tr(`schTarget_${t}`)}${n ? ` ${n}` : ""}</td>
-      <td>${e.entity}: ${e.action}</td>
+      <td>
+        ${e.scenario ? "–" : `${this.tr(`schTarget_${t}`)}${n ? ` ${n}` : ""}`}
+      </td>
+      <td>
+        ${e.scenario ? this.tr("schScenario", { id: e.scenario }) : `${e.entity}: ${e.action}`}
+      </td>
       <td>
         ${this.tr(`schTrigger_${e.trigger.type}`)}<br /><small
           >${Xe(e.trigger)}</small

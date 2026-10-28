@@ -10,7 +10,15 @@ LABEL_NAME: Final = "test data"
 
 # WebSocket API for the panel (concept 8.2).
 API_VERSION: Final = 1
-FEATURES: Final = ("areas", "faults", "native_output", "removal", "schedules", "templates")
+FEATURES: Final = (
+    "areas",
+    "faults",
+    "native_output",
+    "removal",
+    "scenarios",
+    "schedules",
+    "templates",
+)
 
 # Storage (concept 4.3).
 STORE_KEY: Final = f"{DOMAIN}.data"

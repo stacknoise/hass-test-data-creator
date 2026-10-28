@@ -29,6 +29,7 @@ class RemovalPlan:
     orphans: list[dict[str, str]] = field(default_factory=list)
     runs: list[str] = field(default_factory=list)
     schedules: list[str] = field(default_factory=list)
+    scenarios: list[str] = field(default_factory=list)
     areas: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -39,6 +40,7 @@ class RemovalPlan:
             "orphans": self.orphans,
             "runs": self.runs,
             "schedules": self.schedules,
+            "scenarios": self.scenarios,
             "areas": self.areas,
         }
 
@@ -59,6 +61,7 @@ class RemovalPlanner:
             plan.devices = self._store.devices()
             plan.orphans = self._orphans({item.id for item in plan.devices})
             plan.runs = [run.id for run in self._store.runs()]
+            plan.scenarios = [item.id for item in self._store.scenarios()]
         elif target == TARGET_RUN:
             run = next((item for item in self._store.runs() if item.id == target_id), None)
             if run is None:
