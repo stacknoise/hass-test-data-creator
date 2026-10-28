@@ -8,7 +8,9 @@ import type { CreateRequest, EntityDef, Info, SignalDef, TemplateInfo } from '..
 import { editableSensors, withSignal } from '../signals/editor-helpers';
 import '../signals/curve-editor';
 import '../signals/signal-preview';
-import { parseAreas, stateRate } from './helpers';
+import '../common/multi-select';
+import { knownAreas } from '../devices/helpers';
+import { stateRate } from './helpers';
 
 const CUSTOM = 'custom';
 const RATE_WARNING = 50;
@@ -39,7 +41,7 @@ export class CreationWizard extends TdcElement {
   @state() private template = '';
   @state() private count = 10;
   @state() private pattern = '{template} {nn}';
-  @state() private areas = '';
+  @state() private areas: string[] = [];
   @state() private mode: 'even' | 'random' = 'even';
   @state() private seed = '';
   @state() private output = 'native';
@@ -112,7 +114,7 @@ export class CreationWizard extends TdcElement {
       template: this.template,
       count: this.count,
       name_pattern: this.pattern,
-      areas: parseAreas(this.areas),
+      areas: this.areas,
       area_mode: this.mode,
       output: this.output,
       ...(this.seed ? { seed: this.seed } : {}),
@@ -154,7 +156,7 @@ export class CreationWizard extends TdcElement {
   override render(): TemplateResult {
     const sensor = this.entities().find((e) => e.platform === 'sensor' && e.signal);
     return html`
-      <div class="row">
+      <div class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr('template')}
           <select @change=${(e: Event) => (this.template = (e.target as HTMLSelectElement).value)}>
@@ -176,7 +178,7 @@ export class CreationWizard extends TdcElement {
           />
         </label>
       </div>
-      <p class="row">
+      <p class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr('namePattern')}
           <input
@@ -187,10 +189,12 @@ export class CreationWizard extends TdcElement {
         </label>
         <label style="flex: 1 1 220px"
           >${this.tr('areas')}
-          <input
-            .value=${this.areas}
-            @input=${(e: Event) => (this.areas = (e.target as HTMLInputElement).value)}
-          />
+          <tdc-multi-select
+            .hass=${this.hass}
+            .options=${knownAreas(this.hass?.areas, [])}
+            .selected=${this.areas}
+            @tdc-select-change=${(e: CustomEvent<string[]>) => (this.areas = e.detail)}
+          ></tdc-multi-select>
           <small>${this.tr('areasHint')}</small>
         </label>
         <label style="flex: 0 0 160px"

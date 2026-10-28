@@ -72,7 +72,7 @@ export class CurveEditor extends TdcElement {
   /** Render the element. */
   override render(): TemplateResult {
     return html`
-      <div class="row">
+      <div class="row form">
         <label style="flex: 1 1 180px"
           >${this.tr('edShape')}
           <select
@@ -96,7 +96,7 @@ export class CurveEditor extends TdcElement {
               ${this.numberField('decimals')}`
         }
       </div>
-      <div class="row">
+      <div class="row form">
         ${fieldsFor(this.signal.shape).map((field) => this.numberField(field))}
         ${textFieldsFor(this.signal.shape).map((field) => this.listField(field))}
       </div>

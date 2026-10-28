@@ -61,6 +61,10 @@ export abstract class TdcElement extends LitElement {
       padding: 6px 8px;
       ${controlStyle}
     }
+    input,
+    select {
+      min-height: 36px;
+    }
     label {
       display: flex;
       flex-direction: column;
@@ -140,6 +144,9 @@ export abstract class TdcElement extends LitElement {
       table.cards tr.card > td.row::before {
         flex-basis: 100%;
       }
+    }
+    .row.form {
+      align-items: flex-start;
     }
     .row {
       display: flex;
