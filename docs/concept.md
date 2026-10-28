@@ -344,6 +344,7 @@ Code needed in a second place becomes its own function at that moment. CI runs P
 - No secrets in the store, in logs or in templates.
 - The API for the panel changes only with `API_VERSION` rules (8.2).
 - Generated files (`docs/code-index.md`, `docs/error-codes.md`, `frontend/*.js`) are never edited by hand.
+- The README is kept current from the first commit on and changes in the same pull request as the behaviour it describes (`docs/development.md`, section "The README").
 - No licence headers in source files. Dependencies only under Apache-2.0-compatible licences (Apache-2.0, MIT, BSD), never GPL.
 - UI texts only through translations (`de` and `en`); exception texts through `translations/*.json`.
 

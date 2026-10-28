@@ -192,6 +192,17 @@ Every error is a `TdcError` with an `ErrorCode`.
 - Branches `feat/<topic>`, `fix/<topic>`, `docs/<topic>`, `chore/<topic>`, `ci/<topic>`. Commit messages and PR titles follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, optionally with a scope such as `feat(panel):`). Start every branch from the current `origin/main` (`git switch --no-track -c <name> origin/main`) and push with upstream set.
 - After a squash merge, a second PR built on the first needs `git rebase --onto origin/main <last commit of the first branch> <second branch>` and a push with `--force-with-lease`.
 - A change that touches the panel sources commits the rebuilt `frontend/hass-test-data-creator-panel.js` in the same commit.
+- **Keep the README current in the same pull request** (see below).
+
+### The README
+
+`README.md` is the page users see first on GitHub and in HACS (`render_readme`). It is written in English and kept up to date from the first commit on.
+
+- A pull request that changes what a user sees or does updates the README in the same pull request: a new or changed service, template, signal shape, panel feature, limit, requirement (Home Assistant or Python version), installation step or breaking change. A pull request without such a change needs no README edit.
+- The README holds: what the integration does and does not do, the status line with the version, installation through HACS, the services with one example, how to add own templates, a pointer to `docs/development.md`, and the licence. Planned features are named as planned, never as available.
+- It does not repeat the concept. Details link to the chapter of `docs/concept.md`.
+- Examples in the README are copied from working calls; a changed service field changes its example.
+- Before merging, read the README once against the diff: the feature list, the service table and the status line must match the code.
 - Workflows: `validate.yml` (hassfest, HACS validation, nightly), `tests.yml` (lint, CPD, pytest, panel job), `release.yml`, `codeql.yml`. A GitHub default CodeQL setup and a CodeQL workflow exclude each other; this repository uses the workflow.
 
 ### The concept document
@@ -200,7 +211,7 @@ Every error is a `TdcError` with an `ErrorCode`.
 
 ## 11. Versions and releases
 
-- The version is in `manifest.json` (`version`), `pyproject.toml`, `panel-src/package.json` and the expected value in the `info` test. All four are raised together in their own pull request (`chore(release): bump the version to X.Y.Z`).
+- The version is in `manifest.json` (`version`), `pyproject.toml`, `panel-src/package.json` and the expected value in the `info` test. All four are raised together in their own pull request (`chore(release): bump the version to X.Y.Z`), which also updates the status line of the README.
 - Tag the merge commit and push the tag: `git tag -a vX.Y.Z -m vX.Y.Z <sha>` and `git push origin vX.Y.Z`. `release.yml` checks that the manifest version equals the tag and creates the GitHub Release. **Do not create the release in the GitHub UI first**; the workflow then fails because the release exists.
 - Tags `v*` are protected (no deleting, moving or overwriting), so check the version on `main` before tagging.
 - Semantic versioning: a breaking change of a command raises `API_VERSION` and the major version; new optional features raise the minor version and extend `FEATURES`. Until 1.0.0 the minor version may contain breaking changes of the store, with a migration.
@@ -215,4 +226,5 @@ Every error is a `TdcError` with an `ErrorCode`.
 - Every action is written only through `AuditLog.record(AuditEntryFactory…)`; never `_LOGGER.info` for an action; user-typed values go through `format_value`; no tokens, passwords or broker credentials in logs.
 - Generated files are never edited by hand: `docs/code-index.md`, `docs/error-codes.md`, `frontend/*.js`.
 - UI texts only through translations; exception texts only through `translations/*.json`.
+- The README is part of the change: user-visible behaviour and its description change in the same pull request.
 - No licence headers in source files; dependencies only under Apache-2.0-compatible licences (Apache-2.0, MIT, BSD), never GPL.

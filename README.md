@@ -41,6 +41,10 @@ data:
   areas: ["Living room", "Kitchen", "Bedroom"]
 ```
 
+Actions of `fire_event` per entity type: switch `turn_on`, `turn_off`, `toggle`; binary sensor `set_on`, `set_off`, `pulse` (optional `duration_s`); event `press` (optional `event_type`).
+
+Limits: at most 500 devices per call, 2000 devices and 40 entities per device in total.
+
 Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](docs/concept.md) chapter 4.2.
 
 ## Development
