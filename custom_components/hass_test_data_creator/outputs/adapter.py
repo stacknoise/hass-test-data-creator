@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from ..const import OUTPUT_NATIVE
 from ..core.errors import ErrorCode, OutputError
 from ..model.models import DeviceDef
+from .mqtt.client import MqttClient
 
 
 class OutputAdapter(ABC):
@@ -31,10 +32,16 @@ class OutputAdapter(ABC):
 class OutputAdapterFactory:
     """Creates the adapter for the output of a device."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
-        """Keep the instance and the config entry the adapters work for."""
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, mqtt: MqttClient) -> None:
+        """Keep the instance, the config entry and the MQTT client the adapters work with."""
         self._hass = hass
         self._entry = entry
+        self._mqtt = mqtt
+
+    async def async_clear_topics(self, topics: list[str]) -> None:
+        """Delete the retained messages on `topics`; raises TDC-OUT-002 if MQTT is not usable."""
+        if topics:
+            await self._mqtt.async_clear(topics)
 
     def create(self, output: str) -> OutputAdapter:
         """Return the adapter for `output`; MQTT outputs arrive in v0.3."""

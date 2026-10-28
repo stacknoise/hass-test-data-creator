@@ -18,6 +18,7 @@ from ..engine.signal_factory import SignalFactory
 from ..engine.tick import Tick
 from ..faults.factory import FaultFactory
 from ..outputs.adapter import OutputAdapterFactory
+from ..outputs.mqtt.client import MqttClient
 from ..platforms.factory import EntityFactory
 from ..platforms.scheduler import HassScheduler
 from ..removal.planner import RemovalPlanner
@@ -52,6 +53,7 @@ class TdcData:
     removal_runner: RemovalRunner
     template_registry: TemplateRegistry
     entity_factory: EntityFactory
+    mqtt: MqttClient
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -64,7 +66,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     audit, audit_factory = AuditLog(), AuditEntryFactory()
     template_factory = TemplateFactory()
     registry = TemplateRegistry(template_factory)
-    outputs = OutputAdapterFactory(hass, entry)
+    mqtt = MqttClient(hass, store)
+    outputs = OutputAdapterFactory(hass, entry, mqtt)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
     actions = ActionFactory(FaultFactory())
@@ -106,6 +109,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         ),
         template_registry=registry,
         entity_factory=EntityFactory(BehaviourFactory(SignalFactory(), HassScheduler(hass)), live),
+        mqtt=mqtt,
         live=live,
     )
 

@@ -42,7 +42,8 @@ class RemovalRunner:
         self._audit_factory = audit_factory
 
     async def async_run(self, plan: RemovalPlan) -> dict[str, Any]:
-        """Execute `plan` and return what was removed; schedules go first (concept 10.3)."""
+        """Execute `plan` and return what was removed; MQTT topics go first, so that a missing broker stops the removal before anything is gone."""
+        await self._outputs.async_clear_topics(plan.topics)
         self._schedules.forget(plan.schedules)
         self._scenarios.forget(plan.scenarios)
         for device in plan.devices:
@@ -64,5 +65,6 @@ class RemovalRunner:
             "orphans": len(plan.orphans),
             "schedules": len(plan.schedules),
             "scenarios": len(plan.scenarios),
+            "topics": len(plan.topics),
             "areas": areas,
         }

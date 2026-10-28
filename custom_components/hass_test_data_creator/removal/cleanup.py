@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from ..areas.assigner import AreaAssigner
+from ..outputs.mqtt.client import MqttClient
 from ..store.store import TdcStore
 
 
@@ -21,5 +22,8 @@ async def async_cleanup_after_entry_removal(hass: HomeAssistant, entry: ConfigEn
         registry.async_remove_device(device.id)
     store = TdcStore(hass)
     await store.async_load()
+    mqtt = MqttClient(hass, store)
+    if store.topics() and mqtt.available():
+        await mqtt.async_clear(store.topics())
     AreaAssigner(hass, store).delete_empty_created()
     await store.async_remove()

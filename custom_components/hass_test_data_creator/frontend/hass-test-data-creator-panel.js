@@ -689,6 +689,7 @@ var ze = {
 		schMoreRuns: "… and {count} more",
 		planSchedules: "{count} schedules",
 		planScenarios: "{count} scenarios",
+		planTopics: "{count} MQTT topics with retained messages",
 		tabScenarios: "Scenarios",
 		scnNone: "No scenarios yet. Add one below.",
 		scnNew: "New scenario",
@@ -808,6 +809,7 @@ var ze = {
 		schMoreRuns: "… und {count} weitere",
 		planSchedules: "{count} Zeitpläne",
 		planScenarios: "{count} Szenarien",
+		planTopics: "{count} MQTT-Topics mit retained Nachrichten",
 		tabScenarios: "Szenarien",
 		scnNone: "Noch keine Szenarien. Lege unten eines an.",
 		scnNew: "Neues Szenario",
@@ -1131,6 +1133,7 @@ var B = class extends R {
 	renderPlan(e) {
 		return e.devices.length + e.orphans.length === 0 && e.runs.length === 0 ? w`<p>${this.tr("planNothing")}</p>` : w`<ul>
         <li>${this.tr("planDevices", { count: e.devices.length })}</li>
+        ${e.topics.length ? w`<li>${this.tr("planTopics", { count: e.topics.length })}</li>` : ""}
         ${e.scenarios.length ? w`<li>${this.tr("planScenarios", { count: e.scenarios.length })}</li>` : ""}
         ${e.schedules.length ? w`<li>${this.tr("planSchedules", { count: e.schedules.length })}</li>` : ""}
         ${e.orphans.length ? w`<li>${this.tr("planOrphans", { count: e.orphans.length })}</li>` : ""}

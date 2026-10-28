@@ -18,6 +18,7 @@ def _empty() -> dict[str, Any]:
         "runs": {},
         "schedules": {},
         "scenarios": {},
+        "published_topics": {},
         "created_areas": [],
         "counters": {},
     }
@@ -104,6 +105,23 @@ class TdcStore:
     def remove_scenario(self, scenario_id: str) -> None:
         """Delete the scenario `scenario_id`."""
         self._data["scenarios"].pop(scenario_id, None)
+
+    def add_topic(self, topic: str, device_id: str | None) -> None:
+        """Record a retained MQTT topic and the device it belongs to (None: shared topics)."""
+        self._data["published_topics"][topic] = device_id
+
+    def topics(self, device_ids: set[str] | None = None) -> list[str]:
+        """Return the recorded topics: all, or those of the given devices."""
+        return [
+            topic
+            for topic, owner in self._data["published_topics"].items()
+            if device_ids is None or owner in device_ids
+        ]
+
+    def forget_topics(self, topics: list[str]) -> None:
+        """Forget recorded topics, for example after their retained messages were deleted."""
+        for topic in topics:
+            self._data["published_topics"].pop(topic, None)
 
     def remove_run(self, run_id: str) -> None:
         """Delete the run record `run_id`."""

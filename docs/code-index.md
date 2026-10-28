@@ -123,6 +123,9 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.scenario` | `def scenario(self, scenario_id: str) -> ScenarioDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the scenario with `scenario_id`, or None. |
 | `TdcStore.put_scenario` | `def put_scenario(self, scenario: ScenarioDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `scenario`, replacing one with the same id. |
 | `TdcStore.remove_scenario` | `def remove_scenario(self, scenario_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the scenario `scenario_id`. |
+| `TdcStore.add_topic` | `def add_topic(self, topic: str, device_id: str \| None) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Record a retained MQTT topic and the device it belongs to (None: shared topics). |
+| `TdcStore.topics` | `def topics(self, device_ids: set[str] \| None=None) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the recorded topics: all, or those of the given devices. |
+| `TdcStore.forget_topics` | `def forget_topics(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Forget recorded topics, for example after their retained messages were deleted. |
 | `TdcStore.remove_run` | `def remove_run(self, run_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the run record `run_id`. |
 | `TdcStore.next_index` | `def next_index(self, template_id: str, count: int) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Reserve `count` device numbers of a template and return the first one (from 1). |
 | `TdcStore.created_areas` | `def created_areas(self) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the ids of the areas the integration created itself. |
@@ -304,8 +307,19 @@ Lists every module, class and function of the integration with signature, file a
 | `OutputAdapter.announce` | `def announce(self, devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Make the entities of the registered `devices` appear. |
 | `OutputAdapter.remove` | `def remove(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Remove `device` and everything it created from its output. |
 | `OutputAdapterFactory` | `class OutputAdapterFactory` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Creates the adapter for the output of a device. |
-| `OutputAdapterFactory.__init__` | `def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Keep the instance and the config entry the adapters work for. |
+| `OutputAdapterFactory.__init__` | `def __init__(self, hass: HomeAssistant, entry: ConfigEntry, mqtt: MqttClient) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Keep the instance, the config entry and the MQTT client the adapters work with. |
+| `OutputAdapterFactory.async_clear_topics` | `async def async_clear_topics(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Delete the retained messages on `topics`; raises TDC-OUT-002 if MQTT is not usable. |
 | `OutputAdapterFactory.create` | `def create(self, output: str) -> OutputAdapter` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Return the adapter for `output`; MQTT outputs arrive in v0.3. |
+| `hass_test_data_creator.outputs.mqtt.__init__` | `module` | `custom_components/hass_test_data_creator/outputs/mqtt/__init__.py` | MQTT outputs of the HASS Test Data Creator (concept 7.3, 7.4). |
+| `hass_test_data_creator.outputs.mqtt.client` | `module` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Access to the MQTT integration of the same instance: publish, subscribe, clean up (concept 7.3). |
+| `MqttClient` | `class MqttClient` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Uses the broker of the MQTT integration and records every retained topic it publishes. |
+| `MqttClient.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Keep the instance and the store that holds `published_topics`. |
+| `MqttClient.available` | `def available(self) -> bool` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Whether the MQTT integration is set up and connected to its broker. |
+| `MqttClient.async_publish` | `async def async_publish(self, topic: str, payload: str, *, retain: bool=True, device_id: str \| None=None) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Publish `payload`; a retained topic is recorded for `device_id` (None: shared topics). |
+| `MqttClient.async_subscribe` | `async def async_subscribe(self, topic: str, callback: MESSAGE_CALLBACK) -> Callable[[], None]` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Call `callback(topic, payload)` for every message on `topic`; return the unsubscribe. |
+| `MqttClient.async_subscribe.received` | `def received(message: mqtt.ReceiveMessage) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Pass topic and text payload on. |
+| `MqttClient.async_clear` | `async def async_clear(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Delete the retained messages on `topics` and forget the topics. |
+| `MqttClient._require` | `def _require(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/client.py` | Raise TDC-OUT-002 unless MQTT is set up and connected. |
 | `hass_test_data_creator.outputs.native.__init__` | `module` | `custom_components/hass_test_data_creator/outputs/native/__init__.py` | Native package of the HASS Test Data Creator. |
 | `hass_test_data_creator.outputs.native.adapter` | `module` | `custom_components/hass_test_data_creator/outputs/native/adapter.py` | Native output: devices in the registry and entities on the Home Assistant platforms. |
 | `NativeAdapter` | `class NativeAdapter(OutputAdapter)` | `custom_components/hass_test_data_creator/outputs/native/adapter.py` | Registers devices with markers (concept 4.4) and lets the platforms add the entities. |
@@ -482,7 +496,7 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.removal.runner` | `module` | `custom_components/hass_test_data_creator/removal/runner.py` | Runs a removal plan step by step; every step can be repeated (concept 10.3). |
 | `RemovalRunner` | `class RemovalRunner` | `custom_components/hass_test_data_creator/removal/runner.py` | Removes devices, run records and empty created areas. |
 | `RemovalRunner.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, outputs: OutputAdapterFactory, areas: AreaAssigner, schedules: ScheduleManager, scenarios: ScenarioManager, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/removal/runner.py` | Keep the collaborators. |
-| `RemovalRunner.async_run` | `async def async_run(self, plan: RemovalPlan) -> dict[str, Any]` | `custom_components/hass_test_data_creator/removal/runner.py` | Execute `plan` and return what was removed; schedules go first (concept 10.3). |
+| `RemovalRunner.async_run` | `async def async_run(self, plan: RemovalPlan) -> dict[str, Any]` | `custom_components/hass_test_data_creator/removal/runner.py` | Execute `plan` and return what was removed; MQTT topics go first, so that a missing broker stops the removal before anything is gone. |
 
 ## audit
 
