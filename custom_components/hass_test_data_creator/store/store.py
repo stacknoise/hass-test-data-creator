@@ -106,9 +106,11 @@ class TdcStore:
         """Delete the scenario `scenario_id`."""
         self._data["scenarios"].pop(scenario_id, None)
 
-    def add_topic(self, topic: str, device_id: str | None) -> None:
-        """Record a retained MQTT topic and the device it belongs to (None: shared topics)."""
+    def add_topic(self, topic: str, device_id: str | None) -> bool:
+        """Record a retained MQTT topic and its device (None: shared); True if it was new."""
+        known = topic in self._data["published_topics"]
         self._data["published_topics"][topic] = device_id
+        return not known
 
     def topics(self, device_ids: set[str] | None = None) -> list[str]:
         """Return the recorded topics: all, or those of the given devices."""

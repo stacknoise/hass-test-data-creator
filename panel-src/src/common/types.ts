@@ -91,6 +91,7 @@ export interface CreateRequest {
   name_pattern: string;
   areas: string[];
   area_mode: 'even' | 'random';
+  output?: string;
   seed?: string;
   label?: string;
   entities?: Record<string, unknown>[];

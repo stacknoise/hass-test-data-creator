@@ -210,6 +210,17 @@ Entity platforms are set up once by the single config entry and receive devices 
 
 Publishes discovery configs under `homeassistant/<component>/<node>/<object>/config` and states on topics below the integration's own base topic. Home Assistant creates the entities through the MQTT integration. All discovery and state topics are recorded in `published_topics`.
 
+Topics (base topic `tdc` by default, option `mqtt_base_topic`):
+
+| Topic | Content |
+| --- | --- |
+| `homeassistant/<component>/tdc_<device id>/<key>/config` | discovery config, retained |
+| `<base>/<device id>/<key>/availability` | `online` or `offline`, retained; `offline` while a fault makes the entity unavailable and after the integration is unloaded |
+| `<base>/<device id>/<key>/<facet>` | state, retained: `state` (sensor, binary sensor, switch, light as JSON), `position` (cover), `mode`, `temperature`, `current_temperature` (thermostat); `event` for events (not retained) |
+| `<base>/<device id>/<key>/<facet>/set` | commands: `state` for switch (`ON`/`OFF`) and light (JSON), `command` (`OPEN`/`CLOSE`) and `position` for covers, `mode` and `temperature` for thermostats |
+
+The behaviours (engine, 2) of the devices with the output `mqtt` run in `MqttDevices`; `MqttProfileFactory` creates one profile per platform that knows the discovery payload, the state payloads and the commands. One subscription `<base>/+/+/+/set` receives all commands; the tick publishes changed values. Stored devices are started again after a restart as soon as MQTT is connected. A command with an invalid payload is ignored and logged.
+
 The MQTT outputs share one `MqttClient` (`outputs/mqtt/client.py`). It uses the MQTT integration of the instance (an `after_dependency`, not a requirement), publishes, subscribes and records every retained topic in `published_topics` (a map from topic to the device it belongs to; shared topics such as the bridge have none). Without a connected MQTT integration it raises `TDC-OUT-002`. A removal deletes the retained messages of its topics first; if MQTT is not usable it stops before anything else is removed, so nothing is left half done. Removing the config entry clears the topics if MQTT is connected.
 
 ### 7.4 Zigbee2MQTT emulation (v0.3)
@@ -313,6 +324,7 @@ Objects whose kind depends on a type or on runtime data are created only by a fa
 | `ActionFactory` | the action per platform and action name |
 | `FaultFactory` | the fault per kind |
 | `OutputAdapterFactory` | the output adapter per device (native, mqtt, z2m) |
+| `MqttProfileFactory` | the discovery payload, state payloads and commands per platform |
 | `Z2mPayloadFactory` | bridge, device, group and state payloads |
 | `AuditEntryFactory` | audit entry per kind of action |
 | `ResponseFactory` | WebSocket result, error and event replies |

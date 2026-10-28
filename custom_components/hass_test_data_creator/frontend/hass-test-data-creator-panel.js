@@ -690,6 +690,8 @@ var ze = {
 		planSchedules: "{count} schedules",
 		planScenarios: "{count} scenarios",
 		planTopics: "{count} MQTT topics with retained messages",
+		outputNative: "Home Assistant (native)",
+		outputMqtt: "MQTT discovery",
 		tabScenarios: "Scenarios",
 		scnNone: "No scenarios yet. Add one below.",
 		scnNew: "New scenario",
@@ -810,6 +812,8 @@ var ze = {
 		planSchedules: "{count} Zeitpläne",
 		planScenarios: "{count} Szenarien",
 		planTopics: "{count} MQTT-Topics mit retained Nachrichten",
+		outputNative: "Home Assistant (nativ)",
+		outputMqtt: "MQTT-Discovery",
 		tabScenarios: "Szenarien",
 		scnNone: "Noch keine Szenarien. Lege unten eines an.",
 		scnNew: "Neues Szenario",
@@ -2027,7 +2031,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
 	}
 }], null, 2), Q = class extends R {
 	constructor(...e) {
-		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = "", this.mode = "even", this.seed = "", this.custom = un, this.editIndex = -1, this.busy = !1, this.message = "", this.error = "";
+		super(...e), this.templates = [], this.template = "", this.count = 10, this.pattern = "{template} {nn}", this.areas = "", this.mode = "even", this.seed = "", this.output = "native", this.custom = un, this.editIndex = -1, this.busy = !1, this.message = "", this.error = "";
 	}
 	async connectedCallback() {
 		super.connectedCallback();
@@ -2075,6 +2079,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
 			name_pattern: this.pattern,
 			areas: sn(this.areas),
 			area_mode: this.mode,
+			output: this.output,
 			...this.seed ? { seed: this.seed } : {},
 			...this.template === Z ? { entities: this.entities() } : {}
 		};
@@ -2145,6 +2150,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
             <option value="random">${this.tr("modeRandom")}</option>
           </select>
         </label>
+        ${this.select(this.tr("colOutput"), this.info?.outputs ?? ["native"], this.output, (e) => this.tr(e === "mqtt" ? "outputMqtt" : "outputNative"), (e) => this.output = e)}
         <label style="flex: 0 0 160px"
           >${this.tr("seed")}
           <input
@@ -2185,7 +2191,7 @@ var Z = "custom", ln = 50, un = JSON.stringify([{
     `;
 	}
 };
-L([F()], Q.prototype, "info", void 0), L([F()], Q.prototype, "templates", void 0), L([F()], Q.prototype, "template", void 0), L([F()], Q.prototype, "count", void 0), L([F()], Q.prototype, "pattern", void 0), L([F()], Q.prototype, "areas", void 0), L([F()], Q.prototype, "mode", void 0), L([F()], Q.prototype, "seed", void 0), L([F()], Q.prototype, "custom", void 0), L([F()], Q.prototype, "editIndex", void 0), L([F()], Q.prototype, "busy", void 0), L([F()], Q.prototype, "message", void 0), L([F()], Q.prototype, "error", void 0), Q = L([N("tdc-creation-wizard")], Q);
+L([F()], Q.prototype, "info", void 0), L([F()], Q.prototype, "templates", void 0), L([F()], Q.prototype, "template", void 0), L([F()], Q.prototype, "count", void 0), L([F()], Q.prototype, "pattern", void 0), L([F()], Q.prototype, "areas", void 0), L([F()], Q.prototype, "mode", void 0), L([F()], Q.prototype, "seed", void 0), L([F()], Q.prototype, "output", void 0), L([F()], Q.prototype, "custom", void 0), L([F()], Q.prototype, "editIndex", void 0), L([F()], Q.prototype, "busy", void 0), L([F()], Q.prototype, "message", void 0), L([F()], Q.prototype, "error", void 0), Q = L([N("tdc-creation-wizard")], Q);
 // src/panel.ts
 var $ = class extends R {
 	constructor(...e) {

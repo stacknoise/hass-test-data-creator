@@ -13,6 +13,7 @@ API_VERSION: Final = 1
 FEATURES: Final = (
     "areas",
     "faults",
+    "mqtt_discovery",
     "native_output",
     "removal",
     "scenarios",
@@ -29,6 +30,7 @@ SAVE_DELAY_SECONDS: Final = 5
 CONF_IS_TEST_ENVIRONMENT: Final = "is_test_environment"
 CONF_SEED: Final = "seed"
 CONF_TICK_SECONDS: Final = "tick_seconds"
+CONF_MQTT_BASE_TOPIC: Final = "mqtt_base_topic"
 DEFAULT_SEED: Final = "tdc-0042"
 DEFAULT_TICK_SECONDS: Final = 10
 MIN_TICK_SECONDS: Final = 1
@@ -59,6 +61,8 @@ PLATFORMS: Final = (
 )
 
 # Outputs (concept 7). Only the native output exists in v0.1.
+DEFAULT_MQTT_BASE_TOPIC: Final = "tdc"
+DISCOVERY_PREFIX: Final = "homeassistant"
 OUTPUT_NATIVE: Final = "native"
 OUTPUT_MQTT: Final = "mqtt"
 OUTPUT_Z2M: Final = "z2m"

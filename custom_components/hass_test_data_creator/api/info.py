@@ -15,6 +15,7 @@ from ..const import (
     MAX_BATCH,
     MAX_DEVICES,
     MAX_ENTITIES_PER_DEVICE,
+    OUTPUT_MQTT,
     OUTPUT_NATIVE,
     PLATFORMS,
 )
@@ -40,7 +41,7 @@ async def ws_info(
             "max_batch": MAX_BATCH,
             "max_entities_per_device": MAX_ENTITIES_PER_DEVICE,
         },
-        "outputs": [OUTPUT_NATIVE],
+        "outputs": [OUTPUT_NATIVE, OUTPUT_MQTT],
         "shapes": list(SHAPE_NAMES),
         "triggers": list(TRIGGER_TYPES),
         "platforms": list(PLATFORMS),
