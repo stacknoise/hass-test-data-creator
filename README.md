@@ -19,7 +19,7 @@ Planned: statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4
 
 ## Status
 
-Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.1.0: schedules, scenarios, faults, more curve shapes, light, blind and thermostat templates, and the schedule and scenario tabs and the curve editor in the panel. Not tried yet in a running Home Assistant beyond the automatic tests.
+Version 0.3.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.2.0: the MQTT discovery and Zigbee2MQTT outputs with groups and base topic options, the state shapes `enum` and `state_machine` with the washing machine template, the faults `late` and `duplicate`, the Groups tab, and scheduling a scenario from the panel. Not tried yet in a running Home Assistant or against a real broker beyond the automatic tests; native Home Assistant groups are not created.
 
 ## Installation (HACS)
 
