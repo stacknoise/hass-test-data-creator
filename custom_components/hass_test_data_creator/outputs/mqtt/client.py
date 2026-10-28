@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from homeassistant.components import mqtt
-from homeassistant.core import HomeAssistant
+from homeassistant.components.mqtt.util import async_wait_for_mqtt_client
+from homeassistant.core import HomeAssistant, callback as hass_callback
 
 from ...core.errors import ErrorCode, OutputError
 from ...store.store import TdcStore
@@ -28,34 +29,38 @@ class MqttClient:
         except KeyError:
             return False
 
+    async def async_wait(self) -> bool:
+        """Wait until the MQTT integration is connected; False if it is not set up."""
+        return await async_wait_for_mqtt_client(self._hass)
+
     async def async_publish(
         self, topic: str, payload: str, *, retain: bool = True, device_id: str | None = None
     ) -> None:
         """Publish `payload`; a retained topic is recorded for `device_id` (None: shared topics)."""
-        self._require()
+        self.require()
         await mqtt.async_publish(self._hass, topic, payload, 0, retain)
-        if retain:
-            self._store.add_topic(topic, device_id)
+        if retain and self._store.add_topic(topic, device_id):
             self._store.schedule_save()
 
     async def async_subscribe(self, topic: str, callback: MESSAGE_CALLBACK) -> Callable[[], None]:
         """Call `callback(topic, payload)` for every message on `topic`; return the unsubscribe."""
-        self._require()
+        self.require()
 
+        @hass_callback
         def received(message: mqtt.ReceiveMessage) -> None:
-            """Pass topic and text payload on."""
+            """Pass topic and text payload on, on the event loop."""
             callback(message.topic, str(message.payload))
 
         return await mqtt.async_subscribe(self._hass, topic, received)
 
     async def async_clear(self, topics: list[str]) -> None:
         """Delete the retained messages on `topics` and forget the topics."""
-        self._require()
+        self.require()
         for topic in topics:
             await mqtt.async_publish(self._hass, topic, "", 0, True)
         self._store.forget_topics(topics)
 
-    def _require(self) -> None:
+    def require(self) -> None:
         """Raise TDC-OUT-002 unless MQTT is set up and connected."""
         if not self.available():
             raise OutputError(ErrorCode.OUT_MQTT_UNAVAILABLE)

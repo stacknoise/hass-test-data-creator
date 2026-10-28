@@ -42,13 +42,18 @@ class RemovalRunner:
         self._audit_factory = audit_factory
 
     async def async_run(self, plan: RemovalPlan) -> dict[str, Any]:
-        """Execute `plan` and return what was removed; MQTT topics go first, so that a missing broker stops the removal before anything is gone."""
-        await self._outputs.async_clear_topics(plan.topics)
+        """Execute `plan` and return what was removed (concept 10.3).
+
+        A missing MQTT connection stops the removal before anything is gone; the retained
+        topics are deleted last, when nothing publishes any more.
+        """
+        self._outputs.check_clearable(plan.topics)
         self._schedules.forget(plan.schedules)
         self._scenarios.forget(plan.scenarios)
         for device in plan.devices:
-            self._outputs.create(device.output).remove(device)
+            await self._outputs.create(device.output).remove(device)
             self._store.remove_device(device.id)
+        await self._outputs.async_clear_topics(plan.topics)
         registry = dr.async_get(self._hass)
         for orphan in plan.orphans:
             if registry.async_get(orphan["id"]) is not None:

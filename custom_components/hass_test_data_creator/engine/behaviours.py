@@ -72,6 +72,10 @@ class Behaviour:
         self._fault_changed()
         self.on_change()
 
+    def tick(self, now: float) -> bool:
+        """Follow the clock; True if the state changed. Most entities do not move by themselves."""
+        return False
+
     def close(self) -> None:
         """Cancel the timers and stop reporting; the behaviour is no longer used."""
         self._clear_fault_timer()
@@ -275,6 +279,14 @@ class ClimateBehaviour(Behaviour):
     def current_temperature(self, now: float) -> float | str:
         """The measured temperature at signal time `now`."""
         return self.signal.value(now)
+
+    def measured(self) -> float | str:
+        """The measured temperature now."""
+        return self.signal.value(self._scheduler.now())
+
+    def tick(self, now: float) -> bool:
+        """The measured temperature moves all the time, so every tick is a change."""
+        return True
 
     def restore(self, heating: bool, target: float | None) -> None:
         """Set the last mode and target without telling anyone."""

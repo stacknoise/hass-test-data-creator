@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
 from .api import async_register_commands
-from .const import DOMAIN, PLATFORMS
+from .const import DOMAIN, OUTPUT_MQTT, PLATFORMS
 from .core.runtime import build_data
 from .panel import async_register_panel, async_remove_panel
 from .removal.cleanup import async_cleanup_after_entry_removal
@@ -23,6 +23,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data.tick.start()
     data.schedules.async_start()
+    mqtt_devices = [item for item in data.store.devices() if item.output == OUTPUT_MQTT]
+    if mqtt_devices:
+        entry.async_create_background_task(
+            hass, data.mqtt_devices.async_start(mqtt_devices), "tdc_mqtt_start"
+        )
     async_register_services(hass)
     async_register_commands(hass)
     integration = await async_get_integration(hass, DOMAIN)
@@ -38,6 +43,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data.tick.stop()
         data.schedules.async_stop()
         data.scenarios.async_stop()
+        await data.mqtt_devices.async_stop()
         await data.store.async_save()
         async_remove_services(hass)
         async_remove_panel(hass)

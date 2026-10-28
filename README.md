@@ -10,6 +10,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
 - Scenarios: a named list of steps, each with a target, an entity, an action and `after_s`, the wait after the step before. Start one by hand, from the scenario tab, or from a schedule (`scenario: <id>` instead of target, entity and action; the schedule form of the panel has a "Runs" select).
 - Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`. The device list shows active faults.
+- Publish the devices over MQTT discovery instead (output `mqtt`, base topic `tdc`): Home Assistant creates the entities through its MQTT integration, values follow the curves, commands and faults work, and a removal deletes the retained messages. MQTT must be set up and connected.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
@@ -17,7 +18,7 @@ Planned: more fault kinds (`late`, `duplicate`), MQTT and Zigbee2MQTT emulation 
 
 ## Status
 
-Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output only; MQTT and Zigbee2MQTT are planned (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.1.0: schedules, scenarios, faults, more curve shapes, light, blind and thermostat templates, and the schedule and scenario tabs and the curve editor in the panel. Not tried yet in a running Home Assistant beyond the automatic tests.
+Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery; Zigbee2MQTT is planned (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.1.0: schedules, scenarios, faults, more curve shapes, light, blind and thermostat templates, and the schedule and scenario tabs and the curve editor in the panel. Not tried yet in a running Home Assistant beyond the automatic tests.
 
 ## Installation (HACS)
 

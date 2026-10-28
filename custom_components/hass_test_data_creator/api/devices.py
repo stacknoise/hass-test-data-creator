@@ -14,6 +14,7 @@ from ..core.command import tdc_command
 from ..core.runtime import get_data
 from ..devices.schema import CREATE_FIELDS, job_from_request
 from ..model.models import DeviceDef
+from ..outputs.mqtt.profiles import mqtt_unique_id
 
 
 def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any]]:
@@ -24,6 +25,8 @@ def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any
     for definition in device.entities:
         entity_id = registry.async_get_entity_id(
             definition.platform, DOMAIN, f"{device.id}_{definition.key}"
+        ) or registry.async_get_entity_id(
+            definition.platform, "mqtt", mqtt_unique_id(device.id, definition.key)
         )
         state = hass.states.get(entity_id) if entity_id else None
         result.append(

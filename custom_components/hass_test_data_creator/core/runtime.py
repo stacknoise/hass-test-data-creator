@@ -10,7 +10,13 @@ from homeassistant.core import HomeAssistant
 from ..areas.assigner import AreaAssigner
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
-from ..const import CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS, DOMAIN
+from ..const import (
+    CONF_MQTT_BASE_TOPIC,
+    CONF_TICK_SECONDS,
+    DEFAULT_MQTT_BASE_TOPIC,
+    DEFAULT_TICK_SECONDS,
+    DOMAIN,
+)
 from ..devices.manager import DevicesManager
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import Live
@@ -19,6 +25,8 @@ from ..engine.tick import Tick
 from ..faults.factory import FaultFactory
 from ..outputs.adapter import OutputAdapterFactory
 from ..outputs.mqtt.client import MqttClient
+from ..outputs.mqtt.devices import MqttDevices
+from ..outputs.mqtt.profiles import MqttProfileFactory
 from ..platforms.factory import EntityFactory
 from ..platforms.scheduler import HassScheduler
 from ..removal.planner import RemovalPlanner
@@ -54,6 +62,7 @@ class TdcData:
     template_registry: TemplateRegistry
     entity_factory: EntityFactory
     mqtt: MqttClient
+    mqtt_devices: MqttDevices
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -67,7 +76,18 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     template_factory = TemplateFactory()
     registry = TemplateRegistry(template_factory)
     mqtt = MqttClient(hass, store)
-    outputs = OutputAdapterFactory(hass, entry, mqtt)
+    behaviours = BehaviourFactory(SignalFactory(), HassScheduler(hass))
+    mqtt_devices = MqttDevices(
+        hass,
+        mqtt,
+        behaviours,
+        live,
+        MqttProfileFactory(),
+        entry.options.get(CONF_MQTT_BASE_TOPIC, DEFAULT_MQTT_BASE_TOPIC),
+        audit,
+        audit_factory,
+    )
+    outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
     actions = ActionFactory(FaultFactory())
@@ -108,8 +128,9 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
             hass, store, outputs, areas, schedules, scenarios, audit, audit_factory
         ),
         template_registry=registry,
-        entity_factory=EntityFactory(BehaviourFactory(SignalFactory(), HassScheduler(hass)), live),
+        entity_factory=EntityFactory(behaviours, live),
         mqtt=mqtt,
+        mqtt_devices=mqtt_devices,
         live=live,
     )
 

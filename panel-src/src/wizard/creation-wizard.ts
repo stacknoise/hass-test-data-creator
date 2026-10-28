@@ -35,6 +35,7 @@ export class CreationWizard extends TdcElement {
   @state() private areas = '';
   @state() private mode: 'even' | 'random' = 'even';
   @state() private seed = '';
+  @state() private output = 'native';
   @state() private custom = SAMPLE_ENTITIES;
   @state() private editIndex = -1;
   @state() private busy = false;
@@ -106,6 +107,7 @@ export class CreationWizard extends TdcElement {
       name_pattern: this.pattern,
       areas: parseAreas(this.areas),
       area_mode: this.mode,
+      output: this.output,
       ...(this.seed ? { seed: this.seed } : {}),
       ...(this.template === CUSTOM
         ? { entities: this.entities() as unknown as Record<string, unknown>[] }
@@ -185,6 +187,13 @@ export class CreationWizard extends TdcElement {
             <option value="random">${this.tr('modeRandom')}</option>
           </select>
         </label>
+        ${this.select(
+          this.tr('colOutput'),
+          this.info?.outputs ?? ['native'],
+          this.output,
+          (output) => this.tr(output === 'mqtt' ? 'outputMqtt' : 'outputNative'),
+          (output) => (this.output = output),
+        )}
         <label style="flex: 0 0 160px"
           >${this.tr('seed')}
           <input

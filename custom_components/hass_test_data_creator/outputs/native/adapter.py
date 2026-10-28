@@ -20,7 +20,7 @@ class NativeAdapter(OutputAdapter):
         self._hass = hass
         self._entry = entry
 
-    def create(self, device: DeviceDef, area_id: str | None) -> None:
+    async def create(self, device: DeviceDef, area_id: str | None) -> None:
         """Add `device` to the device registry with the entry, manufacturer and test label."""
         labels = lr.async_get(self._hass)
         label = labels.async_get_label_by_name(LABEL_NAME) or labels.async_create(LABEL_NAME)
@@ -34,11 +34,11 @@ class NativeAdapter(OutputAdapter):
         )
         registry.async_update_device(entry.id, area_id=area_id, labels={label.label_id})
 
-    def announce(self, devices: list[DeviceDef]) -> None:
+    async def announce(self, devices: list[DeviceDef]) -> None:
         """Tell the platforms to add the entities of `devices`."""
         async_dispatcher_send(self._hass, SIGNAL_DEVICES_ADDED, devices)
 
-    def remove(self, device: DeviceDef) -> None:
+    async def remove(self, device: DeviceDef) -> None:
         """Remove the registry device of `device`; Home Assistant removes its entities."""
         registry = dr.async_get(self._hass)
         entry = registry.async_get_device(identifiers={(DOMAIN, device.id)})

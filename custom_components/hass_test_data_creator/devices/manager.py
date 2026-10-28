@@ -109,10 +109,10 @@ class DevicesManager:
                 chunk = devices[start : start + CHUNK_SIZE]
                 for device in chunk:
                     area_id = self._areas.ensure(device.area) if device.area else None
-                    adapter.create(device, area_id)
+                    await adapter.create(device, area_id)
                     self._store.add_device(device)
                     run.device_ids.append(device.id)
-                adapter.announce(chunk)
+                await adapter.announce(chunk)
                 await asyncio.sleep(0)
         finally:
             if run.device_ids:
