@@ -34,8 +34,8 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | Version | Content |
 | --- | --- |
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
-| v0.2 | Scheduler (fixed, interval, random window, Poisson), scenarios, faults (without `late` and `duplicate`, which need the MQTT output), the shapes `household_load`, `pv_day`, `steps` and `discharge`, the curve editor, light/cover/thermostat templates, and the schedule and scenario tabs. The shapes `enum` and `state_machine` follow in the version after v0.2.0 (text states, the `washer` template) |
-| v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check |
+| v0.2 | Scheduler (fixed, interval, random window, Poisson), scenarios, faults (without `late` and `duplicate`, which need the MQTT output), the shapes `household_load`, `pv_day`, `steps` and `discharge`, the curve editor, light/cover/thermostat templates, and the schedule and scenario tabs. The shapes `enum` and `state_machine` and the faults `late` and `duplicate` moved to v0.3 (text states, the MQTT output) |
+| v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check; the shapes `enum` and `state_machine` (washer template); the faults `late` and `duplicate`; scheduling a scenario in the panel; the Groups tab. Native Home Assistant groups are not part of it |
 | v0.4 | Statistics backfill, time lapse, CSV replay, YAML import/export, sharing of templates |
 
 ## 2. Architecture
@@ -156,7 +156,7 @@ Everything the integration creates is marked, so that nothing has to be searched
 | `counter` | monotonic counter for `total_increasing` sensors (energy) | v0.1 |
 | `steps`, `discharge` | stairs (`interval_s` per step, one climb per `period_s`), battery discharge (full to empty over `period_s`) | v0.2 |
 | `csv` | replay of a file, looped | v0.4 |
-| `enum`, `state_machine` | discrete values with weights (new draw every `interval_s`); a cycle of states with durations (`states`, `phase`). The sensor gets the device class `enum` with the states as options; no unit or state class; faults that change numbers do not touch them | after v0.2.0 |
+| `enum`, `state_machine` | discrete values with weights (new draw every `interval_s`); a cycle of states with durations (`states`, `phase`). The sensor gets the device class `enum` with the states as options; no unit or state class; faults that change numbers do not touch them | v0.3 |
 
 Modifiers (all optional): `noise` (fraction of the range), `drift`, `spikes` (rate and factor), `rounding`, `hourly_factor[24]`.
 
