@@ -8,20 +8,32 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from ..const import SAVE_DELAY_SECONDS, STORE_KEY, STORE_VERSION
+from ..core.keys import (
+    KEY_CREATED_AREAS,
+    KEY_CREATED_STATISTICS,
+    KEY_DEVICE_IDS,
+    KEY_DEVICES,
+    KEY_GROUPS,
+    KEY_PUBLISHED_TOPICS,
+    KEY_RUN_ID,
+    KEY_RUNS,
+    KEY_SCENARIOS,
+    KEY_SCHEDULES,
+)
 from ..model.models import DeviceDef, GroupDef, RunRecord, ScenarioDef, ScheduleDef
 
 
 def _empty() -> dict[str, Any]:
     """Return the content of a new store."""
     return {
-        "devices": {},
-        "runs": {},
-        "schedules": {},
-        "scenarios": {},
-        "published_topics": {},
-        "created_statistics": {},
-        "groups": {},
-        "created_areas": [],
+        KEY_DEVICES: {},
+        KEY_RUNS: {},
+        KEY_SCHEDULES: {},
+        KEY_SCENARIOS: {},
+        KEY_PUBLISHED_TOPICS: {},
+        KEY_CREATED_STATISTICS: {},
+        KEY_GROUPS: {},
+        KEY_CREATED_AREAS: [],
         "counters": {},
     }
 
@@ -42,128 +54,128 @@ class TdcStore:
 
     def devices(self) -> list[DeviceDef]:
         """Return all stored devices in creation order."""
-        return [DeviceDef.from_dict(item) for item in self._data["devices"].values()]
+        return [DeviceDef.from_dict(item) for item in self._data[KEY_DEVICES].values()]
 
     def device(self, device_id: str) -> DeviceDef | None:
         """Return the device with `device_id`, or None."""
-        item = self._data["devices"].get(device_id)
+        item = self._data[KEY_DEVICES].get(device_id)
         return DeviceDef.from_dict(item) if item else None
 
     def device_count(self) -> int:
         """Return the number of stored devices."""
-        return len(self._data["devices"])
+        return len(self._data[KEY_DEVICES])
 
     def add_device(self, device: DeviceDef) -> None:
         """Store `device`."""
-        self._data["devices"][device.id] = device.to_dict()
+        self._data[KEY_DEVICES][device.id] = device.to_dict()
 
     def remove_device(self, device_id: str) -> None:
         """Delete the device and its id in the run it belongs to."""
-        item = self._data["devices"].pop(device_id, None)
-        run = self._data["runs"].get(item["run_id"]) if item else None
-        if run and device_id in run["device_ids"]:
-            run["device_ids"].remove(device_id)
-            if not run["device_ids"]:
-                del self._data["runs"][item["run_id"]]
+        item = self._data[KEY_DEVICES].pop(device_id, None)
+        run = self._data[KEY_RUNS].get(item[KEY_RUN_ID]) if item else None
+        if run and device_id in run[KEY_DEVICE_IDS]:
+            run[KEY_DEVICE_IDS].remove(device_id)
+            if not run[KEY_DEVICE_IDS]:
+                del self._data[KEY_RUNS][item[KEY_RUN_ID]]
 
     def runs(self) -> list[RunRecord]:
         """Return all runs."""
-        return [RunRecord.from_dict(item) for item in self._data["runs"].values()]
+        return [RunRecord.from_dict(item) for item in self._data[KEY_RUNS].values()]
 
     def add_run(self, run: RunRecord) -> None:
         """Store `run`."""
-        self._data["runs"][run.id] = run.to_dict()
+        self._data[KEY_RUNS][run.id] = run.to_dict()
 
     def schedules(self) -> list[ScheduleDef]:
         """Return all schedules in creation order."""
-        return [ScheduleDef.from_dict(item) for item in self._data["schedules"].values()]
+        return [ScheduleDef.from_dict(item) for item in self._data[KEY_SCHEDULES].values()]
 
     def schedule(self, schedule_id: str) -> ScheduleDef | None:
         """Return the schedule with `schedule_id`, or None."""
-        item = self._data["schedules"].get(schedule_id)
+        item = self._data[KEY_SCHEDULES].get(schedule_id)
         return ScheduleDef.from_dict(item) if item else None
 
     def put_schedule(self, schedule: ScheduleDef) -> None:
         """Store `schedule`, replacing one with the same id."""
-        self._data["schedules"][schedule.id] = schedule.to_dict()
+        self._data[KEY_SCHEDULES][schedule.id] = schedule.to_dict()
 
     def remove_schedule(self, schedule_id: str) -> None:
         """Delete the schedule `schedule_id`."""
-        self._data["schedules"].pop(schedule_id, None)
+        self._data[KEY_SCHEDULES].pop(schedule_id, None)
 
     def scenarios(self) -> list[ScenarioDef]:
         """Return all scenarios in creation order."""
-        return [ScenarioDef.from_dict(item) for item in self._data["scenarios"].values()]
+        return [ScenarioDef.from_dict(item) for item in self._data[KEY_SCENARIOS].values()]
 
     def scenario(self, scenario_id: str) -> ScenarioDef | None:
         """Return the scenario with `scenario_id`, or None."""
-        item = self._data["scenarios"].get(scenario_id)
+        item = self._data[KEY_SCENARIOS].get(scenario_id)
         return ScenarioDef.from_dict(item) if item else None
 
     def put_scenario(self, scenario: ScenarioDef) -> None:
         """Store `scenario`, replacing one with the same id."""
-        self._data["scenarios"][scenario.id] = scenario.to_dict()
+        self._data[KEY_SCENARIOS][scenario.id] = scenario.to_dict()
 
     def remove_scenario(self, scenario_id: str) -> None:
         """Delete the scenario `scenario_id`."""
-        self._data["scenarios"].pop(scenario_id, None)
+        self._data[KEY_SCENARIOS].pop(scenario_id, None)
 
     def groups(self) -> list[GroupDef]:
         """Return all groups in creation order."""
-        return [GroupDef.from_dict(item) for item in self._data["groups"].values()]
+        return [GroupDef.from_dict(item) for item in self._data[KEY_GROUPS].values()]
 
     def group(self, group_id: str) -> GroupDef | None:
         """Return the group with `group_id`, or None."""
-        item = self._data["groups"].get(group_id)
+        item = self._data[KEY_GROUPS].get(group_id)
         return GroupDef.from_dict(item) if item else None
 
     def put_group(self, group: GroupDef) -> None:
         """Store `group`, replacing one with the same id."""
-        self._data["groups"][group.id] = group.to_dict()
+        self._data[KEY_GROUPS][group.id] = group.to_dict()
 
     def remove_group(self, group_id: str) -> None:
         """Delete the group `group_id`."""
-        self._data["groups"].pop(group_id, None)
+        self._data[KEY_GROUPS].pop(group_id, None)
 
     def add_topic(self, topic: str, device_id: str | None) -> bool:
         """Record a retained MQTT topic and its device (None: shared); True if it was new."""
-        known = topic in self._data["published_topics"]
-        self._data["published_topics"][topic] = device_id
+        known = topic in self._data[KEY_PUBLISHED_TOPICS]
+        self._data[KEY_PUBLISHED_TOPICS][topic] = device_id
         return not known
 
     def topics(self, device_ids: set[str] | None = None) -> list[str]:
         """Return the recorded topics: all, or those of the given devices."""
         return [
             topic
-            for topic, owner in self._data["published_topics"].items()
+            for topic, owner in self._data[KEY_PUBLISHED_TOPICS].items()
             if device_ids is None or owner in device_ids
         ]
 
     def forget_topics(self, topics: list[str]) -> None:
         """Forget recorded topics, for example after their retained messages were deleted."""
         for topic in topics:
-            self._data["published_topics"].pop(topic, None)
+            self._data[KEY_PUBLISHED_TOPICS].pop(topic, None)
 
     def add_statistic(self, statistic_id: str, device_id: str) -> None:
         """Record a statistic id the integration imported and the device it belongs to."""
-        self._data["created_statistics"][statistic_id] = device_id
+        self._data[KEY_CREATED_STATISTICS][statistic_id] = device_id
 
     def statistics(self, device_ids: set[str] | None = None) -> list[str]:
         """Return the imported statistic ids: all, or those of the given devices."""
         return [
             statistic_id
-            for statistic_id, owner in self._data["created_statistics"].items()
+            for statistic_id, owner in self._data[KEY_CREATED_STATISTICS].items()
             if device_ids is None or owner in device_ids
         ]
 
     def forget_statistics(self, statistic_ids: list[str]) -> None:
         """Forget imported statistic ids, for example after they were cleared."""
         for statistic_id in statistic_ids:
-            self._data["created_statistics"].pop(statistic_id, None)
+            self._data[KEY_CREATED_STATISTICS].pop(statistic_id, None)
 
     def remove_run(self, run_id: str) -> None:
         """Delete the run record `run_id`."""
-        self._data["runs"].pop(run_id, None)
+        self._data[KEY_RUNS].pop(run_id, None)
 
     def next_index(self, template_id: str, count: int) -> int:
         """Reserve `count` device numbers of a template and return the first one (from 1)."""
@@ -175,17 +187,17 @@ class TdcStore:
     @property
     def created_areas(self) -> list[str]:
         """Return the ids of the areas the integration created itself."""
-        return list(self._data["created_areas"])
+        return list(self._data[KEY_CREATED_AREAS])
 
     def add_created_area(self, area_id: str) -> None:
         """Remember that the integration created the area."""
-        if area_id not in self._data["created_areas"]:
-            self._data["created_areas"].append(area_id)
+        if area_id not in self._data[KEY_CREATED_AREAS]:
+            self._data[KEY_CREATED_AREAS].append(area_id)
 
     def forget_area(self, area_id: str) -> None:
         """Forget an area, for example after it was deleted."""
-        if area_id in self._data["created_areas"]:
-            self._data["created_areas"].remove(area_id)
+        if area_id in self._data[KEY_CREATED_AREAS]:
+            self._data[KEY_CREATED_AREAS].remove(area_id)
 
     def schedule_save(self) -> None:
         """Save after a short delay; used for frequent writes."""

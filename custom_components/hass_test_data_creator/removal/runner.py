@@ -12,6 +12,7 @@ from ..areas.assigner import AreaAssigner
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, RemovalError
+from ..core.keys import KEY_AREAS, KEY_DEVICES, KEY_GROUPS, KEY_ID, KEY_SCENARIOS, KEY_SCHEDULES
 from ..history.manager import HistoryManager
 from ..outputs.adapter import OutputAdapterFactory
 from ..scenarios.manager import ScenarioManager
@@ -74,8 +75,8 @@ class RemovalRunner:
         self._history.forget(plan.statistics)
         registry = dr.async_get(self._hass)
         for orphan in plan.orphans:
-            if registry.async_get(orphan["id"]) is not None:
-                registry.async_remove_device(orphan["id"])
+            if registry.async_get(orphan[KEY_ID]) is not None:
+                registry.async_remove_device(orphan[KEY_ID])
         for run_id in plan.runs:
             self._store.remove_run(run_id)
         areas = self._areas.delete_empty_created()
@@ -84,12 +85,12 @@ class RemovalRunner:
             self._audit_factory.removal_done(plan.target, len(plan.devices), len(areas))
         )
         return {
-            "devices": len(plan.devices),
+            KEY_DEVICES: len(plan.devices),
             "orphans": len(plan.orphans),
-            "schedules": len(plan.schedules),
-            "scenarios": len(plan.scenarios),
-            "groups": len(plan.groups),
+            KEY_SCHEDULES: len(plan.schedules),
+            KEY_SCENARIOS: len(plan.scenarios),
+            KEY_GROUPS: len(plan.groups),
             "topics": len(plan.topics),
             "statistics": len(plan.statistics),
-            "areas": areas,
+            KEY_AREAS: areas,
         }

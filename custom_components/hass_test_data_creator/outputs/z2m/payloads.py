@@ -6,6 +6,23 @@ import hashlib
 import json
 from typing import Any
 
+from ...const import DEFAULT_MQTT_BASE_TOPIC, OUTPUT_MQTT
+from ...core.keys import (
+    KEY_BRIGHTNESS,
+    KEY_DESCRIPTION,
+    KEY_ENABLED,
+    KEY_FRIENDLY_NAME,
+    KEY_ID,
+    KEY_IEEE_ADDRESS,
+    KEY_MEMBERS,
+    KEY_MODEL,
+    KEY_OUTPUT,
+    KEY_POSITION,
+    KEY_POWER_SOURCE,
+    KEY_STATE,
+    KEY_TYPE,
+    KEY_VENDOR,
+)
 from ...model.models import DeviceDef, GroupDef
 
 BRIDGE_VERSION = "2.1.0"
@@ -19,15 +36,28 @@ GROUP_PROPERTIES = (
     "occupied_heating_setpoint",
 )
 
+HEX_BASE = 16
+IEEE_HEX_DIGITS = 16
+NETWORK_HEX_DIGITS = 4
+# The fake Zigbee network of the bridge info.
+ZIGBEE_CHANNEL = 11
+PAN_ID = 6754
+EXTENDED_PAN_ID_BYTES = 8
+
 
 def ieee_address(device_id: str) -> str:
     """Return a stable fake IEEE address for a device id."""
-    return "0x" + hashlib.sha256(device_id.encode()).hexdigest()[:16]
+    return "0x" + hashlib.sha256(device_id.encode()).hexdigest()[:IEEE_HEX_DIGITS]
 
 
 def network_address(device_id: str) -> int:
     """Return a stable fake network address (16 bit) for a device id."""
-    return int(hashlib.sha256(device_id.encode()).hexdigest()[16:20], 16)
+    return int(
+        hashlib.sha256(device_id.encode()).hexdigest()[
+            IEEE_HEX_DIGITS : IEEE_HEX_DIGITS + NETWORK_HEX_DIGITS
+        ],
+        HEX_BASE,
+    )
 
 
 class Z2mPayloadFactory:
@@ -35,32 +65,36 @@ class Z2mPayloadFactory:
 
     def bridge_state(self, online: bool) -> str:
         """Return the payload of `bridge/state`."""
-        return json.dumps({"state": "online" if online else "offline"})
+        return json.dumps({KEY_STATE: "online" if online else "offline"})
 
     def availability(self, online: bool) -> str:
         """Return the payload of `<device>/availability`."""
-        return json.dumps({"state": "online" if online else "offline"})
+        return json.dumps({KEY_STATE: "online" if online else "offline"})
 
     def bridge_info(self, base_topic: str) -> str:
         """Return the payload of `bridge/info`: version, coordinator and a subset of the config."""
         return json.dumps(
             {
                 "version": BRIDGE_VERSION,
-                "commit": "tdc",
+                "commit": DEFAULT_MQTT_BASE_TOPIC,
                 "coordinator": {
-                    "type": "HASS Test Data Creator",
-                    "ieee_address": COORDINATOR_IEEE,
-                    "meta": {"revision": "tdc"},
+                    KEY_TYPE: "HASS Test Data Creator",
+                    KEY_IEEE_ADDRESS: COORDINATOR_IEEE,
+                    "meta": {"revision": DEFAULT_MQTT_BASE_TOPIC},
                 },
-                "network": {"channel": 11, "pan_id": 6754, "extended_pan_id": [0] * 8},
+                "network": {
+                    "channel": ZIGBEE_CHANNEL,
+                    "pan_id": PAN_ID,
+                    "extended_pan_id": [0] * EXTENDED_PAN_ID_BYTES,
+                },
                 "log_level": "info",
                 "permit_join": False,
                 "permit_join_end": None,
                 "restart_required": False,
                 "config": {
-                    "homeassistant": {"enabled": False},
-                    "advanced": {"output": "json"},
-                    "mqtt": {"base_topic": base_topic},
+                    "homeassistant": {KEY_ENABLED: False},
+                    "advanced": {KEY_OUTPUT: "json"},
+                    OUTPUT_MQTT: {"base_topic": base_topic},
                 },
             }
         )
@@ -68,12 +102,12 @@ class Z2mPayloadFactory:
     def bridge_devices(self, entries: list[dict[str, Any]]) -> str:
         """Return the payload of `bridge/devices`: the coordinator and the given devices."""
         coordinator = {
-            "ieee_address": COORDINATOR_IEEE,
-            "type": "Coordinator",
+            KEY_IEEE_ADDRESS: COORDINATOR_IEEE,
+            KEY_TYPE: "Coordinator",
             "network_address": 0,
             "supported": False,
             "disabled": False,
-            "friendly_name": "Coordinator",
+            KEY_FRIENDLY_NAME: "Coordinator",
             "interviewing": False,
             "interview_completed": True,
         }
@@ -84,25 +118,25 @@ class Z2mPayloadFactory:
     ) -> dict[str, Any]:
         """Return one device of `bridge/devices`; `meta` is the z2m block of its template."""
         return {
-            "ieee_address": ieee_address(device.id),
-            "type": meta.get("type", "EndDevice"),
+            KEY_IEEE_ADDRESS: ieee_address(device.id),
+            KEY_TYPE: meta.get(KEY_TYPE, "EndDevice"),
             "network_address": network_address(device.id),
             "supported": True,
             "disabled": False,
-            "friendly_name": device.name,
-            "description": "",
+            KEY_FRIENDLY_NAME: device.name,
+            KEY_DESCRIPTION: "",
             "definition": {
-                "model": meta.get("model", device.model),
-                "vendor": meta.get("vendor", DEFAULT_VENDOR),
-                "description": meta.get("description", device.model),
+                KEY_MODEL: meta.get(KEY_MODEL, device.model),
+                KEY_VENDOR: meta.get(KEY_VENDOR, DEFAULT_VENDOR),
+                KEY_DESCRIPTION: meta.get(KEY_DESCRIPTION, device.model),
                 "supports_ota": False,
                 "exposes": exposes,
                 "options": [],
             },
-            "power_source": meta.get("power_source", "Battery"),
-            "model_id": meta.get("model", device.model),
+            KEY_POWER_SOURCE: meta.get(KEY_POWER_SOURCE, "Battery"),
+            "model_id": meta.get(KEY_MODEL, device.model),
             "date_code": "",
-            "software_build_id": "tdc",
+            "software_build_id": DEFAULT_MQTT_BASE_TOPIC,
             "interviewing": False,
             "interview_completed": True,
             "endpoints": {},
@@ -115,10 +149,10 @@ class Z2mPayloadFactory:
     def group_entry(self, group: GroupDef, devices: list[DeviceDef]) -> dict[str, Any]:
         """Return one group of `bridge/groups` with its member devices."""
         return {
-            "id": group.number,
-            "friendly_name": group.name,
-            "members": [
-                {"ieee_address": ieee_address(device.id), "endpoint": 1} for device in devices
+            KEY_ID: group.number,
+            KEY_FRIENDLY_NAME: group.name,
+            KEY_MEMBERS: [
+                {KEY_IEEE_ADDRESS: ieee_address(device.id), "endpoint": 1} for device in devices
             ],
             "scenes": [],
         }
@@ -130,9 +164,9 @@ class Z2mPayloadFactory:
             values = [item[name] for item in member_states if name in item]
             if not values:
                 continue
-            if name == "state":
+            if name == KEY_STATE:
                 state[name] = "ON" if "ON" in values else "OFF"
-            elif name in ("brightness", "position"):
+            elif name in (KEY_BRIGHTNESS, KEY_POSITION):
                 state[name] = round(sum(values) / len(values))
             else:
                 state[name] = values[0]

@@ -1,5 +1,6 @@
 import type { DeviceInfo } from '../common/types';
 import { isDiscrete } from '../signals/editor-helpers';
+import { PLATFORM_SENSOR } from '../common/constants';
 
 export const MIN_DAYS = 1;
 export const MAX_DAYS = 365;
@@ -24,7 +25,12 @@ export function sensorEntities(devices: DeviceInfo[], deviceIds: string[]): Sens
     const sensors = new Map<string, Sensor>();
     for (const entity of device.entities) {
       const shape = entity.signal?.shape;
-      if (entity.platform === 'sensor' && entity.state_class && shape && !isDiscrete(shape)) {
+      if (
+        entity.platform === PLATFORM_SENSOR &&
+        entity.state_class &&
+        shape &&
+        !isDiscrete(shape)
+      ) {
         sensors.set(entity.key, { key: entity.key, name: entity.name });
       }
     }

@@ -15,6 +15,7 @@ import voluptuous as vol
 from ..const import DOMAIN
 from .error_factory import ErrorFactory
 from .errors import TdcError
+from .keys import KEY_ID, KEY_TYPE
 from .response_factory import ResponseFactory
 from .runtime import TdcData
 
@@ -33,7 +34,7 @@ def tdc_command(
     The handler returns the payload or raises a TdcError. Errors are logged once with their code
     and sent as an error reply.
     """
-    schema = {vol.Required("type"): command_type, **(fields or {})}
+    schema = {vol.Required(KEY_TYPE): command_type, **(fields or {})}
 
     def decorator(handler: Handler) -> Any:
         """Wrap `handler` with schema, admin check and error conversion."""
@@ -61,9 +62,9 @@ def tdc_command(
                     command_type,
                     exc_info=error.code.name == "INT_UNEXPECTED",
                 )
-                connection.send_message(responses.error(msg["id"], error))
+                connection.send_message(responses.error(msg[KEY_ID], error))
                 return
-            connection.send_message(responses.result(msg["id"], payload))
+            connection.send_message(responses.result(msg[KEY_ID], payload))
 
         return command
 

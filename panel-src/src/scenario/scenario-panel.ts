@@ -10,6 +10,9 @@ import type { ScenarioInfo } from '../common/types';
 import { describeTarget } from '../schedule/helpers';
 import './scenario-form';
 import type { ScenarioForm, ScenarioRequest } from './scenario-form';
+import { KIND_ALL } from '../common/constants';
+
+const COLUMN_COUNT = 3;
 
 /** Creates, lists, changes, starts and removes scenarios: named lists of timed steps. */
 @customElement('tdc-scenario-panel')
@@ -89,7 +92,7 @@ export class ScenarioPanel extends TdcPollingElement {
   /** Render the table row of one scenario and, if open, its form. */
   private renderRow(item: ScenarioInfo): TemplateResult {
     const first = item.steps[0];
-    const { kind } = first ? describeTarget(first.target) : { kind: 'all' as const };
+    const { kind } = first ? describeTarget(first.target) : ({ kind: KIND_ALL } as const);
     const lang = this.hass?.language;
     const open = this.expanded.has(item.id);
     return html`<tr class="scenario card" @click=${() => this.toggle(item.id)}>
@@ -120,7 +123,7 @@ export class ScenarioPanel extends TdcPollingElement {
       ${
         open
           ? this.editRow(
-              3,
+              COLUMN_COUNT,
               item.id,
               html`<tdc-scenario-form
                 .scenario=${item}

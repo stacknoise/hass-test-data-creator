@@ -19,6 +19,10 @@ import '../common/dialog';
 import '../wizard/creation-wizard';
 import './device-detail';
 import { knownAreas, usageEntries } from './helpers';
+import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
+
+const VALUES_SHOWN = 4;
+const COLUMN_COUNT = 6;
 
 const PAGE_SIZE = 200;
 const REFRESH_MS = 10_000;
@@ -30,7 +34,7 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
 };
 const FIRE_PREFIX = 'fire:';
 const REMOVE = 'remove';
-const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
+const VALUE_PLATFORMS = [PLATFORM_SENSOR, 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
 @customElement('tdc-device-list')
@@ -155,7 +159,7 @@ export class DeviceList extends TdcElement {
   private pick(device: DeviceInfo, value: string): void {
     if (value === REMOVE) {
       this.dispatchEvent(
-        new CustomEvent('tdc-remove', { detail: { target: 'device', id: device.id } }),
+        new CustomEvent('tdc-remove', { detail: { target: KIND_DEVICE, id: device.id } }),
       );
       return;
     }
@@ -168,7 +172,7 @@ export class DeviceList extends TdcElement {
     const lang = this.hass?.language;
     return device.entities
       .filter((e) => VALUE_PLATFORMS.includes(e.platform))
-      .slice(0, 4)
+      .slice(0, VALUES_SHOWN)
       .map((e) => {
         const unit = e.unit ? ` ${e.unit}` : '';
         const fault = e.fault ? ` ⚠ ${labelOf(lang, 'fault', e.fault)}` : '';
@@ -209,7 +213,7 @@ export class DeviceList extends TdcElement {
       ${
         open
           ? this.detailRow(
-              6,
+              COLUMN_COUNT,
               html`<tdc-device-detail
                 .hass=${this.hass}
                 .device=${device}

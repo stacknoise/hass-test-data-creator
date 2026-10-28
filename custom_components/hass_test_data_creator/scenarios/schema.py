@@ -6,6 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from ..core.keys import KEY_ACTION, KEY_ENTITY, KEY_NAME, KEY_PARAMS, KEY_STEPS, KEY_TARGET
 from ..scheduler.schema import TARGET_SCHEMA
 
 MAX_STEPS = 50
@@ -16,14 +17,14 @@ STEP_SCHEMA = vol.Schema(
         vol.Optional("after_s", default=0): vol.All(
             vol.Coerce(float), vol.Range(min=0, max=MAX_STEP_DELAY_SECONDS)
         ),
-        vol.Required("target"): TARGET_SCHEMA,
-        vol.Optional("entity", default=""): str,
-        vol.Required("action"): str,
-        vol.Optional("params", default=dict): dict,
+        vol.Required(KEY_TARGET): TARGET_SCHEMA,
+        vol.Optional(KEY_ENTITY, default=""): str,
+        vol.Required(KEY_ACTION): str,
+        vol.Optional(KEY_PARAMS, default=dict): dict,
     }
 )
 
 SCENARIO_FIELDS: dict[Any, Any] = {
-    vol.Required("name"): vol.All(str, vol.Length(min=1, max=64)),
-    vol.Required("steps"): vol.All([STEP_SCHEMA], vol.Length(min=1, max=MAX_STEPS)),
+    vol.Required(KEY_NAME): vol.All(str, vol.Length(min=1, max=64)),
+    vol.Required(KEY_STEPS): vol.All([STEP_SCHEMA], vol.Length(min=1, max=MAX_STEPS)),
 }

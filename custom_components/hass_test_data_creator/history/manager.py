@@ -13,6 +13,7 @@ from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..const import MAX_HISTORY_ROWS
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
+from ..core.keys import KEY_SENSOR
 from ..devices.entity_ids import entity_id_of
 from ..model.models import DeviceDef, EntityDef
 from ..scheduler.schema import device_references
@@ -23,10 +24,13 @@ from .recorder import StatisticsClient
 Target = tuple[DeviceDef, EntityDef, str]
 
 
+HOURS_PER_DAY = 24
+
+
 def last_hours(days: int, now: datetime | None = None) -> list[datetime]:
     """Return the starts (UTC) of the `days` * 24 full hours before the current hour."""
     end = (now or dt_util.utcnow()).replace(minute=0, second=0, microsecond=0)
-    return [end - timedelta(hours=count) for count in range(days * 24, 0, -1)]
+    return [end - timedelta(hours=count) for count in range(days * HOURS_PER_DAY, 0, -1)]
 
 
 class HistoryManager:
@@ -105,7 +109,7 @@ class HistoryManager:
         skipped = 0
         for owner in devices:
             for definition in owner.entities:
-                if definition.platform != "sensor" or entity not in (None, definition.key):
+                if definition.platform != KEY_SENSOR or entity not in (None, definition.key):
                     continue
                 entity_id = entity_id_of(registry, owner, definition)
                 if entity_id and self._series.supports(definition):

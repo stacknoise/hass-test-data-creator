@@ -11,6 +11,19 @@ from homeassistant.helpers import area_registry as ar, device_registry as dr, en
 
 from ..const import DOMAIN
 from ..core.errors import ErrorCode, ScheduleError
+from ..core.keys import (
+    KEY_AREAS,
+    KEY_DEVICE,
+    KEY_DEVICES,
+    KEY_GROUPS,
+    KEY_ID,
+    KEY_NAME,
+    KEY_RUN,
+    KEY_RUNS,
+    KEY_SCENARIOS,
+    KEY_SCHEDULES,
+    KEY_TARGET,
+)
 from ..devices.usage import KINDS, DeviceUsage
 from ..model.models import DeviceDef
 from ..store.store import TdcStore
@@ -41,23 +54,23 @@ class RemovalPlan:
         """Return the devices that are still used, each with the names of its users."""
         return "; ".join(
             f"{item['device']}: "
-            + ", ".join(user["name"] for kind in KINDS for user in item["usage"][kind])
+            + ", ".join(user[KEY_NAME] for kind in KINDS for user in item["usage"][kind])
             for item in self.in_use
         )
 
     def to_dict(self) -> dict[str, Any]:
         """Return the plan as the panel shows it before the user confirms."""
         return {
-            "target": self.target,
-            "devices": [{"id": item.id, "name": item.name} for item in self.devices],
+            KEY_TARGET: self.target,
+            KEY_DEVICES: [{KEY_ID: item.id, KEY_NAME: item.name} for item in self.devices],
             "orphans": self.orphans,
-            "runs": self.runs,
-            "schedules": self.schedules,
-            "scenarios": self.scenarios,
-            "groups": self.groups,
+            KEY_RUNS: self.runs,
+            KEY_SCHEDULES: self.schedules,
+            KEY_SCENARIOS: self.scenarios,
+            KEY_GROUPS: self.groups,
             "topics": self.topics,
             "statistics": self.statistics,
-            "areas": self.areas,
+            KEY_AREAS: self.areas,
             "in_use": self.in_use,
         }
 
@@ -112,7 +125,7 @@ class RemovalPlanner:
             return []
         found = [(device, self._usage.of(device)) for device in plan.devices]
         return [
-            {"device": device.name, "usage": usage}
+            {KEY_DEVICE: device.name, "usage": usage}
             for device, usage in found
             if self._usage.is_used(usage)
         ]
@@ -128,7 +141,7 @@ class RemovalPlanner:
         schedules = self._store.schedules()
         if plan.target == TARGET_ALL:
             return [item.id for item in schedules]
-        return [item.id for item in schedules if item.target.get("run") in plan.runs]
+        return [item.id for item in schedules if item.target.get(KEY_RUN) in plan.runs]
 
     def _orphans(self, known: set[str]) -> list[dict[str, str]]:
         """Return registry devices of this entry that the store does not know (damaged store)."""
@@ -137,7 +150,9 @@ class RemovalPlanner:
         for entry in dr.async_entries_for_config_entry(registry, self._entry.entry_id):
             identifier = next((item[1] for item in entry.identifiers if item[0] == DOMAIN), None)
             if identifier is not None and identifier not in known:
-                found.append({"id": entry.id, "name": entry.name or "", "identifier": identifier})
+                found.append(
+                    {KEY_ID: entry.id, KEY_NAME: entry.name or "", "identifier": identifier}
+                )
         return found
 
     def _empty_areas(self, removed: set[str]) -> list[str]:

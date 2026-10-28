@@ -21,6 +21,7 @@ from ..const import (
 )
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..core.ids import new_id
+from ..core.keys import KEY_AREAS
 from ..model.models import DeviceDef, RunRecord
 from ..outputs.adapter import OutputAdapterFactory
 from ..store.store import TdcStore
@@ -104,7 +105,7 @@ class DevicesManager:
         now = time.time()
         first = self._store.next_index(template.id, job.count)
         names = distribute(
-            job.areas, job.count, job.area_mode, device_seed(job.seed, "areas", first)
+            job.areas, job.count, job.area_mode, device_seed(job.seed, KEY_AREAS, first)
         )
         run = RunRecord(new_id(), job.label or template.name, now, job.seed)
         devices = self._device_factory.create(

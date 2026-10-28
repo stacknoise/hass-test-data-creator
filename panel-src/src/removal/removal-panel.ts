@@ -7,6 +7,9 @@ import type { TextKey } from '../common/i18n';
 import { usageEntries } from '../devices/helpers';
 import { sortedByLabel } from '../common/labels';
 import type { RemovalPlan, RemovalTarget } from '../common/types';
+import { KIND_ALL, LIST_SEPARATOR } from '../common/constants';
+
+const LISTED_MAX = 20;
 
 const TARGET_LABELS: Record<RemovalTarget, TextKey> = {
   all: 'targetAll',
@@ -30,7 +33,7 @@ export class RemovalPanel extends TdcElement {
     `,
   ];
 
-  @property() target: RemovalTarget = 'all';
+  @property() target: RemovalTarget = KIND_ALL;
   @property() targetId = '';
 
   @state() private plan?: RemovalPlan;
@@ -101,16 +104,16 @@ export class RemovalPanel extends TdcElement {
         }
         ${
           plan.areas.length
-            ? html`<li>${this.tr('planAreas', { names: plan.areas.join(', ') })}</li>`
+            ? html`<li>${this.tr('planAreas', { names: plan.areas.join(LIST_SEPARATOR) })}</li>`
             : ''
         }
       </ul>
       <p>
         <small
           >${plan.devices
-            .slice(0, 20)
+            .slice(0, LISTED_MAX)
             .map((d) => d.name)
-            .join(', ')}${plan.devices.length > 20 ? ' …' : ''}</small
+            .join(LIST_SEPARATOR)}${plan.devices.length > LISTED_MAX ? ' …' : ''}</small
         >
       </p>
       ${
@@ -123,7 +126,7 @@ export class RemovalPanel extends TdcElement {
                       ${item.device}:
                       ${usageEntries(item.usage)
                         .map((entry) => `${this.tr(`use_${entry.kind}` as TextKey)} ${entry.name}`)
-                        .join(', ')}
+                        .join(LIST_SEPARATOR)}
                     </li>`,
                 )}
               </ul>`
@@ -163,7 +166,7 @@ export class RemovalPanel extends TdcElement {
           </select>
         </label>
         ${
-          this.target === 'all'
+          this.target === KIND_ALL
             ? ''
             : html`<tdc-target-select
                 .hass=${this.hass}
@@ -177,7 +180,7 @@ export class RemovalPanel extends TdcElement {
         }
         <div>
           <button
-            ?disabled=${this.target !== 'all' && !this.targetId}
+            ?disabled=${this.target !== KIND_ALL && !this.targetId}
             @click=${() => void this.showPlan()}
           >
             ${this.tr('showPlan')}

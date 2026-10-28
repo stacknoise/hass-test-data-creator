@@ -4,6 +4,7 @@ import { live } from 'lit/directives/live.js';
 import { TdcElement } from './base';
 import { sortedByLabel } from './labels';
 import { PopoverElement, popoverStyles } from './popover';
+import { LIST_SEPARATOR } from './constants';
 
 /** One option of a select: the value that is kept and the text that is shown. */
 export interface SelectItem {
@@ -138,7 +139,7 @@ export class MultiSelect extends PopoverElement {
       >
         ${
           shown.length
-            ? html`<span class="summary">${shown.join(', ')}</span>`
+            ? html`<span class="summary">${shown.join(LIST_SEPARATOR)}</span>`
             : html`<span class="summary empty">${this.empty || this.tr('areasNone')}</span>`
         }
         <span>▾</span>

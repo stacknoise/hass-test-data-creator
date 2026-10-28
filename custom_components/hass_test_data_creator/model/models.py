@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from ..core.keys import KEY_ENTITIES
+
 
 @dataclass
 class EntityDef:
@@ -54,8 +56,8 @@ class DeviceDef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> DeviceDef:
         """Return the device stored in `data`."""
-        entities = [EntityDef.from_dict(item) for item in data.get("entities", [])]
-        return cls(**{**data, "entities": entities})
+        entities = [EntityDef.from_dict(item) for item in data.get(KEY_ENTITIES, [])]
+        return cls(**{**data, KEY_ENTITIES: entities})
 
 
 @dataclass

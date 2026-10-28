@@ -17,6 +17,7 @@ import {
   type TextField,
 } from './editor-helpers';
 import './signal-preview';
+import { FIELD_SHAPE } from '../common/constants';
 
 const FIELD_LABELS: Record<SignalField | 'min' | 'max' | 'decimals', TextKey> = {
   min: 'edMin',
@@ -120,11 +121,11 @@ export class CurveEditor extends TdcElement {
           >${this.tr('edShape')}
           <select @change=${(e: Event) => this.changeShape((e.target as HTMLSelectElement).value)}>
             ${sortedByLabel(this.hass?.language, this.shapes, (s) =>
-              labelOf(this.hass?.language, 'shape', s),
+              labelOf(this.hass?.language, FIELD_SHAPE, s),
             ).map(
               (shape) =>
                 html`<option value=${shape} ?selected=${shape === this.signal.shape}>
-                  ${labelOf(this.hass?.language, 'shape', shape)}
+                  ${labelOf(this.hass?.language, FIELD_SHAPE, shape)}
                 </option>`,
             )}
           </select>

@@ -10,12 +10,13 @@ import voluptuous as vol
 
 from ..const import DOMAIN
 from ..core.command import tdc_command
+from ..core.keys import KEY_TARGET, KEY_TARGET_ID
 from ..core.runtime import get_data
 from ..removal.planner import TARGETS
 
 REMOVAL_FIELDS = {
-    vol.Required("target"): vol.In(TARGETS),
-    vol.Optional("target_id"): str,
+    vol.Required(KEY_TARGET): vol.In(TARGETS),
+    vol.Optional(KEY_TARGET_ID): str,
 }
 
 
@@ -24,7 +25,7 @@ async def ws_removal_plan(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Return what a removal of the target would delete."""
-    plan = get_data(hass).removal_planner.plan(msg["target"], msg.get("target_id"))
+    plan = get_data(hass).removal_planner.plan(msg[KEY_TARGET], msg.get(KEY_TARGET_ID))
     return plan.to_dict()
 
 
@@ -34,5 +35,5 @@ async def ws_removal_run(
 ) -> dict[str, Any]:
     """Remove the target and return what was removed."""
     data = get_data(hass)
-    plan = data.removal_planner.plan(msg["target"], msg.get("target_id"))
+    plan = data.removal_planner.plan(msg[KEY_TARGET], msg.get(KEY_TARGET_ID))
     return await data.removal_runner.async_run(plan)

@@ -1,3 +1,4 @@
+import { DEFAULT_MAX } from '../signals/signals';
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
@@ -11,6 +12,10 @@ import '../signals/signal-preview';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
 import { stateRate } from './helpers';
+import { KIND_TEMPLATE, PLATFORM_SENSOR } from '../common/constants';
+
+const DEFAULT_COUNT = 10;
+const DEFAULT_TICK_S = 10;
 
 const CUSTOM = 'custom';
 const RATE_WARNING = 50;
@@ -23,10 +28,10 @@ const SAMPLE_ENTITIES = JSON.stringify(
   [
     {
       key: 'level',
-      platform: 'sensor',
+      platform: PLATFORM_SENSOR,
       name: 'Level',
       unit: '%',
-      signal: { shape: 'sine', min: 0, max: 100 },
+      signal: { shape: 'sine', min: 0, max: DEFAULT_MAX },
     },
   ],
   null,
@@ -39,7 +44,7 @@ export class CreationWizard extends TdcElement {
   @state() private info?: Info;
   @state() private templates: TemplateInfo[] = [];
   @state() private template = '';
-  @state() private count = 10;
+  @state() private count = DEFAULT_COUNT;
   @state() private pattern = '{template} {nn}';
   @state() private areas: string[] = [];
   @state() private mode: 'even' | 'random' = 'even';
@@ -135,8 +140,8 @@ export class CreationWizard extends TdcElement {
   /** Render the estimate of the load and a warning for a high rate. */
   private renderEstimate(): TemplateResult {
     const entities = this.entities();
-    const sensors = entities.filter((e) => e.platform === 'sensor').length * this.count;
-    const rate = stateRate(sensors, this.info?.tick_seconds ?? 10);
+    const sensors = entities.filter((e) => e.platform === PLATFORM_SENSOR).length * this.count;
+    const rate = stateRate(sensors, this.info?.tick_seconds ?? DEFAULT_TICK_S);
     return html`<p>
       <small>${this.tr('estimate', { entities: entities.length * this.count, rate })}</small>
       ${rate > RATE_WARNING ? html`<br /><span class="warning">${this.tr('rateWarning')}</span>` : ''}
@@ -155,11 +160,11 @@ export class CreationWizard extends TdcElement {
 
   /** Render the element. */
   override render(): TemplateResult {
-    const sensor = this.entities().find((e) => e.platform === 'sensor' && e.signal);
+    const sensor = this.entities().find((e) => e.platform === PLATFORM_SENSOR && e.signal);
     return html`
       <div class="row form">
         <label style="flex: 1 1 220px"
-          >${this.tr('template')}
+          >${this.tr(KIND_TEMPLATE)}
           <select @change=${(e: Event) => (this.template = (e.target as HTMLSelectElement).value)}>
             ${this.templateOptions().map(
               (option) =>

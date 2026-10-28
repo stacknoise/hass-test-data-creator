@@ -13,6 +13,7 @@ from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError
 from ..core.ids import new_id
+from ..core.keys import KEY_ACTION, KEY_ENTITY, KEY_NAME, KEY_PARAMS, KEY_STEPS, KEY_TARGET
 from ..model.models import ScenarioDef
 from ..scheduler.actions import ActionFactory
 from ..scheduler.runner import ActionRunner
@@ -60,7 +61,7 @@ class ScenarioManager:
     def _check_steps(self, data: dict[str, Any]) -> None:
         """Raise TDC-SCH-001 unless every step names an action that exists."""
         known = {name for names in self._actions.names().values() for name in names}
-        if any(step["action"] not in known for step in data["steps"]):
+        if any(step[KEY_ACTION] not in known for step in data[KEY_STEPS]):
             raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
     async def async_add(self, data: dict[str, Any]) -> ScenarioDef:
@@ -68,8 +69,8 @@ class ScenarioManager:
         self._check_steps(data)
         scenario = ScenarioDef(
             id=new_id(),
-            name=data["name"],
-            steps=data["steps"],
+            name=data[KEY_NAME],
+            steps=data[KEY_STEPS],
             created_at=dt_util.utcnow().timestamp(),
         )
         self._store.put_scenario(scenario)
@@ -80,8 +81,8 @@ class ScenarioManager:
         """Replace the name and the steps of a scenario; a wrong request changes nothing."""
         scenario = self.get(scenario_id)
         self._check_steps(data)
-        scenario.name = data["name"]
-        scenario.steps = data["steps"]
+        scenario.name = data[KEY_NAME]
+        scenario.steps = data[KEY_STEPS]
         self._store.put_scenario(scenario)
         await self._store.async_save()
         self._audit.record(self._audit_factory.scenario_changed(scenario.name))
@@ -126,9 +127,9 @@ class ScenarioManager:
     async def _run_step(self, name: str, step: dict[str, Any]) -> None:
         """Run the action of one step on all devices of its target."""
         await self._runner.async_run_on(
-            self._runner.devices_for(step["target"]),
-            step["entity"],
-            step["action"],
-            step["params"],
+            self._runner.devices_for(step[KEY_TARGET]),
+            step[KEY_ENTITY],
+            step[KEY_ACTION],
+            step[KEY_PARAMS],
             name,
         )

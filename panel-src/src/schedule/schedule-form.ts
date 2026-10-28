@@ -21,8 +21,23 @@ import {
   type TriggerForm,
   type WorkForm,
 } from './helpers';
+import {
+  EVENT_SUBMIT,
+  KIND_ALL,
+  TRIGGER_INTERVAL,
+  TRIGGER_ONCE,
+  TRIGGER_POISSON,
+  TRIGGER_RANDOM_WINDOW,
+  TRIGGER_TIMES,
+} from '../common/constants';
 
-const TRIGGER_TYPES: TriggerType[] = ['times', 'interval', 'once', 'random_window', 'poisson'];
+const TRIGGER_TYPES: TriggerType[] = [
+  TRIGGER_TIMES,
+  TRIGGER_INTERVAL,
+  TRIGGER_ONCE,
+  TRIGGER_RANDOM_WINDOW,
+  TRIGGER_POISSON,
+];
 const WEEKDAYS = [
   'weekdayMon',
   'weekdayTue',
@@ -101,14 +116,14 @@ export class ScheduleForm extends TdcElement {
   /** Whether the action, and the target if it needs one, are chosen. */
   private complete(): boolean {
     return (
-      Boolean(this.work.action) && (this.work.kind === 'all' || this.work.targetIds.length > 0)
+      Boolean(this.work.action) && (this.work.kind === KIND_ALL || this.work.targetIds.length > 0)
     );
   }
 
   /** Tell the parent to save what the form describes. */
   private submit(): void {
     this.dispatchEvent(
-      new CustomEvent('tdc-submit', { detail: this.request(), bubbles: true, composed: true }),
+      new CustomEvent(EVENT_SUBMIT, { detail: this.request(), bubbles: true, composed: true }),
     );
   }
 
@@ -157,17 +172,17 @@ export class ScheduleForm extends TdcElement {
   /** Render the inputs that belong to the selected trigger type. */
   private renderTriggerFields(): TemplateResult {
     switch (this.form.type) {
-      case 'times':
-        return html`${this.field(this.tr('schTimes'), 'times')} ${this.renderWeekdays()}`;
-      case 'interval':
+      case TRIGGER_TIMES:
+        return html`${this.field(this.tr('schTimes'), TRIGGER_TIMES)} ${this.renderWeekdays()}`;
+      case TRIGGER_INTERVAL:
         return html`${this.field(this.tr('schEveryS'), 'everyS', 'number')}
         ${this.field(this.tr('schFrom'), 'start')} ${this.field(this.tr('schTo'), 'end')}`;
-      case 'once':
+      case TRIGGER_ONCE:
         return this.field(this.tr('schAt'), 'at', 'datetime-local');
-      case 'random_window':
+      case TRIGGER_RANDOM_WINDOW:
         return html`${this.field(this.tr('schCount'), 'count', 'number')}
         ${this.field(this.tr('schFrom'), 'start')} ${this.field(this.tr('schTo'), 'end')}`;
-      case 'poisson':
+      case TRIGGER_POISSON:
         return this.field(this.tr('schPerDay'), 'perDay', 'number');
     }
   }

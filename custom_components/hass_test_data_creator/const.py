@@ -92,3 +92,12 @@ PANEL_STATIC_URL: Final = "/hass_test_data_creator_static"
 
 # Custom template id of devices defined by hand.
 CUSTOM_TEMPLATE_ID: Final = "custom"
+
+# Seconds in the units of a time of day.
+SECONDS_PER_MINUTE: Final = 60
+SECONDS_PER_HOUR: Final = 3600
+
+# The positions of a cover, in percent, and the step of a temperature, in degrees.
+COVER_CLOSED_POSITION: Final = 0
+COVER_OPEN_POSITION: Final = 100
+TEMPERATURE_STEP: Final = 0.5

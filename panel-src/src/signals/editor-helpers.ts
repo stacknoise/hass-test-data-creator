@@ -1,4 +1,14 @@
 import type { SignalDef } from '../common/types';
+import {
+  FIELD_INTERVAL_S,
+  FIELD_NOISE,
+  FIELD_PHASE,
+  FIELD_SHAPE,
+  LIST_SEPARATOR,
+  PLATFORM_SENSOR,
+  SHAPE_ENUM,
+  SHAPE_STATE_MACHINE,
+} from '../common/constants';
 
 /** The numeric parameters of a signal that the editor can show, besides min, max and decimals. */
 export type SignalField =
@@ -11,7 +21,7 @@ export const CSV_SHAPE = 'csv';
 export type TextField = 'values' | 'weights' | 'states';
 
 /** The shapes whose value is a state name instead of a number. */
-export const DISCRETE_SHAPES = ['enum', 'state_machine'];
+export const DISCRETE_SHAPES = [SHAPE_ENUM, SHAPE_STATE_MACHINE];
 
 const PERIODIC = ['sine', 'saw', 'square', 'triangle', 'random_walk', 'discharge'];
 const NO_PARAMETERS = ['constant', 'household_load', 'pv_day'];
@@ -25,20 +35,20 @@ export function isDiscrete(shape: string): boolean {
 /** Return the parameters that change the curve of `shape`, in the order the editor shows them. */
 export function fieldsFor(shape: string): SignalField[] {
   if (shape === 'counter') return ['rate_per_hour'];
-  if (shape === CSV_SHAPE) return ['step_s', 'phase'];
-  if (shape === 'noise') return ['interval_s', 'noise'];
-  if (shape === 'steps') return ['period_s', 'interval_s', 'phase', 'noise'];
-  if (shape === 'enum') return ['interval_s'];
-  if (shape === 'state_machine') return ['phase'];
-  if (PERIODIC.includes(shape)) return ['period_s', 'phase', 'noise'];
-  if (NO_PARAMETERS.includes(shape)) return ['noise'];
+  if (shape === CSV_SHAPE) return ['step_s', FIELD_PHASE];
+  if (shape === FIELD_NOISE) return [FIELD_INTERVAL_S, FIELD_NOISE];
+  if (shape === 'steps') return ['period_s', FIELD_INTERVAL_S, FIELD_PHASE, FIELD_NOISE];
+  if (shape === SHAPE_ENUM) return [FIELD_INTERVAL_S];
+  if (shape === SHAPE_STATE_MACHINE) return [FIELD_PHASE];
+  if (PERIODIC.includes(shape)) return ['period_s', FIELD_PHASE, FIELD_NOISE];
+  if (NO_PARAMETERS.includes(shape)) return [FIELD_NOISE];
   return [];
 }
 
 /** Return the list parameters that `shape` takes. */
 export function textFieldsFor(shape: string): TextField[] {
-  if (shape === 'enum') return ['values', 'weights'];
-  if (shape === 'state_machine') return ['states'];
+  if (shape === SHAPE_ENUM) return ['values', 'weights'];
+  if (shape === SHAPE_STATE_MACHINE) return ['states'];
   return [];
 }
 
@@ -69,9 +79,9 @@ function items(text: string): string[] {
 /** Return the text of a list parameter: `a, b`, `1, 2` or `idle:600, wash:1800`. */
 export function textOf(signal: SignalDef, field: TextField): string {
   if (field === 'states') {
-    return (signal.states ?? []).map((s) => `${s.value}:${s.duration_s}`).join(', ');
+    return (signal.states ?? []).map((s) => `${s.value}:${s.duration_s}`).join(LIST_SEPARATOR);
   }
-  return (signal[field] ?? []).join(', ');
+  return (signal[field] ?? []).join(LIST_SEPARATOR);
 }
 
 /** Return `signal` with a list parameter set from its text; items that do not fit are dropped. */
@@ -95,8 +105,8 @@ export function withText(signal: SignalDef, field: TextField, text: string): Sig
 
 /** Return the parameters that a new discrete shape needs, so that it is valid at once. */
 function defaultsFor(shape: string): Partial<SignalDef> {
-  if (shape === 'enum') return { values: ['on', 'off'], interval_s: DEFAULT_HOLD_S };
-  if (shape === 'state_machine') {
+  if (shape === SHAPE_ENUM) return { values: ['on', 'off'], interval_s: DEFAULT_HOLD_S };
+  if (shape === SHAPE_STATE_MACHINE) {
     return {
       states: [
         { value: 'idle', duration_s: DEFAULT_HOLD_S },
@@ -109,7 +119,7 @@ function defaultsFor(shape: string): Partial<SignalDef> {
 
 /** Return `signal` with another shape; parameters that the new shape ignores are dropped. */
 export function withShape(signal: SignalDef, shape: string): SignalDef {
-  const keep = new Set<string>(['shape', ...fieldsFor(shape), ...textFieldsFor(shape)]);
+  const keep = new Set<string>([FIELD_SHAPE, ...fieldsFor(shape), ...textFieldsFor(shape)]);
   if (shape === CSV_SHAPE) keep.add('file');
   if (!isDiscrete(shape)) ['min', 'max', 'decimals'].forEach((key) => keep.add(key));
   const merged = { ...defaultsFor(shape), ...signal, shape };
@@ -137,7 +147,7 @@ function parseEntities(json: string): Record<string, unknown>[] {
 /** Return the sensors with a signal in the JSON text of custom entities. */
 export function editableSensors(json: string): EditableSensor[] {
   return parseEntities(json).flatMap((entity, index) =>
-    entity.platform === 'sensor' && entity.signal
+    entity.platform === PLATFORM_SENSOR && entity.signal
       ? [
           {
             index,

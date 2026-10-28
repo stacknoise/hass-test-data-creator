@@ -14,8 +14,9 @@ import {
   type TargetKind,
   type WorkForm,
 } from './helpers';
+import { KIND_ALL, KIND_DEVICE, KIND_RUN, KIND_TEMPLATE } from '../common/constants';
 
-const TARGET_KINDS: TargetKind[] = ['all', 'template', 'device', 'run'];
+const TARGET_KINDS: TargetKind[] = [KIND_ALL, KIND_TEMPLATE, KIND_DEVICE, KIND_RUN];
 const DEVICE_LIMIT = 500;
 
 /** Picks what runs where: a target, an action and, for one device or template, an entity. */
@@ -148,12 +149,12 @@ export class WorkPicker extends TdcElement {
           (kind) => this.emit({ kind: kind as TargetKind, targetIds: [], entity: '' }),
         )}
         ${
-          this.work.kind === 'all'
+          this.work.kind === KIND_ALL
             ? nothing
             : html`<tdc-target-select
                 .hass=${this.hass}
                 kind=${this.work.kind}
-                ?multiple=${this.work.kind === 'device'}
+                ?multiple=${this.work.kind === KIND_DEVICE}
                 .values=${this.work.targetIds}
                 .templates=${this.templates}
                 @tdc-target-change=${(e: CustomEvent<string[]>) =>

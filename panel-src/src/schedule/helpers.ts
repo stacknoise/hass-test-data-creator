@@ -6,6 +6,24 @@ import type {
   Trigger,
   TriggerType,
 } from '../common/types';
+import {
+  KIND_ALL,
+  KIND_DEVICE,
+  KIND_RUN,
+  KIND_TEMPLATE,
+  LIST_SEPARATOR,
+  TRIGGER_INTERVAL,
+  TRIGGER_ONCE,
+  TRIGGER_POISSON,
+  TRIGGER_RANDOM_WINDOW,
+  TRIGGER_TIMES,
+} from '../common/constants';
+
+const DEFAULT_EVERY_S = 60;
+const DEFAULT_COUNT = 3;
+const DEFAULT_PER_DAY = 24;
+// Length of `2026-10-28T17:30`, an ISO time up to the minute.
+const MINUTE_LENGTH = 16;
 
 /** The raw inputs of the trigger part of the schedule form. */
 export interface TriggerForm {
@@ -26,15 +44,15 @@ export type TargetKind = 'all' | 'template' | 'device' | 'run';
 /** Return the form values of a new trigger. */
 export function defaultTriggerForm(): TriggerForm {
   return {
-    type: 'times',
+    type: TRIGGER_TIMES,
     times: '08:00, 18:30',
     weekdays: [],
-    everyS: 60,
+    everyS: DEFAULT_EVERY_S,
     start: '00:00',
     end: '24:00',
     at: '',
-    count: 3,
-    perDay: 24,
+    count: DEFAULT_COUNT,
+    perDay: DEFAULT_PER_DAY,
   };
 }
 
@@ -49,31 +67,35 @@ export function parseTimes(text: string): string[] {
 /** Return the trigger that the form describes. */
 export function buildTrigger(form: TriggerForm): Trigger {
   switch (form.type) {
-    case 'times':
+    case TRIGGER_TIMES:
       return form.weekdays.length
-        ? { type: 'times', times: parseTimes(form.times), weekdays: [...form.weekdays].sort() }
-        : { type: 'times', times: parseTimes(form.times) };
-    case 'interval':
-      return { type: 'interval', every_s: form.everyS, start: form.start, end: form.end };
-    case 'once':
-      return { type: 'once', at: form.at };
-    case 'random_window':
-      return { type: 'random_window', count: form.count, start: form.start, end: form.end };
-    case 'poisson':
-      return { type: 'poisson', per_day: form.perDay };
+        ? {
+            type: TRIGGER_TIMES,
+            times: parseTimes(form.times),
+            weekdays: [...form.weekdays].sort(),
+          }
+        : { type: TRIGGER_TIMES, times: parseTimes(form.times) };
+    case TRIGGER_INTERVAL:
+      return { type: TRIGGER_INTERVAL, every_s: form.everyS, start: form.start, end: form.end };
+    case TRIGGER_ONCE:
+      return { type: TRIGGER_ONCE, at: form.at };
+    case TRIGGER_RANDOM_WINDOW:
+      return { type: TRIGGER_RANDOM_WINDOW, count: form.count, start: form.start, end: form.end };
+    case TRIGGER_POISSON:
+      return { type: TRIGGER_POISSON, per_day: form.perDay };
   }
 }
 
 /** Return the target for a kind and its ids; devices may be several, the others take the first id. */
 export function buildTarget(kind: TargetKind, ids: string[]): ScheduleTarget {
   switch (kind) {
-    case 'all':
+    case KIND_ALL:
       return { all: true };
-    case 'template':
+    case KIND_TEMPLATE:
       return { template: ids[0] ?? '' };
-    case 'device':
+    case KIND_DEVICE:
       return { device: ids.length === 1 ? ids[0] : ids };
-    case 'run':
+    case KIND_RUN:
       return { run: ids[0] ?? '' };
   }
 }
@@ -83,36 +105,36 @@ export function describeTarget(target: ScheduleTarget | Record<string, never>): 
   kind: TargetKind;
   ids: string[];
 } {
-  if ('template' in target) return { kind: 'template', ids: [target.template] };
-  if ('device' in target) {
+  if (KIND_TEMPLATE in target) return { kind: KIND_TEMPLATE, ids: [target.template] };
+  if (KIND_DEVICE in target) {
     return {
-      kind: 'device',
+      kind: KIND_DEVICE,
       ids: typeof target.device === 'string' ? [target.device] : target.device,
     };
   }
-  if ('run' in target) return { kind: 'run', ids: [target.run] };
-  return { kind: 'all', ids: [] };
+  if (KIND_RUN in target) return { kind: KIND_RUN, ids: [target.run] };
+  return { kind: KIND_ALL, ids: [] };
 }
 
 /** Return a short text for a trigger, for the list. */
 export function summarizeTrigger(trigger: Trigger): string {
   switch (trigger.type) {
-    case 'times':
-      return trigger.times.join(', ');
-    case 'interval':
+    case TRIGGER_TIMES:
+      return trigger.times.join(LIST_SEPARATOR);
+    case TRIGGER_INTERVAL:
       return `${trigger.every_s} s (${trigger.start}–${trigger.end})`;
-    case 'once':
+    case TRIGGER_ONCE:
       return trigger.at.replace('T', ' ');
-    case 'random_window':
+    case TRIGGER_RANDOM_WINDOW:
       return `${trigger.count}× ${trigger.start}–${trigger.end}`;
-    case 'poisson':
+    case TRIGGER_POISSON:
       return `Ø ${trigger.per_day}/d`;
   }
 }
 
 /** Return a planned run time as local date and time without seconds. */
 export function formatWhen(iso: string): string {
-  return iso.slice(0, 16).replace('T', ' ');
+  return iso.slice(0, MINUTE_LENGTH).replace('T', ' ');
 }
 
 /** The inputs that say what runs where: the target and the action (by name).
@@ -131,7 +153,7 @@ export function actionNames(actions: Record<string, string[]>): string[] {
 
 /** Return a form for all devices with the first action. */
 export function defaultWork(actions: Record<string, string[]>): WorkForm {
-  return { kind: 'all', targetIds: [], action: actionNames(actions)[0] ?? '', entity: '' };
+  return { kind: KIND_ALL, targetIds: [], action: actionNames(actions)[0] ?? '', entity: '' };
 }
 
 /**
@@ -148,14 +170,14 @@ export function platformSetsOfTarget(
 ): Set<string>[] | undefined {
   const of = (entities: { platform: string }[]): Set<string> =>
     new Set(entities.map((entity) => entity.platform));
-  if (kind === 'all') return devices.length ? devices.map((d) => of(d.entities)) : undefined;
+  if (kind === KIND_ALL) return devices.length ? devices.map((d) => of(d.entities)) : undefined;
   if (ids.length === 0) return undefined;
-  if (kind === 'template') {
+  if (kind === KIND_TEMPLATE) {
     const tpl = templates.find((t) => t.id === ids[0]);
     return tpl ? [of(tpl.entities)] : undefined;
   }
   const chosen =
-    kind === 'device'
+    kind === KIND_DEVICE
       ? devices.filter((d) => ids.includes(d.id) || ids.includes(d.name))
       : devices.filter((d) => d.run_id === ids[0]);
   return chosen.length ? chosen.map((d) => of(d.entities)) : undefined;
@@ -206,9 +228,9 @@ export function entityChoices(
   const entities =
     ids.length !== 1
       ? []
-      : kind === 'template'
+      : kind === KIND_TEMPLATE
         ? (templates.find((t) => t.id === ids[0])?.entities ?? [])
-        : kind === 'device'
+        : kind === KIND_DEVICE
           ? (devices.find((d) => d.id === ids[0] || d.name === ids[0])?.entities ?? [])
           : [];
   const platforms = new Set(
@@ -238,15 +260,19 @@ export function resolveWork(work: WorkForm): {
 export function triggerFormOf(trigger: Trigger): TriggerForm {
   const base = { ...defaultTriggerForm(), type: trigger.type };
   switch (trigger.type) {
-    case 'times':
-      return { ...base, times: trigger.times.join(', '), weekdays: trigger.weekdays ?? [] };
-    case 'interval':
+    case TRIGGER_TIMES:
+      return {
+        ...base,
+        times: trigger.times.join(LIST_SEPARATOR),
+        weekdays: trigger.weekdays ?? [],
+      };
+    case TRIGGER_INTERVAL:
       return { ...base, everyS: trigger.every_s, start: trigger.start, end: trigger.end };
-    case 'once':
+    case TRIGGER_ONCE:
       return { ...base, at: trigger.at };
-    case 'random_window':
+    case TRIGGER_RANDOM_WINDOW:
       return { ...base, count: trigger.count, start: trigger.start, end: trigger.end };
-    case 'poisson':
+    case TRIGGER_POISSON:
       return { ...base, perDay: trigger.per_day };
   }
 }

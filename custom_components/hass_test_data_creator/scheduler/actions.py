@@ -5,7 +5,22 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from ..const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION
 from ..core.errors import ErrorCode, ScheduleError
+from ..core.keys import (
+    KEY_BINARY_SENSOR,
+    KEY_BRIGHTNESS,
+    KEY_CLIMATE,
+    KEY_COVER,
+    KEY_DURATION_S,
+    KEY_EVENT,
+    KEY_LIGHT,
+    KEY_POSITION,
+    KEY_SWITCH,
+    KEY_TEMPERATURE,
+    KEY_TURN_OFF,
+    KEY_TURN_ON,
+)
 from ..faults.factory import ACTION_PREFIX, FaultFactory
 
 Action = Callable[[Any, dict[str, Any]], Awaitable[None]]
@@ -38,7 +53,7 @@ async def _set_off(behaviour: Any, params: dict[str, Any]) -> None:
 
 async def _pulse(behaviour: Any, params: dict[str, Any]) -> None:
     """Switch a binary sensor on for `duration_s` seconds."""
-    behaviour.pulse(params.get("duration_s"))
+    behaviour.pulse(params.get(KEY_DURATION_S))
 
 
 async def _press(behaviour: Any, params: dict[str, Any]) -> None:
@@ -47,6 +62,9 @@ async def _press(behaviour: Any, params: dict[str, Any]) -> None:
     if event_type not in behaviour.event_types:
         raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
     behaviour.press(event_type)
+
+
+MAX_BRIGHTNESS = 255
 
 
 def _number(params: dict[str, Any], key: str, low: float, high: float) -> float:
@@ -62,7 +80,7 @@ def _number(params: dict[str, Any], key: str, low: float, high: float) -> float:
 
 async def _set_brightness(behaviour: Any, params: dict[str, Any]) -> None:
     """Set the brightness (0 to 255) of a light; 0 switches it off."""
-    brightness = int(_number(params, "brightness", 0, 255))
+    brightness = int(_number(params, KEY_BRIGHTNESS, 0, MAX_BRIGHTNESS))
     if brightness == 0:
         behaviour.turn_off()
     else:
@@ -81,32 +99,34 @@ async def _close_cover(behaviour: Any, params: dict[str, Any]) -> None:
 
 async def _set_position(behaviour: Any, params: dict[str, Any]) -> None:
     """Move a cover to a position (0 closed, 100 open)."""
-    behaviour.set_position(int(_number(params, "position", 0, 100)))
+    behaviour.set_position(
+        int(_number(params, KEY_POSITION, COVER_CLOSED_POSITION, COVER_OPEN_POSITION))
+    )
 
 
 async def _set_temperature(behaviour: Any, params: dict[str, Any]) -> None:
     """Set the target temperature of a thermostat."""
-    behaviour.set_target(_number(params, "temperature", behaviour.min_temp, behaviour.max_temp))
+    behaviour.set_target(_number(params, KEY_TEMPERATURE, behaviour.min_temp, behaviour.max_temp))
 
 
 _ACTIONS: dict[tuple[str, str], Action] = {
-    ("switch", "turn_on"): _turn_on,
-    ("switch", "turn_off"): _turn_off,
-    ("switch", "toggle"): _toggle,
-    ("binary_sensor", "set_on"): _set_on,
-    ("binary_sensor", "set_off"): _set_off,
-    ("binary_sensor", "pulse"): _pulse,
-    ("event", "press"): _press,
-    ("light", "turn_on"): _turn_on,
-    ("light", "turn_off"): _turn_off,
-    ("light", "toggle"): _toggle,
-    ("light", "set_brightness"): _set_brightness,
-    ("cover", "open"): _open_cover,
-    ("cover", "close"): _close_cover,
-    ("cover", "set_position"): _set_position,
-    ("climate", "set_temperature"): _set_temperature,
-    ("climate", "turn_on"): _turn_on,
-    ("climate", "turn_off"): _turn_off,
+    (KEY_SWITCH, KEY_TURN_ON): _turn_on,
+    (KEY_SWITCH, KEY_TURN_OFF): _turn_off,
+    (KEY_SWITCH, "toggle"): _toggle,
+    (KEY_BINARY_SENSOR, "set_on"): _set_on,
+    (KEY_BINARY_SENSOR, "set_off"): _set_off,
+    (KEY_BINARY_SENSOR, "pulse"): _pulse,
+    (KEY_EVENT, "press"): _press,
+    (KEY_LIGHT, KEY_TURN_ON): _turn_on,
+    (KEY_LIGHT, KEY_TURN_OFF): _turn_off,
+    (KEY_LIGHT, "toggle"): _toggle,
+    (KEY_LIGHT, "set_brightness"): _set_brightness,
+    (KEY_COVER, "open"): _open_cover,
+    (KEY_COVER, "close"): _close_cover,
+    (KEY_COVER, "set_position"): _set_position,
+    (KEY_CLIMATE, "set_temperature"): _set_temperature,
+    (KEY_CLIMATE, KEY_TURN_ON): _turn_on,
+    (KEY_CLIMATE, KEY_TURN_OFF): _turn_off,
 }
 
 

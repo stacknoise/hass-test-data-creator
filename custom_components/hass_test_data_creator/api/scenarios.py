@@ -10,6 +10,7 @@ import voluptuous as vol
 
 from ..const import DOMAIN
 from ..core.command import tdc_command
+from ..core.keys import KEY_SCENARIO_ID, KEY_STEPS
 from ..core.runtime import get_data
 from ..scenarios.schema import SCENARIO_FIELDS
 
@@ -31,28 +32,28 @@ async def ws_scenarios_add(
     return scenario.to_dict()
 
 
-@tdc_command(f"{DOMAIN}/scenarios/update", {vol.Required("scenario_id"): str, **SCENARIO_FIELDS})
+@tdc_command(f"{DOMAIN}/scenarios/update", {vol.Required(KEY_SCENARIO_ID): str, **SCENARIO_FIELDS})
 async def ws_scenarios_update(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Change a scenario and return it."""
-    scenario = await get_data(hass).scenarios.async_update(msg["scenario_id"], msg)
+    scenario = await get_data(hass).scenarios.async_update(msg[KEY_SCENARIO_ID], msg)
     return scenario.to_dict()
 
 
-@tdc_command(f"{DOMAIN}/scenarios/remove", {vol.Required("scenario_id"): str})
+@tdc_command(f"{DOMAIN}/scenarios/remove", {vol.Required(KEY_SCENARIO_ID): str})
 async def ws_scenarios_remove(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Delete a scenario."""
-    await get_data(hass).scenarios.async_remove(msg["scenario_id"])
+    await get_data(hass).scenarios.async_remove(msg[KEY_SCENARIO_ID])
     return {}
 
 
-@tdc_command(f"{DOMAIN}/scenarios/run", {vol.Required("scenario_id"): str})
+@tdc_command(f"{DOMAIN}/scenarios/run", {vol.Required(KEY_SCENARIO_ID): str})
 async def ws_scenarios_run(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Start a scenario and return the number of its steps."""
-    steps = await get_data(hass).scenarios.async_run(msg["scenario_id"])
-    return {"steps": steps}
+    steps = await get_data(hass).scenarios.async_run(msg[KEY_SCENARIO_ID])
+    return {KEY_STEPS: steps}

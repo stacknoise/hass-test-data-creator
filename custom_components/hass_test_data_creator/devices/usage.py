@@ -2,6 +2,15 @@
 
 from __future__ import annotations
 
+from ..core.keys import (
+    KEY_DEVICE,
+    KEY_GROUPS,
+    KEY_ID,
+    KEY_NAME,
+    KEY_SCENARIOS,
+    KEY_SCHEDULES,
+    KEY_TARGET,
+)
 from ..model.models import DeviceDef
 from ..scheduler.schema import device_references
 from ..store.store import TdcStore
@@ -25,20 +34,21 @@ class DeviceUsage:
         """Return `{kind: [{id, name}]}` for the three kinds of user of `device`."""
         names = {device.id, device.name}
         return {
-            "schedules": [
-                {"id": item.id, "name": item.name}
+            KEY_SCHEDULES: [
+                {KEY_ID: item.id, KEY_NAME: item.name}
                 for item in self._store.schedules()
-                if device_references(item.target.get("device")) & names
+                if device_references(item.target.get(KEY_DEVICE)) & names
             ],
-            "scenarios": [
-                {"id": item.id, "name": item.name}
+            KEY_SCENARIOS: [
+                {KEY_ID: item.id, KEY_NAME: item.name}
                 for item in self._store.scenarios()
                 if any(
-                    device_references(step["target"].get("device")) & names for step in item.steps
+                    device_references(step[KEY_TARGET].get(KEY_DEVICE)) & names
+                    for step in item.steps
                 )
             ],
-            "groups": [
-                {"id": item.id, "name": item.name}
+            KEY_GROUPS: [
+                {KEY_ID: item.id, KEY_NAME: item.name}
                 for item in self._store.groups()
                 if device.id in item.members
             ],
