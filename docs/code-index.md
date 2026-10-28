@@ -42,6 +42,8 @@ Lists every module, class and function of the integration with signature, file a
 | `_add_scenario` | `async def _add_scenario(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Add a scenario. |
 | `_remove_scenario` | `async def _remove_scenario(call: ServiceCall) -> None` | `custom_components/hass_test_data_creator/services.py` | Delete a scenario. |
 | `_run_scenario` | `async def _run_scenario(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Start a scenario. |
+| `_add_group` | `async def _add_group(call: ServiceCall) -> dict[str, object]` | `custom_components/hass_test_data_creator/services.py` | Add a group of Zigbee2MQTT devices. |
+| `_remove_group` | `async def _remove_group(call: ServiceCall) -> None` | `custom_components/hass_test_data_creator/services.py` | Delete a group. |
 | `async_register_services` | `def async_register_services(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/services.py` | Register the services as administrator services. |
 | `async_remove_services` | `def async_remove_services(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/services.py` | Remove the services when the entry is unloaded. |
 | `hass_test_data_creator.switch` | `module` | `custom_components/hass_test_data_creator/switch.py` | The switch platform of the generated devices. |
@@ -103,6 +105,9 @@ Lists every module, class and function of the integration with signature, file a
 | `ScenarioDef` | `class ScenarioDef` | `custom_components/hass_test_data_creator/model/models.py` | A named list of steps; each step runs an action `after_s` seconds after the step before. |
 | `ScenarioDef.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the JSON-serialisable form. |
 | `ScenarioDef.from_dict` | `def from_dict(cls, data: dict[str, Any]) -> ScenarioDef` | `custom_components/hass_test_data_creator/model/models.py` | Return the scenario stored in `data`. |
+| `GroupDef` | `class GroupDef` | `custom_components/hass_test_data_creator/model/models.py` | A named group of Zigbee2MQTT devices; `number` is the id Zigbee2MQTT shows. |
+| `GroupDef.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the JSON-serialisable form. |
+| `GroupDef.from_dict` | `def from_dict(cls, data: dict[str, Any]) -> GroupDef` | `custom_components/hass_test_data_creator/model/models.py` | Return the group stored in `data`. |
 
 ## store
 
@@ -129,6 +134,10 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.scenario` | `def scenario(self, scenario_id: str) -> ScenarioDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the scenario with `scenario_id`, or None. |
 | `TdcStore.put_scenario` | `def put_scenario(self, scenario: ScenarioDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `scenario`, replacing one with the same id. |
 | `TdcStore.remove_scenario` | `def remove_scenario(self, scenario_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the scenario `scenario_id`. |
+| `TdcStore.groups` | `def groups(self) -> list[GroupDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all groups in creation order. |
+| `TdcStore.group` | `def group(self, group_id: str) -> GroupDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the group with `group_id`, or None. |
+| `TdcStore.put_group` | `def put_group(self, group: GroupDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `group`, replacing one with the same id. |
+| `TdcStore.remove_group` | `def remove_group(self, group_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the group `group_id`. |
 | `TdcStore.add_topic` | `def add_topic(self, topic: str, device_id: str \| None) -> bool` | `custom_components/hass_test_data_creator/store/store.py` | Record a retained MQTT topic and its device (None: shared); True if it was new. |
 | `TdcStore.topics` | `def topics(self, device_ids: set[str] \| None=None) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the recorded topics: all, or those of the given devices. |
 | `TdcStore.forget_topics` | `def forget_topics(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Forget recorded topics, for example after their retained messages were deleted. |
@@ -316,7 +325,8 @@ Lists every module, class and function of the integration with signature, file a
 | `OutputAdapter.announce` | `async def announce(self, devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Make the entities of the registered `devices` appear. |
 | `OutputAdapter.remove` | `async def remove(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Remove `device` and everything it created from its output. |
 | `OutputAdapterFactory` | `class OutputAdapterFactory` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Creates the adapter for the output of a device. |
-| `OutputAdapterFactory.__init__` | `def __init__(self, hass: HomeAssistant, entry: ConfigEntry, mqtt: MqttClient, devices: MqttDevices, z2m_devices: Z2mDevices) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Keep the instance, the config entry, the MQTT client and the runtimes of the outputs. |
+| `OutputAdapterFactory.__init__` | `def __init__(self, hass: HomeAssistant, entry: ConfigEntry, mqtt: MqttClient, devices: MqttDevices, z2m_devices: Z2mDevices, groups: GroupManager) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Keep the instance, the config entry, the MQTT client and the runtimes of the outputs. |
+| `OutputAdapterFactory.async_drop_groups` | `async def async_drop_groups(self, group_ids: list[str], device_ids: set[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Delete groups and take removed devices out of the other groups. |
 | `OutputAdapterFactory.check_clearable` | `def check_clearable(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Raise TDC-OUT-002 if there are topics to clear and MQTT is not usable. |
 | `OutputAdapterFactory.async_clear_topics` | `async def async_clear_topics(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Delete the retained messages on `topics`; raises TDC-OUT-002 if MQTT is not usable. |
 | `OutputAdapterFactory.create` | `def create(self, output: str) -> OutputAdapter` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Return the adapter for `output`; native, MQTT discovery or Zigbee2MQTT. |
@@ -435,6 +445,8 @@ Lists every module, class and function of the integration with signature, file a
 | `_Entry.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: Behaviour, profile: Z2mProfile) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Keep the profile. |
 | `Z2mDevices` | `class Z2mDevices(BehaviourRuntime)` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Behaves like a Zigbee2MQTT bridge for the devices with the output `z2m`. |
 | `Z2mDevices.__init__` | `def __init__(self, parts: RuntimeParts, profiles: Z2mProfileFactory, payloads: Z2mPayloadFactory, templates: TemplateRegistry, settings: Z2mSettings) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Keep the factories, the template registry and the settings. |
+| `Z2mDevices.set_groups` | `def set_groups(self, groups: list[GroupDef]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Hand over the stored groups; they are published when the devices start. |
+| `Z2mDevices.async_groups_changed` | `async def async_groups_changed(self, groups: list[GroupDef]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the groups after one was added, removed or lost a member. |
 | `Z2mDevices.async_check` | `async def async_check(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Raise unless MQTT is usable and the base topic may be used; then publish the bridge. |
 | `Z2mDevices._ensure_bridge` | `async def _ensure_bridge(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Refuse a foreign base topic, then publish `bridge/state` and `bridge/info`. |
 | `Z2mDevices._async_prepare` | `async def _async_prepare(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Make sure the bridge is up before devices start. |
@@ -442,10 +454,14 @@ Lists every module, class and function of the integration with signature, file a
 | `Z2mDevices._wire` | `def _wire(self, entry: RuntimeEntry) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the events of the behaviour as actions. |
 | `Z2mDevices._command_pattern` | `def _command_pattern(self) -> str` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the filter for `<base>/<friendly name>/set`. |
 | `Z2mDevices._on_message` | `def _on_message(self, topic: str, payload: str) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Apply a `/set` message to every entity of the device with that friendly name. |
+| `Z2mDevices._targets` | `def _targets(self, name: str) -> list[_Entry]` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the entries a `/set` to `name` reaches: one device, or the members of a group. |
 | `Z2mDevices._async_announce` | `async def _async_announce(self, added: list[RuntimeEntry], devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish `bridge/devices` and the state and availability of the new devices. |
 | `Z2mDevices._async_changed` | `async def _async_changed(self, entry: RuntimeEntry) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the state of the device once, however many of its entities changed. |
 | `Z2mDevices._async_offline` | `async def _async_offline(self, entries: list[RuntimeEntry]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Mark the devices and the bridge offline. |
 | `Z2mDevices._async_removed` | `async def _async_removed(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish `bridge/devices` without the removed device. |
+| `Z2mDevices._async_bridge_groups` | `async def _async_bridge_groups(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the group list of the bridge. |
+| `Z2mDevices._async_publish_group` | `async def _async_publish_group(self, group: GroupDef) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the state of a group, derived from the states of its started members. |
+| `Z2mDevices._device_values` | `def _device_values(self, device_id: str) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the state properties of all started entities of a device. |
 | `Z2mDevices._async_bridge_devices` | `async def _async_bridge_devices(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the device list of the bridge. |
 | `Z2mDevices._bridge_entry` | `def _bridge_entry(self, device: DeviceDef) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the description of a device for `bridge/devices`. |
 | `Z2mDevices._async_publish_device` | `async def _async_publish_device(self, device_id: str) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish availability and the state of a device; it is offline if any entity is. |
@@ -459,6 +475,9 @@ Lists every module, class and function of the integration with signature, file a
 | `Z2mPayloadFactory.bridge_info` | `def bridge_info(self, base_topic: str) -> str` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return the payload of `bridge/info`: version, coordinator and a subset of the config. |
 | `Z2mPayloadFactory.bridge_devices` | `def bridge_devices(self, entries: list[dict[str, Any]]) -> str` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return the payload of `bridge/devices`: the coordinator and the given devices. |
 | `Z2mPayloadFactory.device_entry` | `def device_entry(self, device: DeviceDef, meta: dict[str, str], exposes: list[dict[str, Any]]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return one device of `bridge/devices`; `meta` is the z2m block of its template. |
+| `Z2mPayloadFactory.bridge_groups` | `def bridge_groups(self, groups: list[dict[str, Any]]) -> str` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return the payload of `bridge/groups`. |
+| `Z2mPayloadFactory.group_entry` | `def group_entry(self, group: GroupDef, devices: list[DeviceDef]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return one group of `bridge/groups` with its member devices. |
+| `Z2mPayloadFactory.group_state` | `def group_state(self, member_states: list[dict[str, Any]]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return the state of a group from the states of its members. |
 | `Z2mPayloadFactory.device_state` | `def device_state(self, properties: dict[str, Any]) -> str` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return the payload of `<device>`: all properties as JSON. |
 | `hass_test_data_creator.outputs.z2m.profiles` | `module` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | How each platform looks in the Zigbee2MQTT format: exposes, state values and commands (concept 7.4). |
 | `numeric` | `def numeric(name: str, label: str, access: int, **extra: Any) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Return a numeric expose (or feature) of Zigbee2MQTT. |
@@ -661,6 +680,7 @@ Lists every module, class and function of the integration with signature, file a
 | `RemovalPlanner` | `class RemovalPlanner` | `custom_components/hass_test_data_creator/removal/planner.py` | Builds the plan for a target from the store and the registry markers. |
 | `RemovalPlanner.__init__` | `def __init__(self, hass: HomeAssistant, entry: ConfigEntry, store: TdcStore) -> None` | `custom_components/hass_test_data_creator/removal/planner.py` | Keep the instance, the config entry and the store. |
 | `RemovalPlanner.plan` | `def plan(self, target: str, target_id: str \| None) -> RemovalPlan` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the plan to remove `target` (`all`, `device` or `run`) with `target_id`. |
+| `RemovalPlanner._group_ids` | `def _group_ids(self, plan: RemovalPlan) -> list[str]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the ids of the groups that go with the plan: all, or those left without members. |
 | `RemovalPlanner._schedule_ids` | `def _schedule_ids(self, plan: RemovalPlan) -> list[str]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the ids of the schedules that go with the plan: all, or those aimed at it. |
 | `RemovalPlanner._orphans` | `def _orphans(self, known: set[str]) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return registry devices of this entry that the store does not know (damaged store). |
 | `RemovalPlanner._empty_areas` | `def _empty_areas(self, removed: set[str]) -> list[str]` | `custom_components/hass_test_data_creator/removal/planner.py` | Return the names of created areas that would be empty after removing `removed`. |
@@ -701,6 +721,10 @@ Lists every module, class and function of the integration with signature, file a
 | `ws_devices_list` | `async def ws_devices_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Return one page of devices with the current state of their entities. |
 | `ws_devices_create` | `async def ws_devices_create(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Create the devices of a job and return the run. |
 | `ws_devices_fire` | `async def ws_devices_fire(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Run an action on one entity of a device. |
+| `hass_test_data_creator.api.groups` | `module` | `custom_components/hass_test_data_creator/api/groups.py` | Commands about groups (concept 8.2). |
+| `ws_groups_list` | `async def ws_groups_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/groups.py` | Return all groups. |
+| `ws_groups_add` | `async def ws_groups_add(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Add a group and return it. |
+| `ws_groups_remove` | `async def ws_groups_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/groups.py` | Delete a group. |
 | `hass_test_data_creator.api.info` | `module` | `custom_components/hass_test_data_creator/api/info.py` | Commands about the integration itself and the templates (concept 8.2). |
 | `ws_info` | `async def ws_info(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/info.py` | Return version, API version, features, limits, outputs, shapes and platforms. |
 | `ws_templates_list` | `async def ws_templates_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/info.py` | Return all templates with their entities. |
@@ -735,6 +759,24 @@ Lists every module, class and function of the integration with signature, file a
 | `FaultFactory.kinds` | `def kinds(self) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the names of all kinds of fault. |
 | `FaultFactory.platforms` | `def platforms(self, kind: str) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the platforms a kind of fault applies to; empty if the kind is unknown. |
 | `FaultFactory.create` | `def create(self, kind: str, params: dict[str, Any]) -> Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fault or raise SCH_INVALID_FAULT for unknown kinds and bad parameters. |
+
+## groups
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.groups.__init__` | `module` | `custom_components/hass_test_data_creator/groups/__init__.py` | Groups of the Zigbee2MQTT emulation (concept 7.4). |
+| `hass_test_data_creator.groups.manager` | `module` | `custom_components/hass_test_data_creator/groups/manager.py` | Groups of Zigbee2MQTT devices: a named list of members (concept 7.4). |
+| `GroupManager` | `class GroupManager` | `custom_components/hass_test_data_creator/groups/manager.py` | Adds and removes groups and keeps the Zigbee2MQTT bridge up to date. |
+| `GroupManager.__init__` | `def __init__(self, store: TdcStore, client: MqttClient, z2m: Z2mDevices) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Keep the store, the MQTT client and the Zigbee2MQTT runtime. |
+| `GroupManager.all_groups` | `def all_groups(self) -> list[GroupDef]` | `custom_components/hass_test_data_creator/groups/manager.py` | Return all groups. |
+| `GroupManager.load` | `def load(self) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Hand the stored groups to the runtime, before the stored devices start. |
+| `GroupManager.get` | `def get(self, group_id: str) -> GroupDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Return the group or raise TDC-OUT-006. |
+| `GroupManager.async_add` | `async def async_add(self, name: str, members: list[str]) -> GroupDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Add a group of Zigbee2MQTT devices given by id or name and publish it. |
+| `GroupManager.async_remove` | `async def async_remove(self, group_id: str) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Delete a group and its retained topics. |
+| `GroupManager.async_drop` | `async def async_drop(self, group_ids: list[str], device_ids: set[str]) -> None` | `custom_components/hass_test_data_creator/groups/manager.py` | Delete groups and take removed devices out of the others; the topics are cleared later. |
+| `GroupManager._member` | `def _member(self, reference: str) -> DeviceDef` | `custom_components/hass_test_data_creator/groups/manager.py` | Return the Zigbee2MQTT device with this id or name, or raise TDC-OUT-005. |
+| `GroupManager._name_is_free` | `def _name_is_free(self, name: str) -> bool` | `custom_components/hass_test_data_creator/groups/manager.py` | Whether `name` can be a group name: not reserved and used by no device or group. |
+| `hass_test_data_creator.groups.schema` | `module` | `custom_components/hass_test_data_creator/groups/schema.py` | Request fields of a group, shared by the services and the WebSocket commands. |
 
 ## scenarios
 

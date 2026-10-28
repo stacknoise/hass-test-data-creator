@@ -160,3 +160,23 @@ run_scenario:
       required: true
       selector:
         text:
+
+add_group:
+  fields:
+    name:
+      required: true
+      example: Living room lights
+      selector:
+        text:
+    members:
+      required: true
+      example: '["Lamp 01", "Lamp 02"]'
+      selector:
+        object:
+
+remove_group:
+  fields:
+    group_id:
+      required: true
+      selector:
+        text:

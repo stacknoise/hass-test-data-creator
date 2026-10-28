@@ -11,15 +11,15 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Scenarios: a named list of steps, each with a target, an entity, an action and `after_s`, the wait after the step before. Start one by hand, from the scenario tab, or from a schedule (`scenario: <id>` instead of target, entity and action; the schedule form of the panel has a "Runs" select).
 - Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`. The device list shows active faults.
 - Publish the devices over MQTT discovery instead (output `mqtt`, base topic `tdc`): Home Assistant creates the entities through its MQTT integration, values follow the curves, commands and faults work, and a removal deletes the retained messages. MQTT must be set up and connected.
-- Publish the devices as a Zigbee2MQTT bridge instead (output `z2m`, base topic `tdc_z2m`): `bridge/state`, `bridge/info`, `bridge/devices` with exposes, one JSON state per device, availability, `<name>/set` and button actions. It refuses a base topic with a foreign bridge on it. The base topics are set in the options of the integration.
+- Publish the devices as a Zigbee2MQTT bridge instead (output `z2m`, base topic `tdc_z2m`): `bridge/state`, `bridge/info`, `bridge/devices` with exposes, one JSON state per device, availability, `<name>/set` and button actions. Groups of such devices (`add_group`, `remove_group`, the Groups tab) are listed in `bridge/groups`, publish a state derived from their members and pass `set` on to every member. It refuses a base topic with a foreign bridge on it. The base topics are set in the options of the integration.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
-Planned: more fault kinds (`late`, `duplicate`), groups in the Zigbee2MQTT emulation, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Planned: more fault kinds (`late`, `duplicate`), statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
 ## Status
 
-Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format (without groups so far) (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.1.0: schedules, scenarios, faults, more curve shapes, light, blind and thermostat templates, and the schedule and scenario tabs and the curve editor in the panel. Not tried yet in a running Home Assistant beyond the automatic tests.
+Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.1.0: schedules, scenarios, faults, more curve shapes, light, blind and thermostat templates, and the schedule and scenario tabs and the curve editor in the panel. Not tried yet in a running Home Assistant beyond the automatic tests.
 
 ## Installation (HACS)
 
@@ -43,6 +43,8 @@ Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration create
 | `hass_test_data_creator.add_scenario` | Store a named list of timed steps |
 | `hass_test_data_creator.run_scenario` | Start a scenario (`scenario_id`) |
 | `hass_test_data_creator.remove_scenario` | Delete a scenario (`scenario_id`) |
+| `hass_test_data_creator.add_group` | Group Zigbee2MQTT devices (`name`, `members` by name or id) |
+| `hass_test_data_creator.remove_group` | Delete a group (`group_id`) |
 
 ```yaml
 action: hass_test_data_creator.create_devices

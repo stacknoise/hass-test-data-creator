@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from ..const import SAVE_DELAY_SECONDS, STORE_KEY, STORE_VERSION
-from ..model.models import DeviceDef, RunRecord, ScenarioDef, ScheduleDef
+from ..model.models import DeviceDef, GroupDef, RunRecord, ScenarioDef, ScheduleDef
 
 
 def _empty() -> dict[str, Any]:
@@ -19,6 +19,7 @@ def _empty() -> dict[str, Any]:
         "schedules": {},
         "scenarios": {},
         "published_topics": {},
+        "groups": {},
         "created_areas": [],
         "counters": {},
     }
@@ -105,6 +106,23 @@ class TdcStore:
     def remove_scenario(self, scenario_id: str) -> None:
         """Delete the scenario `scenario_id`."""
         self._data["scenarios"].pop(scenario_id, None)
+
+    def groups(self) -> list[GroupDef]:
+        """Return all groups in creation order."""
+        return [GroupDef.from_dict(item) for item in self._data["groups"].values()]
+
+    def group(self, group_id: str) -> GroupDef | None:
+        """Return the group with `group_id`, or None."""
+        item = self._data["groups"].get(group_id)
+        return GroupDef.from_dict(item) if item else None
+
+    def put_group(self, group: GroupDef) -> None:
+        """Store `group`, replacing one with the same id."""
+        self._data["groups"][group.id] = group.to_dict()
+
+    def remove_group(self, group_id: str) -> None:
+        """Delete the group `group_id`."""
+        self._data["groups"].pop(group_id, None)
 
     def add_topic(self, topic: str, device_id: str | None) -> bool:
         """Record a retained MQTT topic and its device (None: shared); True if it was new."""

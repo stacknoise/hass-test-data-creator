@@ -121,3 +121,23 @@ class ScenarioDef:
     def from_dict(cls, data: dict[str, Any]) -> ScenarioDef:
         """Return the scenario stored in `data`."""
         return cls(**data)
+
+
+@dataclass
+class GroupDef:
+    """A named group of Zigbee2MQTT devices; `number` is the id Zigbee2MQTT shows."""
+
+    id: str
+    name: str
+    number: int
+    members: list[str]
+    created_at: float
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the JSON-serialisable form."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> GroupDef:
+        """Return the group stored in `data`."""
+        return cls(**data)
