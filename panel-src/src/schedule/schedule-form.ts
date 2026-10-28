@@ -216,7 +216,7 @@ export class ScheduleForm extends TdcElement {
       ${this.submitRow({
         enabled: !!this.name.trim() && !!(this.scenarioId || this.complete()),
         busy: this.busy,
-        label: this.submitLabel,
+        label: this.submitLabel || this.tr('schSave'),
         editing: !!this.schedule,
         submit: () => this.submit(),
       })}

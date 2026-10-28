@@ -71,7 +71,7 @@ export class GroupForm extends TdcElement {
       ${this.submitRow({
         enabled: !!this.name.trim() && this.members.length > 0,
         busy: this.busy,
-        label: this.submitLabel,
+        label: this.submitLabel || this.tr('schSave'),
         editing: !!this.group,
         submit: () => this.submit(),
       })}

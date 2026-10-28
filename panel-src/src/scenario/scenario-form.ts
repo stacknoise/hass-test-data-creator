@@ -130,7 +130,7 @@ export class ScenarioForm extends TdcElement {
       ${this.submitRow({
         enabled: this.complete(),
         busy: this.busy,
-        label: this.submitLabel,
+        label: this.submitLabel || this.tr('schSave'),
         editing: !!this.scenario,
         submit: () => this.submit(),
         extra: html`<button

@@ -3071,7 +3071,7 @@ var G = class extends P {
       ${this.submitRow({
 			enabled: !!this.name.trim() && this.members.length > 0,
 			busy: this.busy,
-			label: this.submitLabel,
+			label: this.submitLabel || this.tr("schSave"),
 			editing: !!this.group,
 			submit: () => this.submit()
 		})}
@@ -3156,7 +3156,6 @@ var Zn = 500, Qn = "z2m", $n = class extends W {
                 .hass=${this.hass}
                 .devices=${this.members()}
                 .group=${e}
-                submitLabel=${this.tr("schSave")}
                 ?busy=${this.busy}
               ></tdc-group-form>`, (t) => void this.save(e, t)) : x}`;
 	}
@@ -3860,7 +3859,7 @@ var X = class extends P {
       ${this.submitRow({
 			enabled: this.complete(),
 			busy: this.busy,
-			label: this.submitLabel,
+			label: this.submitLabel || this.tr("schSave"),
 			editing: !!this.scenario,
 			submit: () => this.submit(),
 			extra: y`<button
@@ -3957,7 +3956,6 @@ var Nr = class extends W {
                 .info=${this.info}
                 .templates=${this.templates}
                 .scenario=${e}
-                submitLabel=${this.tr("schSave")}
                 ?busy=${this.busy}
               ></tdc-scenario-form>`, (t) => void this.save(e, t)) : x}`;
 	}
@@ -4098,7 +4096,7 @@ var Pr = [
       ${this.submitRow({
 			enabled: !!this.name.trim() && !!(this.scenarioId || this.complete()),
 			busy: this.busy,
-			label: this.submitLabel,
+			label: this.submitLabel || this.tr("schSave"),
 			editing: !!this.schedule,
 			submit: () => this.submit()
 		})}
@@ -4221,7 +4219,6 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
                 .templates=${this.templates}
                 .scenarios=${this.scenarios}
                 .schedule=${e}
-                submitLabel=${this.tr("schSave")}
                 ?busy=${this.busy}
               ></tdc-schedule-form>`, (t) => void this.save(e, t)) : x}`;
 	}

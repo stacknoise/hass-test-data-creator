@@ -127,7 +127,6 @@ export class ScenarioPanel extends TdcPollingElement {
                 .info=${this.info}
                 .templates=${this.templates}
                 .scenario=${item}
-                submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
               ></tdc-scenario-form>`,
               (request: ScenarioRequest) => void this.save(item, request),

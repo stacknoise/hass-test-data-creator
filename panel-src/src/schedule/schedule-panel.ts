@@ -187,7 +187,6 @@ export class SchedulePanel extends TdcPollingElement {
                 .templates=${this.templates}
                 .scenarios=${this.scenarios}
                 .schedule=${item}
-                submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
               ></tdc-schedule-form>`,
               (request: ScheduleRequest) => void this.save(item, request),

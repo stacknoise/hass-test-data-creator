@@ -121,7 +121,6 @@ export class GroupPanel extends TdcPollingElement {
                 .hass=${this.hass}
                 .devices=${this.members()}
                 .group=${item}
-                submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
               ></tdc-group-form>`,
               (request: GroupRequest) => void this.save(item, request),
