@@ -6,6 +6,11 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(ci)"
+    groups:
+      # init and analyze must always have the same version.
+      codeql-action:
+        patterns:
+          - "github/codeql-action/*"
 
   - package-ecosystem: pip
     directory: /
@@ -23,3 +28,17 @@ updates:
       interval: weekly
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      # The lint packages have to match each other's eslint version.
+      eslint:
+        patterns:
+          - "eslint"
+          - "@eslint/js"
+          - "typescript-eslint"
+          - "eslint-plugin-*"
+      # vitest needs a matching vite. A new vite also changes the built panel in the repo:
+      # run `npm run build` in panel-src and commit the result with the update.
+      vite:
+        patterns:
+          - "vite"
+          - "vitest"
