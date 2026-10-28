@@ -101,7 +101,7 @@ dev/           docker-compose setup with Home Assistant and Mosquitto
 - **Device**: `id` (time-ordered hex id), `name`, `template` (id or `custom`), `area`, `output` (`native`, `mqtt`, `z2m`), `run_id`, `seed`, `created_at`, `entities[]`, `group_ids[]`.
 - **Entity definition**: `key`, `platform`, `name`, `device_class`, `unit`, `state_class`, `attributes`, `signal` (sensors) or `states` (discrete), `commands` (switches, lights).
 - **Signal spec**: `shape`, `min`, `max`, `period`, `interval`, `noise`, `spikes`, `decimals`, `phase`. Parameters of one shape are validated by the shape (5.2).
-- **Group**: `id`, `name`, `members[]`. Z2M groups and native HA groups are created from it (7.4).
+- **Group**: `id`, `name`, `members[]`. Z2M groups are created from it (7.4); native Home Assistant groups are not.
 - **Schedule**: `id`, `target` (device, group or template), `action`, `trigger`, `enabled`, `seed`.
 - **Run**: one creation job with `id`, `label`, `created_at`, `seed` and the ids of everything it created. A run is the unit of removal besides device and template.
 
@@ -248,7 +248,7 @@ Implemented in the first part (devices, without groups):
 - The model catalogue is the optional `z2m` block of a template (`vendor`, `model`, `description`, `power_source`, `type`); a custom device gets vendor `TDC`.
 - The base topic is the option `z2m_base_topic` (default `tdc_z2m`); `zigbee2mqtt` needs the confirmation `z2m_confirm_default_topic` (`TDC-OUT-004`). If the base topic already holds a retained `bridge/state` that this integration did not publish, the output refuses to start (`TDC-OUT-003`). The options flow checks both base topics.
 - Home Assistant discovery is not published in the Zigbee2MQTT format; the devices are for consumers of the Zigbee2MQTT topics. Use the output `mqtt` to get Home Assistant entities.
-- Groups follow in the next part.
+- Groups: a group has a name, a number (the id Zigbee2MQTT shows) and members, which must be devices with the output `z2m`. The name must be free (no device, no group, not `bridge`, no slash). `bridge/groups` lists them with the IEEE addresses of the members. The group state `<base>/<group name>` is derived from the members (`state` is ON if any member is ON, `brightness` and `position` are averaged, mode and setpoint come from the first member) and is published again whenever a member changes. A `set` on `<group name>/set` is applied to every member. Removing a device takes it out of its groups; a group without members is deleted, and so is every group by `remove_all`. Native Home Assistant groups are not created.
 
 Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the model catalogue come from the templates; the network map is not implemented. At startup the adapter checks if the base topic already carries a retained `bridge/state` of a foreign publisher and refuses to start (`TDC-OUT-003`).
 
@@ -256,11 +256,11 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.1 Services
 
-`hass_test_data_creator.create_devices`, `fire_event`, `add_schedule`, `remove_schedule`, `set_schedule_enabled`, `add_scenario`, `remove_scenario`, `run_scenario`, `inject_fault`, `import_history` (v0.4), `remove` (target: device, template, run or all) and `remove_all`. Services are described in `services.yaml` and have schemas.
+`hass_test_data_creator.create_devices`, `fire_event`, `add_schedule`, `remove_schedule`, `set_schedule_enabled`, `add_scenario`, `remove_scenario`, `run_scenario`, `add_group`, `remove_group`, `inject_fault`, `import_history` (v0.4), `remove` (target: device, template, run or all) and `remove_all`. Services are described in `services.yaml` and have schemas.
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, add, remove, enable, preview), `scenarios/*` (list, add, remove, run), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, add, remove, enable, preview), `scenarios/*` (list, add, remove, run), `groups/*` (list, add, remove), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 

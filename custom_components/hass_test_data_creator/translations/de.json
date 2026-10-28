@@ -101,6 +101,12 @@
     "out_z2m_default_topic": {
       "message": "Bestätige in den Optionen, dass das Basis-Topic zigbee2mqtt benutzt werden darf"
     },
+    "out_group_invalid": {
+      "message": "Die Gruppe braucht Zigbee2MQTT-Geräte als Mitglieder und einen freien Namen"
+    },
+    "out_group_not_found": {
+      "message": "Die Gruppe wurde nicht gefunden"
+    },
     "rem_failed": {
       "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"
     },

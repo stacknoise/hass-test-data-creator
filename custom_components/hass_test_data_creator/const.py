@@ -20,6 +20,7 @@ FEATURES: Final = (
     "schedules",
     "templates",
     "z2m_bridge",
+    "z2m_groups",
 )
 
 # Storage (concept 4.3).

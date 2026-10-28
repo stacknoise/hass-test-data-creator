@@ -30,6 +30,8 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-OUT-002 | MQTT is not set up or not connected | The MQTT integration is not set up or not connected to its broker. |
 | TDC-OUT-003 | The Zigbee2MQTT base topic is used by another bridge | The Zigbee2MQTT base topic already carries a retained bridge state of someone else. |
 | TDC-OUT-004 | Confirm in the options that the base topic zigbee2mqtt may be used | The base topic zigbee2mqtt is used without the confirmation in the options. |
+| TDC-OUT-005 | The group needs Zigbee2MQTT devices as members and a free name | A group needs members that are Zigbee2MQTT devices and a free name without a slash. |
+| TDC-OUT-006 | The group was not found | The group does not exist. |
 | TDC-REM-001 | The removal was interrupted. Run it again to finish it | A step of a removal failed; the removal can be run again. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |
 | TDC-INT-001 | An unexpected error occurred. See the Home Assistant log | An unexpected error; the details are in the Home Assistant log. |

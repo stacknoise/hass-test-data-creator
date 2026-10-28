@@ -101,6 +101,12 @@
     "out_z2m_default_topic": {
       "message": "Confirm in the options that the base topic zigbee2mqtt may be used"
     },
+    "out_group_invalid": {
+      "message": "The group needs Zigbee2MQTT devices as members and a free name"
+    },
+    "out_group_not_found": {
+      "message": "The group was not found"
+    },
     "rem_failed": {
       "message": "The removal was interrupted. Run it again to finish it"
     },

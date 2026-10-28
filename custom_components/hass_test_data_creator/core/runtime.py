@@ -26,6 +26,7 @@ from ..engine.behaviours import Live
 from ..engine.signal_factory import SignalFactory
 from ..engine.tick import Tick
 from ..faults.factory import FaultFactory
+from ..groups.manager import GroupManager
 from ..outputs.adapter import OutputAdapterFactory
 from ..outputs.mqtt.client import MqttClient
 from ..outputs.mqtt.devices import MqttDevices
@@ -71,6 +72,7 @@ class TdcData:
     mqtt: MqttClient
     mqtt_devices: MqttDevices
     z2m_devices: Z2mDevices
+    groups: GroupManager
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -101,7 +103,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
             entry.options.get(CONF_Z2M_CONFIRM_DEFAULT, False),
         ),
     )
-    outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices, z2m_devices)
+    groups = GroupManager(store, mqtt, z2m_devices)
+    outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices, z2m_devices, groups)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
     actions = ActionFactory(FaultFactory())
@@ -146,6 +149,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         mqtt=mqtt,
         mqtt_devices=mqtt_devices,
         z2m_devices=z2m_devices,
+        groups=groups,
         live=live,
     )
 

@@ -84,6 +84,12 @@ class ErrorCode(StrEnum):
     OUT_Z2M_DEFAULT_TOPIC = "TDC-OUT-004"
     """The base topic zigbee2mqtt is used without the confirmation in the options."""
 
+    OUT_GROUP_INVALID = "TDC-OUT-005"
+    """A group needs members that are Zigbee2MQTT devices and a free name without a slash."""
+
+    OUT_GROUP_NOT_FOUND = "TDC-OUT-006"
+    """The group does not exist."""
+
     REM_FAILED = "TDC-REM-001"
     """A step of a removal failed; the removal can be run again."""
 

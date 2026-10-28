@@ -9,6 +9,7 @@ import voluptuous as vol
 from .const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from .core.runtime import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
+from .groups.schema import GROUP_FIELDS
 from .removal.planner import TARGET_ALL
 from .scenarios.schema import SCENARIO_FIELDS
 from .scheduler.schema import SCHEDULE_FIELDS
@@ -23,6 +24,8 @@ SERVICE_ENABLE_SCHEDULE = "set_schedule_enabled"
 SERVICE_ADD_SCENARIO = "add_scenario"
 SERVICE_REMOVE_SCENARIO = "remove_scenario"
 SERVICE_RUN_SCENARIO = "run_scenario"
+SERVICE_ADD_GROUP = "add_group"
+SERVICE_REMOVE_GROUP = "remove_group"
 SERVICES = (
     SERVICE_CREATE,
     SERVICE_FIRE,
@@ -34,6 +37,8 @@ SERVICES = (
     SERVICE_ADD_SCENARIO,
     SERVICE_REMOVE_SCENARIO,
     SERVICE_RUN_SCENARIO,
+    SERVICE_ADD_GROUP,
+    SERVICE_REMOVE_GROUP,
 )
 
 
@@ -101,6 +106,17 @@ async def _run_scenario(call: ServiceCall) -> dict[str, object]:
     return {"steps": await get_data(call.hass).scenarios.async_run(call.data["scenario_id"])}
 
 
+async def _add_group(call: ServiceCall) -> dict[str, object]:
+    """Add a group of Zigbee2MQTT devices."""
+    group = await get_data(call.hass).groups.async_add(call.data["name"], call.data["members"])
+    return {"id": group.id, "number": group.number}
+
+
+async def _remove_group(call: ServiceCall) -> None:
+    """Delete a group."""
+    await get_data(call.hass).groups.async_remove(call.data["group_id"])
+
+
 def async_register_services(hass: HomeAssistant) -> None:
     """Register the services as administrator services."""
     definitions = (
@@ -165,6 +181,13 @@ def async_register_services(hass: HomeAssistant) -> None:
             _run_scenario,
             vol.Schema({vol.Required("scenario_id"): str}),
             SupportsResponse.OPTIONAL,
+        ),
+        (SERVICE_ADD_GROUP, _add_group, vol.Schema(GROUP_FIELDS), SupportsResponse.OPTIONAL),
+        (
+            SERVICE_REMOVE_GROUP,
+            _remove_group,
+            vol.Schema({vol.Required("group_id"): str}),
+            SupportsResponse.NONE,
         ),
     )
     for name, handler, schema, response in definitions:

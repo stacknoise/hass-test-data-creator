@@ -106,6 +106,7 @@ export interface RemovalPlan {
   areas: string[];
   schedules: string[];
   scenarios: string[];
+  groups: string[];
   topics: string[];
 }
 
@@ -181,5 +182,14 @@ export interface ScenarioInfo {
   id: string;
   name: string;
   steps: ScenarioStep[];
+  created_at: number;
+}
+
+/** A group of Zigbee2MQTT devices as listed by the backend. */
+export interface GroupInfo {
+  id: string;
+  name: string;
+  number: number;
+  members: string[];
   created_at: number;
 }

@@ -30,6 +30,7 @@ class RemovalPlan:
     runs: list[str] = field(default_factory=list)
     schedules: list[str] = field(default_factory=list)
     scenarios: list[str] = field(default_factory=list)
+    groups: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
     areas: list[str] = field(default_factory=list)
 
@@ -42,6 +43,7 @@ class RemovalPlan:
             "runs": self.runs,
             "schedules": self.schedules,
             "scenarios": self.scenarios,
+            "groups": self.groups,
             "topics": self.topics,
             "areas": self.areas,
         }
@@ -78,12 +80,21 @@ class RemovalPlanner:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             plan.devices = [device]
         plan.schedules = self._schedule_ids(plan)
-        owners = None if target == TARGET_ALL else {d.id for d in plan.devices}
+        plan.groups = self._group_ids(plan)
+        owners = None if target == TARGET_ALL else {d.id for d in plan.devices} | set(plan.groups)
         plan.topics = self._store.topics(owners)
         plan.areas = self._empty_areas(
             {item.id for item in plan.devices} | {item["identifier"] for item in plan.orphans}
         )
         return plan
+
+    def _group_ids(self, plan: RemovalPlan) -> list[str]:
+        """Return the ids of the groups that go with the plan: all, or those left without members."""
+        groups = self._store.groups()
+        if plan.target == TARGET_ALL:
+            return [item.id for item in groups]
+        removed = {device.id for device in plan.devices}
+        return [item.id for item in groups if set(item.members) <= removed]
 
     def _schedule_ids(self, plan: RemovalPlan) -> list[str]:
         """Return the ids of the schedules that go with the plan: all, or those aimed at it."""

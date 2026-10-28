@@ -6,11 +6,18 @@ import hashlib
 import json
 from typing import Any
 
-from ...model.models import DeviceDef
+from ...model.models import DeviceDef, GroupDef
 
 BRIDGE_VERSION = "2.1.0"
 COORDINATOR_IEEE = "0x00124b0000000001"
 DEFAULT_VENDOR = "TDC"
+GROUP_PROPERTIES = (
+    "state",
+    "brightness",
+    "position",
+    "system_mode",
+    "occupied_heating_setpoint",
+)
 
 
 def ieee_address(device_id: str) -> str:
@@ -100,6 +107,36 @@ class Z2mPayloadFactory:
             "interview_completed": True,
             "endpoints": {},
         }
+
+    def bridge_groups(self, groups: list[dict[str, Any]]) -> str:
+        """Return the payload of `bridge/groups`."""
+        return json.dumps(groups)
+
+    def group_entry(self, group: GroupDef, devices: list[DeviceDef]) -> dict[str, Any]:
+        """Return one group of `bridge/groups` with its member devices."""
+        return {
+            "id": group.number,
+            "friendly_name": group.name,
+            "members": [
+                {"ieee_address": ieee_address(device.id), "endpoint": 1} for device in devices
+            ],
+            "scenes": [],
+        }
+
+    def group_state(self, member_states: list[dict[str, Any]]) -> dict[str, Any]:
+        """Return the state of a group from the states of its members."""
+        state: dict[str, Any] = {}
+        for name in GROUP_PROPERTIES:
+            values = [item[name] for item in member_states if name in item]
+            if not values:
+                continue
+            if name == "state":
+                state[name] = "ON" if "ON" in values else "OFF"
+            elif name in ("brightness", "position"):
+                state[name] = round(sum(values) / len(values))
+            else:
+                state[name] = values[0]
+        return state
 
     def device_state(self, properties: dict[str, Any]) -> str:
         """Return the payload of `<device>`: all properties as JSON."""

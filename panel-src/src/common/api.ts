@@ -6,6 +6,7 @@ import type {
   PlannedRun,
   RemovalPlan,
   RemovalResult,
+  GroupInfo,
   RemovalTarget,
   ScenarioInfo,
   ScenarioStep,
@@ -99,6 +100,21 @@ export class TdcApi {
   /** Start a scenario and return the number of its steps. */
   runScenario(scenarioId: string): Promise<{ steps: number }> {
     return this.call('scenarios/run', { scenario_id: scenarioId });
+  }
+
+  /** Return all groups. */
+  groups(): Promise<GroupInfo[]> {
+    return this.call('groups/list');
+  }
+
+  /** Add a group of Zigbee2MQTT devices given by name or id. */
+  addGroup(name: string, members: string[]): Promise<GroupInfo> {
+    return this.call('groups/add', { name, members });
+  }
+
+  /** Delete a group. */
+  removeGroup(groupId: string): Promise<Record<string, never>> {
+    return this.call('groups/remove', { group_id: groupId });
   }
 
   /** Send a command with its defined fields to the backend. */

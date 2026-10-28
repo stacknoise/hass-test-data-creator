@@ -50,6 +50,7 @@ class RemovalRunner:
         self._outputs.check_clearable(plan.topics)
         self._schedules.forget(plan.schedules)
         self._scenarios.forget(plan.scenarios)
+        await self._outputs.async_drop_groups(plan.groups, {item.id for item in plan.devices})
         for device in plan.devices:
             await self._outputs.create(device.output).remove(device)
             self._store.remove_device(device.id)
@@ -70,6 +71,7 @@ class RemovalRunner:
             "orphans": len(plan.orphans),
             "schedules": len(plan.schedules),
             "scenarios": len(plan.scenarios),
+            "groups": len(plan.groups),
             "topics": len(plan.topics),
             "areas": areas,
         }

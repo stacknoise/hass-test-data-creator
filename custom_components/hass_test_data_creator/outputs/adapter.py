@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 
 from ..const import OUTPUT_MQTT, OUTPUT_NATIVE, OUTPUT_Z2M
 from ..core.errors import ErrorCode, OutputError
+from ..groups.manager import GroupManager
 from ..model.models import DeviceDef
 from .mqtt.client import MqttClient
 from .mqtt.devices import MqttDevices
@@ -41,6 +42,7 @@ class OutputAdapterFactory:
         mqtt: MqttClient,
         devices: MqttDevices,
         z2m_devices: Z2mDevices,
+        groups: GroupManager,
     ) -> None:
         """Keep the instance, the config entry, the MQTT client and the runtimes of the outputs."""
         self._hass = hass
@@ -48,6 +50,11 @@ class OutputAdapterFactory:
         self._mqtt = mqtt
         self._mqtt_devices = devices
         self._z2m_devices = z2m_devices
+        self._groups = groups
+
+    async def async_drop_groups(self, group_ids: list[str], device_ids: set[str]) -> None:
+        """Delete groups and take removed devices out of the other groups."""
+        await self._groups.async_drop(group_ids, device_ids)
 
     def check_clearable(self, topics: list[str]) -> None:
         """Raise TDC-OUT-002 if there are topics to clear and MQTT is not usable."""

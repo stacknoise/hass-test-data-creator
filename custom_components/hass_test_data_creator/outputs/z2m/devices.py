@@ -11,7 +11,7 @@ from homeassistant.core import callback
 
 from ...core.errors import ErrorCode, OutputError, TdcError
 from ...engine.behaviours import Behaviour
-from ...model.models import DeviceDef, EntityDef
+from ...model.models import DeviceDef, EntityDef, GroupDef
 from ...templates.registry import TemplateRegistry
 from ..mqtt.runtime import BehaviourRuntime, RuntimeEntry, RuntimeParts
 from .payloads import Z2mPayloadFactory
@@ -59,8 +59,22 @@ class Z2mDevices(BehaviourRuntime):
         self._base = settings.base_topic
         self._confirmed = settings.confirmed_default_topic
         self._devices: dict[str, DeviceDef] = {}
+        self._groups: dict[str, GroupDef] = {}
         self._pending: set[str] = set()
         self._bridge_ready = False
+
+    def set_groups(self, groups: list[GroupDef]) -> None:
+        """Hand over the stored groups; they are published when the devices start."""
+        self._groups = {group.id: group for group in groups}
+
+    async def async_groups_changed(self, groups: list[GroupDef]) -> None:
+        """Publish the groups after one was added, removed or lost a member."""
+        self.set_groups(groups)
+        if not self._bridge_ready:
+            return
+        await self._async_bridge_groups()
+        for group in groups:
+            await self._async_publish_group(group)
 
     async def async_check(self) -> None:
         """Raise unless MQTT is usable and the base topic may be used; then publish the bridge."""
@@ -115,7 +129,7 @@ class Z2mDevices(BehaviourRuntime):
     def _on_message(self, topic: str, payload: str) -> None:
         """Apply a `/set` message to every entity of the device with that friendly name."""
         name = topic.removeprefix(f"{self._base}/").removesuffix(SET_SUFFIX)
-        entries = [self._z2m(item) for item in self._entries.values() if item.device.name == name]
+        entries = self._targets(name)
         if not entries:
             return
         try:
@@ -125,13 +139,25 @@ class Z2mDevices(BehaviourRuntime):
         except ValueError, KeyError, TypeError, AttributeError:
             self._audit.record(self._audit_factory.mqtt_failed(topic, "invalid command"))
 
+    def _targets(self, name: str) -> list[_Entry]:
+        """Return the entries a `/set` to `name` reaches: one device, or the members of a group."""
+        group = next((item for item in self._groups.values() if item.name == name), None)
+        return [
+            self._z2m(item)
+            for item in self._entries.values()
+            if (item.device.id in group.members if group else item.device.name == name)
+        ]
+
     async def _async_announce(self, added: list[RuntimeEntry], devices: list[DeviceDef]) -> None:
         """Publish `bridge/devices` and the state and availability of the new devices."""
         for device in devices:
             self._devices[device.id] = device
         await self._async_bridge_devices()
+        await self._async_bridge_groups()
         for device in devices:
             await self._async_publish_device(device.id)
+        for group in self._groups.values():
+            await self._async_publish_group(group)
 
     async def _async_changed(self, entry: RuntimeEntry) -> None:
         """Publish the state of the device once, however many of its entities changed."""
@@ -160,6 +186,38 @@ class Z2mDevices(BehaviourRuntime):
         self._devices.pop(device.id, None)
         if self._bridge_ready and self._client.available():
             await self._async_bridge_devices()
+
+    async def _async_bridge_groups(self) -> None:
+        """Publish the group list of the bridge."""
+        entries = [
+            self._payloads.group_entry(
+                group, [self._devices[item] for item in group.members if item in self._devices]
+            )
+            for group in self._groups.values()
+        ]
+        await self._async_publish(
+            f"{self._base}/bridge/groups", self._payloads.bridge_groups(entries), None
+        )
+
+    async def _async_publish_group(self, group: GroupDef) -> None:
+        """Publish the state of a group, derived from the states of its started members."""
+        members = [self._device_values(device_id) for device_id in group.members]
+        states = [item for item in members if item]
+        if not states:
+            return
+        properties = self._payloads.group_state(states)
+        await self._async_publish(
+            f"{self._base}/{group.name}", self._payloads.device_state(properties), group.id
+        )
+
+    def _device_values(self, device_id: str) -> dict[str, Any]:
+        """Return the state properties of all started entities of a device."""
+        properties: dict[str, Any] = {}
+        for item in self._entries.values():
+            if item.device.id == device_id:
+                mine = self._z2m(item)
+                properties.update(mine.profile.values(mine.definition, mine.behaviour))
+        return properties
 
     async def _async_bridge_devices(self) -> None:
         """Publish the device list of the bridge."""
@@ -198,6 +256,9 @@ class Z2mDevices(BehaviourRuntime):
         await self._async_publish(
             f"{self._base}/{name}", self._payloads.device_state(properties), device_id
         )
+        for group in self._groups.values():
+            if device_id in group.members:
+                await self._async_publish_group(group)
 
     def _z2m(self, entry: RuntimeEntry) -> _Entry:
         """Return the entry as one of this output."""
