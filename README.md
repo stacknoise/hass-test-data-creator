@@ -13,7 +13,7 @@ Planned: scheduled and random events, faults, more curve shapes, MQTT and Zigbee
 
 ## Status
 
-Version 0.1.0 (first release in preparation). Requires Home Assistant 2026.9.0 or newer.
+Version 0.1.0, the first release. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output only; MQTT and Zigbee2MQTT, scheduled events and faults are planned (see the release plan in [docs/concept.md](docs/concept.md)).
 
 ## Installation (HACS)
 
