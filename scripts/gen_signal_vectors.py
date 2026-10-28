@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SIGNALS = ROOT / "custom_components" / "hass_test_data_creator" / "engine" / "signals.py"
 OUTPUT = ROOT / "tests" / "vectors" / "signals.json"
 
-TIMES = (0.0, 1.0, 59.0, 3600.0, 12345.678, 86399.0, 1_700_000_000.25)
+TIMES = (0.0, 1.0, 59.0, 3600.0, 12345.678, 28800.0, 43200.5, 64800.0, 86399.0, 1_700_000_000.25)
 BASE = {"min": 0, "max": 100, "period_s": 3600, "interval_s": 10, "decimals": 3}
 CASES = (
     {"shape": "constant"},
@@ -30,6 +30,12 @@ CASES = (
     {"shape": "noise", "seed": 123456789, "interval_s": 5},
     {"shape": "random_walk", "seed": 42, "period_s": 600},
     {"shape": "random_walk", "seed": 4_000_000_000, "period_s": 60, "noise": 0.1},
+    {"shape": "household_load", "seed": 11, "min": 0, "max": 3000},
+    {"shape": "household_load", "seed": 11, "noise": 0.05},
+    {"shape": "pv_day", "seed": 3, "min": 0, "max": 5000},
+    {"shape": "steps", "period_s": 600, "interval_s": 60},
+    {"shape": "steps", "period_s": 100, "interval_s": 100},
+    {"shape": "discharge", "period_s": 7200, "min": 3, "max": 4.2},
     {"shape": "counter", "min": 10, "rate_per_hour": 0.35, "origin": 100.0},
 )
 

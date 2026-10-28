@@ -34,7 +34,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | Version | Content |
 | --- | --- |
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
-| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler with its panel tab and the faults (without `late` and `duplicate`) are done; shapes, scenarios and templates follow |
+| v0.2 | Scheduler (fixed, interval, random window, Poisson), faults, remaining signal shapes, curve editor, scenarios, light/cover/thermostat templates. Delivered in parts: the scheduler with its panel tab, the faults (without `late` and `duplicate`) and the shapes `household_load`, `pv_day`, `steps` and `discharge` are done; `enum` and `state_machine` (they need text states and value lists), the curve editor, scenarios and templates follow |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check |
 | v0.4 | Statistics backfill, time lapse, CSV replay, YAML import/export, sharing of templates |
 
@@ -152,9 +152,9 @@ Everything the integration creates is marked, so that nothing has to be searched
 | --- | --- | --- |
 | `constant`, `sine`, `saw`, `square`, `triangle` | periodic, scaled to min..max | v0.1 |
 | `noise`, `random_walk` | hash noise, smoothed noise | v0.1 |
-| `household_load`, `pv_day` | daily profiles with small variation | v0.2 |
+| `household_load`, `pv_day` | daily profiles with small variation: load with peaks at 07:30, 12:30 and 19:00; PV between 06:00 and 20:00 with clouds | v0.2 |
 | `counter` | monotonic counter for `total_increasing` sensors (energy) | v0.1 |
-| `steps`, `discharge` | stairs, battery discharge | v0.2 |
+| `steps`, `discharge` | stairs (`interval_s` per step, one climb per `period_s`), battery discharge (full to empty over `period_s`) | v0.2 |
 | `csv` | replay of a file, looped | v0.4 |
 | `enum`, `state_machine` | discrete values with weights; transitions with durations | v0.2 |
 
