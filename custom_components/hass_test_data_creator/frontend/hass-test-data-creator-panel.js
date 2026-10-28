@@ -714,6 +714,8 @@ var Ve = {
 		edRate: "Rate per hour",
 		edNoise: "Noise (fraction of the range)",
 		schScenario: "Scenario {id}",
+		schRuns: "Runs",
+		schRunsAction: "An action",
 		loading: "Loading …",
 		noDevices: "No test devices yet. Open \"Create\" to generate some.",
 		colName: "Name",
@@ -828,6 +830,8 @@ var Ve = {
 		edRate: "Rate pro Stunde",
 		edNoise: "Rauschen (Anteil des Bereichs)",
 		schScenario: "Szenario {id}",
+		schRuns: "Startet",
+		schRunsAction: "Eine Aktion",
 		loading: "Lade …",
 		noDevices: "Noch keine Testgeräte. Öffne „Erstellen“, um welche zu erzeugen.",
 		colName: "Name",
@@ -1500,14 +1504,18 @@ var lt = 24, W = 50, ut = [
 	"weekdaySun"
 ], G = class extends z {
 	constructor(...e) {
-		super(...e), this.schedules = [], this.runs = [], this.name = "", this.work = B({}), this.seed = "", this.form = Xe();
+		super(...e), this.schedules = [], this.runs = [], this.scenarios = [], this.scenarioId = "", this.name = "", this.work = B({}), this.seed = "", this.form = Xe();
 	}
 	optionsLoaded(e) {
 		this.work = B(e.actions);
 	}
 	async refresh() {
 		try {
-			[this.schedules, this.runs] = await Promise.all([this.api.schedules(), this.api.schedulePreview(lt)]), this.error = "";
+			[this.schedules, this.runs, this.scenarios] = await Promise.all([
+				this.api.schedules(),
+				this.api.schedulePreview(lt),
+				this.api.scenarios()
+			]), this.error = "";
 		} catch (e) {
 			this.error = P(e);
 		}
@@ -1516,11 +1524,14 @@ var lt = 24, W = 50, ut = [
 		await this.run(async () => {
 			await this.api.addSchedule({
 				name: this.name,
-				...at(this.work, this.templates),
+				...this.scenarioId ? { scenario: this.scenarioId } : at(this.work, this.templates),
 				trigger: Qe(this.form),
 				seed: this.seed || void 0
 			}), this.name = "";
 		});
+	}
+	scenarioName(e) {
+		return this.scenarios.find((t) => t.id === e)?.name ?? e;
 	}
 	setForm(e) {
 		this.form = {
@@ -1570,13 +1581,16 @@ var lt = 24, W = 50, ut = [
         ${this.textField(this.tr("schName"), this.name, (e) => this.name = e)}
         ${this.select(this.tr("schTrigger"), ut, this.form.type, (e) => this.tr(`schTrigger_${e}`), (e) => this.setForm({ type: e }))}
       </div>
-      <tdc-work-picker
-        .hass=${this.hass}
-        .work=${this.work}
-        .actions=${this.info?.actions ?? {}}
-        .templates=${this.templates}
-        @tdc-work-change=${(e) => this.work = e.detail}
-      ></tdc-work-picker>
+      <div class="row">
+        ${this.select(this.tr("schRuns"), ["", ...this.scenarios.map((e) => e.id)], this.scenarioId, (e) => e ? this.tr("schScenario", { id: this.scenarioName(e) }) : this.tr("schRunsAction"), (e) => this.scenarioId = e)}
+      </div>
+      ${this.scenarioId ? T : C`<tdc-work-picker
+              .hass=${this.hass}
+              .work=${this.work}
+              .actions=${this.info?.actions ?? {}}
+              .templates=${this.templates}
+              @tdc-work-change=${(e) => this.work = e.detail}
+            ></tdc-work-picker>`}
       <div class="row">
         ${this.renderTriggerFields()}
         ${this.textField(this.tr("seed"), this.seed, (e) => this.seed = e, {
@@ -1587,7 +1601,7 @@ var lt = 24, W = 50, ut = [
       <p>
         <button
           class="primary"
-          ?disabled=${this.busy || !this.name.trim() || !this.work.actionKey}
+          ?disabled=${this.busy || !this.name.trim() || !(this.scenarioId || this.work.actionKey)}
           @click=${() => void this.add()}
         >
           ${this.tr("schAdd")}
@@ -1603,7 +1617,7 @@ var lt = 24, W = 50, ut = [
         ${e.scenario ? "–" : `${this.tr(`schTarget_${t}`)}${n ? ` ${n}` : ""}`}
       </td>
       <td>
-        ${e.scenario ? this.tr("schScenario", { id: e.scenario }) : `${e.entity}: ${e.action}`}
+        ${e.scenario ? this.tr("schScenario", { id: this.scenarioName(e.scenario) }) : `${e.entity}: ${e.action}`}
       </td>
       <td>
         ${this.tr(`schTrigger_${e.trigger.type}`)}<br /><small
@@ -1665,7 +1679,7 @@ var lt = 24, W = 50, ut = [
     `;
 	}
 };
-F([N()], G.prototype, "schedules", void 0), F([N()], G.prototype, "runs", void 0), F([N()], G.prototype, "name", void 0), F([N()], G.prototype, "work", void 0), F([N()], G.prototype, "seed", void 0), F([N()], G.prototype, "form", void 0), G = F([j("tdc-schedule-panel")], G);
+F([N()], G.prototype, "schedules", void 0), F([N()], G.prototype, "runs", void 0), F([N()], G.prototype, "scenarios", void 0), F([N()], G.prototype, "scenarioId", void 0), F([N()], G.prototype, "name", void 0), F([N()], G.prototype, "work", void 0), F([N()], G.prototype, "seed", void 0), F([N()], G.prototype, "form", void 0), G = F([j("tdc-schedule-panel")], G);
 // src/signals/editor-helpers.ts
 var ft = [
 	"sine",
