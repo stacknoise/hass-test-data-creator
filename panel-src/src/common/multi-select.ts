@@ -25,6 +25,8 @@ export class MultiSelect extends PopoverElement {
   @property({ attribute: false }) items: SelectItem[] = [];
   @property({ attribute: false }) selected: string[] = [];
   @property({ type: Boolean }) allowAdd = false;
+  /** Only one value can be chosen: a pick replaces the choice and closes the list. */
+  @property({ type: Boolean }) single = false;
   @property() empty = '';
 
   @state() private draft = '';
@@ -82,9 +84,16 @@ export class MultiSelect extends PopoverElement {
     this.dispatchEvent(new CustomEvent('tdc-select-change', { detail: selected }));
   }
 
+  /** Change the selection by one value: in single mode it replaces the choice and closes the list. */
+  private pick(value: string, on: boolean): void {
+    if (!this.single) return this.emit(toggled(this.selected, value, on));
+    this.emit(on && value.trim() ? [value.trim()] : []);
+    this.open = false;
+  }
+
   /** Add the value in the field to the selection and clear the field. */
   private add(): void {
-    this.emit(toggled(this.selected, this.draft, true));
+    this.pick(this.draft, true);
     this.draft = '';
   }
 
@@ -145,13 +154,7 @@ export class MultiSelect extends PopoverElement {
                       type="checkbox"
                       .checked=${this.selected.includes(item.value)}
                       @change=${(e: Event) =>
-                        this.emit(
-                          toggled(
-                            this.selected,
-                            item.value,
-                            (e.target as HTMLInputElement).checked,
-                          ),
-                        )}
+                        this.pick(item.value, (e.target as HTMLInputElement).checked)}
                     />
                     ${item.label}
                   </label>`,

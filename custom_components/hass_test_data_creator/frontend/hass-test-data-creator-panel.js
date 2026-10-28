@@ -2136,7 +2136,7 @@ function kn(e, t, n) {
 }
 var z = class extends Dt {
 	constructor(...e) {
-		super(...e), this.items = [], this.selected = [], this.allowAdd = !1, this.empty = "", this.draft = "";
+		super(...e), this.items = [], this.selected = [], this.allowAdd = !1, this.single = !1, this.empty = "", this.draft = "";
 	}
 	static {
 		this.styles = [
@@ -2190,8 +2190,12 @@ var z = class extends Dt {
 	emit(e) {
 		this.dispatchEvent(new CustomEvent("tdc-select-change", { detail: e }));
 	}
+	pick(e, t) {
+		if (!this.single) return this.emit(kn(this.selected, e, t));
+		this.emit(t && e.trim() ? [e.trim()] : []), this.open = !1;
+	}
 	add() {
-		this.emit(kn(this.selected, this.draft, !0)), this.draft = "";
+		this.pick(this.draft, !0), this.draft = "";
 	}
 	options() {
 		let e = new Set(this.items.map((e) => e.value)), t = this.selected.filter((t) => !e.has(t)).map((e) => ({
@@ -2233,7 +2237,7 @@ var z = class extends Dt {
                     <input
                       type="checkbox"
                       .checked=${this.selected.includes(e.value)}
-                      @change=${(t) => this.emit(kn(this.selected, e.value, t.target.checked))}
+                      @change=${(t) => this.pick(e.value, t.target.checked)}
                     />
                     ${e.label}
                   </label>`)}
@@ -2241,7 +2245,7 @@ var z = class extends Dt {
     `;
 	}
 };
-N([E({ attribute: !1 })], z.prototype, "items", void 0), N([E({ attribute: !1 })], z.prototype, "selected", void 0), N([E({ type: Boolean })], z.prototype, "allowAdd", void 0), N([E()], z.prototype, "empty", void 0), N([D()], z.prototype, "draft", void 0), z = N([T("tdc-multi-select")], z);
+N([E({ attribute: !1 })], z.prototype, "items", void 0), N([E({ attribute: !1 })], z.prototype, "selected", void 0), N([E({ type: Boolean })], z.prototype, "allowAdd", void 0), N([E({ type: Boolean })], z.prototype, "single", void 0), N([E()], z.prototype, "empty", void 0), N([D()], z.prototype, "draft", void 0), z = N([T("tdc-multi-select")], z);
 // src/devices/helpers.ts
 var An = {
 	set_brightness: {
@@ -2592,15 +2596,18 @@ var H = class extends P {
 		return y`<div class="row area-row">
       <label style="flex: 0 1 320px"
         >${this.tr("detArea")}
-        <input
-          list="tdc-areas"
-          .value=${e}
-          placeholder=${this.tr("detAreaNone")}
-          @input=${(e) => this.areaDraft = e.target.value}
-        />
-        <datalist id="tdc-areas">
-          ${this.areas.map((e) => y`<option value=${e}></option>`)}
-        </datalist>
+        <tdc-multi-select
+          .hass=${this.hass}
+          .items=${this.areas.map((e) => ({
+			value: e,
+			label: e
+		}))}
+          .selected=${e ? [e] : []}
+          single
+          allowAdd
+          empty=${this.tr("detAreaNone")}
+          @tdc-select-change=${(e) => this.areaDraft = e.detail[0] ?? ""}
+        ></tdc-multi-select>
       </label>
       <button
         class="primary"
