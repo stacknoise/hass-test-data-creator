@@ -1,6 +1,7 @@
 import { html, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
+import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
 import type { TextKey } from '../common/i18n';
 import { actionLabel, labelOf } from '../common/labels';
@@ -34,6 +35,8 @@ const WEEKDAYS = [
 /** Lists, creates, switches and removes schedules and previews their next runs. */
 @customElement('tdc-schedule-panel')
 export class SchedulePanel extends TdcPollingElement {
+  static override styles = [TdcElement.styles, containerHost];
+
   @state() private schedules: ScheduleInfo[] = [];
   @state() private runs: PlannedRun[] = [];
   @state() private scenarios: ScenarioInfo[] = [];
@@ -200,20 +203,20 @@ export class SchedulePanel extends TdcPollingElement {
   /** Render the table row of one schedule. */
   private renderRow(item: ScheduleInfo): TemplateResult {
     const { kind, id } = describeTarget(item.target);
-    return html`<tr>
-      <td>${item.name}</td>
-      <td>
+    return html`<tr class="card">
+      <td class="name">${item.name}</td>
+      <td data-label=${this.tr('schTarget')}>
         ${item.scenario ? '–' : `${this.tr(`schTarget_${kind}` as TextKey)}${id ? ` ${id}` : ''}`}
       </td>
-      <td>
+      <td data-label=${this.tr('schAction')}>
         ${item.scenario ? this.tr('schScenario', { id: this.scenarioName(item.scenario) }) : `${labelOf(this.hass?.language, 'entity', item.entity)}: ${actionLabel(this.hass?.language, item.action)}`}
       </td>
-      <td>
+      <td data-label=${this.tr('schTrigger')}>
         ${this.tr(`schTrigger_${item.trigger.type}` as TextKey)}<br /><small
           >${summarizeTrigger(item.trigger)}</small
         >
       </td>
-      <td>
+      <td data-label=${this.tr('schEnabled')}>
         <input
           type="checkbox"
           style="width: auto"
@@ -226,7 +229,7 @@ export class SchedulePanel extends TdcPollingElement {
             )}
         />
       </td>
-      <td>
+      <td data-label=${this.tr('colActions')}>
         <button
           ?disabled=${this.busy}
           @click=${() => void this.run(() => this.api.removeSchedule(item.id))}
@@ -268,7 +271,7 @@ export class SchedulePanel extends TdcPollingElement {
       ${
         this.schedules.length === 0
           ? html`<p>${this.tr('schNone')}</p>`
-          : html`<table>
+          : html`<table class="cards">
               <tr>
                 <th>${this.tr('schName')}</th>
                 <th>${this.tr('schTarget')}</th>

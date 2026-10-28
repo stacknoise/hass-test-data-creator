@@ -1,6 +1,7 @@
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
+import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
 import type { DeviceInfo, GroupInfo } from '../common/types';
 import { parseAreas } from '../wizard/helpers';
@@ -10,6 +11,8 @@ const DEVICE_LIMIT = 500;
 /** Lists, creates and removes groups of Zigbee2MQTT devices. */
 @customElement('tdc-group-panel')
 export class GroupPanel extends TdcPollingElement {
+  static override styles = [TdcElement.styles, containerHost];
+
   @state() private groups: GroupInfo[] = [];
   @state() private names: Record<string, string> = {};
   @state() private name = '';
@@ -46,10 +49,12 @@ export class GroupPanel extends TdcPollingElement {
   /** Render the table row of one group. */
   private renderRow(item: GroupInfo): TemplateResult {
     const names = item.members.map((id) => this.names[id] ?? id).join(', ');
-    return html`<tr>
-      <td>${item.name}<br /><small>${this.tr('grpNumber', { number: item.number })}</small></td>
-      <td>${names}</td>
-      <td>
+    return html`<tr class="card">
+      <td class="name">
+        ${item.name}<br /><small>${this.tr('grpNumber', { number: item.number })}</small>
+      </td>
+      <td data-label=${this.tr('grpMembers')}>${names}</td>
+      <td data-label=${this.tr('colActions')}>
         <button
           ?disabled=${this.busy}
           @click=${() => void this.run(() => this.api.removeGroup(item.id))}
@@ -66,7 +71,7 @@ export class GroupPanel extends TdcPollingElement {
       ${
         this.groups.length === 0
           ? html`<p>${this.tr('grpNone')}</p>`
-          : html`<table>
+          : html`<table class="cards">
               <tr>
                 <th>${this.tr('colName')}</th>
                 <th>${this.tr('grpMembers')}</th>

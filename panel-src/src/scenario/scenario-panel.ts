@@ -2,6 +2,7 @@ import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { actionLabel, labelOf } from '../common/labels';
+import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
 import type { Info, ScenarioInfo } from '../common/types';
 import { describeTarget, type WorkForm } from '../schedule/helpers';
@@ -11,6 +12,8 @@ import { buildSteps, defaultStep, type StepForm } from './helpers';
 /** Lists, creates, starts and removes scenarios: named lists of timed steps. */
 @customElement('tdc-scenario-panel')
 export class ScenarioPanel extends TdcPollingElement {
+  static override styles = [TdcElement.styles, containerHost];
+
   @state() private scenarios: ScenarioInfo[] = [];
   @state() private name = '';
   @state() private steps: StepForm[] = [];
@@ -123,14 +126,14 @@ export class ScenarioPanel extends TdcPollingElement {
   private renderRow(item: ScenarioInfo): TemplateResult {
     const first = item.steps[0];
     const { kind } = first ? describeTarget(first.target) : { kind: 'all' as const };
-    return html`<tr>
-      <td>${item.name}</td>
-      <td>
+    return html`<tr class="card">
+      <td class="name">${item.name}</td>
+      <td data-label=${this.tr('scnSteps')}>
         ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
           >${first ? `${labelOf(this.hass?.language, 'entity', first.entity)}: ${actionLabel(this.hass?.language, first.action)} · ${this.tr(`schTarget_${kind}`)}` : ''}</small
         >
       </td>
-      <td>
+      <td data-label=${this.tr('colActions')}>
         <button class="primary" ?disabled=${this.busy} @click=${() => void this.start(item)}>
           ${this.tr('scnRun')}
         </button>
@@ -150,7 +153,7 @@ export class ScenarioPanel extends TdcPollingElement {
       ${
         this.scenarios.length === 0
           ? html`<p>${this.tr('scnNone')}</p>`
-          : html`<table>
+          : html`<table class="cards">
               <tr>
                 <th>${this.tr('schName')}</th>
                 <th>${this.tr('scnSteps')}</th>

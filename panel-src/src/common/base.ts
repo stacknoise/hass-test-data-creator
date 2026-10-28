@@ -5,6 +5,13 @@ import { languageOf, t, type TextKey } from './i18n';
 import { sortedByLabel } from './labels';
 import type { Hass } from './types';
 
+/** Lets a component answer container queries; only for blocks that fill their row, never inline items. */
+export const containerHost = css`
+  :host {
+    container-type: inline-size;
+  }
+`;
+
 /** The look that buttons and form fields share. */
 const controlStyle = css`
   border-radius: 6px;
@@ -85,6 +92,54 @@ export abstract class TdcElement extends LitElement {
     }
     .warning {
       color: var(--warning-color);
+    }
+    @container (max-width: 760px) {
+      table.cards thead,
+      table.cards tr:has(> th) {
+        display: none;
+      }
+      table.cards,
+      table.cards tbody,
+      table.cards tr,
+      table.cards td {
+        display: block;
+      }
+      table.cards tbody {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+      table.cards tr:not(.card) {
+        grid-column: 1 / -1;
+      }
+      table.cards tr.card {
+        border: 1px solid var(--divider-color);
+        border-radius: 8px;
+        padding: 4px 8px;
+      }
+      table.cards tr.card > td {
+        display: flex;
+        gap: 12px;
+        padding: 4px 0;
+        border-bottom: 0;
+      }
+      table.cards tr.card > td[data-label]::before {
+        content: attr(data-label);
+        flex: 0 0 90px;
+        color: var(--secondary-text-color);
+        font-size: 0.8em;
+        padding-top: 2px;
+      }
+      table.cards tr.card > td.name {
+        font-weight: 500;
+      }
+      table.cards tr.card > td.row {
+        flex-wrap: wrap;
+      }
+      table.cards tr.card > td.row::before {
+        flex-basis: 100%;
+      }
     }
     .row {
       display: flex;

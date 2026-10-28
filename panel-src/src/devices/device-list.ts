@@ -2,9 +2,19 @@ import { css, html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { describeError } from '../common/api';
-import { TdcElement } from '../common/base';
+import { TdcElement, containerHost } from '../common/base';
+import '../common/menu-button';
+import type { MenuItem } from '../common/menu-button';
 import type { DeviceInfo, EntityState, Info } from '../common/types';
-import { OUTPUT_LABELS, entityName, labelOf, stateLabel, templateLabel } from '../common/labels';
+import {
+  OUTPUT_LABELS,
+  actionLabel,
+  entityName,
+  labelOf,
+  sortedByLabel,
+  stateLabel,
+  templateLabel,
+} from '../common/labels';
 import './device-detail';
 import { knownAreas } from './helpers';
 
@@ -17,6 +27,8 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
   light: 'toggle',
 };
 const SWITCH_PLATFORMS = ['switch', 'light'];
+const FIRE_PREFIX = 'fire:';
+const REMOVE = 'remove';
 const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
@@ -24,10 +36,8 @@ const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 
 export class DeviceList extends TdcElement {
   static override styles = [
     TdcElement.styles,
+    containerHost,
     css`
-      :host {
-        container-type: inline-size;
-      }
       tr.device {
         cursor: pointer;
       }
@@ -65,48 +75,6 @@ export class DeviceList extends TdcElement {
       }
       .on .knob {
         transform: translateX(16px);
-      }
-      @container (max-width: 760px) {
-        thead {
-          display: none;
-        }
-        table,
-        tbody,
-        tr,
-        td {
-          display: block;
-        }
-        tr.device {
-          margin-top: 12px;
-          border: 1px solid var(--divider-color);
-          border-radius: 8px;
-          padding: 4px 8px;
-        }
-        tr.device td {
-          display: flex;
-          gap: 12px;
-          padding: 4px 0;
-          border-bottom: 0;
-        }
-        tr.device td::before {
-          content: attr(data-label);
-          flex: 0 0 90px;
-          color: var(--secondary-text-color);
-          font-size: 0.8em;
-          padding-top: 2px;
-        }
-        tr.device td.name {
-          font-weight: 500;
-        }
-        tr.device td.name::before {
-          content: none;
-        }
-        tr.device td.row {
-          flex-wrap: wrap;
-        }
-        tr.device td.row::before {
-          flex-basis: 100%;
-        }
       }
     `,
   ];
@@ -194,16 +162,32 @@ export class DeviceList extends TdcElement {
     </button>`;
   }
 
-  /** Render the button of an entity that has no state to switch, such as a motion pulse. */
-  private renderPress(device: DeviceInfo, entity: EntityState): TemplateResult {
-    return html`<button
-      @click=${(event: Event) => {
-        event.stopPropagation();
-        void this.fire(device, entity);
-      }}
-    >
-      ${entityName(this.hass?.language, entity.key, entity.name)}
-    </button>`;
+  /** Return the entries of the actions menu: the actions of entities without a state, and remove. */
+  private menuItems(device: DeviceInfo): MenuItem[] {
+    const lang = this.hass?.language;
+    const items = device.entities
+      .filter((e) => e.platform in ACTION_BY_PLATFORM && !SWITCH_PLATFORMS.includes(e.platform))
+      .map((e) => ({
+        value: `${FIRE_PREFIX}${e.key}`,
+        label: `${entityName(lang, e.key, e.name)} – ${actionLabel(lang, ACTION_BY_PLATFORM[e.platform])}`,
+      }));
+    return sortedByLabel(
+      lang,
+      [...items, { value: REMOVE, label: this.tr('remove') }],
+      (i) => i.label,
+    );
+  }
+
+  /** Run the chosen entry of the actions menu. */
+  private pick(device: DeviceInfo, value: string): void {
+    if (value === REMOVE) {
+      this.dispatchEvent(
+        new CustomEvent('tdc-remove', { detail: { target: 'device', id: device.id } }),
+      );
+      return;
+    }
+    const entity = device.entities.find((e) => `${FIRE_PREFIX}${e.key}` === value);
+    if (entity) void this.fire(device, entity);
   }
 
   /** Return the current values of the first entities as one line. */
@@ -230,7 +214,7 @@ export class DeviceList extends TdcElement {
   private renderRow(device: DeviceInfo): TemplateResult {
     const actionable = device.entities.filter((e) => e.platform in ACTION_BY_PLATFORM);
     const open = this.expanded.has(device.id);
-    return html`<tr class="device" @click=${() => this.toggle(device.id)}>
+    return html`<tr class="device card" @click=${() => this.toggle(device.id)}>
         <td class="name">${open ? '▾' : '▸'} ${device.name}</td>
         <td data-label=${this.tr('colTemplate')}>${this.templateName(device)}</td>
         <td data-label=${this.tr('colArea')}>${device.area ?? '–'}</td>
@@ -239,21 +223,16 @@ export class DeviceList extends TdcElement {
         </td>
         <td data-label=${this.tr('colValues')}><small>${this.values(device)}</small></td>
         <td class="row" data-label=${this.tr('colActions')}>
-          ${actionable.map((e) =>
-            SWITCH_PLATFORMS.includes(e.platform)
-              ? this.renderSwitch(device, e)
-              : this.renderPress(device, e),
-          )}
-          <button
-            @click=${(event: Event) => {
-              event.stopPropagation();
-              this.dispatchEvent(
-                new CustomEvent('tdc-remove', { detail: { target: 'device', id: device.id } }),
-              );
-            }}
-          >
-            ${this.tr('remove')}
-          </button>
+          ${actionable
+            .filter((e) => SWITCH_PLATFORMS.includes(e.platform))
+            .map((e) => this.renderSwitch(device, e))}
+          <tdc-menu-button
+            .hass=${this.hass}
+            label=${this.tr('colActions')}
+            .items=${this.menuItems(device)}
+            @click=${(event: Event) => event.stopPropagation()}
+            @tdc-pick=${(e: CustomEvent<string>) => this.pick(device, e.detail)}
+          ></tdc-menu-button>
         </td>
       </tr>
       ${
@@ -282,7 +261,7 @@ export class DeviceList extends TdcElement {
       ${
         this.devices.length === 0
           ? html`<p>${this.tr('noDevices')}</p>`
-          : html`<table>
+          : html`<table class="cards">
                 <thead>
                   <tr>
                     <th>${this.tr('colName')}</th>

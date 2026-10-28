@@ -1,9 +1,11 @@
-import { css, html, type TemplateResult } from 'lit';
+import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { DeviceInfo, EntityState, SignalDef } from '../common/types';
 import { actionLabel, entityName, labelOf, sortedByLabel, stateLabel } from '../common/labels';
+import '../common/menu-button';
+import type { MenuItem } from '../common/menu-button';
 import '../signals/curve-editor';
 import { isDiscrete } from '../signals/editor-helpers';
 import {
@@ -24,9 +26,8 @@ export class DeviceDetail extends TdcElement {
   @property({ attribute: false }) shapes: string[] = [];
 
   @state() private areaDraft?: string;
-  @state() private values: Record<string, string> = {};
-  @state() private faultKind: Record<string, string> = {};
-  @state() private faultSeconds: Record<string, string> = {};
+  @state() private picked: Record<string, string> = {};
+  @state() private inputs: Record<string, string> = {};
   @state() private curves: Record<string, SignalDef> = {};
   @state() private busy = false;
   @state() private error = '';
@@ -160,66 +161,69 @@ export class DeviceDetail extends TdcElement {
     </div>`;
   }
 
-  /** Render the buttons and fields of the actions that take a number. */
-  private renderValueAction(entity: EntityState, action: string): TemplateResult {
-    const spec = VALUE_ACTIONS[action];
-    const id = `${entity.key}:${action}`;
-    const text = this.values[id] ?? String(spec.start);
-    const params = valueParams(action, text);
-    return html`<span class="row">
-      <input
-        type="number"
-        min=${spec.min}
-        max=${spec.max}
-        .value=${text}
-        @input=${(e: Event) =>
-          (this.values = { ...this.values, [id]: (e.target as HTMLInputElement).value })}
-      />
-      <button
-        ?disabled=${this.busy || !params}
-        @click=${() => void this.fire(entity, action, params)}
-      >
-        ${actionLabel(this.hass?.language, action)}
-      </button>
-    </span>`;
+  /** Return the entries of the action menu of an entity, sorted by their text. */
+  private menuItems(entity: EntityState): MenuItem[] {
+    const lang = this.hass?.language;
+    const found = actionsFor(this.actions, entity.platform);
+    const actions = [
+      ...found.plain,
+      ...found.withValue,
+      ...found.faults.map((kind) => `${FAULT_PREFIX}${kind}`),
+    ];
+    return sortedByLabel(lang, actions, (a) => actionLabel(lang, a)).map((a) => ({
+      value: a,
+      label: actionLabel(lang, a),
+    }));
   }
 
-  /** Render the fault select with the duration and its start button. */
-  private renderFault(entity: EntityState, kinds: string[]): TemplateResult {
-    const lang = this.hass?.language;
-    const sorted = sortedByLabel(lang, kinds, (k) => labelOf(lang, 'fault', k));
-    const kind = this.faultKind[entity.key] ?? sorted[0];
-    const text = this.faultSeconds[entity.key] ?? String(DEFAULT_FAULT_SECONDS);
-    const params = faultParams(text);
+  /** Run a plain action at once; an action with a number or a fault asks for its input first. */
+  private pick(entity: EntityState, action: string): void {
+    if (action in VALUE_ACTIONS || action.startsWith(FAULT_PREFIX)) {
+      this.picked = { ...this.picked, [entity.key]: action };
+    } else {
+      void this.fire(entity, action);
+    }
+  }
+
+  /** Forget the action that waits for its input. */
+  private cancelPick(entity: EntityState): void {
+    const rest = { ...this.picked };
+    delete rest[entity.key];
+    this.picked = rest;
+  }
+
+  /** Render the input of the chosen action: a number in its range, or the seconds of a fault. */
+  private renderPicked(entity: EntityState): TemplateResult | string {
+    const action = this.picked[entity.key];
+    if (!action) return '';
+    const spec = VALUE_ACTIONS[action];
+    const id = `${entity.key}:${action}`;
+    const text = this.inputs[id] ?? String(spec ? spec.start : DEFAULT_FAULT_SECONDS);
+    const params = spec ? valueParams(action, text) : faultParams(text);
     return html`<span class="row">
-      <select
-        @change=${(e: Event) =>
-          (this.faultKind = {
-            ...this.faultKind,
-            [entity.key]: (e.target as HTMLSelectElement).value,
-          })}
-      >
-        ${sorted.map(
-          (k) =>
-            html`<option value=${k} ?selected=${k === kind}>${labelOf(lang, 'fault', k)}</option>`,
-        )}
-      </select>
+      <strong>${actionLabel(this.hass?.language, action)}</strong>
       <input
         type="number"
-        min="1"
+        min=${spec ? spec.min : 1}
+        max=${spec ? spec.max : nothing}
         .value=${text}
-        title=${this.tr('detSeconds')}
+        title=${spec ? `${spec.min} – ${spec.max}` : this.tr('detSeconds')}
         @input=${(e: Event) =>
-          (this.faultSeconds = {
-            ...this.faultSeconds,
-            [entity.key]: (e.target as HTMLInputElement).value,
-          })}
+          (this.inputs = { ...this.inputs, [id]: (e.target as HTMLInputElement).value })}
       />
+      <small>${spec ? `${spec.min} – ${spec.max}` : this.tr('detSeconds')}</small>
       <button
+        class="primary"
         ?disabled=${this.busy || !params}
-        @click=${() => void this.fire(entity, `${FAULT_PREFIX}${kind}`, params)}
+        @click=${async () => {
+          await this.fire(entity, action, params);
+          if (!this.error) this.cancelPick(entity);
+        }}
       >
-        ${this.tr('detFault')}
+        ${this.tr('detRun')}
+      </button>
+      <button ?disabled=${this.busy} @click=${() => this.cancelPick(entity)}>
+        ${this.tr('detCancel')}
       </button>
     </span>`;
   }
@@ -255,13 +259,7 @@ export class DeviceDetail extends TdcElement {
   /** Render the row of one entity. */
   private renderEntity(entity: EntityState): TemplateResult {
     const lang = this.hass?.language;
-    const found = actionsFor(this.actions, entity.platform);
-    const byLabel = (action: string): string => actionLabel(lang, action);
-    const available = {
-      plain: sortedByLabel(lang, found.plain, byLabel),
-      withValue: sortedByLabel(lang, found.withValue, byLabel),
-      faults: found.faults,
-    };
+    const items = this.menuItems(entity);
     const editable = entity.signal != null && !isDiscrete(entity.signal.shape);
     return html`<tr>
         <td>
@@ -277,14 +275,18 @@ export class DeviceDetail extends TdcElement {
           }
         </td>
         <td class="row">
-          ${available.plain.map(
-            (action) =>
-              html`<button ?disabled=${this.busy} @click=${() => void this.fire(entity, action)}>
-                ${byLabel(action)}
-              </button>`,
-          )}
-          ${available.withValue.map((action) => this.renderValueAction(entity, action))}
-          ${available.faults.length ? this.renderFault(entity, available.faults) : ''}
+          ${
+            items.length
+              ? html`<tdc-menu-button
+                  .hass=${this.hass}
+                  label=${this.tr('detActions')}
+                  ?disabled=${this.busy}
+                  .items=${items}
+                  @tdc-pick=${(e: CustomEvent<string>) => this.pick(entity, e.detail)}
+                ></tdc-menu-button>`
+              : ''
+          }
+          ${this.renderPicked(entity)}
           ${
             editable
               ? html`<button
