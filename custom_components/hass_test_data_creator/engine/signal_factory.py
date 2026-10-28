@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
+from dataclasses import replace
+from typing import Any, Protocol
 
 from ..core.errors import ErrorCode, SignalError
-from .signals import SHAPE_NAMES, SignalSpec, has_invalid_states, value_at
+from .signals import CSV_SHAPE, SHAPE_NAMES, SignalSpec, has_invalid_states, value_at
 
 
 class Signal:
@@ -20,8 +21,19 @@ class Signal:
         return value_at(self.spec, t)
 
 
+class TableSource(Protocol):
+    """Where the tables of csv signals come from."""
+
+    def table(self, file: str, step_s: float) -> tuple[tuple[tuple[float, float], ...], float]:
+        """Return the table of `(seconds, value)` points and the loop length of `file`."""
+
+
 class SignalFactory:
     """Creates validated signals from the signal block of a template."""
+
+    def __init__(self, tables: TableSource | None = None) -> None:
+        """Keep the source of the tables of csv signals."""
+        self._tables = tables
 
     def shapes(self) -> tuple[str, ...]:
         """Return the names of all shapes."""
@@ -36,4 +48,7 @@ class SignalFactory:
             raise SignalError(ErrorCode.SIG_INVALID_RANGE)
         if has_invalid_states(spec):
             raise SignalError(ErrorCode.SIG_INVALID_STATES)
+        if spec.shape == CSV_SHAPE and self._tables is not None:
+            table, loop_s = self._tables.table(spec.file, spec.step_s)
+            spec = replace(spec, table=table, loop_s=loop_s)
         return Signal(spec)

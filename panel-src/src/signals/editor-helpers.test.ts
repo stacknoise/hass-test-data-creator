@@ -84,4 +84,13 @@ describe('curve editor helpers', () => {
     expect(machine.values).toBeUndefined();
     expect(withShape(machine, 'sine')).toEqual({ shape: 'sine' });
   });
+
+  it('keeps the file of a replay and drops it for other shapes', () => {
+    const replay = withShape({ shape: 'sine', min: 0, max: 100 }, 'csv');
+    const chosen = { ...replay, file: 'load.csv', step_s: 30 };
+
+    expect(fieldsFor('csv')).toEqual(['step_s', 'phase']);
+    expect(withShape(chosen, 'csv').file).toBe('load.csv');
+    expect(withShape(chosen, 'sine').file).toBeUndefined();
+  });
 });

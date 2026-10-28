@@ -19,6 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data = build_data(hass, entry)
     await data.store.async_load()
     await data.template_registry.async_load(hass)
+    await data.csv.async_refresh()
     data.groups.load()
     hass.data[DOMAIN] = data
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

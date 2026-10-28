@@ -16,6 +16,8 @@ export interface SignalDef {
   decimals?: number;
   phase?: number;
   rate_per_hour?: number;
+  file?: string;
+  step_s?: number;
   values?: string[];
   weights?: number[];
   states?: { value: string; duration_s: number }[];
@@ -53,6 +55,7 @@ export interface Info {
   actions: Record<string, string[]>;
   tick_seconds: number;
   time_lapse: number;
+  csv_files: string[];
   mqtt: boolean;
   device_count: number;
 }

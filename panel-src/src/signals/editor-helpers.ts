@@ -1,7 +1,11 @@
 import type { SignalDef } from '../common/types';
 
 /** The numeric parameters of a signal that the editor can show, besides min, max and decimals. */
-export type SignalField = 'period_s' | 'interval_s' | 'phase' | 'rate_per_hour' | 'noise';
+export type SignalField =
+  'period_s' | 'interval_s' | 'phase' | 'rate_per_hour' | 'noise' | 'step_s';
+
+/** The shape that replays a file of the backend. */
+export const CSV_SHAPE = 'csv';
 
 /** The parameters that are lists and are edited as one line of text. */
 export type TextField = 'values' | 'weights' | 'states';
@@ -21,6 +25,7 @@ export function isDiscrete(shape: string): boolean {
 /** Return the parameters that change the curve of `shape`, in the order the editor shows them. */
 export function fieldsFor(shape: string): SignalField[] {
   if (shape === 'counter') return ['rate_per_hour'];
+  if (shape === CSV_SHAPE) return ['step_s', 'phase'];
   if (shape === 'noise') return ['interval_s', 'noise'];
   if (shape === 'steps') return ['period_s', 'interval_s', 'phase', 'noise'];
   if (shape === 'enum') return ['interval_s'];
@@ -105,6 +110,7 @@ function defaultsFor(shape: string): Partial<SignalDef> {
 /** Return `signal` with another shape; parameters that the new shape ignores are dropped. */
 export function withShape(signal: SignalDef, shape: string): SignalDef {
   const keep = new Set<string>(['shape', ...fieldsFor(shape), ...textFieldsFor(shape)]);
+  if (shape === CSV_SHAPE) keep.add('file');
   if (!isDiscrete(shape)) ['min', 'max', 'decimals'].forEach((key) => keep.add(key));
   const merged = { ...defaultsFor(shape), ...signal, shape };
   const next = Object.fromEntries(Object.entries(merged).filter(([k]) => keep.has(k)));

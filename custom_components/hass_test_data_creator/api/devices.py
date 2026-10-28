@@ -91,6 +91,7 @@ async def ws_devices_create(
     """Create the devices of a job and return the run."""
     data = get_data(hass)
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
+    await data.csv.async_refresh()
     run = await data.manager.async_create(job_from_request(msg, seed))
     return {"run_id": run.id, "label": run.label, "devices": len(run.device_ids)}
 
@@ -123,7 +124,9 @@ async def ws_devices_signal(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Give a sensor of a device another curve and return the new signal."""
-    definition = await get_data(hass).signal_editor.async_set(
+    data = get_data(hass)
+    await data.csv.async_refresh()
+    definition = await data.signal_editor.async_set(
         msg["device"], msg["entity"], dict(msg["signal"])
     )
     return {"entity": definition.key, "signal": definition.signal}

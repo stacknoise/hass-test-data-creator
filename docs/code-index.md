@@ -239,7 +239,10 @@ Lists every module, class and function of the integration with signature, file a
 | `Signal` | `class Signal` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | A configured signal that returns its value for a point in time. |
 | `Signal.__init__` | `def __init__(self, spec: SignalSpec) -> None` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Keep the validated spec. |
 | `Signal.value` | `def value(self, t: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the value or state at signal time `t` in seconds. |
+| `TableSource` | `class TableSource(Protocol)` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Where the tables of csv signals come from. |
+| `TableSource.table` | `def table(self, file: str, step_s: float) -> tuple[tuple[tuple[float, float], ...], float]` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the table of `(seconds, value)` points and the loop length of `file`. |
 | `SignalFactory` | `class SignalFactory` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Creates validated signals from the signal block of a template. |
+| `SignalFactory.__init__` | `def __init__(self, tables: TableSource \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Keep the source of the tables of csv signals. |
 | `SignalFactory.shapes` | `def shapes(self) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the names of all shapes. |
 | `SignalFactory.create` | `def create(self, definition: dict[str, Any], seed: int, origin: float) -> Signal` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Return the signal for `definition` of one entity with its `seed` and time `origin`. |
 | `hass_test_data_creator.engine.signals` | `module` | `custom_components/hass_test_data_creator/engine/signals.py` | Pure signal functions: the value of a signal is a function of time and seed (concept 5). |
@@ -265,6 +268,7 @@ Lists every module, class and function of the integration with signature, file a
 | `_state_machine` | `def _state_machine(spec: SignalSpec, t: float) -> str` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the state of a cycle of states with durations; `phase` shifts the start. |
 | `options_of` | `def options_of(spec: SignalSpec) -> list[str]` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the distinct states of a discrete signal in the order they are defined. |
 | `has_invalid_states` | `def has_invalid_states(spec: SignalSpec) -> bool` | `custom_components/hass_test_data_creator/engine/signals.py` | Whether a discrete shape lacks its states or has a weight or duration that is not positive. |
+| `_csv_value` | `def _csv_value(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the replayed value: the table loops every `loop_s` seconds from the origin, joined linearly. |
 | `value_at` | `def value_at(spec: SignalSpec, t: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the value at signal time `t` (seconds): a number scaled to min..max or a state name. |
 | `hass_test_data_creator.engine.tick` | `module` | `custom_components/hass_test_data_creator/engine/tick.py` | The tick that drives all signals with one timer (concept 5.3). |
 | `signal_time` | `def signal_time(now: datetime \| None=None) -> float` | `custom_components/hass_test_data_creator/engine/tick.py` | Return the signal time: seconds of the local wall clock, so daily curves follow the day. |
@@ -867,6 +871,25 @@ Lists every module, class and function of the integration with signature, file a
 | `StatisticsClient.write` | `def write(self, metadata: StatisticMetaData, rows: Iterable[StatisticData]) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Queue the hourly `rows` of one statistic; rows of the same hour are replaced. |
 | `StatisticsClient.clear` | `def clear(self, statistic_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Queue the deletion of the statistics `statistic_ids`. |
 | `hass_test_data_creator.history.schema` | `module` | `custom_components/hass_test_data_creator/history/schema.py` | Request fields of a statistics import, shared by the service and the WebSocket command. |
+
+## replay
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.replay.__init__` | `module` | `custom_components/hass_test_data_creator/replay/__init__.py` | CSV replay: files of values that a signal replays in a loop (concept 5.2). |
+| `hass_test_data_creator.replay.library` | `module` | `custom_components/hass_test_data_creator/replay/library.py` | The replay files in the config folder, read once and handed to the signals. |
+| `_read_folder` | `def _read_folder(folder: Path) -> dict[str, Rows \| str]` | `custom_components/hass_test_data_creator/replay/library.py` | Read every replay file of `folder`; a file that cannot be used maps to its reason. |
+| `CsvLibrary` | `class CsvLibrary` | `custom_components/hass_test_data_creator/replay/library.py` | Holds the parsed replay files; call `async_refresh` to read the folder again. |
+| `CsvLibrary.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/replay/library.py` | Keep the instance; the folder is `<config>/hass_test_data_creator/csv`. |
+| `CsvLibrary.async_refresh` | `async def async_refresh(self) -> None` | `custom_components/hass_test_data_creator/replay/library.py` | Read the folder again, off the event loop. |
+| `CsvLibrary.names` | `def names(self) -> list[str]` | `custom_components/hass_test_data_creator/replay/library.py` | Return the names of the files that can be used. |
+| `CsvLibrary.table` | `def table(self, file: str, step_s: float) -> tuple[Table, float]` | `custom_components/hass_test_data_creator/replay/library.py` | Return the table and the loop length of `file`, or raise TDC-SIG-004 or TDC-SIG-005. |
+| `hass_test_data_creator.replay.parser` | `module` | `custom_components/hass_test_data_creator/replay/parser.py` | Pure parsing of replay files: text to rows, rows to the table of a signal. |
+| `_invalid` | `def _invalid(file: str, reason: str) -> SignalError` | `custom_components/hass_test_data_creator/replay/parser.py` | Return TDC-SIG-005 for `file` with the reason. |
+| `_number` | `def _number(text: str, decimal_comma: bool) -> float` | `custom_components/hass_test_data_creator/replay/parser.py` | Return `text` as a finite number; a comma is the decimal mark if the delimiter is `;`. |
+| `_is_header` | `def _is_header(cells: list[str], decimal_comma: bool) -> bool` | `custom_components/hass_test_data_creator/replay/parser.py` | Whether the first row names its columns instead of holding numbers. |
+| `parse_rows` | `def parse_rows(text: str, file: str) -> Rows` | `custom_components/hass_test_data_creator/replay/parser.py` | Return the rows of a replay file: `(None, value)` for one column, `(seconds, value)` for two. |
+| `build_table` | `def build_table(rows: Rows, step_s: float) -> tuple[Table, float]` | `custom_components/hass_test_data_creator/replay/parser.py` | Return the table of `(seconds, value)` points from 0 and the loop length in seconds. |
 
 ## scenarios
 

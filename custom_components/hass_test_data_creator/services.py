@@ -49,6 +49,7 @@ async def _create(call: ServiceCall) -> dict[str, object]:
     """Create the devices of a job."""
     data = get_data(call.hass)
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
+    await data.csv.async_refresh()
     run = await data.manager.async_create(job_from_request(dict(call.data), seed))
     return {"run_id": run.id, "devices": len(run.device_ids)}
 

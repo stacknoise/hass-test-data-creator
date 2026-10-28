@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from bisect import bisect_right
 from collections.abc import Callable
 from dataclasses import dataclass
 import math
@@ -42,6 +43,10 @@ class SignalSpec:
     values: tuple[str, ...] = ()
     weights: tuple[float, ...] = ()
     states: tuple[tuple[str, float], ...] = ()
+    file: str = ""
+    step_s: float = 60.0
+    table: tuple[tuple[float, float], ...] = ()
+    loop_s: float = 0.0
     seed: int = 0
     origin: float = 0.0
 
@@ -60,6 +65,9 @@ class SignalSpec:
                 "decimals",
                 "phase",
                 "rate_per_hour",
+                "file",
+                "step_s",
+                "loop_s",
             )
             if key in data
         }
@@ -70,6 +78,7 @@ class SignalSpec:
             states=tuple(
                 (str(item["value"]), float(item["duration_s"])) for item in data.get("states", ())
             ),
+            table=tuple((float(t), float(v)) for t, v in data.get("table", ())),
             seed=seed,
             origin=origin,
         )
@@ -236,7 +245,22 @@ SHAPES: dict[str, Callable[[SignalSpec, float], float]] = {
     "discharge": _discharge,
 }
 COUNTER_SHAPE = "counter"
-SHAPE_NAMES = (*SHAPES, COUNTER_SHAPE, *DISCRETE_SHAPES)
+CSV_SHAPE = "csv"
+SHAPE_NAMES = (*SHAPES, COUNTER_SHAPE, CSV_SHAPE, *DISCRETE_SHAPES)
+
+
+def _csv_value(spec: SignalSpec, t: float) -> float:
+    """Return the replayed value: the table loops every `loop_s` seconds from the origin, joined linearly."""
+    if not spec.table or spec.loop_s <= 0:
+        return spec.min
+    position = (t - spec.origin + spec.phase * spec.loop_s) % spec.loop_s
+    index = bisect_right(spec.table, position, key=lambda point: point[0]) - 1
+    start_t, start_v = spec.table[max(index, 0)]
+    if index + 1 < len(spec.table):
+        end_t, end_v = spec.table[index + 1]
+    else:
+        end_t, end_v = spec.loop_s, spec.table[0][1]
+    return start_v + (end_v - start_v) * (position - start_t) / (end_t - start_t)
 
 
 def value_at(spec: SignalSpec, t: float) -> float | str:
@@ -246,6 +270,8 @@ def value_at(spec: SignalSpec, t: float) -> float | str:
     if spec.shape == COUNTER_SHAPE:
         elapsed = max(0.0, t - spec.origin)
         return round(spec.min + spec.rate_per_hour * elapsed / SECONDS_PER_HOUR, spec.decimals)
+    if spec.shape == CSV_SHAPE:
+        return round(_csv_value(spec, t), spec.decimals)
     base = SHAPES[spec.shape](spec, t)
     if spec.noise:
         base += (hash01(spec.seed + 1, math.floor(t)) - 0.5) * 2.0 * spec.noise
