@@ -60,6 +60,9 @@
     "sig_invalid_range": {
       "message": "Das Minimum darf nicht größer als das Maximum sein"
     },
+    "sig_invalid_states": {
+      "message": "Die Zustände des Signals sind ungültig"
+    },
     "sch_unknown_action": {
       "message": "Diese Aktion gibt es für diese Entität nicht"
     },

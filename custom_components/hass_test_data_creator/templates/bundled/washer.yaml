@@ -1,0 +1,12 @@
+id: washer
+name: Washing machine
+model: Washing machine
+entities:
+  - { key: program, platform: sensor, name: Program, entity_category: diagnostic,
+      signal: { shape: state_machine, phase: 0.0,
+                states: [ { value: idle, duration_s: 7200 }, { value: wash, duration_s: 2400 },
+                          { value: rinse, duration_s: 900 }, { value: spin, duration_s: 600 } ] } }
+  - { key: door, platform: sensor, name: Door, entity_category: diagnostic,
+      signal: { shape: enum, interval_s: 900, values: [closed, open], weights: [9, 1] } }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

@@ -39,6 +39,9 @@ class SignalSpec:
     decimals: int = 1
     phase: float = 0.0
     rate_per_hour: float = 0.0
+    values: tuple[str, ...] = ()
+    weights: tuple[float, ...] = ()
+    states: tuple[tuple[str, float], ...] = ()
     seed: int = 0
     origin: float = 0.0
 
@@ -60,7 +63,16 @@ class SignalSpec:
             )
             if key in data
         }
-        return cls(**known, seed=seed, origin=origin)
+        return cls(
+            **known,
+            values=tuple(str(item) for item in data.get("values", ())),
+            weights=tuple(float(item) for item in data.get("weights", ())),
+            states=tuple(
+                (str(item["value"]), float(item["duration_s"])) for item in data.get("states", ())
+            ),
+            seed=seed,
+            origin=origin,
+        )
 
 
 def hash01(seed: int, n: int) -> float:
@@ -162,6 +174,54 @@ def _discharge(spec: SignalSpec, t: float) -> float:
     return 1.0 - _cycle(spec, t) ** DISCHARGE_EXPONENT
 
 
+def _enum(spec: SignalSpec, t: float) -> str:
+    """Return a value drawn by weight; a new draw every `interval_s` seconds."""
+    total = sum(spec.weights) if spec.weights else float(len(spec.values))
+    pick = hash01(spec.seed, math.floor(t / spec.interval_s)) * total
+    reached = 0.0
+    for index, value in enumerate(spec.values):
+        reached += spec.weights[index] if spec.weights else 1.0
+        if pick < reached:
+            return value
+    return spec.values[-1]
+
+
+def _state_machine(spec: SignalSpec, t: float) -> str:
+    """Return the state of a cycle of states with durations; `phase` shifts the start."""
+    total = sum(duration for _, duration in spec.states)
+    position = (t + spec.phase * total) % total
+    reached = 0.0
+    for value, duration in spec.states:
+        reached += duration
+        if position < reached:
+            return value
+    return spec.states[-1][0]
+
+
+DISCRETE_SHAPES: dict[str, Callable[[SignalSpec, float], str]] = {
+    "enum": _enum,
+    "state_machine": _state_machine,
+}
+
+
+def options_of(spec: SignalSpec) -> list[str]:
+    """Return the distinct states of a discrete signal in the order they are defined."""
+    names = spec.values if spec.shape == "enum" else tuple(name for name, _ in spec.states)
+    return list(dict.fromkeys(names))
+
+
+def has_invalid_states(spec: SignalSpec) -> bool:
+    """Whether a discrete shape lacks its states or has a weight or duration that is not positive."""
+    if spec.shape == "enum":
+        wrong_weights = bool(spec.weights) and (
+            len(spec.weights) != len(spec.values) or any(w <= 0 for w in spec.weights)
+        )
+        return not spec.values or wrong_weights or spec.interval_s <= 0
+    if spec.shape == "state_machine":
+        return not spec.states or any(duration <= 0 for _, duration in spec.states)
+    return False
+
+
 SHAPES: dict[str, Callable[[SignalSpec, float], float]] = {
     "constant": _constant,
     "sine": _sine,
@@ -176,11 +236,13 @@ SHAPES: dict[str, Callable[[SignalSpec, float], float]] = {
     "discharge": _discharge,
 }
 COUNTER_SHAPE = "counter"
-SHAPE_NAMES = (*SHAPES, COUNTER_SHAPE)
+SHAPE_NAMES = (*SHAPES, COUNTER_SHAPE, *DISCRETE_SHAPES)
 
 
-def value_at(spec: SignalSpec, t: float) -> float:
-    """Return the value of the signal at signal time `t` (seconds), scaled to min..max."""
+def value_at(spec: SignalSpec, t: float) -> float | str:
+    """Return the value at signal time `t` (seconds): a number scaled to min..max or a state name."""
+    if spec.shape in DISCRETE_SHAPES:
+        return DISCRETE_SHAPES[spec.shape](spec, t)
     if spec.shape == COUNTER_SHAPE:
         elapsed = max(0.0, t - spec.origin)
         return round(spec.min + spec.rate_per_hour * elapsed / SECONDS_PER_HOUR, spec.decimals)

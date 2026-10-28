@@ -48,6 +48,9 @@ class ErrorCode(StrEnum):
     SIG_INVALID_RANGE = "TDC-SIG-002"
     """The minimum of a signal is greater than its maximum."""
 
+    SIG_INVALID_STATES = "TDC-SIG-003"
+    """The states, weights or durations of an enum or state machine signal are invalid."""
+
     SCH_UNKNOWN_ACTION = "TDC-SCH-001"
     """The platform of the entity does not support the requested action."""
 

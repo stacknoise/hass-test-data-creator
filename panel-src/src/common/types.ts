@@ -15,6 +15,9 @@ export interface SignalDef {
   decimals?: number;
   phase?: number;
   rate_per_hour?: number;
+  values?: string[];
+  weights?: number[];
+  states?: { value: string; duration_s: number }[];
 }
 
 /** One entity of a template. */

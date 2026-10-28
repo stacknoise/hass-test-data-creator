@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..core.errors import ErrorCode, SignalError
-from .signals import SHAPE_NAMES, SignalSpec, value_at
+from .signals import SHAPE_NAMES, SignalSpec, has_invalid_states, value_at
 
 
 class Signal:
@@ -15,8 +15,8 @@ class Signal:
         """Keep the validated spec."""
         self.spec = spec
 
-    def value(self, t: float) -> float:
-        """Return the value at signal time `t` in seconds."""
+    def value(self, t: float) -> float | str:
+        """Return the value or state at signal time `t` in seconds."""
         return value_at(self.spec, t)
 
 
@@ -34,4 +34,6 @@ class SignalFactory:
             raise SignalError(ErrorCode.SIG_UNKNOWN_SHAPE)
         if spec.min > spec.max:
             raise SignalError(ErrorCode.SIG_INVALID_RANGE)
+        if has_invalid_states(spec):
+            raise SignalError(ErrorCode.SIG_INVALID_STATES)
         return Signal(spec)

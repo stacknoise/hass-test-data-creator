@@ -7,7 +7,7 @@ from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.components.event import EventEntity
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.const import STATE_ON, EntityCategory
 from homeassistant.core import CALLBACK_TYPE, callback
@@ -18,6 +18,7 @@ from homeassistant.helpers.restore_state import RestoreEntity
 
 from ..const import DOMAIN, MANUFACTURER, SIGNAL_TICK
 from ..engine.signal_factory import Signal
+from ..engine.signals import DISCRETE_SHAPES, options_of
 from ..engine.tick import signal_time
 from ..faults.factory import Fault
 from ..model.models import DeviceDef, EntityDef
@@ -129,13 +130,16 @@ class TdcSensor(TdcEntity, SensorEntity):
         self._last = signal_time()
         self._attr_native_unit_of_measurement = definition.unit
         self._attr_state_class = definition.state_class
+        if signal.spec.shape in DISCRETE_SHAPES:
+            self._attr_device_class = SensorDeviceClass.ENUM
+            self._attr_options = options_of(signal.spec)
         self._attr_native_value = signal.value(self._last)
 
-    def _value(self, now: float) -> float:
+    def _value(self, now: float) -> float | str:
         """Return the value of the signal at `now` with the transformation of an active fault."""
         value = self._signal.value(now)
         transform = self._fault.transform if self._fault else None
-        return transform(value) if transform else value
+        return transform(value) if transform and not isinstance(value, str) else value
 
     def _apply_fault(self) -> None:
         """Show the changed value at once, unless the sensor is frozen."""

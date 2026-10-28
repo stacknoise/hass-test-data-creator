@@ -37,6 +37,24 @@ CASES = (
     {"shape": "steps", "period_s": 100, "interval_s": 100},
     {"shape": "discharge", "period_s": 7200, "min": 3, "max": 4.2},
     {"shape": "counter", "min": 10, "rate_per_hour": 0.35, "origin": 100.0},
+    {"shape": "enum", "seed": 5, "interval_s": 600, "values": ["a", "b", "c"]},
+    {
+        "shape": "enum",
+        "seed": 9,
+        "interval_s": 60,
+        "values": ["on", "off"],
+        "weights": [3, 1],
+    },
+    {
+        "shape": "state_machine",
+        "phase": 0.1,
+        "states": [
+            {"value": "idle", "duration_s": 1800},
+            {"value": "wash", "duration_s": 2400},
+            {"value": "rinse", "duration_s": 900},
+            {"value": "spin", "duration_s": 600},
+        ],
+    },
 )
 
 
@@ -60,7 +78,9 @@ def main() -> None:
     values = []
     for case in CASES:
         params = {**BASE, **case}
-        spec = signals.SignalSpec(**params)
+        spec = signals.SignalSpec.from_dict(
+            params, params.get("seed", 0), params.get("origin", 0.0)
+        )
         for t in TIMES:
             values.append({"spec": params, "t": t, "value": signals.value_at(spec, t)})
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

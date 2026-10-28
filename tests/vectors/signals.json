@@ -2161,6 +2161,706 @@
    },
    "t": 1700000000.25,
    "value": 165287.768
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 0.0,
+   "value": "b"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 1.0,
+   "value": "b"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 59.0,
+   "value": "b"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 3600.0,
+   "value": "b"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 12345.678,
+   "value": "a"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 28800.0,
+   "value": "a"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 43200.5,
+   "value": "c"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 64800.0,
+   "value": "a"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 86399.0,
+   "value": "c"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 600,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 5,
+    "values": [
+     "a",
+     "b",
+     "c"
+    ]
+   },
+   "t": 1700000000.25,
+   "value": "a"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 0.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 1.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 59.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 3600.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 12345.678,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 28800.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 43200.5,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 64800.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 86399.0,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 60,
+    "decimals": 3,
+    "shape": "enum",
+    "seed": 9,
+    "values": [
+     "on",
+     "off"
+    ],
+    "weights": [
+     3,
+     1
+    ]
+   },
+   "t": 1700000000.25,
+   "value": "on"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 0.0,
+   "value": "idle"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 1.0,
+   "value": "idle"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 59.0,
+   "value": "idle"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 3600.0,
+   "value": "wash"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 12345.678,
+   "value": "idle"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 28800.0,
+   "value": "idle"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 43200.5,
+   "value": "wash"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 64800.0,
+   "value": "wash"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 86399.0,
+   "value": "idle"
+  },
+  {
+   "spec": {
+    "min": 0,
+    "max": 100,
+    "period_s": 3600,
+    "interval_s": 10,
+    "decimals": 3,
+    "shape": "state_machine",
+    "phase": 0.1,
+    "states": [
+     {
+      "value": "idle",
+      "duration_s": 1800
+     },
+     {
+      "value": "wash",
+      "duration_s": 2400
+     },
+     {
+      "value": "rinse",
+      "duration_s": 900
+     },
+     {
+      "value": "spin",
+      "duration_s": 600
+     }
+    ]
+   },
+   "t": 1700000000.25,
+   "value": "wash"
   }
  ]
 }

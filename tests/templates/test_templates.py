@@ -28,6 +28,7 @@ BUNDLED = {
     "light",
     "cover",
     "thermostat",
+    "washer",
 }
 
 
