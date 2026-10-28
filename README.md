@@ -17,7 +17,7 @@ Planned: more fault kinds (`late`, `duplicate`), the curve shapes `enum` and `st
 
 ## Status
 
-Version 0.1.0, the first release. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output only; MQTT and Zigbee2MQTT, scheduled events and faults are planned (see the release plan in [docs/concept.md](docs/concept.md)).
+Version 0.2.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output only; MQTT and Zigbee2MQTT are planned (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.1.0: schedules, scenarios, faults, more curve shapes, light, blind and thermostat templates, and the schedule and scenario tabs and the curve editor in the panel. Not tried yet in a running Home Assistant beyond the automatic tests.
 
 ## Installation (HACS)
 
