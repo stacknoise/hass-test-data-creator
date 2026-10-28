@@ -45,12 +45,12 @@ describe('sensorEntities', () => {
     expect(sensorEntities(devices, ['b']).map((s) => s.key)).toEqual(['power', 'temp']);
   });
 
-  it('joins the sensors of several devices without doubles', () => {
-    expect(sensorEntities(devices, ['a', 'b']).map((s) => s.key)).toEqual(['power', 'temp']);
+  it('offers only the sensors that every chosen device has', () => {
+    expect(sensorEntities(devices, ['a', 'b']).map((s) => s.key)).toEqual(['power']);
   });
 
-  it('joins the sensors of all devices when none is chosen', () => {
-    expect(sensorEntities(devices, []).map((s) => s.key)).toEqual(['power', 'temp']);
+  it('takes every device into account when none is chosen', () => {
+    expect(sensorEntities(devices, []).map((s) => s.key)).toEqual(['power']);
   });
 
   it('skips sensors without a state class, because no statistics can be written for them', () => {

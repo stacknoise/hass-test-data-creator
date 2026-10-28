@@ -240,7 +240,7 @@
         },
         "entity": {
           "name": "Entity key",
-          "description": "Key of the entity inside the device."
+          "description": "Key of the entity inside the device. Empty: the action runs on every entity that can do it."
         },
         "action": {
           "name": "Action",

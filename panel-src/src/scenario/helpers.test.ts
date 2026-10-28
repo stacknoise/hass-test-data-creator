@@ -1,33 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { TemplateInfo } from '../common/types';
-import { actionNames, allEntities, entityKeysFor, resolveWork } from '../schedule/helpers';
+import { actionNames, resolveWork } from '../schedule/helpers';
 import { buildSteps, defaultStep, parseParams, stepFormOf } from './helpers';
 
 const ACTIONS = { switch: ['toggle', 'turn_on'], light: ['set_brightness'] };
-const TEMPLATES: TemplateInfo[] = [
-  {
-    id: 'plug',
-    name: 'Plug',
-    model: 'Plug',
-    bundled: true,
-    entities: [{ key: 'state', platform: 'switch', name: 'Switch' }],
-  },
-  {
-    id: 'light',
-    name: 'Light',
-    model: 'Light',
-    bundled: true,
-    entities: [{ key: 'light', platform: 'light', name: 'Light' }],
-  },
-];
-
 describe('scenario helpers', () => {
-  it('lists each action once and the entities that it works on', () => {
+  it('lists each action name once', () => {
     expect(actionNames(ACTIONS)).toEqual(['toggle', 'turn_on', 'set_brightness']);
-    const refs = allEntities(TEMPLATES);
-    expect(entityKeysFor(refs, ACTIONS, 'set_brightness')).toEqual(['light']);
-    expect(entityKeysFor(refs, ACTIONS, 'toggle')).toEqual(['state']);
-    expect(entityKeysFor(refs, ACTIONS, 'open')).toEqual([]);
   });
 
   it('resolves the work of a form', () => {

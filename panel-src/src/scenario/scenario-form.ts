@@ -57,7 +57,9 @@ export class ScenarioForm extends TdcElement {
     return (
       Boolean(this.name.trim()) &&
       this.steps.length > 0 &&
-      this.steps.every((s) => s.work.kind === 'all' || s.work.targetIds.length > 0)
+      this.steps.every(
+        (s) => s.work.action && (s.work.kind === 'all' || s.work.targetIds.length > 0),
+      )
     );
   }
 

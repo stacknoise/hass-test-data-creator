@@ -2,13 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { DeviceInfo, Trigger } from '../common/types';
 import {
   buildTarget,
-  allEntities,
   availableActions,
   buildTrigger,
   defaultTriggerForm,
   describeTarget,
-  entitiesOfTarget,
-  entityKeysFor,
+  platformSetsOfTarget,
   formatWhen,
   parseTimes,
   summarizeTrigger,
@@ -109,11 +107,7 @@ describe('what fits a target', () => {
   const entity = (
     key: string,
     platform: string,
-  ): { key: string; platform: string; name: string } => ({
-    key,
-    platform,
-    name: key,
-  });
+  ): { key: string; platform: string; name: string } => ({ key, platform, name: key });
   const templates = [
     { id: 'lamp', name: 'Lamp', model: 'x', bundled: true, entities: [entity('light', 'light')] },
     { id: 'plug', name: 'Plug', model: 'x', bundled: true, entities: [entity('state', 'switch')] },
@@ -125,48 +119,48 @@ describe('what fits a target', () => {
     device('p2', 'r1', entity('state', 'switch')),
     device('l1', 'r2', entity('light', 'light')),
   ];
+  const platforms = (sets: Set<string>[] | undefined): string[][] | undefined =>
+    sets?.map((set) => [...set]);
 
-  it('takes the entities of the chosen devices, by id or name', () => {
-    expect(entitiesOfTarget('device', ['p1', 'P2'], devices, templates)).toEqual([
-      { platform: 'switch', key: 'state' },
+  it('gives the platforms of every chosen device, by id or name', () => {
+    expect(platformSetsOfTarget('device', ['p1', 'L1'], devices, templates)).toHaveLength(2);
+    expect(platforms(platformSetsOfTarget('device', ['p1'], devices, templates))).toEqual([
+      ['switch'],
     ]);
-    expect(entitiesOfTarget('device', ['p1', 'l1'], devices, templates)).toHaveLength(2);
   });
 
-  it('takes the entities of a template, of a creation, and of all devices', () => {
-    expect(entitiesOfTarget('template', ['lamp'], devices, templates)).toEqual([
-      { platform: 'light', key: 'light' },
+  it('gives the platforms of a template, of a device set, and of all devices', () => {
+    expect(platforms(platformSetsOfTarget('template', ['lamp'], devices, templates))).toEqual([
+      ['light'],
     ]);
-    expect(entitiesOfTarget('run', ['r2'], devices, templates)).toEqual([
-      { platform: 'light', key: 'light' },
-    ]);
-    expect(entitiesOfTarget('all', [], devices, templates)).toHaveLength(2);
-    expect(entitiesOfTarget('all', [], [], templates)).toEqual(allEntities(templates));
+    expect(platformSetsOfTarget('run', ['r1'], devices, templates)).toHaveLength(2);
+    expect(platformSetsOfTarget('all', [], devices, templates)).toHaveLength(3);
   });
 
-  it('knows nothing while no target is chosen, or the target is gone', () => {
-    expect(entitiesOfTarget('device', [], devices, templates)).toBeUndefined();
-    expect(entitiesOfTarget('device', ['gone'], devices, templates)).toBeUndefined();
-    expect(entitiesOfTarget('template', ['gone'], devices, templates)).toBeUndefined();
+  it('limits nothing while no target is chosen, there is no device, or the target is gone', () => {
+    expect(platformSetsOfTarget('device', [], devices, templates)).toBeUndefined();
+    expect(platformSetsOfTarget('device', ['gone'], devices, templates)).toBeUndefined();
+    expect(platformSetsOfTarget('template', ['gone'], devices, templates)).toBeUndefined();
+    expect(platformSetsOfTarget('all', [], [], templates)).toBeUndefined();
   });
 
-  it('offers each action once, and only those of the platforms that the target has', () => {
-    const plugs = entitiesOfTarget('device', ['p1'], devices, templates);
+  it('offers only what every chosen device can do', () => {
+    const plugs = platformSetsOfTarget('device', ['p1', 'p2'], devices, templates);
     expect(availableActions(actions, plugs)).toEqual(['toggle', 'turn_on']);
-    const both = entitiesOfTarget('device', ['p1', 'l1'], devices, templates);
-    expect(availableActions(actions, both)).toEqual(['toggle', 'turn_on', 'set_brightness']);
-    expect(availableActions(actions, undefined)).toEqual([
-      'toggle',
-      'turn_on',
-      'set_brightness',
-      'open',
-    ]);
+    const plugAndLamp = platformSetsOfTarget('device', ['p1', 'l1'], devices, templates);
+    expect(availableActions(actions, plugAndLamp)).toEqual(['toggle']);
+    const lamp = platformSetsOfTarget('device', ['l1'], devices, templates);
+    expect(availableActions(actions, lamp)).toEqual(['toggle', 'set_brightness']);
   });
 
-  it('finds the entities that can do the chosen action', () => {
-    const both = entitiesOfTarget('device', ['p1', 'l1'], devices, templates) ?? [];
-    expect(entityKeysFor(both, actions, 'toggle')).toEqual(['state', 'light']);
-    expect(entityKeysFor(both, actions, 'set_brightness')).toEqual(['light']);
-    expect(entityKeysFor(both, actions, 'open')).toEqual([]);
+  it('offers nothing that all devices share when they share no action', () => {
+    const mixed = [device('c1', 'r3', entity('cover', 'cover')), devices[0]];
+    expect(availableActions(actions, platformSetsOfTarget('all', [], mixed, templates))).toEqual(
+      [],
+    );
+  });
+
+  it('offers nothing while the common set cannot be found', () => {
+    expect(availableActions(actions, undefined)).toEqual([]);
   });
 });

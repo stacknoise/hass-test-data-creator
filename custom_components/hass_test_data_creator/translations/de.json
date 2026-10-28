@@ -240,7 +240,7 @@
         },
         "entity": {
           "name": "Entitätsschlüssel",
-          "description": "Schlüssel der Entität im Gerät."
+          "description": "Schlüssel der Entität im Gerät. Leer: Die Aktion läuft auf jeder Entität, die sie kann."
         },
         "action": {
           "name": "Aktion",

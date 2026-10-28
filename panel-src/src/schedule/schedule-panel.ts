@@ -172,7 +172,7 @@ export class SchedulePanel extends TdcPollingElement {
           ${
             item.scenario
               ? this.tr('schScenario', { id: this.scenarioName(item.scenario) })
-              : `${labelOf(lang, 'entity', item.entity)}: ${actionLabel(lang, item.action)}`
+              : `${item.entity ? `${labelOf(lang, 'entity', item.entity)}: ` : ''}${actionLabel(lang, item.action)}`
           }
         </td>
         <td data-label=${this.tr('schTrigger')}>

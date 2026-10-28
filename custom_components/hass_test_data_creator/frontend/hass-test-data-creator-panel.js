@@ -761,7 +761,6 @@ var Xe = {
 		schTarget_device: "Device",
 		schTarget_run: "Device set",
 		schAction: "Action",
-		schEntity: "Entity",
 		schTrigger: "Trigger",
 		schTrigger_times: "Fixed times",
 		schTrigger_interval: "Interval",
@@ -929,7 +928,6 @@ var Xe = {
 		schTarget_device: "Gerät",
 		schTarget_run: "Geräte Set",
 		schAction: "Aktion",
-		schEntity: "Entität",
 		schTrigger: "Auslöser",
 		schTrigger_times: "Feste Zeiten",
 		schTrigger_interval: "Intervall",
@@ -3133,15 +3131,18 @@ function $n(e) {
 	return Math.min(365, Math.max(1, Math.round(e) || 1));
 }
 function er(e, t) {
-	let n = t.length ? e.filter((e) => t.includes(e.id)) : e, r = /* @__PURE__ */ new Map();
-	for (let e of n) for (let t of e.entities) {
-		let e = t.signal?.shape;
-		t.platform === "sensor" && t.state_class && e && !Pt(e) && !r.has(t.key) && r.set(t.key, {
-			key: t.key,
-			name: t.name
-		});
-	}
-	return [...r.values()];
+	let [n, ...r] = (t.length ? e.filter((e) => t.includes(e.id)) : e).map((e) => {
+		let t = /* @__PURE__ */ new Map();
+		for (let n of e.entities) {
+			let e = n.signal?.shape;
+			n.platform === "sensor" && n.state_class && e && !Pt(e) && t.set(n.key, {
+				key: n.key,
+				name: n.name
+			});
+		}
+		return t;
+	});
+	return n ? [...n.values()].filter((e) => r.every((t) => t.has(e.key))) : [];
 }
 // src/history/history-panel.ts
 var tr = 500, G = class extends N {
@@ -3521,41 +3522,31 @@ function yr(e) {
 		entity: ""
 	};
 }
-function br(e) {
-	return [...new Map(e.map((e) => [`${e.platform}/${e.key}`, e])).values()].map(({ platform: e, key: t }) => ({
-		platform: e,
-		key: t
-	}));
-}
-function xr(e) {
-	return br(e.flatMap((e) => e.entities));
-}
-function Sr(e, t, n, r) {
-	if (e === "all") return n.length ? br(n.flatMap((e) => e.entities)) : xr(r);
+function br(e, t, n, r) {
+	let i = (e) => new Set(e.map((e) => e.platform));
+	if (e === "all") return n.length ? n.map((e) => i(e.entities)) : void 0;
 	if (t.length === 0) return;
 	if (e === "template") {
 		let e = r.find((e) => e.id === t[0]);
-		return e ? br(e.entities) : void 0;
+		return e ? [i(e.entities)] : void 0;
 	}
-	let i = e === "device" ? n.filter((e) => t.includes(e.id) || t.includes(e.name)) : n.filter((e) => e.run_id === t[0]);
-	return i.length ? br(i.flatMap((e) => e.entities)) : void 0;
+	let a = e === "device" ? n.filter((e) => t.includes(e.id) || t.includes(e.name)) : n.filter((e) => e.run_id === t[0]);
+	return a.length ? a.map((e) => i(e.entities)) : void 0;
 }
-function Cr(e, t) {
-	let n = t ? new Set(t.map((e) => e.platform)) : void 0, r = Object.entries(e).filter(([e]) => !n || n.has(e));
-	return [...new Set(r.flatMap(([, e]) => e))];
+function xr(e, t) {
+	let n = vr(e);
+	if (!t) return [];
+	let r = t.map((t) => new Set(Object.entries(e).filter(([e]) => t.has(e)).flatMap(([, e]) => e)));
+	return n.filter((e) => r.every((t) => t.has(e)));
 }
-function wr(e, t, n) {
-	let r = new Set(Object.entries(t).filter(([, e]) => e.includes(n)).map(([e]) => e));
-	return [...new Set(e.filter((e) => r.has(e.platform)).map((e) => e.key))];
-}
-function Tr(e) {
+function Sr(e) {
 	return {
 		target: mr(e.kind, e.targetIds),
 		entity: e.entity,
 		action: e.action
 	};
 }
-function Er(e) {
+function Cr(e) {
 	let t = {
 		...dr(),
 		type: e.type
@@ -3588,7 +3579,7 @@ function Er(e) {
 		};
 	}
 }
-function Dr(e) {
+function wr(e) {
 	let { kind: t, ids: n } = hr(e.target);
 	return {
 		kind: t,
@@ -3598,12 +3589,12 @@ function Dr(e) {
 	};
 }
 // src/schedule/work-picker.ts
-var Or = [
+var Tr = [
 	"all",
 	"template",
 	"device",
 	"run"
-], kr = 500, J = class extends N {
+], Er = 500, J = class extends N {
 	constructor(...e) {
 		super(...e), this.actions = {}, this.templates = [], this.devices = [], this.error = "";
 	}
@@ -3612,7 +3603,7 @@ var Or = [
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devices(0, kr)).devices, this.error = "";
+			this.devices = (await this.api.devices(0, Er)).devices, this.error = "";
 		} catch (e) {
 			this.error = O(e);
 		}
@@ -3623,28 +3614,41 @@ var Or = [
 			...e
 		} }));
 	}
-	scope() {
-		let e = Sr(this.work.kind, this.work.targetIds, this.devices, this.templates), t = this.hass?.language;
-		return {
-			actions: j(t, Cr(this.actions, e), (e) => A(t, e)),
-			entities: j(t, wr(e ?? xr(this.templates), this.actions, this.work.action), (e) => k(t, "entity", e))
-		};
+	actionChoices() {
+		let e = this.hass?.language, t = br(this.work.kind, this.work.targetIds, this.devices, this.templates);
+		return j(e, xr(this.actions, t), (t) => A(e, t));
 	}
 	updated(e) {
 		super.updated(e);
-		let { actions: t, entities: n } = this.scope();
+		let t = this.actionChoices();
 		t.length && !t.includes(this.work.action) ? this.emit({
 			action: t[0],
 			entity: ""
-		}) : n.length && !n.includes(this.work.entity) && this.emit({ entity: n[0] });
+		}) : t.length === 0 && this.work.action && this.emit({
+			action: "",
+			entity: ""
+		});
+	}
+	renderAction(e) {
+		let t = this.actionChoices();
+		return t.length === 0 ? y`<label
+        >${this.tr("schAction")}
+        <select disabled>
+          <option>${this.tr("pickOne")}</option>
+        </select>
+      </label>` : this.select(this.tr("schAction"), t, this.work.action, (t) => A(e, t), (e) => this.emit({
+			action: e,
+			entity: ""
+		}));
 	}
 	render() {
-		let { actions: e, entities: t } = this.scope(), n = this.hass?.language;
+		let e = this.hass?.language;
 		return y`
       <div class="fields">
-        ${this.select(this.tr("schTarget"), Or, this.work.kind, (e) => this.tr(`schTarget_${e}`), (e) => this.emit({
+        ${this.select(this.tr("schTarget"), Tr, this.work.kind, (e) => this.tr(`schTarget_${e}`), (e) => this.emit({
 			kind: e,
-			targetIds: []
+			targetIds: [],
+			entity: ""
 		}))}
         ${this.work.kind === "all" ? x : y`<tdc-target-select
                 .hass=${this.hass}
@@ -3652,13 +3656,12 @@ var Or = [
                 ?multiple=${this.work.kind === "device"}
                 .values=${this.work.targetIds}
                 .templates=${this.templates}
-                @tdc-target-change=${(e) => this.emit({ targetIds: e.detail })}
-              ></tdc-target-select>`}
-        ${this.select(this.tr("schAction"), e, this.work.action, (e) => A(n, e), (e) => this.emit({
-			action: e,
+                @tdc-target-change=${(e) => this.emit({
+			targetIds: e.detail,
 			entity: ""
-		}))}
-        ${this.select(this.tr("schEntity"), t, this.work.entity || t[0] || "", (e) => k(n, "entity", e), (e) => this.emit({ entity: e }))}
+		})}
+              ></tdc-target-select>`}
+        ${this.renderAction(e)}
       </div>
       ${this.error ? y`<p class="error">${this.error}</p>` : x}
     `;
@@ -3666,14 +3669,14 @@ var Or = [
 };
 M([E({ attribute: !1 })], J.prototype, "work", void 0), M([E({ attribute: !1 })], J.prototype, "actions", void 0), M([E({ attribute: !1 })], J.prototype, "templates", void 0), M([D()], J.prototype, "devices", void 0), M([D()], J.prototype, "error", void 0), J = M([T("tdc-work-picker")], J);
 // src/scenario/helpers.ts
-function Ar(e) {
+function Dr(e) {
 	return {
 		afterS: 0,
 		work: yr(e),
 		params: ""
 	};
 }
-function jr(e) {
+function Or(e) {
 	if (e.trim() === "") return {};
 	try {
 		let t = JSON.parse(e);
@@ -3682,23 +3685,23 @@ function jr(e) {
 		return;
 	}
 }
-function Mr(e) {
+function kr(e) {
 	let t = [];
 	for (let n of e) {
-		let e = jr(n.params);
+		let e = Or(n.params);
 		if (e === void 0) return;
 		t.push({
 			after_s: Math.max(0, n.afterS || 0),
-			...Tr(n.work),
+			...Sr(n.work),
 			params: e
 		});
 	}
 	return t;
 }
-function Nr(e) {
+function Ar(e) {
 	return {
 		afterS: e.after_s,
-		work: Dr(e),
+		work: wr(e),
 		params: Object.keys(e.params).length ? JSON.stringify(e.params) : ""
 	};
 }
@@ -3709,10 +3712,10 @@ var Y = class extends N {
 	}
 	willUpdate(e) {
 		let t = this.info?.actions;
-		this.scenario && t && this.loadedId !== this.scenario.id ? (this.loadedId = this.scenario.id, this.name = this.scenario.name, this.steps = this.scenario.steps.map(Nr)) : !this.scenario && t && this.steps.length === 0 && (this.steps = [Ar(t)]), super.willUpdate(e);
+		this.scenario && t && this.loadedId !== this.scenario.id ? (this.loadedId = this.scenario.id, this.name = this.scenario.name, this.steps = this.scenario.steps.map(Ar)) : !this.scenario && t && this.steps.length === 0 && (this.steps = [Dr(t)]), super.willUpdate(e);
 	}
 	reset() {
-		this.name = "", this.error = "", this.steps = [Ar(this.info?.actions ?? {})];
+		this.name = "", this.error = "", this.steps = [Dr(this.info?.actions ?? {})];
 	}
 	setStep(e, t) {
 		this.steps = this.steps.map((n, r) => r === e ? {
@@ -3721,10 +3724,10 @@ var Y = class extends N {
 		} : n);
 	}
 	complete() {
-		return !!this.name.trim() && this.steps.length > 0 && this.steps.every((e) => e.work.kind === "all" || e.work.targetIds.length > 0);
+		return !!this.name.trim() && this.steps.length > 0 && this.steps.every((e) => e.work.action && (e.work.kind === "all" || e.work.targetIds.length > 0));
 	}
 	submit() {
-		let e = Mr(this.steps);
+		let e = kr(this.steps);
 		e ? (this.error = "", this.dispatchEvent(new CustomEvent("tdc-submit", { detail: {
 			name: this.name,
 			steps: e
@@ -3770,7 +3773,7 @@ var Y = class extends N {
       ${this.steps.map((e, t) => this.renderStep(e, t))}
       <p class="row">
         <button
-          @click=${() => this.steps = [...this.steps, Ar(this.info?.actions ?? {})]}
+          @click=${() => this.steps = [...this.steps, Dr(this.info?.actions ?? {})]}
         >
           ${this.tr("scnAddStep")}
         </button>
@@ -3873,7 +3876,7 @@ var X = class extends H {
         <td class="name">${i ? "▾" : "▸"} ${e.name}</td>
         <td data-label=${this.tr("scnSteps")}>
           ${this.tr("scnStepCount", { count: e.steps.length })}<br /><small
-            >${t ? `${k(r, "entity", t.entity)}: ${A(r, t.action)} · ${this.tr(`schTarget_${n}`)}` : ""}</small
+            >${t ? `${t.entity ? `${k(r, "entity", t.entity)}: ` : ""}${A(r, t.action)} · ${this.tr(`schTarget_${n}`)}` : ""}</small
           >
         </td>
         <td data-label=${this.tr("colActions")}>
@@ -3928,13 +3931,13 @@ var X = class extends H {
 };
 M([D()], X.prototype, "scenarios", void 0), M([D()], X.prototype, "expanded", void 0), M([D()], X.prototype, "creating", void 0), M([qe("tdc-scenario-form#new")], X.prototype, "newForm", void 0), X = M([T("tdc-scenario-panel")], X);
 // src/schedule/schedule-form.ts
-var Pr = [
+var jr = [
 	"times",
 	"interval",
 	"once",
 	"random_window",
 	"poisson"
-], Fr = [
+], Mr = [
 	"weekdayMon",
 	"weekdayTue",
 	"weekdayWed",
@@ -3944,11 +3947,11 @@ var Pr = [
 	"weekdaySun"
 ], Z = class extends N {
 	constructor(...e) {
-		super(...e), this.templates = [], this.scenarios = [], this.submitLabel = "", this.busy = !1, this.name = "", this.scenarioId = "", this.work = yr({}), this.seed = "", this.form = dr();
+		super(...e), this.templates = [], this.scenarios = [], this.submitLabel = "", this.busy = !1, this.name = "", this.scenarioId = "", this.work = yr({}), this.seed = "", this.form = dr(), this.started = !1;
 	}
 	willUpdate(e) {
 		let t = this.info?.actions;
-		this.schedule && t && this.loadedId !== this.schedule.id ? (this.loadedId = this.schedule.id, this.name = this.schedule.name, this.scenarioId = this.schedule.scenario ?? "", this.work = Dr(this.schedule), this.form = Er(this.schedule.trigger)) : !this.schedule && t && !this.work.action && (this.work = yr(t)), super.willUpdate(e);
+		this.schedule && t && this.loadedId !== this.schedule.id ? (this.loadedId = this.schedule.id, this.name = this.schedule.name, this.scenarioId = this.schedule.scenario ?? "", this.work = wr(this.schedule), this.form = Cr(this.schedule.trigger)) : !this.schedule && t && !this.started && (this.started = !0, this.work = yr(t)), super.willUpdate(e);
 	}
 	reset() {
 		this.name = "";
@@ -3963,7 +3966,7 @@ var Pr = [
 		};
 	}
 	request() {
-		let e = this.scenarioId ? { scenario: this.scenarioId } : Tr(this.work), t = this.schedule && "action" in e && e.action === this.schedule.action;
+		let e = this.scenarioId ? { scenario: this.scenarioId } : Sr(this.work), t = this.schedule && "action" in e && e.action === this.schedule.action;
 		return {
 			name: this.name,
 			...e,
@@ -3997,7 +4000,7 @@ var Pr = [
 	}
 	renderWeekdays() {
 		return y`<div class="row wide">
-      ${Fr.map((e, t) => y`<label style="flex-direction: row; align-items: center">
+      ${Mr.map((e, t) => y`<label style="flex-direction: row; align-items: center">
             <input
               type="checkbox"
               style="width: auto; min-height: 0"
@@ -4022,7 +4025,7 @@ var Pr = [
 		return y`
       <div class="fields">
         ${this.textField(this.tr("schName"), this.name, (e) => this.name = e)}
-        ${this.select(this.tr("schTrigger"), Pr, this.form.type, (e) => this.tr(`schTrigger_${e}`), (e) => this.setForm({ type: e }))}
+        ${this.select(this.tr("schTrigger"), jr, this.form.type, (e) => this.tr(`schTrigger_${e}`), (e) => this.setForm({ type: e }))}
         ${this.select(this.tr("schRuns"), ["", ...this.scenarios.map((e) => e.id)], this.scenarioId, (e) => e ? this.tr("schScenario", { id: this.scenarioName(e) }) : this.tr("schRunsAction"), (e) => this.scenarioId = e)}
       </div>
       ${this.scenarioId ? x : y`<tdc-work-picker
@@ -4059,7 +4062,7 @@ var Pr = [
 };
 M([E({ attribute: !1 })], Z.prototype, "info", void 0), M([E({ attribute: !1 })], Z.prototype, "templates", void 0), M([E({ attribute: !1 })], Z.prototype, "scenarios", void 0), M([E({ attribute: !1 })], Z.prototype, "schedule", void 0), M([E()], Z.prototype, "submitLabel", void 0), M([E({ type: Boolean })], Z.prototype, "busy", void 0), M([D()], Z.prototype, "name", void 0), M([D()], Z.prototype, "scenarioId", void 0), M([D()], Z.prototype, "work", void 0), M([D()], Z.prototype, "seed", void 0), M([D()], Z.prototype, "form", void 0), Z = M([T("tdc-schedule-form")], Z);
 // src/schedule/schedule-panel.ts
-var Ir = 24, Lr = 50, Rr = 500, Q = class extends H {
+var Nr = 24, Pr = 50, Fr = 500, Q = class extends H {
 	constructor(...e) {
 		super(...e), this.schedules = [], this.runs = [], this.scenarios = [], this.devices = [], this.expanded = /* @__PURE__ */ new Set(), this.previewOpen = !1, this.creating = !1;
 	}
@@ -4094,9 +4097,9 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends H {
 			let e;
 			[this.schedules, this.runs, this.scenarios, e] = await Promise.all([
 				this.api.schedules(),
-				this.api.schedulePreview(Ir),
+				this.api.schedulePreview(Nr),
 				this.api.scenarios(),
-				this.api.devices(0, Rr)
+				this.api.devices(0, Fr)
 			]), this.devices = e.devices, this.error = "";
 		} catch (e) {
 			this.error = O(e);
@@ -4163,7 +4166,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends H {
           ${e.scenario ? "–" : this.targetText(t, n)}
         </td>
         <td data-label=${this.tr("schAction")}>
-          ${e.scenario ? this.tr("schScenario", { id: this.scenarioName(e.scenario) }) : `${k(r, "entity", e.entity)}: ${A(r, e.action)}`}
+          ${e.scenario ? this.tr("schScenario", { id: this.scenarioName(e.scenario) }) : `${e.entity ? `${k(r, "entity", e.entity)}: ` : ""}${A(r, e.action)}`}
         </td>
         <td data-label=${this.tr("schTrigger")}>
           ${this.tr(`schTrigger_${e.trigger.type}`)}<br /><small
@@ -4231,13 +4234,13 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends H {
           <th>${this.tr("schWhen")}</th>
           <th>${this.tr("schName")}</th>
         </tr>
-        ${this.runs.slice(0, Lr).map((e) => y`<tr>
+        ${this.runs.slice(0, Pr).map((e) => y`<tr>
               <td>${_r(e.when)}</td>
               <td>${e.name}</td>
             </tr>`)}
       </table>
-      ${this.runs.length > Lr ? y`<p>
-              <small>${this.tr("schMoreRuns", { count: this.runs.length - Lr })}</small>
+      ${this.runs.length > Pr ? y`<p>
+              <small>${this.tr("schMoreRuns", { count: this.runs.length - Pr })}</small>
             </p>` : x}`;
 	}
 	render() {
@@ -4249,7 +4252,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends H {
         @toggle=${(e) => this.previewOpen = e.target.open}
       >
         <summary>
-          ${this.tr("schPreview", { hours: Ir })} · ${this.actionCount()}
+          ${this.tr("schPreview", { hours: Nr })} · ${this.actionCount()}
         </summary>
         ${this.renderPreview()}
       </details>

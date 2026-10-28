@@ -15,21 +15,22 @@ export interface Sensor {
   name: string;
 }
 
-/** Return the sensors with a number curve and a state class (statistics need one) of the chosen devices, or of all devices if none is chosen. */
+/** Return the sensors that every chosen device has (or every device, if none is chosen). */
 export function sensorEntities(devices: DeviceInfo[], deviceIds: string[]): Sensor[] {
   const chosen = deviceIds.length
     ? devices.filter((device) => deviceIds.includes(device.id))
     : devices;
-  const found = new Map<string, Sensor>();
-  for (const device of chosen) {
+  const perDevice = chosen.map((device) => {
+    const sensors = new Map<string, Sensor>();
     for (const entity of device.entities) {
       const shape = entity.signal?.shape;
-      const fits =
-        entity.platform === 'sensor' && entity.state_class && shape && !isDiscrete(shape);
-      if (fits && !found.has(entity.key)) {
-        found.set(entity.key, { key: entity.key, name: entity.name });
+      if (entity.platform === 'sensor' && entity.state_class && shape && !isDiscrete(shape)) {
+        sensors.set(entity.key, { key: entity.key, name: entity.name });
       }
     }
-  }
-  return [...found.values()];
+    return sensors;
+  });
+  const [first, ...others] = perDevice;
+  if (!first) return [];
+  return [...first.values()].filter((sensor) => others.every((sensors) => sensors.has(sensor.key)));
 }

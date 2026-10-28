@@ -3,17 +3,10 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
-import { actionLabel, labelOf, sortedByLabel } from '../common/labels';
+import { actionLabel, sortedByLabel } from '../common/labels';
 import '../common/target-select';
 import type { DeviceInfo, TemplateInfo } from '../common/types';
-import {
-  allEntities,
-  availableActions,
-  entitiesOfTarget,
-  entityKeysFor,
-  type TargetKind,
-  type WorkForm,
-} from './helpers';
+import { availableActions, platformSetsOfTarget, type TargetKind, type WorkForm } from './helpers';
 
 const TARGET_KINDS: TargetKind[] = ['all', 'template', 'device', 'run'];
 const DEVICE_LIMIT = 500;
@@ -49,40 +42,53 @@ export class WorkPicker extends TdcElement {
     this.dispatchEvent(new CustomEvent('tdc-work-change', { detail: { ...this.work, ...patch } }));
   }
 
-  /** Return the actions that fit the chosen target, and the entities that the chosen action fits. */
-  private scope(): { actions: string[]; entities: string[] } {
-    const scoped = entitiesOfTarget(
+  /** Return the actions that every device of the chosen target can do, sorted by their text. */
+  private actionChoices(): string[] {
+    const lang = this.hass?.language;
+    const sets = platformSetsOfTarget(
       this.work.kind,
       this.work.targetIds,
       this.devices,
       this.templates,
     );
-    const lang = this.hass?.language;
-    const actions = sortedByLabel(lang, availableActions(this.actions, scoped), (action) =>
+    return sortedByLabel(lang, availableActions(this.actions, sets), (action) =>
       actionLabel(lang, action),
     );
-    const entities = sortedByLabel(
-      lang,
-      entityKeysFor(scoped ?? allEntities(this.templates), this.actions, this.work.action),
-      (key) => labelOf(lang, 'entity', key),
-    );
-    return { actions, entities };
   }
 
-  /** Move the action and the entity to ones that fit, when the target changed under them. */
+  /** Move the action to one that fits, when the target changed under it. */
   protected override updated(changed: PropertyValues): void {
     super.updated(changed);
-    const { actions, entities } = this.scope();
+    const actions = this.actionChoices();
     if (actions.length && !actions.includes(this.work.action)) {
       this.emit({ action: actions[0], entity: '' });
-    } else if (entities.length && !entities.includes(this.work.entity)) {
-      this.emit({ entity: entities[0] });
+    } else if (actions.length === 0 && this.work.action) {
+      this.emit({ action: '', entity: '' });
     }
+  }
+
+  /** Render the select of the action; with nothing to offer it is disabled and asks to choose. */
+  private renderAction(lang: string | undefined): TemplateResult {
+    const actions = this.actionChoices();
+    if (actions.length === 0) {
+      return html`<label
+        >${this.tr('schAction')}
+        <select disabled>
+          <option>${this.tr('pickOne')}</option>
+        </select>
+      </label>`;
+    }
+    return this.select(
+      this.tr('schAction'),
+      actions,
+      this.work.action,
+      (action) => actionLabel(lang, action),
+      (action) => this.emit({ action, entity: '' }),
+    );
   }
 
   /** Render the element. */
   override render(): TemplateResult {
-    const { actions, entities } = this.scope();
     const lang = this.hass?.language;
     return html`
       <div class="fields">
@@ -91,7 +97,7 @@ export class WorkPicker extends TdcElement {
           TARGET_KINDS,
           this.work.kind,
           (kind) => this.tr(`schTarget_${kind}` as TextKey),
-          (kind) => this.emit({ kind: kind as TargetKind, targetIds: [] }),
+          (kind) => this.emit({ kind: kind as TargetKind, targetIds: [], entity: '' }),
         )}
         ${
           this.work.kind === 'all'
@@ -103,23 +109,10 @@ export class WorkPicker extends TdcElement {
                 .values=${this.work.targetIds}
                 .templates=${this.templates}
                 @tdc-target-change=${(e: CustomEvent<string[]>) =>
-                  this.emit({ targetIds: e.detail })}
+                  this.emit({ targetIds: e.detail, entity: '' })}
               ></tdc-target-select>`
         }
-        ${this.select(
-          this.tr('schAction'),
-          actions,
-          this.work.action,
-          (action) => actionLabel(lang, action),
-          (action) => this.emit({ action, entity: '' }),
-        )}
-        ${this.select(
-          this.tr('schEntity'),
-          entities,
-          this.work.entity || entities[0] || '',
-          (key) => labelOf(lang, 'entity', key),
-          (key) => this.emit({ entity: key }),
-        )}
+        ${this.renderAction(lang)}
       </div>
       ${this.error ? html`<p class="error">${this.error}</p>` : nothing}
     `;

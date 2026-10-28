@@ -115,18 +115,13 @@ export function formatWhen(iso: string): string {
   return iso.slice(0, 16).replace('T', ' ');
 }
 
-/** The inputs that say what runs where: the target, the action (by name) and the entity (by key). */
+/** The inputs that say what runs where: the target and the action (by name).
+ * The entity is empty, so the action runs on every entity that can do it; a stored one is kept. */
 export interface WorkForm {
   kind: TargetKind;
   targetIds: string[];
   action: string;
   entity: string;
-}
-
-/** An entity that a target has: its platform and its key. */
-export interface EntityRef {
-  platform: string;
-  key: string;
 }
 
 /** Return the distinct action names of all platforms, in the order that they are first listed. */
@@ -139,71 +134,56 @@ export function defaultWork(actions: Record<string, string[]>): WorkForm {
   return { kind: 'all', targetIds: [], action: actionNames(actions)[0] ?? '', entity: '' };
 }
 
-/** Return `refs` without doubles. */
-function unique(refs: EntityRef[]): EntityRef[] {
-  const seen = new Map(refs.map((ref) => [`${ref.platform}/${ref.key}`, ref]));
-  return [...seen.values()].map(({ platform, key }) => ({ platform, key }));
-}
-
-/** Return every entity that the templates define; what could exist at all. */
-export function allEntities(templates: TemplateInfo[]): EntityRef[] {
-  return unique(templates.flatMap((tpl) => tpl.entities));
-}
-
 /**
- * Return the entities that the chosen target has, or undefined while nothing is chosen yet.
+ * Return the platforms that each chosen device has, or undefined while nothing is chosen yet.
  *
- * A template is taken from the templates, everything else from the devices that exist; with no
- * device at all, "all devices" falls back to what the templates would create.
+ * A template gives one set, a device or a device set one set per device, and "all devices" one set
+ * per device that exists; with no device at all nothing limits the actions.
  */
-export function entitiesOfTarget(
+export function platformSetsOfTarget(
   kind: TargetKind,
   ids: string[],
   devices: DeviceInfo[],
   templates: TemplateInfo[],
-): EntityRef[] | undefined {
-  if (kind === 'all') {
-    return devices.length ? unique(devices.flatMap((d) => d.entities)) : allEntities(templates);
-  }
+): Set<string>[] | undefined {
+  const of = (entities: { platform: string }[]): Set<string> =>
+    new Set(entities.map((entity) => entity.platform));
+  if (kind === 'all') return devices.length ? devices.map((d) => of(d.entities)) : undefined;
   if (ids.length === 0) return undefined;
   if (kind === 'template') {
     const tpl = templates.find((t) => t.id === ids[0]);
-    return tpl ? unique(tpl.entities) : undefined;
+    return tpl ? [of(tpl.entities)] : undefined;
   }
   const chosen =
     kind === 'device'
       ? devices.filter((d) => ids.includes(d.id) || ids.includes(d.name))
       : devices.filter((d) => d.run_id === ids[0]);
-  return chosen.length ? unique(chosen.flatMap((d) => d.entities)) : undefined;
+  return chosen.length ? chosen.map((d) => of(d.entities)) : undefined;
 }
 
-/** Return the distinct actions that some of the entities can do; all of them while no target is chosen. */
+/**
+ * Return the actions that every chosen device can do (the smallest common denominator).
+ *
+ * A device can do an action if one of its entities can. If the common set cannot be found (no target
+ * is chosen yet, the target is gone, or there is no device), nothing is offered.
+ */
 export function availableActions(
   actions: Record<string, string[]>,
-  refs: EntityRef[] | undefined,
+  sets: Set<string>[] | undefined,
 ): string[] {
-  const platforms = refs ? new Set(refs.map((ref) => ref.platform)) : undefined;
-  const fitting = Object.entries(actions).filter(
-    ([platform]) => !platforms || platforms.has(platform),
-  );
-  return [...new Set(fitting.flatMap(([, names]) => names))];
+  const all = actionNames(actions);
+  if (!sets) return [];
+  const doable = (platforms: Set<string>): Set<string> =>
+    new Set(
+      Object.entries(actions)
+        .filter(([platform]) => platforms.has(platform))
+        .flatMap(([, names]) => names),
+    );
+  const per = sets.map(doable);
+  return all.filter((action) => per.every((names) => names.has(action)));
 }
 
-/** Return the keys of the entities whose platform can do the action. */
-export function entityKeysFor(
-  refs: EntityRef[],
-  actions: Record<string, string[]>,
-  action: string,
-): string[] {
-  const platforms = new Set(
-    Object.entries(actions)
-      .filter(([, names]) => names.includes(action))
-      .map(([platform]) => platform),
-  );
-  return [...new Set(refs.filter((ref) => platforms.has(ref.platform)).map((ref) => ref.key))];
-}
-
-/** Return the target, entity and action that the form describes. */
+/** Return the target, entity and action that the form describes; an empty entity means all that fit. */
 export function resolveWork(work: WorkForm): {
   target: ScheduleTarget;
   entity: string;

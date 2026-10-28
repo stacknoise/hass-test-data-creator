@@ -153,10 +153,13 @@ class ScheduleManager:
         ]
 
     def _check_work(self, data: dict[str, Any]) -> None:
-        """Raise unless `data` names an existing scenario or a target with a known action."""
+        """Raise unless `data` names an existing scenario or a target with a known action.
+
+        The entity is optional: without one the action runs on every entity that can do it.
+        """
         if data.get("scenario") is not None:
             self._scenarios.get(data["scenario"])
-        elif not all(key in data for key in ("target", "entity", "action")):
+        elif not all(key in data for key in ("target", "action")):
             raise ScheduleError(ErrorCode.SCH_INVALID_PARAMS)
         elif not any(data["action"] in names for names in self._runner.actions().values()):
             raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)

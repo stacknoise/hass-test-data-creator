@@ -50,6 +50,7 @@ export class ScheduleForm extends TdcElement {
   @state() private form: TriggerForm = defaultTriggerForm();
 
   private loadedId?: string;
+  private started = false;
 
   /** Fill the form from the schedule once, and start a new one with the first action. */
   protected override willUpdate(changed: PropertyValues): void {
@@ -60,7 +61,8 @@ export class ScheduleForm extends TdcElement {
       this.scenarioId = this.schedule.scenario ?? '';
       this.work = workOf(this.schedule);
       this.form = triggerFormOf(this.schedule.trigger);
-    } else if (!this.schedule && actions && !this.work.action) {
+    } else if (!this.schedule && actions && !this.started) {
+      this.started = true;
       this.work = defaultWork(actions);
     }
     super.willUpdate(changed);

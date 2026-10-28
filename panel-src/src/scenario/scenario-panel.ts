@@ -118,7 +118,7 @@ export class ScenarioPanel extends TdcPollingElement {
           ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
             >${
               first
-                ? `${labelOf(lang, 'entity', first.entity)}: ${actionLabel(lang, first.action)} · ${this.tr(`schTarget_${kind}`)}`
+                ? `${first.entity ? `${labelOf(lang, 'entity', first.entity)}: ` : ''}${actionLabel(lang, first.action)} · ${this.tr(`schTarget_${kind}`)}`
                 : ''
             }</small
           >
