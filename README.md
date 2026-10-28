@@ -1,5 +1,7 @@
 # HASS Test Data Creator
 
+[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=stacknoise&repository=hass-test-data-creator&category=integration)
+
 Home Assistant custom integration that creates and manages **test devices, test entities and test data** for development and performance tests. It is meant for **test environments only**, never for an instance with real devices.
 
 - Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor, dimmable light, blind, radiator thermostat, washing machine) or from your own entity definitions.
@@ -27,7 +29,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
-Not planned for now: YAML import and export, sharing of templates. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Not planned for now: YAML import and export, sharing of templates. See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 1.4.
 
 ## Screenshots
 
@@ -35,31 +37,31 @@ The panel in the sidebar of Home Assistant (admin only). The images are rendered
 
 **Devices**: every generated device with its values; open one to change its area and the curve of a sensor, and to see where it is used.
 
-![The device list](docs/images/devices.png)
+![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=1)
 
-![A device with its curve editor and its uses](docs/images/device-details.png)
+![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=1)
 
-![The popup that creates devices](docs/images/create-devices.png)
+![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=1)
 
 **Schedules and scenarios**: schedules with the planned runs of the next 24 hours, and scenarios as timed steps.
 
-![The schedules with the next 24 hours](docs/images/schedules.png)
+![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=1)
 
-![The popup of a new schedule](docs/images/schedule-new.png)
+![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=1)
 
-![A scenario with its steps](docs/images/scenarios.png)
+![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=1)
 
 **MQTT groups, history and removal**
 
-![The MQTT groups](docs/images/groups.png)
+![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=1)
 
-![The statistics import](docs/images/history.png)
+![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=1)
 
-![The removal with its plan](docs/images/removal.png)
+![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=1)
 
 ## Status
 
-Version 0.3.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](docs/concept.md)). New since 0.2.0: the MQTT discovery and Zigbee2MQTT outputs with groups and base topic options, the state shapes `enum` and `state_machine` with the washing machine template, the faults `late` and `duplicate`, the MQTT groups tab, and scheduling a scenario from the panel. Not tried yet in a running Home Assistant or against a real broker beyond the automatic tests; native Home Assistant groups are not created.
+Version 0.3.0. Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md)). New since 0.2.0: the MQTT discovery and Zigbee2MQTT outputs with groups and base topic options, the state shapes `enum` and `state_machine` with the washing machine template, the faults `late` and `duplicate`, the MQTT groups tab, and scheduling a scenario from the panel. Not tried yet in a running Home Assistant or against a real broker beyond the automatic tests; native Home Assistant groups are not created.
 
 ## Installation (HACS)
 
@@ -149,11 +151,11 @@ data:
   trigger: { type: random_window, count: 3, start: "18:00", end: "23:00" }
 ```
 
-Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](docs/concept.md) chapter 4.2.
+Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2.
 
 ## Development
 
-Read [docs/development.md](docs/development.md) first. In short:
+Read [docs/development.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/development.md) first. In short:
 
 ```bash
 docker compose -f dev/docker-compose.yml up          # Home Assistant + Mosquitto for manual tests
@@ -163,4 +165,4 @@ cd panel-src && npm ci && npm run build               # build the panel
 
 ## License
 
-Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache-2.0, see [LICENSE](https://github.com/stacknoise/hass-test-data-creator/blob/main/LICENSE) and [NOTICE](https://github.com/stacknoise/hass-test-data-creator/blob/main/NOTICE).
