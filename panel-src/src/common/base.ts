@@ -208,7 +208,8 @@ export abstract class TdcElement extends LitElement {
     </label>`;
   }
 
-  /** Render a labelled select; `text` returns the label of a value, and the options are sorted by it. */
+  /** Render a labelled select; `text` returns the label of a value, and the options are sorted by it.
+   * With a single value there is nothing to choose, so the select is locked on it. */
   protected select(
     label: string,
     values: string[],
@@ -218,10 +219,15 @@ export abstract class TdcElement extends LitElement {
   ): TemplateResult {
     return html`<label style="flex: 1 1 180px"
       >${label}
-      <select @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}>
+      <select
+        ?disabled=${values.length === 1}
+        @change=${(e: Event) => change((e.target as HTMLSelectElement).value)}
+      >
         ${sortedByLabel(this.hass?.language, values, text).map(
           (value) =>
-            html`<option value=${value} ?selected=${value === current}>${text(value)}</option>`,
+            html`<option value=${value} ?selected=${value === current || values.length === 1}>
+              ${text(value)}
+            </option>`,
         )}
       </select>
     </label>`;

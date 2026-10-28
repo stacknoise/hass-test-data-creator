@@ -46,19 +46,39 @@ export class TargetSelect extends TdcElement {
     this.dispatchEvent(new CustomEvent('tdc-target-change', { detail: values }));
   }
 
-  /** Render the select of one id. */
+  /** Take the only option, as there is nothing else to choose. */
+  protected override updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (this.multiple && this.kind === 'device') return;
+    const options = this.options();
+    if (options.length === 1 && this.values[0] !== options[0].value) this.emit([options[0].value]);
+  }
+
+  /** Return the options of the kind. */
+  private options(): { value: string; label: string }[] {
+    return targetOptions(this.kind, this.devices, this.templates, this.hass?.language, (count) =>
+      this.tr('planDevices', { count }),
+    );
+  }
+
+  /** Render the select of one id; with a single option it is locked on it. */
   private renderSingle(
     options: { value: string; label: string }[],
     current: string,
   ): TemplateResult {
     const known = current === '' || options.some((option) => option.value === current);
     return html`<select
+      ?disabled=${options.length === 1}
       @change=${(e: Event) => {
         const value = (e.target as HTMLSelectElement).value;
         this.emit(value ? [value] : []);
       }}
     >
-      <option value="" ?selected=${current === ''}>${this.tr('pickOne')}</option>
+      ${
+        options.length === 1
+          ? ''
+          : html`<option value="" ?selected=${current === ''}>${this.tr('pickOne')}</option>`
+      }
       ${known ? '' : html`<option value=${current} selected>${current}</option>`}
       ${options.map(
         (option) =>
@@ -71,13 +91,7 @@ export class TargetSelect extends TdcElement {
 
   /** Render the element. */
   override render(): TemplateResult {
-    const options = targetOptions(
-      this.kind,
-      this.devices,
-      this.templates,
-      this.hass?.language,
-      (count) => this.tr('planDevices', { count }),
-    );
+    const options = this.options();
     const ids = this.values.map((value) => resolveTargetId(this.kind, value, this.devices));
     return html`<label>
       ${this.tr(KIND_LABELS[this.kind])}

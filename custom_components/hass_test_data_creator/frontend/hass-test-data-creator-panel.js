@@ -1498,8 +1498,13 @@ var at = o`
 	select(e, t, n, r, i) {
 		return y`<label style="flex: 1 1 180px"
       >${e}
-      <select @change=${(e) => i(e.target.value)}>
-        ${M(this.hass?.language, t, r).map((e) => y`<option value=${e} ?selected=${e === n}>${r(e)}</option>`)}
+      <select
+        ?disabled=${t.length === 1}
+        @change=${(e) => i(e.target.value)}
+      >
+        ${M(this.hass?.language, t, r).map((e) => y`<option value=${e} ?selected=${e === n || t.length === 1}>
+              ${r(e)}
+            </option>`)}
       </select>
     </label>`;
 	}
@@ -3293,15 +3298,24 @@ var sr = 500, cr = {
 	emit(e) {
 		this.dispatchEvent(new CustomEvent("tdc-target-change", { detail: e }));
 	}
+	updated(e) {
+		if (super.updated(e), this.multiple && this.kind === "device") return;
+		let t = this.options();
+		t.length === 1 && this.values[0] !== t[0].value && this.emit([t[0].value]);
+	}
+	options() {
+		return ir(this.kind, this.devices, this.templates, this.hass?.language, (e) => this.tr("planDevices", { count: e }));
+	}
 	renderSingle(e, t) {
 		let n = t === "" || e.some((e) => e.value === t);
 		return y`<select
+      ?disabled=${e.length === 1}
       @change=${(e) => {
 			let t = e.target.value;
 			this.emit(t ? [t] : []);
 		}}
     >
-      <option value="" ?selected=${t === ""}>${this.tr("pickOne")}</option>
+      ${e.length === 1 ? "" : y`<option value="" ?selected=${t === ""}>${this.tr("pickOne")}</option>`}
       ${n ? "" : y`<option value=${t} selected>${t}</option>`}
       ${e.map((e) => y`<option value=${e.value} ?selected=${e.value === t}>
             ${e.label}
@@ -3309,7 +3323,7 @@ var sr = 500, cr = {
     </select>`;
 	}
 	render() {
-		let e = ir(this.kind, this.devices, this.templates, this.hass?.language, (e) => this.tr("planDevices", { count: e })), t = this.values.map((e) => or(this.kind, e, this.devices));
+		let e = this.options(), t = this.values.map((e) => or(this.kind, e, this.devices));
 		return y`<label>
       ${this.tr(cr[this.kind])}
       ${this.multiple && this.kind === "device" ? y`<tdc-multi-select
