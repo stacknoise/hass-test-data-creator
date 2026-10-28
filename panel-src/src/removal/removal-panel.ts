@@ -1,0 +1,109 @@
+import { html, type TemplateResult } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { describeError } from '../common/api';
+import { TdcElement } from '../common/base';
+import type { RemovalPlan, RemovalTarget } from '../common/types';
+
+/** Shows what a removal would delete and removes it after the user confirms. */
+@customElement('tdc-removal-panel')
+export class RemovalPanel extends TdcElement {
+  @property() target: RemovalTarget = 'all';
+  @property() targetId = '';
+
+  @state() private plan?: RemovalPlan;
+  @state() private busy = false;
+  @state() private message = '';
+  @state() private error = '';
+
+  /** Ask the backend what the removal of the selected target would delete. */
+  private async showPlan(): Promise<void> {
+    this.message = '';
+    this.error = '';
+    try {
+      this.plan = await this.api.removalPlan(this.target, this.targetId || undefined);
+    } catch (err) {
+      this.plan = undefined;
+      this.error = describeError(err);
+    }
+  }
+
+  /** Run the removal that was shown. */
+  private async confirm(): Promise<void> {
+    this.busy = true;
+    try {
+      const result = await this.api.removalRun(this.target, this.targetId || undefined);
+      this.message = this.tr('removed', { count: result.devices + result.orphans });
+      this.plan = undefined;
+    } catch (err) {
+      this.error = describeError(err);
+    }
+    this.busy = false;
+  }
+
+  /** Render the list of what will be removed. */
+  private renderPlan(plan: RemovalPlan): TemplateResult {
+    const total = plan.devices.length + plan.orphans.length;
+    if (total === 0 && plan.runs.length === 0) return html`<p>${this.tr('planNothing')}</p>`;
+    return html`<ul>
+        <li>${this.tr('planDevices', { count: plan.devices.length })}</li>
+        ${
+          plan.orphans.length
+            ? html`<li>${this.tr('planOrphans', { count: plan.orphans.length })}</li>`
+            : ''
+        }
+        ${
+          plan.areas.length
+            ? html`<li>${this.tr('planAreas', { names: plan.areas.join(', ') })}</li>`
+            : ''
+        }
+      </ul>
+      <p>
+        <small
+          >${plan.devices
+            .slice(0, 20)
+            .map((d) => d.name)
+            .join(', ')}${plan.devices.length > 20 ? ' …' : ''}</small
+        >
+      </p>
+      <button class="primary" ?disabled=${this.busy} @click=${() => void this.confirm()}>
+        ${this.tr('confirmRemove')}
+      </button>`;
+  }
+
+  /** Render the element. */
+  override render(): TemplateResult {
+    return html`
+      <div class="row">
+        <label style="flex: 0 0 280px"
+          >${this.tr('target')}
+          <select
+            @change=${(e: Event) => {
+              this.target = (e.target as HTMLSelectElement).value as RemovalTarget;
+              this.plan = undefined;
+            }}
+          >
+            <option value="all" ?selected=${this.target === 'all'}>${this.tr('targetAll')}</option>
+            <option value="device" ?selected=${this.target === 'device'}>
+              ${this.tr('targetDevice')}
+            </option>
+            <option value="run" ?selected=${this.target === 'run'}>${this.tr('targetRun')}</option>
+          </select>
+        </label>
+        ${
+          this.target === 'all'
+            ? ''
+            : html`<label style="flex: 1 1 260px"
+                >${this.tr('targetId')}
+                <input
+                  .value=${this.targetId}
+                  @input=${(e: Event) => (this.targetId = (e.target as HTMLInputElement).value)}
+                />
+              </label>`
+        }
+        <button @click=${() => void this.showPlan()}>${this.tr('showPlan')}</button>
+      </div>
+      ${this.plan ? this.renderPlan(this.plan) : ''}
+      <p>${this.message}<span class="error">${this.error}</span></p>
+    `;
+  }
+}

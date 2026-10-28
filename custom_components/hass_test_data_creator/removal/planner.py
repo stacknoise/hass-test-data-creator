@@ -1,0 +1,105 @@
+"""Plans a removal: what would be deleted (concept 10.2)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
+
+from ..const import DOMAIN
+from ..core.errors import ErrorCode, ScheduleError
+from ..model.models import DeviceDef
+from ..store.store import TdcStore
+
+TARGET_ALL = "all"
+TARGET_DEVICE = "device"
+TARGET_RUN = "run"
+TARGETS = (TARGET_ALL, TARGET_DEVICE, TARGET_RUN)
+
+
+@dataclass
+class RemovalPlan:
+    """What a removal would delete."""
+
+    target: str
+    devices: list[DeviceDef] = field(default_factory=list)
+    orphans: list[dict[str, str]] = field(default_factory=list)
+    runs: list[str] = field(default_factory=list)
+    areas: list[str] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the plan as the panel shows it before the user confirms."""
+        return {
+            "target": self.target,
+            "devices": [{"id": item.id, "name": item.name} for item in self.devices],
+            "orphans": self.orphans,
+            "runs": self.runs,
+            "areas": self.areas,
+        }
+
+
+class RemovalPlanner:
+    """Builds the plan for a target from the store and the registry markers."""
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, store: TdcStore) -> None:
+        """Keep the instance, the config entry and the store."""
+        self._hass = hass
+        self._entry = entry
+        self._store = store
+
+    def plan(self, target: str, target_id: str | None) -> RemovalPlan:
+        """Return the plan to remove `target` (`all`, `device` or `run`) with `target_id`."""
+        plan = RemovalPlan(target)
+        if target == TARGET_ALL:
+            plan.devices = self._store.devices()
+            plan.orphans = self._orphans({item.id for item in plan.devices})
+            plan.runs = [run.id for run in self._store.runs()]
+        elif target == TARGET_RUN:
+            run = next((item for item in self._store.runs() if item.id == target_id), None)
+            if run is None:
+                raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+            plan.runs = [run.id]
+            plan.devices = [
+                device for device in self._store.devices() if device.id in run.device_ids
+            ]
+        else:
+            device = self._store.device(target_id or "")
+            if device is None:
+                raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+            plan.devices = [device]
+        plan.areas = self._empty_areas(
+            {item.id for item in plan.devices} | {item["identifier"] for item in plan.orphans}
+        )
+        return plan
+
+    def _orphans(self, known: set[str]) -> list[dict[str, str]]:
+        """Return registry devices of this entry that the store does not know (damaged store)."""
+        registry = dr.async_get(self._hass)
+        found: list[dict[str, str]] = []
+        for entry in dr.async_entries_for_config_entry(registry, self._entry.entry_id):
+            identifier = next((item[1] for item in entry.identifiers if item[0] == DOMAIN), None)
+            if identifier is not None and identifier not in known:
+                found.append({"id": entry.id, "name": entry.name or "", "identifier": identifier})
+        return found
+
+    def _empty_areas(self, removed: set[str]) -> list[str]:
+        """Return the names of created areas that would be empty after removing `removed`."""
+        areas = ar.async_get(self._hass)
+        devices = dr.async_get(self._hass)
+        entities = er.async_get(self._hass)
+        names: list[str] = []
+        for area_id in self._store.created_areas:
+            area = areas.async_get_area(area_id)
+            if area is None:
+                continue
+            others = [
+                item
+                for item in dr.async_entries_for_area(devices, area_id)
+                if not any(identifier in removed for _, identifier in item.identifiers)
+            ]
+            if not others and not er.async_entries_for_area(entities, area_id):
+                names.append(area.name)
+        return names

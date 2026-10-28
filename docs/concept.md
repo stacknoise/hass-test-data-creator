@@ -75,8 +75,9 @@ custom_components/hass_test_data_creator/
   core/        errors.py, error_factory.py, response_factory.py, command.py, runtime.py, ids.py
   model/       device, entity, group, schedule, signal spec dataclasses; marker handling
   store/       persistent storage, schema version, migrations
-  templates/   template loader, TemplateFactory, bundled *.yaml
-  engine/      signals.py, signal_factory.py, rng.py, tick.py
+  templates/   template loader, TemplateFactory, DeviceFactory, bundled *.yaml
+  devices/     DevicesManager (creation jobs in chunks), request schema of a job
+  engine/      signals.py (pure functions and the hash, no Home Assistant import), signal_factory.py, tick.py
   scheduler/   triggers.py (TriggerFactory), actions.py (ActionFactory), planner.py, runner.py
   faults/      FaultFactory and the fault kinds
   outputs/     adapter.py (OutputAdapterFactory), native/, mqtt_discovery/, z2m/
@@ -97,7 +98,7 @@ dev/           docker-compose setup with Home Assistant and Mosquitto
 
 ### 4.1 Objects
 
-- **Device**: `id` (ULID), `name`, `template` (id or `custom`), `area`, `output` (`native`, `mqtt`, `z2m`), `run_id`, `seed`, `created_at`, `entities[]`, `group_ids[]`.
+- **Device**: `id` (time-ordered hex id), `name`, `template` (id or `custom`), `area`, `output` (`native`, `mqtt`, `z2m`), `run_id`, `seed`, `created_at`, `entities[]`, `group_ids[]`.
 - **Entity definition**: `key`, `platform`, `name`, `device_class`, `unit`, `state_class`, `attributes`, `signal` (sensors) or `states` (discrete), `commands` (switches, lights).
 - **Signal spec**: `shape`, `min`, `max`, `period`, `interval`, `noise`, `spikes`, `decimals`, `phase`. Parameters of one shape are validated by the shape (5.2).
 - **Group**: `id`, `name`, `members[]`. Z2M groups and native HA groups are created from it (7.4).
@@ -137,7 +138,7 @@ Everything the integration creates is marked, so that nothing has to be searched
 | Area | id listed in `created_areas` of the store (only areas the integration made itself) |
 | Statistics | statistic ids listed in `created_statistics` |
 | MQTT topics | base topic of the integration plus a list of all published topics (`published_topics`) |
-| Label | HA label "test data" on devices and entities |
+| Label | HA label "test data" on devices (entities follow in a later version) |
 
 ## 5. Signal engine
 
@@ -152,7 +153,8 @@ Everything the integration creates is marked, so that nothing has to be searched
 | `constant`, `sine`, `saw`, `square`, `triangle` | periodic, scaled to min..max | v0.1 |
 | `noise`, `random_walk` | hash noise, smoothed noise | v0.1 |
 | `household_load`, `pv_day` | daily profiles with small variation | v0.2 |
-| `steps`, `counter`, `discharge` | stairs, monotonic counter (for `total_increasing`), battery discharge | v0.2 |
+| `counter` | monotonic counter for `total_increasing` sensors (energy) | v0.1 |
+| `steps`, `discharge` | stairs, battery discharge | v0.2 |
 | `csv` | replay of a file, looped | v0.4 |
 | `enum`, `state_machine` | discrete values with weights; transitions with durations | v0.2 |
 
@@ -269,7 +271,7 @@ The config flow requires the confirmation "this is a test instance". The panel s
 
 ### 10.5 Other rules
 
-- Test devices carry the label "test data" so they can be filtered in Home Assistant.
+- Test devices carry the label "test data" so they can be filtered in Home Assistant. Device numbers (`{n}`, `{nn}`) count per template, so a second job continues where the first one ended.
 - Option "do not record" excludes the entities from the recorder for load tests that should not fill the database.
 
 ## 11. Tests

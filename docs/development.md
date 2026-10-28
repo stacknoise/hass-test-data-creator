@@ -92,7 +92,9 @@ panel ──WebSocket──▶ HA websocket_api ──▶ command wrapper (core/
 
    ```python
    @tdc_command("hass_test_data_creator/removal/plan")
-   async def ws_removal_plan(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]:
+   async def ws_removal_plan(
+       hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+   ) -> dict[str, Any]:
        """Return what a removal of the given target would delete."""
        return plan_removal(get_data(hass), RemovalTarget.from_request(msg))
    ```

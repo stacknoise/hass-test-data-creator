@@ -1,0 +1,15 @@
+id: plug_metering
+name: Plug with metering
+model: Plug (metering)
+entities:
+  - { key: state, platform: switch, name: Switch }
+  - { key: power, platform: sensor, name: Power, device_class: power, unit: W, state_class: measurement,
+      signal: { shape: random_walk, min: 0, max: 2300, period_s: 600, noise: 0.02, decimals: 1 } }
+  - { key: energy, platform: sensor, name: Energy, device_class: energy, unit: kWh, state_class: total_increasing,
+      signal: { shape: counter, min: 0, rate_per_hour: 0.35, decimals: 3 } }
+  - { key: voltage, platform: sensor, name: Voltage, device_class: voltage, unit: V, state_class: measurement,
+      signal: { shape: sine, min: 228, max: 234, period_s: 7200, noise: 0.05, decimals: 1 } }
+  - { key: current, platform: sensor, name: Current, device_class: current, unit: A, state_class: measurement,
+      signal: { shape: random_walk, min: 0, max: 10, period_s: 600, decimals: 2 } }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

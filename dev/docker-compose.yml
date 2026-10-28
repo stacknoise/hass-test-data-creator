@@ -1,0 +1,19 @@
+# Manual test setup: Home Assistant with the integration mounted, plus Mosquitto.
+# Start with: docker compose -f dev/docker-compose.yml up
+# Open http://localhost:8123, finish onboarding, then add the "HASS Test Data Creator" integration.
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    ports:
+      - "8123:8123"
+    volumes:
+      - ./config:/config
+      - ../custom_components/hass_test_data_creator:/config/custom_components/hass_test_data_creator:ro
+    restart: unless-stopped
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped

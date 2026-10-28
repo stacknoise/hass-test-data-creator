@@ -1,0 +1,15 @@
+{
+  "domain": "hass_test_data_creator",
+  "name": "HASS Test Data Creator",
+  "after_dependencies": ["mqtt"],
+  "codeowners": ["@stacknoise"],
+  "config_flow": true,
+  "dependencies": ["http", "frontend", "panel_custom"],
+  "documentation": "https://github.com/stacknoise/hass-test-data-creator",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/stacknoise/hass-test-data-creator/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

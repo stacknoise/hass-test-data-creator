@@ -1,0 +1,9 @@
+id: contact_sensor
+name: Contact sensor
+model: Contact sensor
+entities:
+  - { key: contact, platform: binary_sensor, name: Contact, device_class: door }
+  - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 20, max: 100, period_s: 86400, decimals: 0 } }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

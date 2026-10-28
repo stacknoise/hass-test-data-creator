@@ -1,0 +1,14 @@
+id: climate_sensor
+name: Climate sensor
+model: Climate sensor
+entities:
+  - { key: temperature, platform: sensor, name: Temperature, device_class: temperature, unit: "°C", state_class: measurement,
+      signal: { shape: sine, min: 18, max: 26, period_s: 86400, noise: 0.02, decimals: 1 } }
+  - { key: humidity, platform: sensor, name: Humidity, device_class: humidity, unit: "%", state_class: measurement,
+      signal: { shape: random_walk, min: 35, max: 70, period_s: 3600, decimals: 1 } }
+  - { key: pressure, platform: sensor, name: Pressure, device_class: pressure, unit: hPa, state_class: measurement,
+      signal: { shape: sine, min: 990, max: 1030, period_s: 172800, decimals: 1 } }
+  - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 20, max: 100, period_s: 86400, decimals: 0 } }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

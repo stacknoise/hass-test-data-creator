@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HASS Test Data Creator",
+        "description": "This integration creates test devices and test data. Use it only in a test environment, never next to real devices.",
+        "data": {
+          "is_test_environment": "This is a test environment",
+          "seed": "Seed",
+          "tick_seconds": "Tick interval (seconds)"
+        },
+        "data_description": {
+          "is_test_environment": "Confirm that this Home Assistant instance is used for tests only",
+          "seed": "The same seed creates the same values and events",
+          "tick_seconds": "How often the values of all sensors are updated"
+        }
+      }
+    },
+    "error": {
+      "not_test_environment": "Confirm that this is a test environment. The integration must not run next to real devices"
+    },
+    "abort": {
+      "single_instance_allowed": "Already configured. Only one instance is possible"
+    }
+  },
+  "exceptions": {
+    "cfg_not_test_env": {
+      "message": "Confirm that this is a test environment"
+    },
+    "cfg_not_loaded": {
+      "message": "HASS Test Data Creator is not loaded"
+    },
+    "tpl_not_found": {
+      "message": "The template does not exist"
+    },
+    "tpl_invalid": {
+      "message": "A template or entity definition is invalid: {file}"
+    },
+    "tpl_unknown_shape": {
+      "message": "The signal shape is unknown"
+    },
+    "gen_limit": {
+      "message": "Too many devices. The limit is 2000 devices"
+    },
+    "gen_batch": {
+      "message": "Too many devices in one job. The limit is 500"
+    },
+    "gen_name_pattern": {
+      "message": "The name pattern is invalid. Allowed placeholders are n, nn and template in curly braces"
+    },
+    "gen_entity_limit": {
+      "message": "A device can have at most 40 entities"
+    },
+    "gen_tick_slow": {
+      "message": "The update took too long. Raise the tick interval or create fewer entities"
+    },
+    "sig_unknown_shape": {
+      "message": "The signal shape is unknown"
+    },
+    "sig_invalid_range": {
+      "message": "The minimum must not be greater than the maximum"
+    },
+    "sch_unknown_action": {
+      "message": "This action is not available for this entity"
+    },
+    "sch_target_not_found": {
+      "message": "The device or entity was not found"
+    },
+    "out_unsupported": {
+      "message": "This output is not available in this version"
+    },
+    "rem_failed": {
+      "message": "The removal was interrupted. Run it again to finish it"
+    },
+    "ws_invalid_request": {
+      "message": "The request is invalid"
+    },
+    "int_unexpected": {
+      "message": "An unexpected error occurred. See the Home Assistant log"
+    }
+  },
+  "services": {
+    "create_devices": {
+      "name": "Create devices",
+      "description": "Creates test devices from a template.",
+      "fields": {
+        "template": {
+          "name": "Template",
+          "description": "Id of a template, or custom together with entities."
+        },
+        "count": {
+          "name": "Count",
+          "description": "Number of devices, at most 500 per call."
+        },
+        "name_pattern": {
+          "name": "Name pattern",
+          "description": "Name with the placeholders n, nn and template in curly braces."
+        },
+        "areas": {
+          "name": "Areas",
+          "description": "Area names; missing areas are created."
+        },
+        "area_mode": {
+          "name": "Area distribution",
+          "description": "Hand out the areas in turn or pick one at random."
+        },
+        "seed": {
+          "name": "Seed",
+          "description": "Seed of the values; defaults to the seed of the integration."
+        },
+        "label": {
+          "name": "Label",
+          "description": "Name of the creation run."
+        },
+        "output": {
+          "name": "Output",
+          "description": "Where the devices appear."
+        },
+        "entities": {
+          "name": "Entities",
+          "description": "Entity definitions for a custom device."
+        }
+      }
+    },
+    "fire_event": {
+      "name": "Fire event",
+      "description": "Runs an action on one entity of a test device.",
+      "fields": {
+        "device": {
+          "name": "Device",
+          "description": "Id or name of the test device."
+        },
+        "entity": {
+          "name": "Entity key",
+          "description": "Key of the entity inside the device."
+        },
+        "action": {
+          "name": "Action",
+          "description": "For example turn_on, toggle, set_on, pulse or press."
+        },
+        "params": {
+          "name": "Parameters",
+          "description": "Extra parameters such as duration_s or event_type."
+        }
+      }
+    },
+    "remove": {
+      "name": "Remove",
+      "description": "Removes one test device or one creation run.",
+      "fields": {
+        "target": {
+          "name": "Target",
+          "description": "Device or run."
+        },
+        "target_id": {
+          "name": "Id",
+          "description": "Id of the device or the run."
+        }
+      }
+    },
+    "remove_all": {
+      "name": "Remove all",
+      "description": "Removes everything the integration created."
+    }
+  }
+}

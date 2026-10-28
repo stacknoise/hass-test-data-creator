@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HASS Test Data Creator",
+        "description": "Diese Integration erzeugt Testgeräte und Testdaten. Nutze sie nur in einer Testumgebung, nie neben echten Geräten.",
+        "data": {
+          "is_test_environment": "Das ist eine Testumgebung",
+          "seed": "Seed",
+          "tick_seconds": "Tick-Intervall (Sekunden)"
+        },
+        "data_description": {
+          "is_test_environment": "Bestätige, dass diese Home-Assistant-Instanz nur für Tests genutzt wird",
+          "seed": "Derselbe Seed erzeugt dieselben Werte und Ereignisse",
+          "tick_seconds": "Wie oft die Werte aller Sensoren aktualisiert werden"
+        }
+      }
+    },
+    "error": {
+      "not_test_environment": "Bestätige, dass das eine Testumgebung ist. Die Integration darf nicht neben echten Geräten laufen"
+    },
+    "abort": {
+      "single_instance_allowed": "Bereits eingerichtet. Es ist nur eine Instanz möglich"
+    }
+  },
+  "exceptions": {
+    "cfg_not_test_env": {
+      "message": "Bestätige, dass das eine Testumgebung ist"
+    },
+    "cfg_not_loaded": {
+      "message": "HASS Test Data Creator ist nicht geladen"
+    },
+    "tpl_not_found": {
+      "message": "Die Vorlage gibt es nicht"
+    },
+    "tpl_invalid": {
+      "message": "Eine Vorlage oder Entitätsdefinition ist ungültig: {file}"
+    },
+    "tpl_unknown_shape": {
+      "message": "Die Kurvenform ist unbekannt"
+    },
+    "gen_limit": {
+      "message": "Zu viele Geräte. Das Limit sind 2000 Geräte"
+    },
+    "gen_batch": {
+      "message": "Zu viele Geräte in einem Auftrag. Das Limit sind 500"
+    },
+    "gen_name_pattern": {
+      "message": "Das Namensmuster ist ungültig. Erlaubt sind n, nn und template in geschweiften Klammern"
+    },
+    "gen_entity_limit": {
+      "message": "Ein Gerät kann höchstens 40 Entitäten haben"
+    },
+    "gen_tick_slow": {
+      "message": "Die Aktualisierung hat zu lange gedauert. Erhöhe das Tick-Intervall oder erzeuge weniger Entitäten"
+    },
+    "sig_unknown_shape": {
+      "message": "Die Kurvenform ist unbekannt"
+    },
+    "sig_invalid_range": {
+      "message": "Das Minimum darf nicht größer als das Maximum sein"
+    },
+    "sch_unknown_action": {
+      "message": "Diese Aktion gibt es für diese Entität nicht"
+    },
+    "sch_target_not_found": {
+      "message": "Das Gerät oder die Entität wurde nicht gefunden"
+    },
+    "out_unsupported": {
+      "message": "Dieser Ausgang ist in dieser Version nicht verfügbar"
+    },
+    "rem_failed": {
+      "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"
+    },
+    "ws_invalid_request": {
+      "message": "Die Anfrage ist ungültig"
+    },
+    "int_unexpected": {
+      "message": "Ein unerwarteter Fehler ist aufgetreten. Details stehen im Home-Assistant-Protokoll"
+    }
+  },
+  "services": {
+    "create_devices": {
+      "name": "Geräte erstellen",
+      "description": "Erstellt Testgeräte aus einer Vorlage.",
+      "fields": {
+        "template": {
+          "name": "Vorlage",
+          "description": "Id einer Vorlage, oder custom zusammen mit Entitäten."
+        },
+        "count": {
+          "name": "Anzahl",
+          "description": "Anzahl der Geräte, höchstens 500 pro Aufruf."
+        },
+        "name_pattern": {
+          "name": "Namensmuster",
+          "description": "Name mit den Platzhaltern n, nn und template in geschweiften Klammern."
+        },
+        "areas": {
+          "name": "Bereiche",
+          "description": "Namen der Bereiche; fehlende Bereiche werden angelegt."
+        },
+        "area_mode": {
+          "name": "Verteilung",
+          "description": "Bereiche der Reihe nach vergeben oder zufällig wählen."
+        },
+        "seed": {
+          "name": "Seed",
+          "description": "Seed der Werte; Standard ist der Seed der Integration."
+        },
+        "label": {
+          "name": "Bezeichnung",
+          "description": "Name des Erstellungslaufs."
+        },
+        "output": {
+          "name": "Ausgang",
+          "description": "Wo die Geräte erscheinen."
+        },
+        "entities": {
+          "name": "Entitäten",
+          "description": "Entitätsdefinitionen für ein eigenes Gerät."
+        }
+      }
+    },
+    "fire_event": {
+      "name": "Ereignis auslösen",
+      "description": "Führt eine Aktion auf einer Entität eines Testgeräts aus.",
+      "fields": {
+        "device": {
+          "name": "Gerät",
+          "description": "Id oder Name des Testgeräts."
+        },
+        "entity": {
+          "name": "Entitätsschlüssel",
+          "description": "Schlüssel der Entität im Gerät."
+        },
+        "action": {
+          "name": "Aktion",
+          "description": "Zum Beispiel turn_on, toggle, set_on, pulse oder press."
+        },
+        "params": {
+          "name": "Parameter",
+          "description": "Zusätzliche Parameter wie duration_s oder event_type."
+        }
+      }
+    },
+    "remove": {
+      "name": "Entfernen",
+      "description": "Entfernt ein Testgerät oder einen Erstellungslauf.",
+      "fields": {
+        "target": {
+          "name": "Ziel",
+          "description": "Gerät oder Lauf."
+        },
+        "target_id": {
+          "name": "Id",
+          "description": "Id des Geräts oder des Laufs."
+        }
+      }
+    },
+    "remove_all": {
+      "name": "Alles entfernen",
+      "description": "Entfernt alles, was die Integration erzeugt hat."
+    }
+  }
+}

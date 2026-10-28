@@ -1,0 +1,7 @@
+# Minimal configuration of the test instance.
+default_config:
+
+logger:
+  default: warning
+  logs:
+    custom_components.hass_test_data_creator: debug
