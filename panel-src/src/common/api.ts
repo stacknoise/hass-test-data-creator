@@ -3,9 +3,12 @@ import type {
   DevicePage,
   Hass,
   Info,
+  PlannedRun,
   RemovalPlan,
   RemovalResult,
   RemovalTarget,
+  ScheduleInfo,
+  ScheduleRequest,
   TemplateInfo,
 } from './types';
 
@@ -49,6 +52,31 @@ export class TdcApi {
   /** Remove the target. */
   removalRun(target: RemovalTarget, targetId?: string): Promise<RemovalResult> {
     return this.call('removal/run', { target, target_id: targetId });
+  }
+
+  /** Return all schedules. */
+  schedules(): Promise<ScheduleInfo[]> {
+    return this.call('schedules/list');
+  }
+
+  /** Add a schedule. */
+  addSchedule(request: ScheduleRequest): Promise<ScheduleInfo> {
+    return this.call('schedules/add', { ...request });
+  }
+
+  /** Delete a schedule. */
+  removeSchedule(scheduleId: string): Promise<Record<string, never>> {
+    return this.call('schedules/remove', { schedule_id: scheduleId });
+  }
+
+  /** Switch a schedule on or off. */
+  enableSchedule(scheduleId: string, enabled: boolean): Promise<ScheduleInfo> {
+    return this.call('schedules/enable', { schedule_id: scheduleId, enabled });
+  }
+
+  /** Return the planned runs of the next hours. */
+  schedulePreview(hours: number): Promise<PlannedRun[]> {
+    return this.call('schedules/preview', { hours });
   }
 
   /** Send a command with its defined fields to the backend. */

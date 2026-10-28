@@ -99,6 +99,7 @@ export interface RemovalPlan {
   orphans: { id: string; name: string }[];
   runs: string[];
   areas: string[];
+  schedules: string[];
 }
 
 /** What a removal deleted. */
@@ -110,3 +111,49 @@ export interface RemovalResult {
 
 /** The kinds of removal target. */
 export type RemovalTarget = 'all' | 'run' | 'device';
+
+/** What a schedule runs on: exactly one of the keys is set. */
+export type ScheduleTarget =
+  { device: string } | { template: string } | { run: string } | { all: true };
+
+/** The trigger of a schedule, as the backend validates it. */
+export type Trigger =
+  | { type: 'times'; times: string[]; weekdays?: number[] }
+  | { type: 'interval'; every_s: number; start: string; end: string }
+  | { type: 'once'; at: string }
+  | { type: 'random_window'; count: number; start: string; end: string }
+  | { type: 'poisson'; per_day: number };
+
+/** The trigger types the panel can create. */
+export type TriggerType = Trigger['type'];
+
+/** A schedule as listed by the backend. */
+export interface ScheduleInfo {
+  id: string;
+  name: string;
+  target: ScheduleTarget;
+  entity: string;
+  action: string;
+  trigger: Trigger;
+  seed: string;
+  created_at: number;
+  params: Record<string, unknown>;
+  enabled: boolean;
+}
+
+/** The inputs of a new schedule. */
+export interface ScheduleRequest {
+  name: string;
+  target: ScheduleTarget;
+  entity: string;
+  action: string;
+  trigger: Trigger;
+  seed?: string;
+}
+
+/** One planned run of a schedule. */
+export interface PlannedRun {
+  when: string;
+  schedule_id: string;
+  name: string;
+}

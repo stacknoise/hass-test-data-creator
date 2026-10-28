@@ -8,9 +8,9 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Trigger actions by hand: switch, press a button, set or pulse a binary sensor.
 - Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
 - Everything that was generated can be removed again, completely, and nothing else is touched.
-- Sidebar panel in German and English; services for scripts.
+- Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours); services for scripts.
 
-Planned: a schedule tab in the panel, faults, more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
+Planned: faults, more curve shapes, MQTT and Zigbee2MQTT emulation with groups, statistics backfill. See [docs/concept.md](docs/concept.md) chapter 1.4.
 
 ## Status
 
