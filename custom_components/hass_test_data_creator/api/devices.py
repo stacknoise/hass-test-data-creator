@@ -9,7 +9,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 import voluptuous as vol
 
-from ..const import CONF_SEED, DEFAULT_PAGE_SIZE, DEFAULT_SEED, DOMAIN, MAX_PAGE_SIZE
+from ..const import (
+    CONF_SEED,
+    DEFAULT_PAGE_SIZE,
+    DEFAULT_SEED,
+    DOMAIN,
+    MAX_AREA_NAME,
+    MAX_PAGE_SIZE,
+)
 from ..core.command import tdc_command
 from ..core.runtime import get_data
 from ..devices.entity_ids import entity_id_of
@@ -82,6 +89,22 @@ async def ws_devices_create(
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
     run = await data.manager.async_create(job_from_request(msg, seed))
     return {"run_id": run.id, "label": run.label, "devices": len(run.device_ids)}
+
+
+@tdc_command(
+    f"{DOMAIN}/devices/update",
+    {
+        vol.Required("device"): str,
+        vol.Required("area"): vol.Any(None, vol.All(str, vol.Length(max=MAX_AREA_NAME))),
+    },
+)
+async def ws_devices_update(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Put a device into another area, or into none, and return its new area."""
+    area = (msg["area"] or "").strip() or None
+    device = await get_data(hass).manager.async_set_area(msg["device"], area)
+    return {"id": device.id, "area": device.area}
 
 
 @tdc_command(

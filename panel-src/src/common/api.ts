@@ -44,8 +44,18 @@ export class TdcApi {
   }
 
   /** Run an action on one entity of a device. */
-  fire(device: string, entity: string, action: string): Promise<Record<string, never>> {
-    return this.call('devices/fire', { device, entity, action });
+  fire(
+    device: string,
+    entity: string,
+    action: string,
+    params?: Record<string, unknown>,
+  ): Promise<Record<string, never>> {
+    return this.call('devices/fire', { device, entity, action, params });
+  }
+
+  /** Put a device into an area (created if new), or into none if `area` is null. */
+  updateDevice(device: string, area: string | null): Promise<{ id: string; area: string | null }> {
+    return this.call('devices/update', { device, area });
   }
 
   /** Return what a removal of the target would delete. */

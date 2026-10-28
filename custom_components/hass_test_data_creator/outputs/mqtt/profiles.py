@@ -30,6 +30,11 @@ SET = "set"
 Send = Callable[[str, str], None]
 
 
+def mqtt_device_identifier(device_id: str) -> str:
+    """Return the identifier of the registry device that MQTT discovery creates for `device_id`."""
+    return f"tdc_{device_id}"
+
+
 def mqtt_unique_id(device_id: str, key: str) -> str:
     """Return the unique id of the MQTT entity of `key` of a device."""
     return f"tdc_{device_id}_{key}"
@@ -63,7 +68,7 @@ class MqttProfile(ABC):
             "payload_available": ONLINE,
             "payload_not_available": OFFLINE,
             "device": {
-                "identifiers": [f"tdc_{device.id}"],
+                "identifiers": [mqtt_device_identifier(device.id)],
                 "name": device.name,
                 "manufacturer": MANUFACTURER,
                 "model": device.model,

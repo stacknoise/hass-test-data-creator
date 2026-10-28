@@ -1,8 +1,11 @@
-import { html, type TemplateResult } from 'lit';
+import { css, html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
+import { repeat } from 'lit/directives/repeat.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
-import type { DeviceInfo, EntityState } from '../common/types';
+import type { DeviceInfo, EntityState, Info } from '../common/types';
+import './device-detail';
+import { knownAreas } from './helpers';
 
 const PAGE_SIZE = 200;
 const REFRESH_MS = 10_000;
@@ -17,16 +20,31 @@ const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 
 /** Lists the generated devices with live values and manual actions. */
 @customElement('tdc-device-list')
 export class DeviceList extends TdcElement {
+  static override styles = [
+    TdcElement.styles,
+    css`
+      tr.device {
+        cursor: pointer;
+      }
+      tr.device:hover {
+        background: var(--secondary-background-color);
+      }
+    `,
+  ];
+
   @state() private devices: DeviceInfo[] = [];
   @state() private total = 0;
   @state() private loaded = false;
   @state() private error = '';
+  @state() private info?: Info;
+  @state() private expanded = new Set<string>();
 
   private timer?: number;
 
   /** Load the data when the element is added to the page. */
   override connectedCallback(): void {
     super.connectedCallback();
+    void this.loadInfo();
     void this.refresh();
     this.timer = window.setInterval(() => void this.refresh(), REFRESH_MS);
   }
@@ -35,6 +53,22 @@ export class DeviceList extends TdcElement {
   override disconnectedCallback(): void {
     window.clearInterval(this.timer);
     super.disconnectedCallback();
+  }
+
+  /** Load the actions that the detail view offers. */
+  private async loadInfo(): Promise<void> {
+    try {
+      this.info = await this.api.info();
+    } catch (err) {
+      this.error = describeError(err);
+    }
+  }
+
+  /** Open or close the details of a device. */
+  private toggle(id: string): void {
+    const next = new Set(this.expanded);
+    if (!next.delete(id)) next.add(id);
+    this.expanded = next;
   }
 
   /** Reload the devices that are shown now, at least the first page. */
@@ -76,26 +110,52 @@ export class DeviceList extends TdcElement {
   /** Render the table row of one device. */
   private renderRow(device: DeviceInfo): TemplateResult {
     const actionable = device.entities.filter((e) => e.platform in ACTION_BY_PLATFORM);
-    return html`<tr>
-      <td>${device.name}</td>
-      <td>${device.model}</td>
-      <td>${device.area ?? '–'}</td>
-      <td>${device.output}</td>
-      <td><small>${this.values(device)}</small></td>
-      <td class="row">
-        ${actionable.map(
-          (e) => html`<button @click=${() => void this.fire(device, e)}>${e.name}</button>`,
-        )}
-        <button
-          @click=${() =>
-            this.dispatchEvent(
-              new CustomEvent('tdc-remove', { detail: { target: 'device', id: device.id } }),
-            )}
-        >
-          ${this.tr('remove')}
-        </button>
-      </td>
-    </tr>`;
+    const open = this.expanded.has(device.id);
+    return html`<tr class="device" @click=${() => this.toggle(device.id)}>
+        <td>${open ? '▾' : '▸'} ${device.name}</td>
+        <td>${device.model}</td>
+        <td>${device.area ?? '–'}</td>
+        <td>${device.output}</td>
+        <td><small>${this.values(device)}</small></td>
+        <td class="row">
+          ${actionable.map(
+            (e) =>
+              html`<button
+                @click=${(event: Event) => {
+                  event.stopPropagation();
+                  void this.fire(device, e);
+                }}
+              >
+                ${e.name}
+              </button>`,
+          )}
+          <button
+            @click=${(event: Event) => {
+              event.stopPropagation();
+              this.dispatchEvent(
+                new CustomEvent('tdc-remove', { detail: { target: 'device', id: device.id } }),
+              );
+            }}
+          >
+            ${this.tr('remove')}
+          </button>
+        </td>
+      </tr>
+      ${
+        open
+          ? html`<tr>
+              <td colspan="6">
+                <tdc-device-detail
+                  .hass=${this.hass}
+                  .device=${device}
+                  .actions=${this.info?.actions ?? {}}
+                  .areas=${knownAreas(this.hass.areas, this.devices)}
+                  @tdc-changed=${() => void this.refresh()}
+                ></tdc-device-detail>
+              </td>
+            </tr>`
+          : ''
+      }`;
   }
 
   /** Render the element. */
@@ -118,7 +178,11 @@ export class DeviceList extends TdcElement {
                   </tr>
                 </thead>
                 <tbody>
-                  ${this.devices.map((d) => this.renderRow(d))}
+                  ${repeat(
+                    this.devices,
+                    (d) => d.id,
+                    (d) => this.renderRow(d),
+                  )}
                 </tbody>
               </table>
               <p class="row">

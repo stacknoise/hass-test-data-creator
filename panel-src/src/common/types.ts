@@ -1,6 +1,7 @@
 /** The part of Home Assistant's `hass` object that the panel uses. */
 export interface Hass {
   language: string;
+  areas?: Record<string, { name: string }>;
   callWS<T>(message: Record<string, unknown>): Promise<T>;
 }
 
