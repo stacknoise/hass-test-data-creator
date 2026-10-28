@@ -21,6 +21,7 @@ export class TdcPanel extends TdcElement {
   @state() private tab: Tab = 'devices';
   @state() private removeTarget: RemovalTarget = 'all';
   @state() private removeId = '';
+  @state() private lapse = 1;
 
   static override styles = [
     TdcElement.styles,
@@ -65,6 +66,16 @@ export class TdcPanel extends TdcElement {
     `,
   ];
 
+  /** Read the time lapse factor, so that the header can show it. */
+  override async connectedCallback(): Promise<void> {
+    super.connectedCallback();
+    try {
+      this.lapse = (await this.api.info()).time_lapse;
+    } catch {
+      this.lapse = 1;
+    }
+  }
+
   /** Switch to the removal tab with a preset target. */
   private startRemoval(event: CustomEvent<{ target: RemovalTarget; id: string }>): void {
     this.removeTarget = event.detail.target;
@@ -85,6 +96,11 @@ export class TdcPanel extends TdcElement {
       <header>
         <h2>${this.tr('title')}</h2>
         <span class="badge">${this.tr('badge')}</span>
+        ${
+          this.lapse > 1
+            ? html`<span class="badge">${this.tr('badgeLapse', { factor: this.lapse })}</span>`
+            : ''
+        }
       </header>
       <nav>
         ${this.renderTab('devices', this.tr('tabDevices'))}

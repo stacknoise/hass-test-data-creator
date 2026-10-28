@@ -18,16 +18,20 @@ from .const import (
     CONF_MQTT_BASE_TOPIC,
     CONF_SEED,
     CONF_TICK_SECONDS,
+    CONF_TIME_LAPSE,
     CONF_Z2M_BASE_TOPIC,
     CONF_Z2M_CONFIRM_DEFAULT,
     DEFAULT_MQTT_BASE_TOPIC,
     DEFAULT_SEED,
     DEFAULT_TICK_SECONDS,
+    DEFAULT_TIME_LAPSE,
     DEFAULT_Z2M_BASE_TOPIC,
     DOMAIN,
     MANUFACTURER,
     MAX_TICK_SECONDS,
+    MAX_TIME_LAPSE,
     MIN_TICK_SECONDS,
+    MIN_TIME_LAPSE,
 )
 
 ERROR_NOT_TEST_ENVIRONMENT = "not_test_environment"
@@ -78,12 +82,12 @@ class TestDataCreatorConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Return the options flow with the MQTT base topics."""
+        """Return the options flow with the MQTT base topics and the time lapse."""
         return TestDataCreatorOptionsFlow()
 
 
 class TestDataCreatorOptionsFlow(OptionsFlow):
-    """Sets the base topics of the MQTT outputs; the entry reloads after a change."""
+    """Sets the MQTT base topics and the time lapse; the entry reloads after a change."""
 
     __test__ = False
 
@@ -109,6 +113,9 @@ class TestDataCreatorOptionsFlow(OptionsFlow):
                 vol.Required(
                     CONF_Z2M_CONFIRM_DEFAULT, default=current.get(CONF_Z2M_CONFIRM_DEFAULT, False)
                 ): bool,
+                vol.Required(
+                    CONF_TIME_LAPSE, default=current.get(CONF_TIME_LAPSE, DEFAULT_TIME_LAPSE)
+                ): vol.All(vol.Coerce(float), vol.Range(min=MIN_TIME_LAPSE, max=MAX_TIME_LAPSE)),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

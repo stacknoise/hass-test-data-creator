@@ -19,8 +19,8 @@ Lists every module, class and function of the integration with signature, file a
 | `_valid_topic` | `def _valid_topic(topic: str) -> bool` | `custom_components/hass_test_data_creator/config_flow.py` | Whether `topic` can be a base topic: not empty, no wildcards, no slash at the ends. |
 | `TestDataCreatorConfigFlow` | `class TestDataCreatorConfigFlow(ConfigFlow)` | `custom_components/hass_test_data_creator/config_flow.py` | Asks once whether this is a test instance and for the seed and tick interval. |
 | `TestDataCreatorConfigFlow.async_step_user` | `async def async_step_user(self, user_input: dict[str, Any] \| None=None) -> ConfigFlowResult` | `custom_components/hass_test_data_creator/config_flow.py` | Create the entry if the user confirms that this is a test environment. |
-| `TestDataCreatorConfigFlow.async_get_options_flow` | `def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow` | `custom_components/hass_test_data_creator/config_flow.py` | Return the options flow with the MQTT base topics. |
-| `TestDataCreatorOptionsFlow` | `class TestDataCreatorOptionsFlow(OptionsFlow)` | `custom_components/hass_test_data_creator/config_flow.py` | Sets the base topics of the MQTT outputs; the entry reloads after a change. |
+| `TestDataCreatorConfigFlow.async_get_options_flow` | `def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow` | `custom_components/hass_test_data_creator/config_flow.py` | Return the options flow with the MQTT base topics and the time lapse. |
+| `TestDataCreatorOptionsFlow` | `class TestDataCreatorOptionsFlow(OptionsFlow)` | `custom_components/hass_test_data_creator/config_flow.py` | Sets the MQTT base topics and the time lapse; the entry reloads after a change. |
 | `TestDataCreatorOptionsFlow.async_step_init` | `async def async_step_init(self, user_input: dict[str, Any] \| None=None) -> ConfigFlowResult` | `custom_components/hass_test_data_creator/config_flow.py` | Check the topics and store them as options. |
 | `TestDataCreatorOptionsFlow._errors` | `def _errors(self, values: dict[str, Any]) -> dict[str, str]` | `custom_components/hass_test_data_creator/config_flow.py` | Return the error of the first wrong field. |
 | `hass_test_data_creator.const` | `module` | `custom_components/hass_test_data_creator/const.py` | Constants of the HASS Test Data Creator. |
@@ -167,11 +167,13 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.engine.behaviours` | `module` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Behaviours: the state and logic of one generated entity, independent of any output (concept 2). |
 | `Scheduler` | `class Scheduler(Protocol)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The clock and the timers of the output; the behaviours know nothing else about time. |
 | `Scheduler.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the signal time in seconds. |
+| `Scheduler.at` | `def at(self, moment: datetime) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the signal time in seconds that belongs to the real `moment`. |
 | `Scheduler.call_later` | `def call_later(self, delay_s: float, callback: Callable[[], None]) -> Cancel` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Run `callback` after `delay_s` seconds and return the function that cancels it. |
 | `_ignore` | `def _ignore() -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing; the default of the change callbacks. |
 | `_ignore_event` | `def _ignore_event(event_type: str) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing with an event; the default of the event callback. |
 | `Behaviour` | `class Behaviour` | `custom_components/hass_test_data_creator/engine/behaviours.py` | What every entity has: its place in a device, a fault and a callback for changes. |
 | `Behaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Keep the ids, the definition and the scheduler. |
+| `Behaviour.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the current signal time in seconds. |
 | `Behaviour.available` | `def available(self) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | False while a fault makes the entity unavailable. |
 | `Behaviour.fault_kind` | `def fault_kind(self) -> str \| None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The kind of the active fault, if there is one. |
 | `Behaviour.message_delay_s` | `def message_delay_s(self) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Seconds that the messages of this entity are held back (fault late). |
@@ -224,6 +226,11 @@ Lists every module, class and function of the integration with signature, file a
 | `ClimateBehaviour.set_target` | `def set_target(self, target: float) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the target temperature. |
 | `ClimateBehaviour.turn_on` | `def turn_on(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch to heat. |
 | `ClimateBehaviour.turn_off` | `def turn_off(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch to off. |
+| `hass_test_data_creator.engine.clock` | `module` | `custom_components/hass_test_data_creator/engine/clock.py` | The clock of the signals, with an optional time lapse (concept 5.1). |
+| `Clock` | `class Clock` | `custom_components/hass_test_data_creator/engine/clock.py` | Maps real moments to signal time; from its start on, signal time runs `factor` times faster. |
+| `Clock.__init__` | `def __init__(self, factor: float=1.0, start: datetime \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/clock.py` | Start the clock at `start` (default: now); up to then signal time equals real time. |
+| `Clock.at` | `def at(self, moment: datetime) -> float` | `custom_components/hass_test_data_creator/engine/clock.py` | Return the signal time in seconds that belongs to the real `moment`. |
+| `Clock.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/engine/clock.py` | Return the current signal time in seconds. |
 | `hass_test_data_creator.engine.signal_factory` | `module` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Factory that creates a signal per shape (concept 13.2). |
 | `Signal` | `class Signal` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | A configured signal that returns its value for a point in time. |
 | `Signal.__init__` | `def __init__(self, spec: SignalSpec) -> None` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Keep the validated spec. |
@@ -587,8 +594,9 @@ Lists every module, class and function of the integration with signature, file a
 | `EntityFactory.create` | `def create(self, device: DeviceDef, definition: EntityDef) -> TdcEntity` | `custom_components/hass_test_data_creator/platforms/factory.py` | Return the entity for `definition` of `device`. |
 | `hass_test_data_creator.platforms.scheduler` | `module` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | The clock and the timers of the native output (concept 7.2). |
 | `HassScheduler` | `class HassScheduler` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Gives the behaviours the signal time and timers of Home Assistant. |
-| `HassScheduler.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Keep the instance the timers run in. |
+| `HassScheduler.__init__` | `def __init__(self, hass: HomeAssistant, clock: Clock) -> None` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Keep the instance the timers run in and the clock of the signals. |
 | `HassScheduler.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Return the signal time in seconds. |
+| `HassScheduler.at` | `def at(self, moment: datetime) -> float` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Return the signal time in seconds that belongs to the real `moment`. |
 | `HassScheduler.call_later` | `def call_later(self, delay_s: float, callback: Callable[[], None]) -> Cancel` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Run `callback` after `delay_s` seconds and return the function that cancels it. |
 | `HassScheduler.call_later.fire` | `def fire(_now: datetime) -> None` | `custom_components/hass_test_data_creator/platforms/scheduler.py` | Run the callback on the event loop. |
 | `hass_test_data_creator.platforms.setup` | `module` | `custom_components/hass_test_data_creator/platforms/setup.py` | Common setup of the entity platforms (concept 7.2). |

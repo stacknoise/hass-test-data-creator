@@ -13,16 +13,19 @@ from ..audit.log import AuditLog
 from ..const import (
     CONF_MQTT_BASE_TOPIC,
     CONF_TICK_SECONDS,
+    CONF_TIME_LAPSE,
     CONF_Z2M_BASE_TOPIC,
     CONF_Z2M_CONFIRM_DEFAULT,
     DEFAULT_MQTT_BASE_TOPIC,
     DEFAULT_TICK_SECONDS,
+    DEFAULT_TIME_LAPSE,
     DEFAULT_Z2M_BASE_TOPIC,
     DOMAIN,
 )
 from ..devices.manager import DevicesManager
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import Live
+from ..engine.clock import Clock
 from ..engine.signal_factory import SignalFactory
 from ..engine.tick import Tick
 from ..faults.factory import FaultFactory
@@ -77,6 +80,7 @@ class TdcData:
     z2m_devices: Z2mDevices
     groups: GroupManager
     history: HistoryManager
+    clock: Clock
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)
@@ -91,7 +95,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     registry = TemplateRegistry(template_factory)
     mqtt = MqttClient(hass, store)
     signals = SignalFactory()
-    behaviours = BehaviourFactory(signals, HassScheduler(hass))
+    clock = Clock(entry.options.get(CONF_TIME_LAPSE, DEFAULT_TIME_LAPSE))
+    behaviours = BehaviourFactory(signals, HassScheduler(hass, clock))
     parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
     mqtt_devices = MqttDevices(
         parts,
@@ -165,6 +170,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         z2m_devices=z2m_devices,
         groups=groups,
         history=history,
+        clock=clock,
         live=live,
     )
 

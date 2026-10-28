@@ -26,13 +26,15 @@
   "options": {
     "step": {
       "init": {
-        "title": "MQTT base topics",
+        "title": "Options",
         "data": {
           "mqtt_base_topic": "Base topic of the MQTT discovery output",
           "z2m_base_topic": "Base topic of the Zigbee2MQTT output",
-          "z2m_confirm_default_topic": "The base topic zigbee2mqtt may be used"
+          "z2m_confirm_default_topic": "The base topic zigbee2mqtt may be used",
+          "time_lapse": "Time lapse factor"
         },
         "data_description": {
+          "time_lapse": "1 is real time; at 60 the curves run one hour per minute. Schedules, fault durations and pulses stay in real time",
           "z2m_confirm_default_topic": "Only confirm this if no real Zigbee2MQTT publishes under this topic"
         }
       }

@@ -666,6 +666,7 @@ var He = {
 	en: {
 		title: "Test data",
 		badge: "Test environment",
+		badgeLapse: "Time lapse ×{factor}",
 		tabDevices: "Devices",
 		tabCreate: "Create",
 		tabRemove: "Remove",
@@ -804,6 +805,7 @@ var He = {
 	de: {
 		title: "Testdaten",
 		badge: "Testumgebung",
+		badgeLapse: "Zeitraffer ×{factor}",
 		tabDevices: "Geräte",
 		tabCreate: "Erstellen",
 		tabRemove: "Entfernen",
@@ -2358,7 +2360,7 @@ P([M()], Q.prototype, "info", void 0), P([M()], Q.prototype, "templates", void 0
 // src/panel.ts
 var $ = class extends F {
 	constructor(...e) {
-		super(...e), this.narrow = !1, this.tab = "devices", this.removeTarget = "all", this.removeId = "";
+		super(...e), this.narrow = !1, this.tab = "devices", this.removeTarget = "all", this.removeId = "", this.lapse = 1;
 	}
 	static {
 		this.styles = [F.styles, o`
@@ -2401,6 +2403,14 @@ var $ = class extends F {
       }
     `];
 	}
+	async connectedCallback() {
+		super.connectedCallback();
+		try {
+			this.lapse = (await this.api.info()).time_lapse;
+		} catch {
+			this.lapse = 1;
+		}
+	}
 	startRemoval(e) {
 		this.removeTarget = e.detail.target, this.removeId = e.detail.id, this.tab = "remove";
 	}
@@ -2414,6 +2424,7 @@ var $ = class extends F {
       <header>
         <h2>${this.tr("title")}</h2>
         <span class="badge">${this.tr("badge")}</span>
+        ${this.lapse > 1 ? S`<span class="badge">${this.tr("badgeLapse", { factor: this.lapse })}</span>` : ""}
       </header>
       <nav>
         ${this.renderTab("devices", this.tr("tabDevices"))}
@@ -2441,5 +2452,5 @@ var $ = class extends F {
     `;
 	}
 };
-P([j({ type: Boolean })], $.prototype, "narrow", void 0), P([M()], $.prototype, "tab", void 0), P([M()], $.prototype, "removeTarget", void 0), P([M()], $.prototype, "removeId", void 0), $ = P([A("hass-test-data-creator-panel")], $);
+P([j({ type: Boolean })], $.prototype, "narrow", void 0), P([M()], $.prototype, "tab", void 0), P([M()], $.prototype, "removeTarget", void 0), P([M()], $.prototype, "removeId", void 0), P([M()], $.prototype, "lapse", void 0), $ = P([A("hass-test-data-creator-panel")], $);
 export { $ as TdcPanel };

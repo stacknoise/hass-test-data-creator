@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from typing import Protocol
 
 from ..faults.factory import Fault
@@ -27,6 +28,9 @@ class Scheduler(Protocol):
 
     def now(self) -> float:
         """Return the signal time in seconds."""
+
+    def at(self, moment: datetime) -> float:
+        """Return the signal time in seconds that belongs to the real `moment`."""
 
     def call_later(self, delay_s: float, callback: Callable[[], None]) -> Cancel:
         """Run `callback` after `delay_s` seconds and return the function that cancels it."""
@@ -53,6 +57,10 @@ class Behaviour:
         self._scheduler = scheduler
         self._fault: Fault | None = None
         self._cancel_fault: Cancel | None = None
+
+    def now(self) -> float:
+        """Return the current signal time in seconds."""
+        return self._scheduler.now()
 
     @property
     def available(self) -> bool:

@@ -51,6 +51,7 @@ export interface Info {
   platforms: string[];
   actions: Record<string, string[]>;
   tick_seconds: number;
+  time_lapse: number;
   device_count: number;
 }
 

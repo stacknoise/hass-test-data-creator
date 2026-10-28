@@ -90,8 +90,8 @@ async def test_tick_updates_sensors_whose_interval_has_passed(
     await create_devices(hass, count=1)
     before = float(state_of(hass, "Plug 01", "energy").state)
     with patch(
-        "custom_components.hass_test_data_creator.platforms.entities.signal_time",
-        lambda: signal_time() + 36000,
+        "custom_components.hass_test_data_creator.engine.clock.Clock.now",
+        lambda _: signal_time() + 36000,
     ):
         async_dispatcher_send(hass, SIGNAL_TICK)
         await hass.async_block_till_done()

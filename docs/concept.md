@@ -36,7 +36,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
 | v0.2 | Scheduler (fixed, interval, random window, Poisson), scenarios, faults (without `late` and `duplicate`, which need the MQTT output), the shapes `household_load`, `pv_day`, `steps` and `discharge`, the curve editor, light/cover/thermostat templates, and the schedule and scenario tabs. The shapes `enum` and `state_machine` and the faults `late` and `duplicate` moved to v0.3 (text states, the MQTT output) |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check; the shapes `enum` and `state_machine` (washer template); the faults `late` and `duplicate`; scheduling a scenario in the panel; the Groups tab. Native Home Assistant groups are not part of it |
-| v0.4 | Statistics backfill (done, 5.3a), time lapse, CSV replay, YAML import/export, sharing of templates |
+| v0.4 | Statistics backfill (done, 5.3a), time lapse (done, 5.1), CSV replay, YAML import/export, sharing of templates |
 
 ## 2. Architecture
 
@@ -144,7 +144,7 @@ Everything the integration creates is marked, so that nothing has to be searched
 
 ### 5.1 Time and determinism
 
-`value_at(spec, t, seed, origin)` is a pure function. `t` is the signal time in seconds: local wall-clock time of the instance (so daily curves follow the local day) multiplied by the time-lapse factor (v0.4). Noise and spikes use an integer hash of `(seed, n)`, not a stateful generator, so a value can be computed for any `t` without history. This is also what makes statistics backfill and the curve preview in the panel possible. The panel computes the preview with the same shapes.
+`value_at(spec, t, seed, origin)` is a pure function. `t` is the signal time in seconds: local wall-clock time of the instance (so daily curves follow the local day) mapped by the time-lapse clock (v0.4): from the start of the config entry on, signal time runs `factor` times faster than real time, `signal = base + (real - base) * factor`, with `base` the signal time at the start. The factor is the option `time_lapse` (1 to 10000, default 1); changing it reloads the entry and starts the clock again, so counters and state shapes may jump. Only the signals are accelerated: schedules, scenarios, fault durations, pulses and the tick stay in real time, and the statistics backfill uses real time. Noise and spikes use an integer hash of `(seed, n)`, not a stateful generator, so a value can be computed for any `t` without history. This is also what makes statistics backfill and the curve preview in the panel possible. The panel computes the preview with the same shapes.
 
 ### 5.2 Shapes
 

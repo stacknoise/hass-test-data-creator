@@ -23,7 +23,6 @@ from ..engine.behaviours import (
     OnOffBehaviour,
     SensorBehaviour,
 )
-from ..engine.tick import signal_time
 from ..model.models import DeviceDef, EntityDef
 
 
@@ -121,7 +120,7 @@ class TdcSensor(TdcEntity, SensorEntity):
     @callback
     def _handle_tick(self) -> None:
         """Compute a new value if the interval of the signal has passed."""
-        if self._behaviour.tick(signal_time()):
+        if self._behaviour.tick(self._behaviour.now()):
             self.async_write_ha_state()
 
 
