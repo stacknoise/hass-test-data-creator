@@ -2983,8 +2983,16 @@ var Xn = 1e4, W = class extends P {
 	toggle(e) {
 		this.expanded = st(this.expanded, e);
 	}
-	editRow(e, t, n) {
-		return this.detailRow(e, y`<div @tdc-cancel=${() => this.toggle(t)}>${n}</div>`);
+	nameCell(e, t) {
+		return y`<td class="name">${this.expanded.has(e) ? "▾" : "▸"} ${t}</td>`;
+	}
+	editRow(e, t, n, r) {
+		return this.detailRow(e, y`<div
+        @tdc-submit=${(e) => r(e.detail)}
+        @tdc-cancel=${() => this.toggle(t)}
+      >
+        ${n}
+      </div>`);
 	}
 	removeButton(e) {
 		return y`<button
@@ -3035,10 +3043,14 @@ var G = class extends P {
 		this.name = "", this.members = [];
 	}
 	submit() {
-		this.dispatchEvent(new CustomEvent("tdc-submit", { detail: {
-			name: this.name.trim(),
-			members: this.members
-		} }));
+		this.dispatchEvent(new CustomEvent("tdc-submit", {
+			detail: {
+				name: this.name.trim(),
+				members: this.members
+			},
+			bubbles: !0,
+			composed: !0
+		}));
 	}
 	render() {
 		return y`
@@ -3146,8 +3158,7 @@ var Zn = 500, Qn = "z2m", $n = class extends W {
                 .group=${e}
                 submitLabel=${this.tr("schSave")}
                 ?busy=${this.busy}
-                @tdc-submit=${(t) => void this.save(e, t.detail)}
-              ></tdc-group-form>`) : x}`;
+              ></tdc-group-form>`, (t) => void this.save(e, t)) : x}`;
 	}
 	render() {
 		return y`
@@ -3799,10 +3810,14 @@ var X = class extends P {
 	}
 	submit() {
 		let e = jr(this.steps);
-		e ? (this.error = "", this.dispatchEvent(new CustomEvent("tdc-submit", { detail: {
-			name: this.name,
-			steps: e
-		} }))) : this.error = this.tr("scnBadParams");
+		e ? (this.error = "", this.dispatchEvent(new CustomEvent("tdc-submit", {
+			detail: {
+				name: this.name,
+				steps: e
+			},
+			bubbles: !0,
+			composed: !0
+		}))) : this.error = this.tr("scnBadParams");
 	}
 	renderStep(e, t) {
 		return y`<fieldset>
@@ -3918,7 +3933,7 @@ var Nr = class extends W {
 	renderRow(e) {
 		let t = e.steps[0], { kind: n } = t ? gr(t.target) : { kind: "all" }, r = this.hass?.language, i = this.expanded.has(e.id);
 		return y`<tr class="scenario card" @click=${() => this.toggle(e.id)}>
-        <td class="name">${i ? "▾" : "▸"} ${e.name}</td>
+        ${this.nameCell(e.id, e.name)}
         <td data-label=${this.tr("scnSteps")}>
           ${this.tr("scnStepCount", { count: e.steps.length })}<br /><small
             >${t ? `${rt(r, t.entity, t.action)} · ${this.tr(`schTarget_${n}`)}` : ""}</small
@@ -3944,8 +3959,7 @@ var Nr = class extends W {
                 .scenario=${e}
                 submitLabel=${this.tr("schSave")}
                 ?busy=${this.busy}
-                @tdc-submit=${(t) => void this.save(e, t.detail)}
-              ></tdc-scenario-form>`) : x}`;
+              ></tdc-scenario-form>`, (t) => void this.save(e, t)) : x}`;
 	}
 	render() {
 		return y`
@@ -4015,7 +4029,11 @@ var Pr = [
 		return !!this.work.action && (this.work.kind === "all" || this.work.targetIds.length > 0);
 	}
 	submit() {
-		this.dispatchEvent(new CustomEvent("tdc-submit", { detail: this.request() }));
+		this.dispatchEvent(new CustomEvent("tdc-submit", {
+			detail: this.request(),
+			bubbles: !0,
+			composed: !0
+		}));
 	}
 	field(e, t, n = "text") {
 		let r = n === "number";
@@ -4170,7 +4188,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
 	renderRow(e) {
 		let { kind: t, ids: n } = gr(e.target), r = this.hass?.language, i = this.expanded.has(e.id);
 		return y`<tr class="schedule card" @click=${() => this.toggle(e.id)}>
-        <td class="name">${i ? "▾" : "▸"} ${e.name}</td>
+        ${this.nameCell(e.id, e.name)}
         <td data-label=${this.tr("schTarget")}>
           ${e.scenario ? "–" : this.targetText(t, n)}
         </td>
@@ -4205,8 +4223,7 @@ var Ir = 24, Lr = 50, Rr = 500, Q = class extends W {
                 .schedule=${e}
                 submitLabel=${this.tr("schSave")}
                 ?busy=${this.busy}
-                @tdc-submit=${(t) => void this.save(e, t.detail)}
-              ></tdc-schedule-form>`) : x}`;
+              ></tdc-schedule-form>`, (t) => void this.save(e, t)) : x}`;
 	}
 	renderList() {
 		return this.schedules.length === 0 ? y`<p>${this.tr("schNone")}</p>` : y`<table class="cards">

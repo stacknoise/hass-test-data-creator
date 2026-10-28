@@ -93,7 +93,7 @@ export class ScenarioPanel extends TdcPollingElement {
     const lang = this.hass?.language;
     const open = this.expanded.has(item.id);
     return html`<tr class="scenario card" @click=${() => this.toggle(item.id)}>
-        <td class="name">${open ? '▾' : '▸'} ${item.name}</td>
+        ${this.nameCell(item.id, item.name)}
         <td data-label=${this.tr('scnSteps')}>
           ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
             >${
@@ -129,8 +129,8 @@ export class ScenarioPanel extends TdcPollingElement {
                 .scenario=${item}
                 submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
-                @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.save(item, e.detail)}
               ></tdc-scenario-form>`,
+              (request: ScenarioRequest) => void this.save(item, request),
             )
           : nothing
       }`;

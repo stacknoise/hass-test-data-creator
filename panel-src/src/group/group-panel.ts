@@ -123,8 +123,8 @@ export class GroupPanel extends TdcPollingElement {
                 .group=${item}
                 submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
-                @tdc-submit=${(e: CustomEvent<GroupRequest>) => void this.save(item, e.detail)}
               ></tdc-group-form>`,
+              (request: GroupRequest) => void this.save(item, request),
             )
           : nothing
       }`;

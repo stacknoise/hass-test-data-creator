@@ -107,7 +107,9 @@ export class ScheduleForm extends TdcElement {
 
   /** Tell the parent to save what the form describes. */
   private submit(): void {
-    this.dispatchEvent(new CustomEvent('tdc-submit', { detail: this.request() }));
+    this.dispatchEvent(
+      new CustomEvent('tdc-submit', { detail: this.request(), bubbles: true, composed: true }),
+    );
   }
 
   /** Render a text or number input bound to a field of the trigger form. */

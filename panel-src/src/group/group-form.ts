@@ -45,6 +45,8 @@ export class GroupForm extends TdcElement {
     this.dispatchEvent(
       new CustomEvent<GroupRequest>('tdc-submit', {
         detail: { name: this.name.trim(), members: this.members },
+        bubbles: true,
+        composed: true,
       }),
     );
   }

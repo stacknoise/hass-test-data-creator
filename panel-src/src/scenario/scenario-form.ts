@@ -72,7 +72,11 @@ export class ScenarioForm extends TdcElement {
     }
     this.error = '';
     this.dispatchEvent(
-      new CustomEvent<ScenarioRequest>('tdc-submit', { detail: { name: this.name, steps } }),
+      new CustomEvent<ScenarioRequest>('tdc-submit', {
+        detail: { name: this.name, steps },
+        bubbles: true,
+        composed: true,
+      }),
     );
   }
 

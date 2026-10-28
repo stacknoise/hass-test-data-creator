@@ -144,7 +144,7 @@ export class SchedulePanel extends TdcPollingElement {
     const lang = this.hass?.language;
     const open = this.expanded.has(item.id);
     return html`<tr class="schedule card" @click=${() => this.toggle(item.id)}>
-        <td class="name">${open ? '▾' : '▸'} ${item.name}</td>
+        ${this.nameCell(item.id, item.name)}
         <td data-label=${this.tr('schTarget')}>
           ${item.scenario ? '–' : this.targetText(kind, ids)}
         </td>
@@ -189,8 +189,8 @@ export class SchedulePanel extends TdcPollingElement {
                 .schedule=${item}
                 submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
-                @tdc-submit=${(e: CustomEvent<ScheduleRequest>) => void this.save(item, e.detail)}
               ></tdc-schedule-form>`,
+              (request: ScheduleRequest) => void this.save(item, request),
             )
           : nothing
       }`;
