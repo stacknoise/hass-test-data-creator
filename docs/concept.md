@@ -36,7 +36,7 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | v0.1 | Engine (sine, noise, random walk, min/max), templates plug, button, climate sensor, motion/contact, custom; areas; native output; panel with list and wizard; removal; CI and HACS package |
 | v0.2 | Scheduler (fixed, interval, random window, Poisson), scenarios, faults (without `late` and `duplicate`, which need the MQTT output), the shapes `household_load`, `pv_day`, `steps` and `discharge`, the curve editor, light/cover/thermostat templates, and the schedule and scenario tabs. The shapes `enum` and `state_machine` and the faults `late` and `duplicate` moved to v0.3 (text states, the MQTT output) |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check; the shapes `enum` and `state_machine` (washer template); the faults `late` and `duplicate`; scheduling a scenario in the panel; the Groups tab. Native Home Assistant groups are not part of it |
-| v0.4 | Statistics backfill (done, 5.3a), time lapse (done, 5.1), CSV replay, YAML import/export, sharing of templates |
+| v0.4 | Statistics backfill (done, 5.3a), time lapse (done, 5.1), CSV replay (done), sharing of templates; YAML import/export dropped for now |
 
 ## 2. Architecture
 
