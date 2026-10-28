@@ -1,0 +1,442 @@
+<title>HASS Test Data Creator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Layout: Lesespalte (Konzept) + breite Mock-Bühnen; Mocks sind HA-ähnliche Fenster */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --surface2:#e8edef; --fg:#14201f; --muted:#546563; --line:#cfd8da;
+  --accent:#0b7f74; --accent-soft:#d3efeb; --signal:#d9480f; --good:#2b8a3e; --warn:#b7791f; --bad:#c0392b;
+  --font-display:'Archivo','Arial Narrow',sans-serif; --font-body:'Source Sans 3',system-ui,sans-serif; --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1718; --surface:#172224; --surface2:#1f2e30; --fg:#e3eceb; --muted:#8fa4a2; --line:#2c3f41;
+  --accent:#3cc9b8; --accent-soft:#17403c; --signal:#ff8a4c; --good:#6ccb7e; --warn:#e3b55b; --bad:#ef7b6e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1718; --surface:#172224; --surface2:#1f2e30; --fg:#e3eceb; --muted:#8fa4a2; --line:#2c3f41;
+  --accent:#3cc9b8; --accent-soft:#17403c; --signal:#ff8a4c; --good:#6ccb7e; --warn:#e3b55b; --bad:#ef7b6e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:17px/1.55 var(--font-body);padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--font-display);line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(24px,5.6vw,60px);font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
+h2{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:19px;font-weight:600}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--font-mono);font-size:.88em}
+.eyebrow{font:500 12px var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.hero{display:flex;flex-direction:column;gap:18px;border-bottom:3px solid var(--fg);padding-bottom:28px}
+.hero p{font-size:20px;color:var(--muted)}
+.hero svg{width:100%;height:70px;display:block}
+section{display:flex;flex-direction:column;gap:20px;min-width:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.box p{font-size:15.5px;color:var(--muted)}
+.tag{display:inline-block;font:500 11px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:3px;background:var(--accent-soft);color:var(--accent);width:max-content}
+.tag.mvp{background:var(--accent);color:var(--bg)} .tag.later{background:var(--surface2);color:var(--muted)}
+pre{margin:0;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:14px 16px;overflow-x:auto;font:13px/1.5 var(--font-mono);color:var(--fg)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:560px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:500 11.5px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* architecture */
+.arch{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.arch .box{border-top:3px solid var(--accent)}
+.arch .box.ext{border-top-color:var(--signal)}
+/* mocks */
+.mock{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden;min-width:0}
+.mock-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--surface2);border-bottom:1px solid var(--line);font:12px var(--font-mono);color:var(--muted)}
+.dots{display:flex;gap:5px}.dots i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+.mock-body{display:grid;grid-template-columns:150px 1fr;min-height:340px}
+.side{background:var(--surface2);padding:12px 8px;display:flex;flex-direction:column;gap:2px;font-size:13.5px;border-right:1px solid var(--line)}
+.side span{padding:6px 10px;border-radius:5px;color:var(--muted)}
+.side .on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.main{padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font:600 13px var(--font-body);padding:6px 12px;border-radius:5px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.chip{font:500 11.5px var(--font-mono);padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.pill{font:500 11px var(--font-mono);padding:2px 7px;border-radius:3px}
+.pill.ok{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.pill.wa{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}
+.pill.bad{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.pill.mq{background:color-mix(in srgb,var(--signal) 18%,transparent);color:var(--signal)}
+.field{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.field b{font:500 13.5px var(--font-mono);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:5px 9px;font-weight:500}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.mcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tpl{border:1px solid var(--line);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:3px;font-size:13px;background:var(--bg)}
+.tpl.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.tpl small{color:var(--muted);font-size:11.5px}
+.tpl strong{font-family:var(--font-display);font-size:15px}
+.dt{width:100%;min-width:520px;font-size:13px}
+.dt td,.dt th{padding:7px 8px}
+.wf{width:100%;height:auto;display:block}
+.wfs{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.wfs div{border:1px solid var(--line);border-radius:6px;padding:6px;font-size:11.5px;text-align:center;background:var(--bg)}
+.wfs .sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.tl{display:flex;flex-direction:column;gap:6px;font:12px var(--font-mono)}
+.tl .lane{display:grid;grid-template-columns:130px 1fr;gap:8px;align-items:center}
+.tl .track{position:relative;height:22px;background:var(--bg);border:1px solid var(--line);border-radius:4px}
+.tl .track i{position:absolute;top:3px;width:3px;height:14px;background:var(--accent);border-radius:1px}
+.tl .track i.r{background:var(--signal)}
+.tl .track b{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--signal) 16%,transparent);border-radius:3px}
+.tl .ax{display:grid;grid-template-columns:130px 1fr;gap:8px;color:var(--muted)}
+.tl .ax div{display:flex;justify-content:space-between}
+.term{background:#0e1516;color:#b9e9e2;border-radius:6px;padding:12px 14px;font:12.5px/1.55 var(--font-mono);overflow-x:auto;white-space:pre}
+.term .k{color:#ffb27c}.term .d{color:#6f8c89}
+.note{border-left:3px solid var(--signal);padding:4px 0 4px 14px;color:var(--muted);font-size:15.5px;max-width:68ch}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:70ch}
+@media (max-width:640px){.mock-body{grid-template-columns:1fr}.side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line)}.side span{white-space:nowrap}.split{grid-template-columns:1fr}}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">Home Assistant · HACS · Konzept v0.1</div>
+  <h1>HASS_TEST_DATA_CREATOR</h1>
+  <p>Testgeräte, Testwerte und Testereignisse für Home Assistant. Hunderte Geräte aus Vorlagen, Kurven statt Zufallszahlen, zeitgesteuerte Ereignisse und optional als Zigbee2MQTT-Attrappe über MQTT.</p>
+  <svg viewBox="0 0 1000 70" preserveAspectRatio="none" aria-hidden="true"><path data-wave="mix" fill="none" stroke="var(--accent)" stroke-width="2.5"/><path data-wave="noise" fill="none" stroke="var(--signal)" stroke-width="1.5" opacity=".8"/></svg>
+</header>
+
+<section>
+  <div class="eyebrow">1 · Ziel</div>
+  <h2>Was das Werkzeug löst</h2>
+  <p>Wer Dashboards, Karten, Automationen oder Add-ons entwickelt, braucht Geräte, die es nicht gibt, und Werte, die sich vorhersehbar verhalten. Heute heißt das: Template-Sensoren per YAML, <code>input_number</code>-Gebastel oder ein zweites Home Assistant. Der Creator ersetzt das durch eine Oberfläche und eine Engine.</p>
+  <div class="grid">
+    <div class="box"><h3>Massenhaft</h3><p>„Erzeuge 200 Steckdosen mit Leistungsmessung, verteilt auf 12 Räume.“ Ein Dialog, eine Minute.</p></div>
+    <div class="box"><h3>Realistisch</h3><p>Vorlagen legen alle üblichen Entitäten, Geräteklassen und Einheiten an, wie ein echtes Gerät dieses Typs.</p></div>
+    <div class="box"><h3>Steuerbar</h3><p>Wertebereiche, Kurvenformen, geplante und zufällige Ereignisse, Ausfälle auf Knopfdruck.</p></div>
+    <div class="box"><h3>Transportneutral</h3><p>Entweder native HA-Entitäten oder dieselben Geräte über MQTT, auch im Zigbee2MQTT-Format.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">2 · Architektur</div>
+  <h2>Eine Engine, zwei Ausgänge</h2>
+  <p>Ein Gerät ist zuerst eine Beschreibung (Modell). Die Engine erzeugt daraus Werte und Ereignisse. Ein Ausgangsadapter entscheidet, ob daraus HA-Entitäten oder MQTT-Nachrichten werden. So verhalten sich native und MQTT-Variante identisch.</p>
+  <div class="arch">
+    <div class="box"><span class="tag mvp">Kern</span><h3>Gerätemodell</h3><p>Geräte, Entitäten, Signalquellen, Zeitpläne, Raumzuordnung. Gespeichert über <code>homeassistant.helpers.storage</code>, export- und importierbar als YAML/JSON.</p></div>
+    <div class="box"><span class="tag mvp">Kern</span><h3>Signal-Engine</h3><p>Reine Funktionen <code>f(t, seed) → Wert</code>. Deterministisch per Seed, damit Tests wiederholbar sind. Ein Tick-Scheduler für alle Entitäten statt eines Timers pro Entität.</p></div>
+    <div class="box"><span class="tag mvp">Kern</span><h3>Event-Scheduler</h3><p>Feste Zeiten, Intervalle, Cron, Zufallsfenster, Poisson-Verteilung, Szenarien. Löst Aktionen am Gerät aus.</p></div>
+    <div class="box"><span class="tag mvp">Ausgang A</span><h3>Nativer Adapter</h3><p>Plattformen <code>sensor</code>, <code>binary_sensor</code>, <code>switch</code>, <code>light</code>, <code>event</code> u. a. Geräte landen in der Geräte-Registry, Räume über <code>area_id</code>.</p></div>
+    <div class="box ext"><span class="tag">Ausgang B</span><h3>MQTT-Adapter</h3><p>Zwei Modi: HA-MQTT-Discovery oder Zigbee2MQTT-Emulation. Nutzt den vorhandenen Broker (z. B. Mosquitto).</p></div>
+    <div class="box"><span class="tag mvp">UI</span><h3>Seitenleisten-Panel</h3><p>Eigenes Panel mit Geräteliste, Assistent, Kurven-Editor, Zeitplan, Live-Monitor. Dazu Config-Flow für Grundeinstellungen. Gebaut mit TypeScript, Lit und Vite.</p></div>
+  </div>
+  <pre>custom_components/hass_test_data_creator/
+├─ manifest.json            # domain: hass_test_data_creator, dependencies: [mqtt] optional
+├─ __init__.py              # Setup, Engine starten, Services registrieren
+├─ config_flow.py           # Basis: Seed, Tick-Rate, MQTT-Modus, Basis-Topic
+├─ engine/  signals.py  scheduler.py  faults.py  rng.py
+├─ models/  device.py  entity.py  templates/*.yaml
+├─ adapters/  native.py  mqtt_discovery.py  z2m_emulation.py
+├─ platforms/ sensor.py binary_sensor.py switch.py light.py event.py climate.py ...
+├─ websocket_api.py         # Panel &lt;-&gt; Backend
+├─ services.yaml            # create_devices, fire_event, inject_fault, import_history
+└─ frontend/hass-test-data-creator-panel.js   # Build-Ausgabe aus panel-src/
+hacs.json                   # type: integration
+panel-src/                  # Panel-Quellcode: TypeScript, Lit, Vite, Vitest
+.github/workflows/          # Build, Tests, Release</pre>
+</section>
+
+<section>
+  <div class="eyebrow">3 · Vorlagen</div>
+  <h2>Gängige Gerätetypen als Templates</h2>
+  <p>Eine Vorlage ist eine YAML-Datei. Eigene Vorlagen lassen sich aus jedem vorhandenen Testgerät speichern und teilen. Die Liste ist der geplante Umfang, der MVP enthält die markierten Typen.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Vorlage</th><th>Entitäten</th><th>Phase</th></tr></thead>
+    <tbody>
+    <tr><td>Steckdose mit Messung</td><td>switch, Leistung (W), Energie (kWh, <code>total_increasing</code>), Spannung (V), Strom (A), Kindersicherung, Link-Qualität</td><td><span class="tag mvp">MVP</span></td></tr>
+    <tr><td>Lichtschalter / Wandtaster</td><td>switch oder <code>event</code> (single, double, hold), Batterie (%), Link-Qualität</td><td><span class="tag mvp">MVP</span></td></tr>
+    <tr><td>Leuchte</td><td>light mit Helligkeit, Farbtemperatur, Farbe, Effekt; Übergangszeit</td><td><span class="tag mvp">MVP</span></td></tr>
+    <tr><td>Klima-Sensor</td><td>Temperatur (°C), Feuchte (%), Luftdruck (hPa), Batterie</td><td><span class="tag mvp">MVP</span></td></tr>
+    <tr><td>Bewegungs- und Kontaktmelder</td><td>binary_sensor (motion, occupancy, door, window), Beleuchtungsstärke (lx), Manipulation, Batterie</td><td><span class="tag mvp">MVP</span></td></tr>
+    <tr><td>Wassersensor, Rauchmelder</td><td>binary_sensor (moisture, smoke), Batterie, Selbsttest</td><td><span class="tag">v0.2</span></td></tr>
+    <tr><td>Thermostat</td><td>climate (Soll, Ist, Modus, Ventilstellung), Fenster-offen-Erkennung</td><td><span class="tag">v0.2</span></td></tr>
+    <tr><td>Energiezähler, Wechselrichter, Wallbox</td><td>Phasenleistungen, Netzbezug/-einspeisung, PV-Ertrag, Ladezustand; passt zu Energy-Dashboards</td><td><span class="tag">v0.2</span></td></tr>
+    <tr><td>Rollo, Garagentor, Schloss</td><td>cover (Position, Neigung), lock, Laufzeit</td><td><span class="tag">v0.2</span></td></tr>
+    <tr><td>Luftqualität</td><td>CO₂ (ppm), VOC (ppb), PM2.5 (µg/m³), Temperatur, Feuchte</td><td><span class="tag later">später</span></td></tr>
+    <tr><td>Custom</td><td>Beliebige Entitäten: Domäne, Geräteklasse, Einheit, Zustandsklasse, Attribute frei wählbar</td><td><span class="tag mvp">MVP</span></td></tr>
+    </tbody></table></div>
+</section>
+
+<section>
+  <div class="eyebrow">4 · Werte</div>
+  <h2>Signalquellen für Sensoren</h2>
+  <p>Jeder Sensor bekommt eine Signalquelle. Der Nutzer gibt <b>Min</b> und <b>Max</b> an, dazu Einheit, Nachkommastellen und Aktualisierungsintervall. Die Kurve wird automatisch auf den Bereich skaliert und ist in der Vorschau sichtbar.</p>
+  <div class="mock"><div class="mock-bar"><div class="dots"><i></i><i></i><i></i></div>Kurvenformen</div>
+  <div class="main"><div class="wfs">
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="sine" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Sinus</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="saw" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Sägezahn</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="square" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Rechteck</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="tri" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Dreieck</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="walk" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Random Walk</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="noise" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Rauschen</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="pv" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Tageskurve (PV)</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="load" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Lastprofil Haushalt</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="steps" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Treppe</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="counter" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Zähler (steigend)</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="discharge" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>Batterie-Entladung</div>
+    <div><svg class="wf" viewBox="0 0 120 50"><path data-wave="csv" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="3 2"/></svg>CSV-Wiedergabe</div>
+  </div></div></div>
+  <div class="grid">
+    <div class="box"><h3>Modifikatoren</h3><p>Überlagerbar: Rauschen (σ), Drift, Ausreißer (Spikes), Rundung, Verzögerung, Tagesgang (Faktor je Stunde), Wochenend-Variante.</p></div>
+    <div class="box"><h3>Diskrete Werte</h3><p>Für Enum-Sensoren und Schalter: Wertelisten mit Gewichten, Zustandsautomaten (z. B. Waschmaschine: idle → wash → rinse → spin → idle).</p></div>
+    <div class="box"><h3>Verlauf rückwirkend</h3><p>„Backfill“ schreibt Langzeitstatistiken für die letzten 30 Tage, damit Energie-Dashboards und Verlaufsgrafiken sofort gefüllt sind (<code>async_import_statistics</code>).</p></div>
+    <div class="box"><h3>Zeitraffer</h3><p>Faktor 1× bis 3600×. Eine Tageskurve läuft in 24 Sekunden. Nur für Signalzeit, nicht für die HA-Systemuhr.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">5 · Ereignisse</div>
+  <h2>Gesteuert und zufällig auslösen</h2>
+  <p>Ein Zeitplan verbindet einen <b>Auslöser</b> mit einer <b>Aktion</b> auf einem Gerät oder einer Gruppe von Geräten.</p>
+  <div class="grid">
+    <div class="box"><h3>Auslöser</h3><p>Feste Uhrzeit(en) · Intervall · Cron · Zufallsfenster („3× zwischen 18:00 und 23:00“) · Poisson („im Mittel 4× pro Stunde“) · einmalig in X Minuten · Knopf im Panel · Service-Aufruf · Folge-Ereignis nach Verzögerung</p></div>
+    <div class="box"><h3>Aktionen</h3><p>Schalter an/aus/umschalten · Taster single/double/hold · Bewegung für N Sekunden · Tür öffnen/schließen · Wert setzen · Szene aus mehreren Schritten</p></div>
+    <div class="box"><h3>Störungen</h3><p>Gerät <code>unavailable</code> · Dropout nur für Sensoren · Wert eingefroren · Spike · Batterie leer · Link-Qualität sinkt · verspätete Meldung · doppelte Meldung</p></div>
+    <div class="box"><h3>Szenarien</h3><p>Zeitleiste aus mehreren Aktionen, z. B. „Ein Tag im Haus mit Familie“. Als Datei speicher- und mit Seed wiederholbar.</p></div>
+  </div>
+  <p class="note">Zufall ist immer seed-basiert. Dieselbe Seed erzeugt dieselbe Ereignisfolge. Das macht Fehler in Automationen reproduzierbar.</p>
+</section>
+
+<section>
+  <div class="eyebrow">6 · MQTT und Zigbee2MQTT</div>
+  <h2>Geräte, die über MQTT ankommen</h2>
+  <p>Für Code, der gegen MQTT statt gegen die HA-Entitäten arbeitet (Add-ons, Karten mit Z2M-Anbindung, Bridges), lassen sich dieselben Testgeräte über den Broker veröffentlichen. Zwei Modi:</p>
+  <div class="grid">
+    <div class="box"><span class="tag">Modus 1</span><h3>MQTT-Discovery</h3><p>Der Creator veröffentlicht Konfigurationen unter <code>homeassistant/&lt;komponente&gt;/…/config</code> und Zustände auf eigenen Topics. HA legt die Entitäten über die MQTT-Integration an. Nützlich, um den echten MQTT-Pfad zu testen.</p></div>
+    <div class="box"><span class="tag mvp">Modus 2</span><h3>Zigbee2MQTT-Emulation</h3><p>Der Creator verhält sich wie eine Z2M-Bridge: <code>bridge/state</code>, <code>bridge/info</code>, <code>bridge/devices</code> mit <code>definition.exposes</code>, Gerätezustände als JSON, <code>/availability</code>, <code>/set</code>, <code>/get</code>. Discovery-Nachrichten entstehen im Z2M-Stil.</p></div>
+  </div>
+  <div class="term"><span class="d"># Basis-Topic frei wählbar, Standard "tdc_z2m" (kollidiert nicht mit echtem Z2M)</span>
+<span class="k">tdc_z2m/bridge/state</span>            {"state":"online"}
+<span class="k">tdc_z2m/bridge/devices</span>          [{"ieee_address":"0x00124b00aa010001","friendly_name":"wohnzimmer_steckdose_1",
+                                     "definition":{"model":"TS011F","vendor":"HASS Test Data Creator","exposes":[…]}}]
+<span class="k">tdc_z2m/wohnzimmer_steckdose_1</span>  {"state":"ON","power":42.7,"energy":118.43,"voltage":231.0,"linkquality":87}
+<span class="k">tdc_z2m/wohnzimmer_steckdose_1/availability</span>  {"state":"online"}
+<span class="k">tdc_z2m/wohnzimmer_steckdose_1/set</span>  {"state":"OFF"}   <span class="d"># wird empfangen, Zustand folgt</span>
+<span class="k">tdc_z2m/wohn_taster/action</span>        "single"            <span class="d"># Taster-Ereignis</span></div>
+  <ul style="margin:0;padding-left:20px;max-width:70ch;display:flex;flex-direction:column;gap:6px">
+    <li><b>Mit echtem Z2M koexistieren:</b> eigenes Basis-Topic und eigene Discovery-Kennungen. Beim Aktivieren prüft der Creator, ob das Basis-Topic schon belegt ist, und warnt.</li>
+    <li><b>Gruppen:</b> Geräte lassen sich zu Gruppen zusammenfassen, z. B. „Wohnzimmer Licht“. Ein <code>/set</code> auf die Gruppe wird an alle Mitglieder weitergegeben, der Gruppenzustand folgt aus den Mitgliedern. Im nativen Modus entsteht dazu eine HA-Gruppe.</li>
+    <li><b>Aufräumen:</b> „Alle Testgeräte entfernen“ löscht auch retained Messages (leere Payload) auf allen verwendeten Topics.</li>
+    <li><b>Modellkatalog:</b> Vorlagen tragen eine Z2M-nahe Modellbeschreibung (Exposes). Später optional Import echter Definitionen aus <code>zigbee-herdsman-converters</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="eyebrow">7 · Mocks</div>
+  <h2>Oberfläche</h2>
+  <p>Fünf Ansichten im Seitenleisten-Panel. Die Mocks sind statisch, zeigen aber die geplanten Bedienwege.</p>
+
+  <h3>A · Geräteübersicht</h3>
+  <div class="mock"><div class="mock-bar"><div class="dots"><i></i><i></i><i></i></div>homeassistant.local:8123 / hass-test-data-creator</div>
+  <div class="mock-body"><nav class="side"><span>Übersicht</span><span>Verlauf</span><span class="on">Testdaten</span><span>Einstellungen</span></nav>
+  <div class="main">
+    <div class="row" style="justify-content:space-between"><div class="row"><h3>Testgeräte</h3><span class="chip on">212 aktiv</span><span class="chip">3 pausiert</span></div><div class="row"><span class="btn">Import</span><span class="btn">Szenarien</span><span class="btn p">+ Geräte erstellen</span></div></div>
+    <div class="row"><span class="field"><b style="min-width:200px">🔍 Suche …</b></span><span class="chip on">Alle Räume</span><span class="chip">Steckdosen 64</span><span class="chip">Sensoren 91</span><span class="chip">Leuchten 38</span><span class="chip">MQTT 40</span></div>
+    <div class="scroll"><table class="dt">
+      <thead><tr><th></th><th>Name</th><th>Vorlage</th><th>Raum</th><th>Ausgang</th><th>Live</th><th>Status</th></tr></thead>
+      <tbody>
+      <tr><td>☐</td><td>Steckdose 01</td><td>Steckdose mit Messung</td><td>Wohnzimmer</td><td><span class="pill ok">nativ</span></td><td class="mono">42,7 W</td><td><span class="pill ok">online</span></td></tr>
+      <tr><td>☐</td><td>Steckdose 02</td><td>Steckdose mit Messung</td><td>Wohnzimmer</td><td><span class="pill ok">nativ</span></td><td class="mono">0,0 W</td><td><span class="pill ok">online</span></td></tr>
+      <tr><td>☐</td><td>Klima Bad</td><td>Klima-Sensor</td><td>Bad</td><td><span class="pill mq">Z2M</span></td><td class="mono">23,4 °C · 61 %</td><td><span class="pill ok">online</span></td></tr>
+      <tr><td>☐</td><td>Taster Flur</td><td>Wandtaster</td><td>Flur</td><td><span class="pill mq">Z2M</span></td><td class="mono">single · 12:04</td><td><span class="pill wa">Batterie 14 %</span></td></tr>
+      <tr><td>☐</td><td>Wassersensor Keller</td><td>Wassersensor</td><td>Keller</td><td><span class="pill ok">nativ</span></td><td class="mono">trocken</td><td><span class="pill bad">unavailable</span> <span class="chip">Störung aktiv</span></td></tr>
+      <tr><td>☐</td><td>Deckenlicht Küche</td><td>Leuchte (CCT)</td><td>Küche</td><td><span class="pill ok">nativ</span></td><td class="mono">80 % · 3200 K</td><td><span class="pill ok">online</span></td></tr>
+      </tbody></table></div>
+    <div class="row"><span class="chip">0 ausgewählt</span><span class="btn">Raum zuweisen</span><span class="btn">Pausieren</span><span class="btn">Störung auslösen</span><span class="btn">Löschen</span></div>
+  </div></div></div>
+
+  <h3>B · Geräte-Assistent (Massenerstellung)</h3>
+  <div class="mock"><div class="mock-bar"><div class="dots"><i></i><i></i><i></i></div>Geräte erstellen · Schritt 2 von 4</div>
+  <div class="main">
+    <div class="row"><span class="chip">1 Vorlage</span><span class="chip on">2 Menge &amp; Orte</span><span class="chip">3 Werte</span><span class="chip">4 Ausgang &amp; Prüfung</span></div>
+    <div class="mcols">
+      <div class="tpl sel"><strong>Steckdose mit Messung</strong><small>6 Entitäten</small></div>
+      <div class="tpl"><strong>Wandtaster</strong><small>3 Entitäten</small></div>
+      <div class="tpl"><strong>Klima-Sensor</strong><small>4 Entitäten</small></div>
+      <div class="tpl"><strong>Leuchte</strong><small>1 Entität</small></div>
+      <div class="tpl"><strong>Custom …</strong><small>frei zusammenstellen</small></div>
+    </div>
+    <div class="split">
+      <div class="main" style="padding:0">
+        <div class="field">Anzahl<b>24</b></div>
+        <div class="field">Namensmuster<b>Steckdose {nn}</b></div>
+        <div class="field">Kennung (Seed)<b>tdc-0042</b></div>
+        <div class="field">Start-ID<b>switch.steckdose_01 …</b></div>
+      </div>
+      <div class="main" style="padding:0">
+        <div class="field">Räume zuweisen<b>Verteilung: gleichmäßig ▾</b></div>
+        <div class="row"><span class="chip on">Wohnzimmer</span><span class="chip on">Küche</span><span class="chip on">Schlafzimmer</span><span class="chip on">Flur</span><span class="chip">Bad</span><span class="chip">+ Raum anlegen</span></div>
+        <p style="font-size:13.5px">Ergebnis: 6 Geräte pro Raum. Alternativen: zufällig, gewichtet, oder jedes Gerät einzeln zuordnen.</p>
+      </div>
+    </div>
+    <div class="row" style="justify-content:space-between"><span class="btn">Zurück</span><span class="btn p">Weiter: Werte</span></div>
+  </div></div>
+
+  <h3>C · Sensor-Editor mit Kurvenvorschau</h3>
+  <div class="mock"><div class="mock-bar"><div class="dots"><i></i><i></i><i></i></div>Steckdose 01 · sensor.steckdose_01_leistung</div>
+  <div class="main"><div class="split">
+    <div class="main" style="padding:0">
+      <div class="split"><div class="field">Einheit<b>W ▾</b></div><div class="field">Geräteklasse<b>power ▾</b></div></div>
+      <div class="split"><div class="field">Minimum<b>0</b></div><div class="field">Maximum<b>2300</b></div></div>
+      <div class="split"><div class="field">Intervall<b>10 s</b></div><div class="field">Nachkommastellen<b>1</b></div></div>
+      <div class="field">Kurvenform<b>Lastprofil Haushalt ▾</b></div>
+      <div class="split"><div class="field">Rauschen σ<b>3 %</b></div><div class="field">Spikes<b>0,2 / h · ×4</b></div></div>
+      <div class="field">Zustandsklasse<b>measurement ▾</b></div>
+    </div>
+    <div class="main" style="padding:0">
+      <div class="row" style="justify-content:space-between"><span class="chip on">24 h</span><span class="chip">7 Tage</span><span class="chip">Zeitraffer 60×</span></div>
+      <svg class="wf" viewBox="0 0 400 190" role="img" aria-label="Vorschau der Lastkurve zwischen 0 und 2300 Watt">
+        <g stroke="var(--line)" stroke-width="1"><line x1="34" y1="10" x2="394" y2="10"/><line x1="34" y1="60" x2="394" y2="60"/><line x1="34" y1="110" x2="394" y2="110"/><line x1="34" y1="160" x2="394" y2="160"/></g>
+        <g fill="var(--muted)" font-size="9" font-family="IBM Plex Mono, monospace"><text x="2" y="13">2300</text><text x="2" y="63">1500</text><text x="2" y="113">800</text><text x="14" y="163">0</text><text x="34" y="180">00:00</text><text x="124" y="180">06:00</text><text x="214" y="180">12:00</text><text x="304" y="180">18:00</text><text x="364" y="180">24:00</text></g>
+        <path data-wave="load" data-box="34,10,360,150" fill="none" stroke="var(--accent)" stroke-width="2"/>
+        <path data-wave="load" data-box="34,10,360,150" data-noise="1" fill="none" stroke="var(--signal)" stroke-width="1" opacity=".7"/>
+      </svg>
+      <p style="font-size:13.5px">Orange: Ergebnis mit Rauschen und Spikes. Blau-grün: Grundkurve. Vorschau rechnet im Browser mit demselben Seed.</p>
+    </div>
+  </div>
+  <div class="row"><span class="btn">Auf alle 24 Steckdosen anwenden</span><span class="btn">Als Vorlage speichern</span><span class="btn p">Speichern</span></div>
+  </div></div>
+
+  <h3>D · Zeitplan für Ereignisse</h3>
+  <div class="mock"><div class="mock-bar"><div class="dots"><i></i><i></i><i></i></div>Zeitplan · Vorschau nächste 24 h (Seed 0042)</div>
+  <div class="main">
+    <div class="tl">
+      <div class="lane"><span>Taster Flur</span><div class="track"><i style="left:29%"></i><i style="left:30%"></i><i style="left:72%"></i><i style="left:77%"></i><i style="left:90%"></i></div></div>
+      <div class="lane"><span>Bewegung Bad</span><div class="track"><i class="r" style="left:27%"></i><i class="r" style="left:31%"></i><i class="r" style="left:55%"></i><i class="r" style="left:69%"></i><i class="r" style="left:81%"></i><i class="r" style="left:88%"></i><i class="r" style="left:94%"></i></div></div>
+      <div class="lane"><span>Steckdose 01</span><div class="track"><i style="left:33%"></i><i style="left:50%"></i><i style="left:75%"></i></div></div>
+      <div class="lane"><span>Wassersensor</span><div class="track"><b style="left:46%;width:8%"></b></div></div>
+      <div class="ax"><span></span><div><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div></div>
+    </div>
+    <div class="row"><span class="chip on">grün: fest</span><span class="chip" style="color:var(--signal)">orange: zufällig</span><span class="chip">Fläche: Störung</span></div>
+    <div class="scroll"><table class="dt">
+      <thead><tr><th>Ziel</th><th>Aktion</th><th>Auslöser</th><th></th></tr></thead>
+      <tbody>
+      <tr><td>Taster Flur</td><td>single drücken</td><td class="mono">07:00 · 17:30 · 18:45 · 21:30</td><td><span class="pill ok">an</span></td></tr>
+      <tr><td>Bewegung Bad</td><td>Bewegung 45 s</td><td class="mono">zufällig: 7× zwischen 06:00 und 23:00</td><td><span class="pill ok">an</span></td></tr>
+      <tr><td>Steckdose 01</td><td>umschalten</td><td class="mono">Poisson: Ø 3× / Tag</td><td><span class="pill ok">an</span></td></tr>
+      <tr><td>Wassersensor Keller</td><td>unavailable für 2 h</td><td class="mono">einmalig 11:00</td><td><span class="pill wa">einmalig</span></td></tr>
+      </tbody></table></div>
+    <div class="row"><span class="btn">+ Regel</span><span class="btn">Jetzt auslösen</span><span class="btn p">Szenario speichern</span></div>
+  </div></div>
+
+  <h3>E · Ausgang: nativ oder MQTT</h3>
+  <div class="mock"><div class="mock-bar"><div class="dots"><i></i><i></i><i></i></div>Ausgang &amp; Prüfung · Schritt 4 von 4</div>
+  <div class="main"><div class="split">
+    <div class="main" style="padding:0">
+      <div class="tpl sel"><strong>Native HA-Entitäten</strong><small>Direkt in HA, ohne Broker</small></div>
+      <div class="tpl"><strong>MQTT-Discovery</strong><small>Über den Broker, HA legt Entitäten an</small></div>
+      <div class="tpl sel"><strong>Zigbee2MQTT-Emulation</strong><small>Bridge-Topics, Exposes, /set, Verfügbarkeit</small></div>
+      <div class="field">Basis-Topic<b>tdc_z2m</b></div>
+      <div class="field">Broker<b>core-mosquitto:1883 (aus MQTT-Integration)</b></div>
+    </div>
+    <div class="main" style="padding:0">
+      <h3>Prüfung vor dem Erstellen</h3>
+      <div class="row"><span class="pill ok">OK</span><span>24 Geräte · 144 Entitäten</span></div>
+      <div class="row"><span class="pill ok">OK</span><span>Namen und IDs frei</span></div>
+      <div class="row"><span class="pill ok">OK</span><span>MQTT-Integration verbunden</span></div>
+      <div class="row"><span class="pill wa">Hinweis</span><span>Basis-Topic ist leer, kein echtes Z2M erkannt</span></div>
+      <div class="row"><span class="pill wa">Hinweis</span><span>144 Entitäten × 10 s = ca. 14 Zustände/s</span></div>
+      <div class="term">tdc_z2m/steckdose_01 {"state":"ON","power":42.7,…}
+tdc_z2m/steckdose_02 {"state":"OFF","power":0,…}
+<span class="d">Live-Vorschau der ersten Nachrichten …</span></div>
+      <div class="row"><span class="btn">Zurück</span><span class="btn p">24 Geräte erstellen</span></div>
+    </div>
+  </div></div></div>
+</section>
+
+<section>
+  <div class="eyebrow">8 · Datenformat</div>
+  <h2>Gerätebeschreibung als YAML</h2>
+  <p>Das Panel schreibt und liest dieses Format. Es kann auch von Hand oder per Skript erzeugt und importiert werden, etwa für CI-Läufe.</p>
+<pre>seed: tdc-0042
+devices:
+  - name: "Steckdose {nn}"
+    template: plug_metering
+    count: 24
+    area: { distribute: even, areas: [Wohnzimmer, Küche, Schlafzimmer, Flur] }
+    output: { type: z2m, base_topic: tdc_z2m }
+    entities:
+      power:
+        signal: { shape: household_load, min: 0, max: 2300, interval: 10s, noise: 0.03 }
+        unit: W
+      energy:
+        signal: { shape: integrate, source: power }   # kWh folgt aus der Leistung
+        unit: kWh
+    schedules:
+      - action: toggle
+        trigger: { poisson: { per_day: 3 } }
+      - action: fault.unavailable
+        trigger: { random_window: { count: 1, between: ["02:00", "04:00"], duration: 30m } }</pre>
+  <p>Services: <code>hass_test_data_creator.create_devices</code>, <code>hass_test_data_creator.fire_event</code>, <code>hass_test_data_creator.inject_fault</code>, <code>hass_test_data_creator.import_history</code>, <code>hass_test_data_creator.remove_all</code>.</p>
+</section>
+
+<section>
+  <div class="eyebrow">9 · Umsetzung</div>
+  <h2>Phasen, Risiken, offene Fragen</h2>
+  <div class="grid">
+    <div class="box"><span class="tag mvp">v0.1 MVP</span><h3>Fundament</h3><p>Engine mit Sinus, Rauschen, Random Walk, Min/Max. Vorlagen: Steckdose, Taster, Klima, Bewegung/Kontakt, Custom. Raumzuordnung. Nativer Adapter. Panel (TypeScript, Lit, Vite) mit Liste und Assistent. HACS-Paket mit Build- und Release-Workflow.</p></div>
+    <div class="box"><span class="tag mvp">v0.2</span><h3>Zeit &amp; Ereignisse</h3><p>Scheduler (fest, Intervall, Zufallsfenster, Poisson), Störungen, restliche Kurvenformen, Kurven-Editor, Szenarien.</p></div>
+    <div class="box"><span class="tag">v0.3</span><h3>MQTT</h3><p>Discovery-Modus, Z2M-Emulation mit Gruppen, Aufräumfunktion für retained Messages, Konfliktprüfung.</p></div>
+    <div class="box"><span class="tag later">v0.4</span><h3>Verlauf &amp; Komfort</h3><p>Backfill der Statistiken, Zeitraffer, CSV-Wiedergabe, YAML-Import/-Export, Vorlagen teilen.</p></div>
+  </div>
+  <div class="grid">
+    <div class="box"><h3>Risiken</h3>
+      <p><b>Dynamisch viele Entitäten:</b> Plattformen müssen zur Laufzeit Entitäten hinzufügen und entfernen. Lösung: ein Config-Entry, Entitäten über <code>async_add_entities</code> aus dem Speicher, Entfernen über die Registry.</p>
+      <p><b>Last:</b> 1000 Entitäten bei 1 s Intervall belasten Recorder und Datenbank. Lösung: gemeinsamer Tick, Standard 10 s, Warnung vor dem Erstellen, Option „nicht aufzeichnen“ (Recorder-Ausschluss).</p>
+      <p><b>Rückbau (Pflichtanforderung):</b> Jedes erzeugte Objekt ist über die Kennung der Integration auffindbar: Geräte, Entitäten, Gruppen, Räume die der Creator angelegt hat, Zeitpläne, Statistiken aus dem Backfill und retained MQTT-Messages. „Alle Testdaten entfernen“ gibt es im Panel und als Service (<code>remove_all</code>), außerdem pro Gerät, pro Vorlage und pro Erstellungslauf. Entfernt der Nutzer die Integration, räumt <code>async_remove_entry</code> alles mit auf. Vor dem Löschen zeigt das Panel eine Liste dessen, was entfernt wird. Bereits vorhandene Räume und echte Geräte bleiben unberührt.</p>
+      <p><b>Testumgebung:</b> Beim ersten Start fragt der Config-Flow einmal nach, ob dies eine Testinstanz ist, und weist darauf hin, dass die Erweiterung nicht für den Betrieb neben echten Geräten gedacht ist.</p>
+      <p><b>Verwechslung mit echten Geräten:</b> Alle Testgeräte tragen Hersteller „HASS Test Data Creator“ und ein Label, damit sie sich mit einem Klick filtern und löschen lassen.</p>
+    </div>
+    <div class="box"><h3>Offene Fragen</h3>
+      <ol class="steps">
+        <li><b>Entschieden:</b> Das Panel entsteht von Anfang an mit Bundler (TypeScript, Lit, Vite, Vitest). Die gebaute Datei liegt im Repo, weil HACS nichts selbst baut. Die CI prüft, dass sie zum Quellcode passt.</li>
+        <li><b>Entschieden:</b> Die Z2M-Emulation enthält Gruppen (<code>bridge/groups</code>, Gruppen-Topic mit <code>/set</code>, Zustand aus den Mitgliedern). Die Netzwerkkarte (<code>bridge/response/networkmap</code>) entfällt.</li>
+        <li><b>Entschieden:</b> Die Erweiterung ist nur für Testumgebungen gedacht, nicht für eine reguläre Instanz. Das Repo bekommt deshalb ein Beispiel-<code>docker-compose</code> mit Home Assistant und Mosquitto. Alles Erzeugte muss sich jederzeit vollständig entfernen lassen (siehe Rückbau bei den Risiken).</li>
+        <li><b>Entschieden:</b> Anzeigename „HASS Test Data Creator“, Domain <code>hass_test_data_creator</code> (HA erlaubt nur Kleinbuchstaben und Unterstriche), Basis-Topic-Kürzel <code>tdc</code>.</li>
+        <li><b>Entschieden:</b> Sprache der Oberfläche: Deutsch und Englisch ab Start, Übersetzungen über <code>translations/</code>.</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* Kurvenformen für die Mocks: Werte 0..1 über x 0..1, deterministisch */
+(function(){
+  function rnd(i){var x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+  var F={
+    sine:function(x){return .5+.5*Math.sin(x*Math.PI*4)},
+    saw:function(x){return (x*3)%1},
+    square:function(x){return Math.floor(x*6)%2?.9:.1},
+    tri:function(x){var t=(x*3)%1;return t<.5?t*2:2-t*2},
+    walk:function(x,i){var v=.5;for(var k=0;k<=i;k++)v+=(rnd(k)-.5)*.14;return Math.min(.95,Math.max(.05,v))},
+    noise:function(x,i){return .25+rnd(i)*.5},
+    pv:function(x){var v=Math.sin((x-.25)*Math.PI*2);return v>0?v*v*.9+.04:.04},
+    load:function(x){var v=.12+.25*Math.exp(-Math.pow((x-.3)*14,2))+.55*Math.exp(-Math.pow((x-.78)*8,2))+.2*Math.exp(-Math.pow((x-.55)*30,2));return Math.min(.97,v)},
+    steps:function(x){return (Math.floor(x*6)+.5)/6.4},
+    counter:function(x){return .06+.88*x+.02*Math.sin(x*40)},
+    discharge:function(x){return .92-.8*Math.pow(x,1.6)},
+    csv:function(x,i){return .5+.3*Math.sin(x*9)+(rnd(i)-.5)*.15},
+    mix:function(x){return .5+.25*Math.sin(x*Math.PI*6)+.15*Math.sin(x*Math.PI*17)}
+  };
+  document.querySelectorAll('path[data-wave]').forEach(function(p){
+    var f=F[p.dataset.wave]; if(!f) return;
+    var svg=p.ownerSVGElement, vb=svg.viewBox.baseVal;
+    var b=p.dataset.box?p.dataset.box.split(',').map(Number):[2,3,vb.width-4,vb.height-6];
+    var n=p.dataset.wave==='walk'||p.dataset.wave==='noise'||p.dataset.wave==='csv'?36:(b[2]>300?200:80);
+    var noisy=p.dataset.noise, d='';
+    for(var i=0;i<=n;i++){
+      var x=i/n, y=f(x,i);
+      if(noisy){y+= (rnd(i+9)-.5)*.06; if(i%53===17) y+=.22; y=Math.min(1,Math.max(0,y))}
+      d+=(i?'L':'M')+(b[0]+x*b[2]).toFixed(1)+' '+(b[1]+(1-y)*b[3]).toFixed(1);
+    }
+    p.setAttribute('d',d);
+  });
+})();
+</script>
