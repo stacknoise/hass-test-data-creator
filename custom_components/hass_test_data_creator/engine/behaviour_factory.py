@@ -6,6 +6,15 @@ import hashlib
 
 from homeassistant.util import dt as dt_util
 
+from ..core.keys import (
+    KEY_BINARY_SENSOR,
+    KEY_CLIMATE,
+    KEY_COVER,
+    KEY_EVENT,
+    KEY_LIGHT,
+    KEY_SENSOR,
+    KEY_SWITCH,
+)
 from ..model.models import DeviceDef, EntityDef
 from .behaviours import (
     Behaviour,
@@ -21,15 +30,15 @@ from .behaviours import (
 from .signal_factory import Signal, SignalFactory
 
 _SIMPLE: dict[str, type[Behaviour]] = {
-    "binary_sensor": BinarySensorBehaviour,
-    "switch": OnOffBehaviour,
-    "event": EventBehaviour,
-    "light": LightBehaviour,
-    "cover": CoverBehaviour,
+    KEY_BINARY_SENSOR: BinarySensorBehaviour,
+    KEY_SWITCH: OnOffBehaviour,
+    KEY_EVENT: EventBehaviour,
+    KEY_LIGHT: LightBehaviour,
+    KEY_COVER: CoverBehaviour,
 }
 _WITH_SIGNAL: dict[str, type[SensorBehaviour] | type[ClimateBehaviour]] = {
-    "sensor": SensorBehaviour,
-    "climate": ClimateBehaviour,
+    KEY_SENSOR: SensorBehaviour,
+    KEY_CLIMATE: ClimateBehaviour,
 }
 
 

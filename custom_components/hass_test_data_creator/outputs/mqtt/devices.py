@@ -8,6 +8,7 @@ from typing import cast
 from homeassistant.core import callback
 
 from ...const import DISCOVERY_PREFIX
+from ...core.keys import KEY_AVAILABILITY
 from ...engine.behaviours import Behaviour
 from ...model.models import DeviceDef, EntityDef
 from .profiles import OFFLINE, ONLINE, SET, MqttProfile, MqttProfileFactory, Topics
@@ -94,21 +95,21 @@ class MqttDevices(BehaviourRuntime):
         """Publish availability and every state of an entity."""
         mine = self._mqtt(entry)
         available = ONLINE if mine.behaviour.available else OFFLINE
-        await self._async_send(mine, "availability", available)
+        await self._async_send(mine, KEY_AVAILABILITY, available)
         for facet, payload in mine.profile.states(mine.behaviour).items():
             await self._async_send(mine, facet, payload)
 
     async def _async_offline(self, entries: list[RuntimeEntry]) -> None:
         """Mark the entities offline."""
         for entry in entries:
-            await self._async_send(self._mqtt(entry), "availability", OFFLINE)
+            await self._async_send(self._mqtt(entry), KEY_AVAILABILITY, OFFLINE)
 
     async def _async_send(
         self, entry: _Entry, facet: str, payload: str, *, retain: bool = True
     ) -> None:
         """Publish `payload` on the topic of `facet`."""
         topic = entry.topics.facet(facet)
-        if facet == "availability":
+        if facet == KEY_AVAILABILITY:
             await self._async_publish(topic, payload, entry.device.id, retain=retain)
         else:
             await self._async_deliver(

@@ -9,6 +9,7 @@ from typing import Any
 import voluptuous as vol
 
 from ..core.errors import ErrorCode, ScheduleError
+from ..core.keys import KEY_DURATION_S, KEY_VALUE
 
 MAX_DURATION_SECONDS = 86400
 ALL_PLATFORMS = ("sensor", "binary_sensor", "switch", "event", "light", "cover", "climate")
@@ -55,8 +56,8 @@ _SPECS: dict[str, FaultSpec] = {
     "dropout": FaultSpec(SENSOR_ONLY, 10, {}),
     "frozen": FaultSpec(SENSOR_ONLY, 300, {}),
     "spike": FaultSpec(SENSOR_ONLY, 30, {vol.Optional("factor"): _NUMBER}),
-    "battery_low": FaultSpec(SENSOR_ONLY, 3600, {vol.Optional("value"): _NUMBER}),
-    "linkquality_drop": FaultSpec(SENSOR_ONLY, 600, {vol.Optional("value"): _NUMBER}),
+    "battery_low": FaultSpec(SENSOR_ONLY, 3600, {vol.Optional(KEY_VALUE): _NUMBER}),
+    "linkquality_drop": FaultSpec(SENSOR_ONLY, 600, {vol.Optional(KEY_VALUE): _NUMBER}),
     "late": FaultSpec(ALL_PLATFORMS, 120, {vol.Optional("delay_s"): _DELAY}),
     "duplicate": FaultSpec(ALL_PLATFORMS, 120, {vol.Optional("copies"): _COPIES}),
 }
@@ -101,12 +102,12 @@ class FaultFactory:
         spec = _SPECS.get(kind)
         if spec is None:
             raise ScheduleError(ErrorCode.SCH_INVALID_FAULT)
-        schema = vol.Schema({vol.Optional("duration_s"): _DURATION, **spec.extra})
+        schema = vol.Schema({vol.Optional(KEY_DURATION_S): _DURATION, **spec.extra})
         try:
             checked = schema({key: value for key, value in params.items() if key in schema.schema})
         except vol.Invalid as err:
             raise ScheduleError(ErrorCode.SCH_INVALID_FAULT) from err
-        duration = checked.get("duration_s", spec.default_duration_s)
+        duration = checked.get(KEY_DURATION_S, spec.default_duration_s)
         if kind in ("unavailable", "dropout"):
             return Fault(kind, duration, unavailable=True)
         if kind == "frozen":
@@ -122,4 +123,4 @@ class FaultFactory:
         if kind == "duplicate":
             return Fault(kind, duration, message_repeats=checked.get("copies", DEFAULT_COPIES))
         default = DEFAULT_BATTERY_LOW if kind == "battery_low" else DEFAULT_LINKQUALITY_DROP
-        return Fault(kind, duration, transform=_fixed(checked.get("value", default)))
+        return Fault(kind, duration, transform=_fixed(checked.get(KEY_VALUE, default)))

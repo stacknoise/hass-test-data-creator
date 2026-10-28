@@ -7,12 +7,15 @@ from typing import Any
 import voluptuous as vol
 
 from ..const import DEFAULT_HISTORY_DAYS, MAX_HISTORY_DAYS
+from ..core.keys import KEY_DAYS, KEY_DEVICE, KEY_ENTITY
 from ..scheduler.schema import MAX_TARGET_DEVICES
 
 HISTORY_FIELDS: dict[Any, Any] = {
-    vol.Optional("days", default=DEFAULT_HISTORY_DAYS): vol.All(
+    vol.Optional(KEY_DAYS, default=DEFAULT_HISTORY_DAYS): vol.All(
         int, vol.Range(min=1, max=MAX_HISTORY_DAYS)
     ),
-    vol.Optional("device"): vol.Any(str, vol.All([str], vol.Length(min=1, max=MAX_TARGET_DEVICES))),
-    vol.Optional("entity"): str,
+    vol.Optional(KEY_DEVICE): vol.Any(
+        str, vol.All([str], vol.Length(min=1, max=MAX_TARGET_DEVICES))
+    ),
+    vol.Optional(KEY_ENTITY): str,
 }

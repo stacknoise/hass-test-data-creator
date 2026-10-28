@@ -7,6 +7,26 @@ from homeassistant.helpers.service import async_register_admin_service
 import voluptuous as vol
 
 from .const import CONF_SEED, DEFAULT_SEED, DOMAIN
+from .core.keys import (
+    KEY_ACTION,
+    KEY_DAYS,
+    KEY_DEVICE,
+    KEY_DEVICES,
+    KEY_ENABLED,
+    KEY_ENTITY,
+    KEY_GROUP_ID,
+    KEY_ID,
+    KEY_MEMBERS,
+    KEY_NAME,
+    KEY_PARAMS,
+    KEY_RUN,
+    KEY_RUN_ID,
+    KEY_SCENARIO_ID,
+    KEY_SCHEDULE_ID,
+    KEY_STEPS,
+    KEY_TARGET,
+    KEY_TARGET_ID,
+)
 from .core.runtime import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
 from .groups.schema import GROUP_FIELDS
@@ -51,20 +71,20 @@ async def _create(call: ServiceCall) -> dict[str, object]:
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
     await data.csv.async_refresh()
     run = await data.manager.async_create(job_from_request(dict(call.data), seed))
-    return {"run_id": run.id, "devices": len(run.device_ids)}
+    return {KEY_RUN_ID: run.id, KEY_DEVICES: len(run.device_ids)}
 
 
 async def _fire(call: ServiceCall) -> None:
     """Run an action on one entity of a device."""
     await get_data(call.hass).action_runner.async_run(
-        call.data["device"], call.data["entity"], call.data["action"], call.data["params"]
+        call.data[KEY_DEVICE], call.data[KEY_ENTITY], call.data[KEY_ACTION], call.data[KEY_PARAMS]
     )
 
 
 async def _remove(call: ServiceCall) -> dict[str, object]:
     """Remove one device or one run."""
     data = get_data(call.hass)
-    plan = data.removal_planner.plan(call.data["target"], call.data["target_id"])
+    plan = data.removal_planner.plan(call.data[KEY_TARGET], call.data[KEY_TARGET_ID])
     return await data.removal_runner.async_run(plan)
 
 
@@ -79,52 +99,52 @@ async def _add_schedule(call: ServiceCall) -> dict[str, object]:
     data = get_data(call.hass)
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
     schedule = await data.schedules.async_add(dict(call.data), seed)
-    return {"id": schedule.id}
+    return {KEY_ID: schedule.id}
 
 
 async def _remove_schedule(call: ServiceCall) -> None:
     """Delete a schedule."""
-    await get_data(call.hass).schedules.async_remove(call.data["schedule_id"])
+    await get_data(call.hass).schedules.async_remove(call.data[KEY_SCHEDULE_ID])
 
 
 async def _set_schedule_enabled(call: ServiceCall) -> None:
     """Switch a schedule on or off."""
     await get_data(call.hass).schedules.async_set_enabled(
-        call.data["schedule_id"], call.data["enabled"]
+        call.data[KEY_SCHEDULE_ID], call.data[KEY_ENABLED]
     )
 
 
 async def _add_scenario(call: ServiceCall) -> dict[str, object]:
     """Add a scenario."""
     scenario = await get_data(call.hass).scenarios.async_add(dict(call.data))
-    return {"id": scenario.id}
+    return {KEY_ID: scenario.id}
 
 
 async def _remove_scenario(call: ServiceCall) -> None:
     """Delete a scenario."""
-    await get_data(call.hass).scenarios.async_remove(call.data["scenario_id"])
+    await get_data(call.hass).scenarios.async_remove(call.data[KEY_SCENARIO_ID])
 
 
 async def _run_scenario(call: ServiceCall) -> dict[str, object]:
     """Start a scenario."""
-    return {"steps": await get_data(call.hass).scenarios.async_run(call.data["scenario_id"])}
+    return {KEY_STEPS: await get_data(call.hass).scenarios.async_run(call.data[KEY_SCENARIO_ID])}
 
 
 async def _add_group(call: ServiceCall) -> dict[str, object]:
     """Add a group of Zigbee2MQTT devices."""
-    group = await get_data(call.hass).groups.async_add(call.data["name"], call.data["members"])
-    return {"id": group.id, "number": group.number}
+    group = await get_data(call.hass).groups.async_add(call.data[KEY_NAME], call.data[KEY_MEMBERS])
+    return {KEY_ID: group.id, "number": group.number}
 
 
 async def _remove_group(call: ServiceCall) -> None:
     """Delete a group."""
-    await get_data(call.hass).groups.async_remove(call.data["group_id"])
+    await get_data(call.hass).groups.async_remove(call.data[KEY_GROUP_ID])
 
 
 async def _import_history(call: ServiceCall) -> dict[str, object]:
     """Write hourly statistics for the past days of the test sensors."""
     return await get_data(call.hass).history.async_import(
-        call.data["days"], call.data.get("device"), call.data.get("entity")
+        call.data[KEY_DAYS], call.data.get(KEY_DEVICE), call.data.get(KEY_ENTITY)
     )
 
 
@@ -137,10 +157,10 @@ def async_register_services(hass: HomeAssistant) -> None:
             _fire,
             vol.Schema(
                 {
-                    vol.Required("device"): str,
-                    vol.Required("entity"): str,
-                    vol.Required("action"): str,
-                    vol.Optional("params", default=dict): dict,
+                    vol.Required(KEY_DEVICE): str,
+                    vol.Required(KEY_ENTITY): str,
+                    vol.Required(KEY_ACTION): str,
+                    vol.Optional(KEY_PARAMS, default=dict): dict,
                 }
             ),
             SupportsResponse.NONE,
@@ -150,8 +170,8 @@ def async_register_services(hass: HomeAssistant) -> None:
             _remove,
             vol.Schema(
                 {
-                    vol.Required("target"): vol.In(("device", "run")),
-                    vol.Required("target_id"): str,
+                    vol.Required(KEY_TARGET): vol.In((KEY_DEVICE, KEY_RUN)),
+                    vol.Required(KEY_TARGET_ID): str,
                 }
             ),
             SupportsResponse.OPTIONAL,
@@ -166,13 +186,13 @@ def async_register_services(hass: HomeAssistant) -> None:
         (
             SERVICE_REMOVE_SCHEDULE,
             _remove_schedule,
-            vol.Schema({vol.Required("schedule_id"): str}),
+            vol.Schema({vol.Required(KEY_SCHEDULE_ID): str}),
             SupportsResponse.NONE,
         ),
         (
             SERVICE_ENABLE_SCHEDULE,
             _set_schedule_enabled,
-            vol.Schema({vol.Required("schedule_id"): str, vol.Required("enabled"): bool}),
+            vol.Schema({vol.Required(KEY_SCHEDULE_ID): str, vol.Required(KEY_ENABLED): bool}),
             SupportsResponse.NONE,
         ),
         (
@@ -184,20 +204,20 @@ def async_register_services(hass: HomeAssistant) -> None:
         (
             SERVICE_REMOVE_SCENARIO,
             _remove_scenario,
-            vol.Schema({vol.Required("scenario_id"): str}),
+            vol.Schema({vol.Required(KEY_SCENARIO_ID): str}),
             SupportsResponse.NONE,
         ),
         (
             SERVICE_RUN_SCENARIO,
             _run_scenario,
-            vol.Schema({vol.Required("scenario_id"): str}),
+            vol.Schema({vol.Required(KEY_SCENARIO_ID): str}),
             SupportsResponse.OPTIONAL,
         ),
         (SERVICE_ADD_GROUP, _add_group, vol.Schema(GROUP_FIELDS), SupportsResponse.OPTIONAL),
         (
             SERVICE_REMOVE_GROUP,
             _remove_group,
-            vol.Schema({vol.Required("group_id"): str}),
+            vol.Schema({vol.Required(KEY_GROUP_ID): str}),
             SupportsResponse.NONE,
         ),
         (

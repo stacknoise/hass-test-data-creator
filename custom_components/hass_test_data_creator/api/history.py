@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 
 from ..const import DOMAIN
 from ..core.command import tdc_command
+from ..core.keys import KEY_DAYS, KEY_DEVICE, KEY_ENTITY
 from ..core.runtime import get_data
 from ..history.schema import HISTORY_FIELDS
 
@@ -19,5 +20,5 @@ async def ws_history_import(
 ) -> dict[str, Any]:
     """Write hourly statistics for the past days and return how many were written."""
     return await get_data(hass).history.async_import(
-        msg["days"], msg.get("device"), msg.get("entity")
+        msg[KEY_DAYS], msg.get(KEY_DEVICE), msg.get(KEY_ENTITY)
     )

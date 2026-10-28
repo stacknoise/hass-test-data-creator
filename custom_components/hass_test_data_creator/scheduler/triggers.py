@@ -10,6 +10,16 @@ from typing import Any
 import voluptuous as vol
 
 from ..core.errors import ErrorCode, ScheduleError
+from ..core.keys import (
+    KEY_COUNT,
+    KEY_END,
+    KEY_INTERVAL,
+    KEY_ONCE,
+    KEY_RANDOM_WINDOW,
+    KEY_START,
+    KEY_TIMES,
+    KEY_TYPE,
+)
 from ..engine.signals import hash01
 
 SECONDS_PER_DAY = 86400
@@ -126,35 +136,35 @@ class PoissonTrigger(Trigger):
 _COUNT = vol.All(int, vol.Range(min=1, max=MAX_EVENTS_PER_DAY))
 _CLOCK = vol.All(str, vol.Length(min=4, max=8))
 _SCHEMAS: dict[str, vol.Schema] = {
-    "times": vol.Schema(
+    KEY_TIMES: vol.Schema(
         {
-            vol.Required("type"): "times",
-            vol.Required("times"): vol.All([_CLOCK], vol.Length(min=1, max=200)),
+            vol.Required(KEY_TYPE): KEY_TIMES,
+            vol.Required(KEY_TIMES): vol.All([_CLOCK], vol.Length(min=1, max=200)),
             vol.Optional("weekdays"): [vol.All(int, vol.Range(min=0, max=6))],
         }
     ),
-    "interval": vol.Schema(
+    KEY_INTERVAL: vol.Schema(
         {
-            vol.Required("type"): "interval",
+            vol.Required(KEY_TYPE): KEY_INTERVAL,
             vol.Required("every_s"): vol.All(int, vol.Range(min=1, max=SECONDS_PER_DAY)),
-            vol.Optional("start", default="00:00"): _CLOCK,
-            vol.Optional("end", default="24:00"): _CLOCK,
+            vol.Optional(KEY_START, default="00:00"): _CLOCK,
+            vol.Optional(KEY_END, default="24:00"): _CLOCK,
         }
     ),
-    "once": vol.Schema(
-        {vol.Required("type"): "once", vol.Required("at"): vol.All(str, vol.Length(min=10))}
+    KEY_ONCE: vol.Schema(
+        {vol.Required(KEY_TYPE): KEY_ONCE, vol.Required("at"): vol.All(str, vol.Length(min=10))}
     ),
-    "random_window": vol.Schema(
+    KEY_RANDOM_WINDOW: vol.Schema(
         {
-            vol.Required("type"): "random_window",
-            vol.Required("count"): _COUNT,
-            vol.Required("start"): _CLOCK,
-            vol.Required("end"): _CLOCK,
+            vol.Required(KEY_TYPE): KEY_RANDOM_WINDOW,
+            vol.Required(KEY_COUNT): _COUNT,
+            vol.Required(KEY_START): _CLOCK,
+            vol.Required(KEY_END): _CLOCK,
         }
     ),
     "poisson": vol.Schema(
         {
-            vol.Required("type"): "poisson",
+            vol.Required(KEY_TYPE): "poisson",
             vol.Required("per_day"): vol.All(
                 vol.Coerce(float), vol.Range(min=0.01, max=MAX_EVENTS_PER_DAY)
             ),
@@ -169,22 +179,22 @@ class TriggerFactory:
 
     def create(self, data: dict[str, Any]) -> Trigger:
         """Return the trigger for `data` or raise SCH_INVALID_TRIGGER."""
-        schema = _SCHEMAS.get(str(data.get("type")))
+        schema = _SCHEMAS.get(str(data.get(KEY_TYPE)))
         if schema is None:
             raise ScheduleError(ErrorCode.SCH_INVALID_TRIGGER)
         try:
             checked = schema(data)
         except vol.Invalid as err:
             raise ScheduleError(ErrorCode.SCH_INVALID_TRIGGER) from err
-        kind = checked["type"]
-        if kind == "times":
-            return TimesTrigger(checked["times"], checked.get("weekdays"))
-        if kind == "interval":
-            return IntervalTrigger(checked["every_s"], checked["start"], checked["end"])
-        if kind == "once":
+        kind = checked[KEY_TYPE]
+        if kind == KEY_TIMES:
+            return TimesTrigger(checked[KEY_TIMES], checked.get("weekdays"))
+        if kind == KEY_INTERVAL:
+            return IntervalTrigger(checked["every_s"], checked[KEY_START], checked[KEY_END])
+        if kind == KEY_ONCE:
             return OnceTrigger(self._moment(checked["at"]))
-        if kind == "random_window":
-            return RandomWindowTrigger(checked["count"], checked["start"], checked["end"])
+        if kind == KEY_RANDOM_WINDOW:
+            return RandomWindowTrigger(checked[KEY_COUNT], checked[KEY_START], checked[KEY_END])
         return PoissonTrigger(checked["per_day"])
 
     def _moment(self, text: str) -> datetime:

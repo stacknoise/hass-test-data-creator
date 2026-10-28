@@ -8,6 +8,20 @@ from dataclasses import dataclass
 import math
 from typing import Any
 
+from ..core.keys import (
+    KEY_DURATION_S,
+    KEY_ENUM,
+    KEY_MAX,
+    KEY_MIN,
+    KEY_NOISE,
+    KEY_SHAPE,
+    KEY_STATE_MACHINE,
+    KEY_STATES,
+    KEY_STEPS,
+    KEY_VALUE,
+    KEY_VALUES,
+)
+
 _MASK = (1 << 64) - 1
 _GOLDEN = 0x9E3779B97F4A7C15
 _MIX_A = 0xBF58476D1CE4E5B9
@@ -56,12 +70,12 @@ class SignalSpec:
         known = {
             key: data[key]
             for key in (
-                "shape",
-                "min",
-                "max",
+                KEY_SHAPE,
+                KEY_MIN,
+                KEY_MAX,
                 "period_s",
                 "interval_s",
-                "noise",
+                KEY_NOISE,
                 "decimals",
                 "phase",
                 "rate_per_hour",
@@ -73,10 +87,11 @@ class SignalSpec:
         }
         return cls(
             **known,
-            values=tuple(str(item) for item in data.get("values", ())),
+            values=tuple(str(item) for item in data.get(KEY_VALUES, ())),
             weights=tuple(float(item) for item in data.get("weights", ())),
             states=tuple(
-                (str(item["value"]), float(item["duration_s"])) for item in data.get("states", ())
+                (str(item[KEY_VALUE]), float(item[KEY_DURATION_S]))
+                for item in data.get(KEY_STATES, ())
             ),
             table=tuple((float(t), float(v)) for t, v in data.get("table", ())),
             seed=seed,
@@ -208,25 +223,25 @@ def _state_machine(spec: SignalSpec, t: float) -> str:
 
 
 DISCRETE_SHAPES: dict[str, Callable[[SignalSpec, float], str]] = {
-    "enum": _enum,
-    "state_machine": _state_machine,
+    KEY_ENUM: _enum,
+    KEY_STATE_MACHINE: _state_machine,
 }
 
 
 def options_of(spec: SignalSpec) -> list[str]:
     """Return the distinct states of a discrete signal in the order they are defined."""
-    names = spec.values if spec.shape == "enum" else tuple(name for name, _ in spec.states)
+    names = spec.values if spec.shape == KEY_ENUM else tuple(name for name, _ in spec.states)
     return list(dict.fromkeys(names))
 
 
 def has_invalid_states(spec: SignalSpec) -> bool:
     """Whether a discrete shape lacks its states or has a weight or duration that is not positive."""
-    if spec.shape == "enum":
+    if spec.shape == KEY_ENUM:
         wrong_weights = bool(spec.weights) and (
             len(spec.weights) != len(spec.values) or any(w <= 0 for w in spec.weights)
         )
         return not spec.values or wrong_weights or spec.interval_s <= 0
-    if spec.shape == "state_machine":
+    if spec.shape == KEY_STATE_MACHINE:
         return not spec.states or any(duration <= 0 for _, duration in spec.states)
     return False
 
@@ -237,11 +252,11 @@ SHAPES: dict[str, Callable[[SignalSpec, float], float]] = {
     "saw": _saw,
     "square": _square,
     "triangle": _triangle,
-    "noise": _noise,
+    KEY_NOISE: _noise,
     "random_walk": _random_walk,
     "household_load": _household_load,
     "pv_day": _pv_day,
-    "steps": _steps,
+    KEY_STEPS: _steps,
     "discharge": _discharge,
 }
 COUNTER_SHAPE = "counter"

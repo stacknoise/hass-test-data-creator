@@ -7,6 +7,7 @@ from typing import Any
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError, TdcError
+from ..core.keys import KEY_DEVICE, KEY_RUN, KEY_TEMPLATE
 from ..engine.behaviours import Live
 from ..model.models import DeviceDef
 from ..store.store import TdcStore
@@ -41,12 +42,12 @@ class ActionRunner:
         devices = self._store.devices()
         if "all" in target:
             return devices
-        if "device" in target:
-            wanted = device_references(target["device"])
+        if KEY_DEVICE in target:
+            wanted = device_references(target[KEY_DEVICE])
             return [d for d in devices if d.id in wanted or d.name in wanted]
-        if "template" in target:
-            return [d for d in devices if d.template == target["template"]]
-        return [d for d in devices if d.run_id == target.get("run")]
+        if KEY_TEMPLATE in target:
+            return [d for d in devices if d.template == target[KEY_TEMPLATE]]
+        return [d for d in devices if d.run_id == target.get(KEY_RUN)]
 
     async def async_run_on(
         self,

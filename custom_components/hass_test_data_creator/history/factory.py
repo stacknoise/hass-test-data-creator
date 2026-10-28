@@ -14,6 +14,7 @@ from homeassistant.components.recorder.statistics import STATISTIC_UNIT_TO_UNIT_
 from homeassistant.components.sensor import UNIT_CONVERTERS
 from homeassistant.util import dt as dt_util
 
+from ..core.keys import KEY_MAX, KEY_MIN, KEY_NAME, KEY_SENSOR, KEY_SHAPE, KEY_START, KEY_STATE
 from ..engine.behaviour_factory import entity_seed
 from ..engine.signal_factory import Signal, SignalFactory
 from ..engine.signals import COUNTER_SHAPE, DISCRETE_SHAPES
@@ -55,9 +56,9 @@ class SeriesFactory:
     def supports(self, definition: EntityDef) -> bool:
         """Whether the entity is a sensor with a state class and numbers as values."""
         return (
-            definition.platform == "sensor"
+            definition.platform == KEY_SENSOR
             and definition.state_class in STATE_CLASSES
-            and (definition.signal or {}).get("shape") not in DISCRETE_SHAPES
+            and (definition.signal or {}).get(KEY_SHAPE) not in DISCRETE_SHAPES
         )
 
     def create(
@@ -73,7 +74,7 @@ class SeriesFactory:
         metadata: StatisticMetaData = {
             "mean_type": StatisticMeanType.ARITHMETIC if measurement else StatisticMeanType.NONE,
             "has_sum": not measurement,
-            "name": None,
+            KEY_NAME: None,
             "source": SOURCE,
             "statistic_id": entity_id,
             "unit_class": unit_class_of(definition.device_class, definition.unit),
@@ -91,7 +92,7 @@ class SeriesFactory:
         """Return the signal of the entity; a counter gets an origin not later than `first`."""
         spec = definition.signal or {}
         origin = signal_time(dt_util.as_local(dt_util.utc_from_timestamp(device.created_at)))
-        if spec.get("shape") == COUNTER_SHAPE:
+        if spec.get(KEY_SHAPE) == COUNTER_SHAPE:
             origin = min(origin, signal_time(dt_util.as_local(first)))
         return self._signals.create(spec, entity_seed(device.seed, definition.key), origin)
 
@@ -106,10 +107,10 @@ def _measurement_row(signal: Signal, start: datetime, begin: float) -> Statistic
     """Return mean, minimum and maximum of the hour that starts at `start`."""
     values = _samples(signal, begin)
     return {
-        "start": start,
+        KEY_START: start,
         "mean": sum(values) / len(values),
-        "min": min(values),
-        "max": max(values),
+        KEY_MIN: min(values),
+        KEY_MAX: max(values),
     }
 
 
@@ -127,5 +128,5 @@ def _total_rows(
             delta = state
         total += delta
         previous = state
-        rows.append({"start": start, "state": state, "sum": total})
+        rows.append({KEY_START: start, KEY_STATE: state, "sum": total})
     return rows

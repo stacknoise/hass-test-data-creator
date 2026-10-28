@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .core.keys import KEY_CLIMATE
 from .platforms.setup import platform_setup
 
-async_setup_entry = platform_setup("climate")
+async_setup_entry = platform_setup(KEY_CLIMATE)

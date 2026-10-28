@@ -21,6 +21,7 @@ from ..const import (
     PLATFORMS,
 )
 from ..core.command import tdc_command
+from ..core.keys import KEY_FEATURES
 from ..core.runtime import get_data
 from ..engine.signals import SHAPE_NAMES
 from ..scheduler.triggers import TRIGGER_TYPES
@@ -41,14 +42,14 @@ async def ws_info(
     return {
         "version": str(integration.version),
         "api_version": API_VERSION,
-        "features": list(FEATURES),
+        KEY_FEATURES: list(FEATURES),
         "limits": {
             "max_devices": MAX_DEVICES,
             "max_batch": MAX_BATCH,
             "max_entities_per_device": MAX_ENTITIES_PER_DEVICE,
         },
         "outputs": [OUTPUT_NATIVE, *([OUTPUT_MQTT, OUTPUT_Z2M] if mqtt else [])],
-        "mqtt": mqtt,
+        OUTPUT_MQTT: mqtt,
         "shapes": list(SHAPE_NAMES),
         "triggers": list(TRIGGER_TYPES),
         "platforms": list(PLATFORMS),

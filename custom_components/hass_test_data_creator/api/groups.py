@@ -10,6 +10,7 @@ import voluptuous as vol
 
 from ..const import DOMAIN
 from ..core.command import tdc_command
+from ..core.keys import KEY_GROUP_ID, KEY_MEMBERS, KEY_NAME
 from ..core.runtime import get_data
 from ..groups.schema import GROUP_FIELDS
 
@@ -27,23 +28,25 @@ async def ws_groups_add(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Add a group and return it."""
-    group = await get_data(hass).groups.async_add(msg["name"], msg["members"])
+    group = await get_data(hass).groups.async_add(msg[KEY_NAME], msg[KEY_MEMBERS])
     return group.to_dict()
 
 
-@tdc_command(f"{DOMAIN}/groups/update", {vol.Required("group_id"): str, **GROUP_FIELDS})
+@tdc_command(f"{DOMAIN}/groups/update", {vol.Required(KEY_GROUP_ID): str, **GROUP_FIELDS})
 async def ws_groups_update(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Rename a group and replace its members; return it."""
-    group = await get_data(hass).groups.async_update(msg["group_id"], msg["name"], msg["members"])
+    group = await get_data(hass).groups.async_update(
+        msg[KEY_GROUP_ID], msg[KEY_NAME], msg[KEY_MEMBERS]
+    )
     return group.to_dict()
 
 
-@tdc_command(f"{DOMAIN}/groups/remove", {vol.Required("group_id"): str})
+@tdc_command(f"{DOMAIN}/groups/remove", {vol.Required(KEY_GROUP_ID): str})
 async def ws_groups_remove(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Delete a group."""
-    await get_data(hass).groups.async_remove(msg["group_id"])
+    await get_data(hass).groups.async_remove(msg[KEY_GROUP_ID])
     return {}

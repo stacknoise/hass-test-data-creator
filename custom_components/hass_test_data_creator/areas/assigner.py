@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 
-from ..const import DOMAIN
+from ..const import DOMAIN, OUTPUT_MQTT
 from ..model.models import DeviceDef
 from ..outputs.mqtt.profiles import mqtt_device_identifier
 from ..store.store import TdcStore
@@ -33,7 +33,9 @@ class AreaAssigner:
         registry = dr.async_get(self._hass)
         entry = registry.async_get_device(
             identifiers={(DOMAIN, device.id)}
-        ) or registry.async_get_device(identifiers={("mqtt", mqtt_device_identifier(device.id))})
+        ) or registry.async_get_device(
+            identifiers={(OUTPUT_MQTT, mqtt_device_identifier(device.id))}
+        )
         if entry is not None:
             registry.async_update_device(entry.id, area_id=self.ensure(name) if name else None)
 

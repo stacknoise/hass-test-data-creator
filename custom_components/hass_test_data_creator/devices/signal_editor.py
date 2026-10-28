@@ -7,6 +7,7 @@ from typing import Any
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError, TemplateError
+from ..core.keys import KEY_SHAPE, KEY_SIGNAL
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import ClimateBehaviour, Live, SensorBehaviour
 from ..engine.signals import DISCRETE_SHAPES
@@ -47,11 +48,11 @@ class SignalEditor:
         )
         if device is None or definition is None or definition.platform not in SIGNAL_PLATFORMS:
             raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
-        if (definition.signal or {}).get("shape") in DISCRETE_SHAPES or (
-            signal.get("shape") in DISCRETE_SHAPES
+        if (definition.signal or {}).get(KEY_SHAPE) in DISCRETE_SHAPES or (
+            signal.get(KEY_SHAPE) in DISCRETE_SHAPES
         ):
             raise TemplateError(ErrorCode.TPL_INVALID, file=f"{key}: signal")
-        changed = EntityDef(**{**definition.to_dict(), "signal": signal})
+        changed = EntityDef(**{**definition.to_dict(), KEY_SIGNAL: signal})
         new_signal = self._behaviours.signal_for(device, changed)
         definition.signal = signal
         self._store.add_device(device)
@@ -59,5 +60,5 @@ class SignalEditor:
         if isinstance(behaviour, SensorBehaviour | ClimateBehaviour):
             behaviour.replace_signal(new_signal)
         await self._store.async_save()
-        self._audit.record(self._audit_factory.signal_changed(device.name, key, signal["shape"]))
+        self._audit.record(self._audit_factory.signal_changed(device.name, key, signal[KEY_SHAPE]))
         return definition

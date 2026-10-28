@@ -13,6 +13,7 @@ from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..const import MAX_HISTORY_ROWS
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
+from ..core.keys import KEY_SENSOR
 from ..devices.entity_ids import entity_id_of
 from ..model.models import DeviceDef, EntityDef
 from ..scheduler.schema import device_references
@@ -105,7 +106,7 @@ class HistoryManager:
         skipped = 0
         for owner in devices:
             for definition in owner.entities:
-                if definition.platform != "sensor" or entity not in (None, definition.key):
+                if definition.platform != KEY_SENSOR or entity not in (None, definition.key):
                     continue
                 entity_id = entity_id_of(registry, owner, definition)
                 if entity_id and self._series.supports(definition):

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from homeassistant.helpers import entity_registry as er
 
-from ..const import DOMAIN
+from ..const import DOMAIN, OUTPUT_MQTT
 from ..model.models import DeviceDef, EntityDef
 from ..outputs.mqtt.profiles import mqtt_unique_id
 
@@ -16,5 +16,5 @@ def entity_id_of(
     return registry.async_get_entity_id(
         definition.platform, DOMAIN, f"{device.id}_{definition.key}"
     ) or registry.async_get_entity_id(
-        definition.platform, "mqtt", mqtt_unique_id(device.id, definition.key)
+        definition.platform, OUTPUT_MQTT, mqtt_unique_id(device.id, definition.key)
     )
