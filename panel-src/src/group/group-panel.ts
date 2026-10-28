@@ -114,8 +114,9 @@ export class GroupPanel extends TdcPollingElement {
       </tr>
       ${
         open
-          ? this.detailRow(
+          ? this.editRow(
               3,
+              item.id,
               html`<tdc-group-form
                 .hass=${this.hass}
                 .devices=${this.members()}
@@ -123,7 +124,6 @@ export class GroupPanel extends TdcPollingElement {
                 submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
                 @tdc-submit=${(e: CustomEvent<GroupRequest>) => void this.save(item, e.detail)}
-                @tdc-cancel=${() => this.toggle(item.id)}
               ></tdc-group-form>`,
             )
           : nothing

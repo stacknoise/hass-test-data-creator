@@ -274,7 +274,7 @@ export abstract class TdcElement extends LitElement {
         options.editing
           ? html`<button
               ?disabled=${options.busy}
-              @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel'))}
+              @click=${() => this.dispatchEvent(new CustomEvent('tdc-cancel', { bubbles: true, composed: true }))}
             >
               ${this.tr('detCancel')}
             </button>`

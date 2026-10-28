@@ -5,7 +5,7 @@ import { describeError } from '../common/api';
 import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
 import type { TextKey } from '../common/i18n';
-import { actionLabel, labelOf } from '../common/labels';
+import { workLabel } from '../common/labels';
 import { targetName } from '../common/targets';
 import type {
   DeviceInfo,
@@ -152,7 +152,7 @@ export class SchedulePanel extends TdcPollingElement {
           ${
             item.scenario
               ? this.tr('schScenario', { id: this.scenarioName(item.scenario) })
-              : `${item.entity ? `${labelOf(lang, 'entity', item.entity)}: ` : ''}${actionLabel(lang, item.action)}`
+              : workLabel(lang, item.entity, item.action)
           }
         </td>
         <td data-label=${this.tr('schTrigger')}>
@@ -178,8 +178,9 @@ export class SchedulePanel extends TdcPollingElement {
       </tr>
       ${
         open
-          ? this.detailRow(
+          ? this.editRow(
               6,
+              item.id,
               html`<tdc-schedule-form
                 .hass=${this.hass}
                 .info=${this.info}
@@ -189,7 +190,6 @@ export class SchedulePanel extends TdcPollingElement {
                 submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
                 @tdc-submit=${(e: CustomEvent<ScheduleRequest>) => void this.save(item, e.detail)}
-                @tdc-cancel=${() => this.toggle(item.id)}
               ></tdc-schedule-form>`,
             )
           : nothing

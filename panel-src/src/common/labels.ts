@@ -217,6 +217,12 @@ export function actionLabel(code: string | undefined, action: string): string {
   return `${prefix}: ${labelOf(code, 'fault', action.slice(FAULT_PREFIX.length))}`;
 }
 
+/** Return the text of what an action does: the entity, if one is named, and the action. */
+export function workLabel(code: string | undefined, entity: string, action: string): string {
+  const prefix = entity ? `${labelOf(code, 'entity', entity)}: ` : '';
+  return `${prefix}${actionLabel(code, action)}`;
+}
+
 /** Return the text of a template: the translated name of a bundled one, else the name it has. */
 export function templateLabel(code: string | undefined, id: string, name: string): string {
   return tables[languageOf(code)].template[id] ?? name;

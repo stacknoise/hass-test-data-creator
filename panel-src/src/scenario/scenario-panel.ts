@@ -3,7 +3,7 @@ import { customElement, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import '../common/dialog';
 import { describeError } from '../common/api';
-import { actionLabel, labelOf } from '../common/labels';
+import { workLabel } from '../common/labels';
 import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
 import type { ScenarioInfo } from '../common/types';
@@ -98,7 +98,7 @@ export class ScenarioPanel extends TdcPollingElement {
           ${this.tr('scnStepCount', { count: item.steps.length })}<br /><small
             >${
               first
-                ? `${first.entity ? `${labelOf(lang, 'entity', first.entity)}: ` : ''}${actionLabel(lang, first.action)} · ${this.tr(`schTarget_${kind}`)}`
+                ? `${workLabel(lang, first.entity, first.action)} · ${this.tr(`schTarget_${kind}`)}`
                 : ''
             }</small
           >
@@ -119,8 +119,9 @@ export class ScenarioPanel extends TdcPollingElement {
       </tr>
       ${
         open
-          ? this.detailRow(
+          ? this.editRow(
               3,
+              item.id,
               html`<tdc-scenario-form
                 .hass=${this.hass}
                 .info=${this.info}
@@ -129,7 +130,6 @@ export class ScenarioPanel extends TdcPollingElement {
                 submitLabel=${this.tr('schSave')}
                 ?busy=${this.busy}
                 @tdc-submit=${(e: CustomEvent<ScenarioRequest>) => void this.save(item, e.detail)}
-                @tdc-cancel=${() => this.toggle(item.id)}
               ></tdc-scenario-form>`,
             )
           : nothing

@@ -54,6 +54,11 @@ export abstract class TdcPollingElement extends TdcElement {
     this.expanded = toggled(this.expanded, id);
   }
 
+  /** Render the row under an object that holds its form; the form's cancel closes the row. */
+  protected editRow(columns: number, id: string, form: TemplateResult): TemplateResult {
+    return this.detailRow(columns, html`<div @tdc-cancel=${() => this.toggle(id)}>${form}</div>`);
+  }
+
   /** Render the button that removes the object of a row, without opening the row. */
   protected removeButton(remove: () => Promise<unknown>): TemplateResult {
     return html`<button
