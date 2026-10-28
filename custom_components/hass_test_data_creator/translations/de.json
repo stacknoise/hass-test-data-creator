@@ -86,6 +86,9 @@
     },
     "sch_invalid_fault": {
       "message": "Die Störung oder ihre Parameter sind ungültig"
+    },
+    "sch_invalid_params": {
+      "message": "Ein Parameter der Aktion fehlt oder liegt außerhalb des Bereichs"
     }
   },
   "services": {

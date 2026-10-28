@@ -19,7 +19,16 @@ from custom_components.hass_test_data_creator.templates.factory import TemplateF
 from custom_components.hass_test_data_creator.templates.registry import TemplateRegistry
 
 SENSOR = {"key": "level", "platform": "sensor", "name": "Level", "signal": {"shape": "sine"}}
-BUNDLED = {"plug_metering", "wall_button", "climate_sensor", "motion_sensor", "contact_sensor"}
+BUNDLED = {
+    "plug_metering",
+    "wall_button",
+    "climate_sensor",
+    "motion_sensor",
+    "contact_sensor",
+    "light",
+    "cover",
+    "thermostat",
+}
 
 
 async def test_bundled_templates_load(hass: HomeAssistant) -> None:

@@ -1,0 +1,7 @@
+id: light
+name: Dimmable light
+model: Light (dimmable)
+entities:
+  - { key: light, platform: light, name: Light }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

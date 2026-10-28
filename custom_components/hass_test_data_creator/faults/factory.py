@@ -11,7 +11,7 @@ import voluptuous as vol
 from ..core.errors import ErrorCode, ScheduleError
 
 MAX_DURATION_SECONDS = 86400
-ALL_PLATFORMS = ("sensor", "binary_sensor", "switch", "event")
+ALL_PLATFORMS = ("sensor", "binary_sensor", "switch", "event", "light", "cover", "climate")
 SENSOR_ONLY = ("sensor",)
 DEFAULT_SPIKE_FACTOR = 5.0
 DEFAULT_BATTERY_LOW = 5.0

@@ -40,7 +40,15 @@ SIGNAL_TICK: Final = f"{DOMAIN}_tick"
 SIGNAL_DEVICES_ADDED: Final = f"{DOMAIN}_devices_added"
 
 # Platforms of the native output.
-PLATFORMS: Final = ("binary_sensor", "event", "sensor", "switch")
+PLATFORMS: Final = (
+    "binary_sensor",
+    "climate",
+    "cover",
+    "event",
+    "light",
+    "sensor",
+    "switch",
+)
 
 # Outputs (concept 7). Only the native output exists in v0.1.
 OUTPUT_NATIVE: Final = "native"

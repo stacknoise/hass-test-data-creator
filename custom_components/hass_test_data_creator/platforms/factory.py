@@ -9,12 +9,20 @@ from homeassistant.util import dt as dt_util
 from ..engine.signal_factory import SignalFactory
 from ..engine.tick import signal_time
 from ..model.models import DeviceDef, EntityDef
+from .actuators import TdcClimate, TdcCover, TdcLight
 from .entities import Live, TdcBinarySensor, TdcEntity, TdcEvent, TdcSensor, TdcSwitch
 
 _SIMPLE_PLATFORMS: dict[str, type[TdcEntity]] = {
     "binary_sensor": TdcBinarySensor,
     "switch": TdcSwitch,
     "event": TdcEvent,
+    "light": TdcLight,
+    "cover": TdcCover,
+}
+
+_SIGNAL_CLASSES: dict[str, type[TdcSensor] | type[TdcClimate]] = {
+    "sensor": TdcSensor,
+    "climate": TdcClimate,
 }
 
 
@@ -34,9 +42,9 @@ class EntityFactory:
 
     def create(self, device: DeviceDef, definition: EntityDef) -> TdcEntity:
         """Return the entity for `definition` of `device`."""
-        if definition.platform == "sensor":
+        if definition.platform in _SIGNAL_CLASSES:
             seed = entity_seed(device.seed, definition.key)
             origin = signal_time(dt_util.as_local(dt_util.utc_from_timestamp(device.created_at)))
             signal = self._signals.create(definition.signal or {}, seed, origin)
-            return TdcSensor(device, definition, self._live, signal)
+            return _SIGNAL_CLASSES[definition.platform](device, definition, self._live, signal)
         return _SIMPLE_PLATFORMS[definition.platform](device, definition, self._live)

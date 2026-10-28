@@ -1,0 +1,10 @@
+id: thermostat
+name: Thermostat
+model: Radiator thermostat
+entities:
+  - { key: thermostat, platform: climate, name: Thermostat,
+      signal: { shape: sine, min: 18, max: 23, period_s: 86400, noise: 0.02, decimals: 1 } }
+  - { key: battery, platform: sensor, name: Battery, device_class: battery, unit: "%", state_class: measurement, entity_category: diagnostic,
+      signal: { shape: discharge, min: 5, max: 100, period_s: 2592000, decimals: 0 } }
+  - { key: linkquality, platform: sensor, name: Link quality, unit: lqi, state_class: measurement, entity_category: diagnostic,
+      signal: { shape: random_walk, min: 40, max: 255, period_s: 1800, decimals: 0 } }

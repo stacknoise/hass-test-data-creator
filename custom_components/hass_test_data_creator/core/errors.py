@@ -63,6 +63,9 @@ class ErrorCode(StrEnum):
     SCH_INVALID_FAULT = "TDC-SCH-005"
     """The kind or the parameters of a fault are invalid."""
 
+    SCH_INVALID_PARAMS = "TDC-SCH-006"
+    """A parameter of an action is missing or outside its range."""
+
     OUT_UNSUPPORTED = "TDC-OUT-001"
     """The requested output is not available in this version."""
 

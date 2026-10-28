@@ -10,7 +10,9 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
   switch: 'toggle',
   event: 'press',
   binary_sensor: 'pulse',
+  light: 'toggle',
 };
+const VALUE_PLATFORMS = ['sensor', 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
 @customElement('tdc-device-list')
@@ -62,9 +64,7 @@ export class DeviceList extends TdcElement {
   /** Return the current values of the first entities as one line. */
   private values(device: DeviceInfo): string {
     return device.entities
-      .filter(
-        (e) => e.platform === 'sensor' || e.platform === 'switch' || e.platform === 'binary_sensor',
-      )
+      .filter((e) => VALUE_PLATFORMS.includes(e.platform))
       .slice(0, 4)
       .map(
         (e) =>
