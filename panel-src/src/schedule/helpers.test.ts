@@ -6,6 +6,7 @@ import {
   buildTrigger,
   defaultTriggerForm,
   describeTarget,
+  entityChoices,
   platformSetsOfTarget,
   formatWhen,
   parseTimes,
@@ -162,5 +163,30 @@ describe('what fits a target', () => {
 
   it('offers nothing while the common set cannot be found', () => {
     expect(availableActions(actions, undefined)).toEqual([]);
+  });
+
+  it('offers the entities of a single device or template that can do the action', () => {
+    const rich = [
+      device('c1', 'r1', entity('a', 'sensor'), entity('b', 'sensor'), entity('s', 'switch')),
+    ];
+    const withFaults = { ...actions, sensor: ['fault_dropout'] };
+    expect(entityChoices('device', ['c1'], rich, templates, withFaults, 'fault_dropout')).toEqual([
+      { key: 'a', name: 'a' },
+      { key: 'b', name: 'b' },
+    ]);
+    expect(entityChoices('device', ['C1'], rich, templates, withFaults, 'toggle')).toEqual([
+      { key: 's', name: 's' },
+    ]);
+    expect(entityChoices('template', ['plug'], rich, templates, withFaults, 'toggle')).toEqual([
+      { key: 'state', name: 'state' },
+    ]);
+  });
+
+  it('offers no entity for several devices, a device set or all devices', () => {
+    expect(entityChoices('device', ['p1', 'p2'], devices, templates, actions, 'toggle')).toEqual(
+      [],
+    );
+    expect(entityChoices('run', ['r1'], devices, templates, actions, 'toggle')).toEqual([]);
+    expect(entityChoices('all', [], devices, templates, actions, 'toggle')).toEqual([]);
   });
 });

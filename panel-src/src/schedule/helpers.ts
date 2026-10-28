@@ -183,6 +183,44 @@ export function availableActions(
   return all.filter((action) => per.every((names) => names.has(action)));
 }
 
+/** An entity that an action can run on: its key and the name it has. */
+export interface EntityChoice {
+  key: string;
+  name: string;
+}
+
+/**
+ * Return the entities of a single device or a template that can do the action.
+ *
+ * Only one device or one template has one set of entities; for several devices, a device set or all
+ * devices there is nothing to choose from, and the list is empty.
+ */
+export function entityChoices(
+  kind: TargetKind,
+  ids: string[],
+  devices: DeviceInfo[],
+  templates: TemplateInfo[],
+  actions: Record<string, string[]>,
+  action: string,
+): EntityChoice[] {
+  const entities =
+    ids.length !== 1
+      ? []
+      : kind === 'template'
+        ? (templates.find((t) => t.id === ids[0])?.entities ?? [])
+        : kind === 'device'
+          ? (devices.find((d) => d.id === ids[0] || d.name === ids[0])?.entities ?? [])
+          : [];
+  const platforms = new Set(
+    Object.entries(actions)
+      .filter(([, names]) => names.includes(action))
+      .map(([platform]) => platform),
+  );
+  return entities
+    .filter((entity) => platforms.has(entity.platform))
+    .map(({ key, name }) => ({ key, name }));
+}
+
 /** Return the target, entity and action that the form describes; an empty entity means all that fit. */
 export function resolveWork(work: WorkForm): {
   target: ScheduleTarget;

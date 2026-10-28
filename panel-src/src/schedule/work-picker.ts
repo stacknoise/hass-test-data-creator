@@ -3,15 +3,22 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
-import { actionLabel, sortedByLabel } from '../common/labels';
+import { actionLabel, entityName, sortedByLabel } from '../common/labels';
 import '../common/target-select';
 import type { DeviceInfo, TemplateInfo } from '../common/types';
-import { availableActions, platformSetsOfTarget, type TargetKind, type WorkForm } from './helpers';
+import {
+  availableActions,
+  entityChoices,
+  platformSetsOfTarget,
+  type EntityChoice,
+  type TargetKind,
+  type WorkForm,
+} from './helpers';
 
 const TARGET_KINDS: TargetKind[] = ['all', 'template', 'device', 'run'];
 const DEVICE_LIMIT = 500;
 
-/** Picks what runs where: a target, an action and an entity; only what fits the target is offered. */
+/** Picks what runs where: a target, an action and, for one device or template, an entity. */
 @customElement('tdc-work-picker')
 export class WorkPicker extends TdcElement {
   @property({ attribute: false }) work!: WorkForm;
@@ -56,6 +63,19 @@ export class WorkPicker extends TdcElement {
     );
   }
 
+  /** Return the entities to choose from: only for one device or template, and only if several fit. */
+  private entities(): EntityChoice[] {
+    const choices = entityChoices(
+      this.work.kind,
+      this.work.targetIds,
+      this.devices,
+      this.templates,
+      this.actions,
+      this.work.action,
+    );
+    return choices.length > 1 ? choices : [];
+  }
+
   /** Move the action to one that fits, when the target changed under it. */
   protected override updated(changed: PropertyValues): void {
     super.updated(changed);
@@ -87,9 +107,29 @@ export class WorkPicker extends TdcElement {
     );
   }
 
-  /** Render the element. */
+  /** Render the optional entity: "all that fit", or one of the entities that can do the action. */
+  private renderEntity(choices: EntityChoice[], lang: string | undefined): TemplateResult {
+    const sorted = sortedByLabel(lang, choices, (choice) =>
+      entityName(lang, choice.key, choice.name),
+    );
+    return html`<label
+      >${this.tr('schEntity')}
+      <select @change=${(e: Event) => this.emit({ entity: (e.target as HTMLSelectElement).value })}>
+        <option value="" ?selected=${!this.work.entity}>${this.tr('schAllFitting')}</option>
+        ${sorted.map(
+          (choice) =>
+            html`<option value=${choice.key} ?selected=${choice.key === this.work.entity}>
+              ${entityName(lang, choice.key, choice.name)}
+            </option>`,
+        )}
+      </select>
+    </label>`;
+  }
+
+  /** Render the element: the target and the entity in one row, the action in the row below. */
   override render(): TemplateResult {
     const lang = this.hass?.language;
+    const entities = this.entities();
     return html`
       <div class="fields">
         ${this.select(
@@ -112,8 +152,9 @@ export class WorkPicker extends TdcElement {
                   this.emit({ targetIds: e.detail, entity: '' })}
               ></tdc-target-select>`
         }
-        ${this.renderAction(lang)}
+        ${entities.length ? this.renderEntity(entities, lang) : nothing}
       </div>
+      <div class="fields">${this.renderAction(lang)}</div>
       ${this.error ? html`<p class="error">${this.error}</p>` : nothing}
     `;
   }
