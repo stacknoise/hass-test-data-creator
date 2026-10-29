@@ -2734,6 +2734,9 @@ var Nr = 10, Pr = 10, B = "custom", Fr = 50, Ir = ["even", "random"], Lr = {
 		let e = this.templates.find((e) => e.id === this.pendingBase);
 		e && (this.custom = structuredClone(e.entities)), this.pendingBase = "";
 	}
+	chooseBase(e) {
+		this.pendingBase = e, this.custom.length === 0 && this.applyBase();
+	}
 	renderBase() {
 		let e = this.hass?.language, t = this.templates.find((e) => e.id === this.pendingBase);
 		return v`<div class="row form">
@@ -2741,7 +2744,7 @@ var Nr = 10, Pr = 10, B = "custom", Fr = 50, Ir = ["even", "random"], Lr = {
           >${this.tr("baseTemplate")}
           <select
             .value=${this.pendingBase}
-            @change=${(e) => this.pendingBase = e.target.value}
+            @change=${(e) => this.chooseBase(e.target.value)}
           >
             <option value="">${this.tr("baseNone")}</option>
             ${N(e, this.templates, (t) => M(e, t.id, t.name)).map((t) => v`<option value=${t.id} ?selected=${t.id === this.pendingBase}>

@@ -64,6 +64,12 @@ export class CreationWizard extends TdcElement {
     this.pendingBase = '';
   }
 
+  /** Take over the template `id` at once when the list is empty, otherwise ask first. */
+  private chooseBase(id: string): void {
+    this.pendingBase = id;
+    if (this.custom.length === 0) this.applyBase();
+  }
+
   /** Render the choice of a template as the start of the custom device, with the warning. */
   private renderBase(): TemplateResult {
     const lang = this.hass?.language;
@@ -73,7 +79,7 @@ export class CreationWizard extends TdcElement {
           >${this.tr('baseTemplate')}
           <select
             .value=${this.pendingBase}
-            @change=${(e: Event) => (this.pendingBase = (e.target as HTMLSelectElement).value)}
+            @change=${(e: Event) => this.chooseBase((e.target as HTMLSelectElement).value)}
           >
             <option value="">${this.tr('baseNone')}</option>
             ${sortedByLabel(lang, this.templates, (t) => templateLabel(lang, t.id, t.name)).map(
