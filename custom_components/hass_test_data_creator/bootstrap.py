@@ -37,6 +37,7 @@ from .history.recorder import StatisticsClient
 from .outputs.adapter import OutputAdapterFactory
 from .outputs.mqtt.client import MqttClient
 from .outputs.mqtt.devices import MqttDevices
+from .outputs.mqtt.labels import MqttLabeler
 from .outputs.mqtt.profiles import MqttProfileFactory
 from .outputs.mqtt.runtime import RuntimeParts
 from .outputs.z2m.devices import Z2mDevices, Z2mSettings
@@ -44,6 +45,7 @@ from .outputs.z2m.payloads import Z2mPayloadFactory
 from .outputs.z2m.profiles import Z2mProfileFactory
 from .platforms.factory import EntityFactory
 from .platforms.scheduler import HassScheduler
+from .removal.orphans import OrphanScanner
 from .removal.planner import RemovalPlanner
 from .removal.runner import Forgetters, RemovalRunner
 from .replay.library import CsvLibrary
@@ -72,20 +74,15 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     clock = Clock(entry.options.get(CONF_TIME_LAPSE, DEFAULT_TIME_LAPSE))
     behaviours = BehaviourFactory(signals, HassScheduler(hass, clock))
     parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
-    mqtt_devices = MqttDevices(
-        parts,
-        MqttProfileFactory(),
-        entry.options.get(CONF_MQTT_BASE_TOPIC, DEFAULT_MQTT_BASE_TOPIC),
-    )
+    mqtt_base = entry.options.get(CONF_MQTT_BASE_TOPIC, DEFAULT_MQTT_BASE_TOPIC)
+    z2m_base = entry.options.get(CONF_Z2M_BASE_TOPIC, DEFAULT_Z2M_BASE_TOPIC)
+    mqtt_devices = MqttDevices(parts, MqttProfileFactory(), mqtt_base)
     z2m_devices = Z2mDevices(
         parts,
         Z2mProfileFactory(),
         Z2mPayloadFactory(),
         registry,
-        Z2mSettings(
-            entry.options.get(CONF_Z2M_BASE_TOPIC, DEFAULT_Z2M_BASE_TOPIC),
-            entry.options.get(CONF_Z2M_CONFIRM_DEFAULT, False),
-        ),
+        Z2mSettings(z2m_base, entry.options.get(CONF_Z2M_CONFIRM_DEFAULT, False)),
         store,
     )
     groups = GroupManager(store, mqtt, z2m_devices)
@@ -145,6 +142,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         template_registry=registry,
         entity_factory=EntityFactory(behaviours, live),
         outputs=outputs,
+        orphans=OrphanScanner(mqtt, store, (mqtt_base, z2m_base), audit, audit_factory),
+        labeler=MqttLabeler(hass),
         mqtt=mqtt,
         mqtt_devices=mqtt_devices,
         z2m_devices=z2m_devices,

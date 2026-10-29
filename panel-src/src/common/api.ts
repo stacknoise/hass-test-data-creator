@@ -104,6 +104,16 @@ export class TdcApi {
     return this.call('removal/run', { target, target_id: targetId });
   }
 
+  /** Return the retained broker topics of generated devices that the store does not know. */
+  orphanTopics(): Promise<{ topics: string[] }> {
+    return this.call('removal/orphan_topics');
+  }
+
+  /** Delete those of the topics that a new scan still reports; return the deleted ones. */
+  clearOrphanTopics(topics: string[]): Promise<{ cleared: string[] }> {
+    return this.call('removal/orphan_topics_clear', { topics });
+  }
+
   /** Return all schedules. */
   schedules(): Promise<ScheduleInfo[]> {
     return this.call('schedules/list');
