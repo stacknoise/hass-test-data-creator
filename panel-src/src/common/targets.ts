@@ -1,5 +1,5 @@
 import { sortedByLabel, templateLabel } from './labels';
-import type { DeviceInfo, TemplateInfo } from './types';
+import type { DeviceName, TemplateInfo } from './types';
 import { KIND_DEVICE, KIND_TEMPLATE } from './constants';
 
 const MS_PER_SECOND = 1000;
@@ -23,7 +23,7 @@ export interface Run {
 }
 
 /** Return the creations that the devices come from, each with its first creation time and count. */
-export function runsOf(devices: DeviceInfo[]): Run[] {
+export function runsOf(devices: DeviceName[]): Run[] {
   const runs = new Map<string, Run>();
   for (const device of devices) {
     const run = runs.get(device.run_id);
@@ -63,7 +63,7 @@ export function runLabel(
 /** Return the options of a target select, sorted by their text. */
 export function targetOptions(
   kind: TargetKind,
-  devices: DeviceInfo[],
+  devices: DeviceName[],
   templates: TemplateInfo[],
   lang: string | undefined,
   countText: (count: number) => string,
@@ -81,7 +81,7 @@ export function targetOptions(
 export function targetName(
   kind: TargetKind,
   id: string,
-  devices: DeviceInfo[],
+  devices: DeviceName[],
   templates: TemplateInfo[],
   lang: string | undefined,
   countText: (count: number) => string,
@@ -94,7 +94,7 @@ export function targetName(
 }
 
 /** Return the id that a stored value stands for: devices may be stored by name. */
-export function resolveTargetId(kind: TargetKind, value: string, devices: DeviceInfo[]): string {
+export function resolveTargetId(kind: TargetKind, value: string, devices: DeviceName[]): string {
   if (kind !== KIND_DEVICE) return value;
   return devices.find((d) => d.id === value || d.name === value)?.id ?? value;
 }

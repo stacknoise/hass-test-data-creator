@@ -64,6 +64,8 @@ export interface Info {
 export interface EntityState {
   key: string;
   name: string;
+  /** The kind of curve of a sensor; the curve itself comes with `devices/get`. */
+  shape?: string | null;
   signal?: SignalDef | null;
   platform: string;
   entity_id: string | null;
@@ -73,16 +75,20 @@ export interface EntityState {
   fault: string | null;
 }
 
-/** A generated device as listed by the backend. */
-export interface DeviceInfo {
+/** What pickers and run lists need of a generated device (`devices/names`). */
+export interface DeviceName {
   id: string;
   name: string;
   template: string;
   model: string;
-  area: string | null;
   output: string;
   run_id: string;
   created_at: number;
+}
+
+/** A generated device as listed by the backend. */
+export interface DeviceInfo extends DeviceName {
+  area: string | null;
   entities: EntityState[];
   used_by: DeviceUsage;
 }

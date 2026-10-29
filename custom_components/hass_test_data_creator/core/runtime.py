@@ -25,6 +25,7 @@ from ..const import (
 from ..devices.manager import DevicesManager
 from ..devices.signal_editor import SignalEditor
 from ..devices.usage import DeviceUsage
+from ..devices.view import DeviceView
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import Live
 from ..engine.clock import Clock
@@ -86,6 +87,7 @@ class TdcData:
     clock: Clock
     signal_editor: SignalEditor
     usage: DeviceUsage
+    device_view: DeviceView
     csv: CsvLibrary
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
@@ -180,6 +182,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         history=history,
         clock=clock,
         usage=usage,
+        device_view=DeviceView(hass, store, usage, live),
         signal_editor=SignalEditor(store, live, behaviours, audit, audit_factory),
         csv=csv,
         live=live,

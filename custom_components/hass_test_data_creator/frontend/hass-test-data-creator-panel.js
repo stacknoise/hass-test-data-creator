@@ -609,6 +609,12 @@ var E = "device", Xe = "template", D = "times", Ze = "interval", Qe = "once", $e
 	templates() {
 		return this.call("templates/list");
 	}
+	device(e) {
+		return this.call("devices/get", { device: e });
+	}
+	async deviceNames() {
+		return (await this.call("devices/names")).devices;
+	}
 	devices(e, t) {
 		return this.call("devices/list", {
 			offset: e,
@@ -2631,10 +2637,13 @@ var H = class extends F {
 			await this.api.updateDevice(this.device.id, e || null), this.areaDraft = void 0;
 		});
 	}
-	openCurve(e) {
-		e.signal && (this.curves = {
-			...this.curves,
-			[e.key]: { ...e.signal }
+	async openCurve(e) {
+		await this.run(async () => {
+			let t = (await this.api.device(this.device.id)).entities.find((t) => t.key === e.key)?.signal;
+			t && (this.curves = {
+				...this.curves,
+				[e.key]: { ...t }
+			});
 		});
 	}
 	closeCurve(e) {
@@ -2760,7 +2769,7 @@ var H = class extends F {
     </tr>`;
 	}
 	renderEntity(e) {
-		let t = this.hass?.language, n = this.menuItems(e), r = e.signal != null && !In(e.signal.shape);
+		let t = this.hass?.language, n = this.menuItems(e), r = e.shape != null && !In(e.shape);
 		return v`<tr>
         <td>
           ${M(t, e.key, e.name)}<br /><small
@@ -2781,7 +2790,7 @@ var H = class extends F {
           ${this.renderPicked(e)}
           ${r ? v`<button
                   ?disabled=${this.busy || e.key in this.curves}
-                  @click=${() => this.openCurve(e)}
+                  @click=${() => void this.openCurve(e)}
                 >
                   ${this.tr("detCurve")}
                 </button>` : ""}
@@ -3156,8 +3165,7 @@ var kr = 3, Ar = "z2m", jr = class extends W {
 	}
 	async refresh() {
 		try {
-			let [e, t] = await Promise.all([this.api.groups(), this.api.devicesUpTo(Infinity)]);
-			this.groups = e, this.devices = t.devices;
+			[this.groups, this.devices] = await Promise.all([this.api.groups(), this.api.deviceNames()]);
 		} catch (e) {
 			this.error = k(e);
 		}
@@ -3235,7 +3243,7 @@ function Nr(e, t) {
 	let [n, ...r] = (t.length ? e.filter((e) => t.includes(e.id)) : e).map((e) => {
 		let t = /* @__PURE__ */ new Map();
 		for (let n of e.entities) {
-			let e = n.signal?.shape;
+			let e = n.shape;
 			n.platform === "sensor" && n.state_class && e && !In(e) && t.set(n.key, {
 				key: n.key,
 				name: n.name
@@ -3383,7 +3391,7 @@ var Hr = {
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devicesUpTo(Infinity)).devices, this.error = "";
+			this.devices = await this.api.deviceNames(), this.error = "";
 		} catch (e) {
 			this.error = k(e);
 		}

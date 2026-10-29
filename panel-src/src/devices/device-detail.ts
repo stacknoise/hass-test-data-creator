@@ -114,8 +114,12 @@ export class DeviceDetail extends TdcElement {
   }
 
   /** Open the curve editor of a sensor with its current curve. */
-  private openCurve(entity: EntityState): void {
-    if (entity.signal) this.curves = { ...this.curves, [entity.key]: { ...entity.signal } };
+  private async openCurve(entity: EntityState): Promise<void> {
+    await this.run(async () => {
+      const full = await this.api.device(this.device.id);
+      const signal = full.entities.find((item) => item.key === entity.key)?.signal;
+      if (signal) this.curves = { ...this.curves, [entity.key]: { ...signal } };
+    });
   }
 
   /** Close the curve editor of a sensor without saving. */
@@ -270,7 +274,7 @@ export class DeviceDetail extends TdcElement {
   private renderEntity(entity: EntityState): TemplateResult {
     const lang = this.hass?.language;
     const items = this.menuItems(entity);
-    const editable = entity.signal != null && !isDiscrete(entity.signal.shape);
+    const editable = entity.shape != null && !isDiscrete(entity.shape);
     return html`<tr>
         <td>
           ${entityName(lang, entity.key, entity.name)}<br /><small
@@ -301,7 +305,7 @@ export class DeviceDetail extends TdcElement {
             editable
               ? html`<button
                   ?disabled=${this.busy || entity.key in this.curves}
-                  @click=${() => this.openCurve(entity)}
+                  @click=${() => void this.openCurve(entity)}
                 >
                   ${this.tr('detCurve')}
                 </button>`

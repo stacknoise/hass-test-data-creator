@@ -123,7 +123,8 @@ class RemovalPlanner:
         """Return the devices of a plan that a schedule, scenario or group names; "all" has none."""
         if plan.target == TARGET_ALL:
             return []
-        found = [(device, self._usage.of(device)) for device in plan.devices]
+        index = self._usage.index()
+        found = [(device, index.of(device)) for device in plan.devices]
         return [
             {KEY_DEVICE: device.name, "usage": usage}
             for device, usage in found
