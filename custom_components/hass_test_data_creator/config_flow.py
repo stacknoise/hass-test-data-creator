@@ -26,8 +26,10 @@ from .const import (
     DEFAULT_TICK_SECONDS,
     DEFAULT_TIME_LAPSE,
     DEFAULT_Z2M_BASE_TOPIC,
+    DISCOVERY_PREFIX,
     DOMAIN,
     MANUFACTURER,
+    MAX_BASE_TOPIC_LENGTH,
     MAX_TICK_SECONDS,
     MAX_TIME_LAPSE,
     MIN_TICK_SECONDS,
@@ -43,10 +45,21 @@ WILDCARDS = ("+", "#")
 
 
 def _valid_topic(topic: str) -> bool:
-    """Whether `topic` can be a base topic: not empty, no wildcards, no slash at the ends."""
+    """Whether `topic` can be a base topic: printable, no wildcards, not broker or discovery space."""
     return (
-        bool(topic) and not any(mark in topic for mark in WILDCARDS) and topic.strip("/") == topic
+        0 < len(topic) <= MAX_BASE_TOPIC_LENGTH
+        and topic.isprintable()
+        and not any(mark in topic for mark in WILDCARDS)
+        and topic.strip("/") == topic
+        and "//" not in topic
+        and not topic.startswith("$")
+        and topic.split("/", maxsplit=1)[0] != DISCOVERY_PREFIX
     )
+
+
+def _overlap(first: str, second: str) -> bool:
+    """Whether the topics are equal or one lies below the other."""
+    return first == second or first.startswith(f"{second}/") or second.startswith(f"{first}/")
 
 
 class TestDataCreatorConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -127,7 +140,7 @@ class TestDataCreatorOptionsFlow(OptionsFlow):
             return {CONF_MQTT_BASE_TOPIC: ERROR_INVALID_TOPIC}
         if not _valid_topic(z2m):
             return {CONF_Z2M_BASE_TOPIC: ERROR_INVALID_TOPIC}
-        if mqtt == z2m:
+        if _overlap(mqtt, z2m):
             return {CONF_Z2M_BASE_TOPIC: ERROR_SAME_TOPIC}
         if z2m == FOREIGN_BASE_TOPIC and not values[CONF_Z2M_CONFIRM_DEFAULT]:
             return {CONF_Z2M_BASE_TOPIC: ERROR_UNCONFIRMED_TOPIC}

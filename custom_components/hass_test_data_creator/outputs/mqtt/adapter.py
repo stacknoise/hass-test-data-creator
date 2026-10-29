@@ -17,6 +17,7 @@ class MqttAdapter(OutputAdapter):
     async def create(self, device: DeviceDef, area_id: str | None) -> None:
         """Check that the output may be used; the area travels as `suggested_area` in discovery."""
         await self._devices.async_check()
+        self._devices.check_device(device)
 
     async def announce(self, devices: list[DeviceDef]) -> None:
         """Start the devices and publish their topics."""
