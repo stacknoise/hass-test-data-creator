@@ -2266,11 +2266,15 @@ var yr = -1, R = class extends P {
 	}
 	static {
 		this.styles = [P.styles, o`
+      :host {
+        --row-height: 44px;
+      }
       ul {
         list-style: none;
         margin: 0;
         padding: 0;
-        max-height: 220px;
+        height: calc(4 * var(--row-height) + 2px);
+        box-sizing: border-box;
         overflow-y: auto;
         border: 1px solid var(--divider-color);
         border-radius: 6px;
@@ -2279,7 +2283,9 @@ var yr = -1, R = class extends P {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 4px 10px;
+        box-sizing: border-box;
+        height: var(--row-height);
+        padding: 0 10px;
         border-bottom: 1px solid var(--divider-color);
       }
       li:last-child {
@@ -2306,7 +2312,7 @@ var yr = -1, R = class extends P {
         flex: 0 0 90px;
       }
       .empty {
-        padding: 16px;
+        justify-content: center;
         text-align: center;
         color: var(--secondary-text-color);
       }
@@ -2467,11 +2473,15 @@ var br = class extends C {
 	}
 	static {
 		this.styles = o`
+    :host {
+      --row-height: 40px;
+    }
     ul {
       list-style: none;
       margin: 0;
       padding: 0;
-      max-height: 180px;
+      height: calc(4 * var(--row-height) + 2px);
+      box-sizing: border-box;
       overflow-y: auto;
       border: 1px solid var(--divider-color);
       border-radius: 6px;
@@ -2480,7 +2490,9 @@ var br = class extends C {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 10px;
+      box-sizing: border-box;
+      height: var(--row-height);
+      padding: 0 10px;
       border-bottom: 1px solid var(--divider-color);
     }
     li:last-child {

@@ -33,11 +33,15 @@ export class EntityEditor extends TdcElement {
   static override styles: CSSResultGroup = [
     TdcElement.styles,
     css`
+      :host {
+        --row-height: 44px;
+      }
       ul {
         list-style: none;
         margin: 0;
         padding: 0;
-        max-height: 220px;
+        height: calc(4 * var(--row-height) + 2px);
+        box-sizing: border-box;
         overflow-y: auto;
         border: 1px solid var(--divider-color);
         border-radius: 6px;
@@ -46,7 +50,9 @@ export class EntityEditor extends TdcElement {
         display: flex;
         align-items: center;
         gap: 10px;
-        padding: 4px 10px;
+        box-sizing: border-box;
+        height: var(--row-height);
+        padding: 0 10px;
         border-bottom: 1px solid var(--divider-color);
       }
       li:last-child {
@@ -73,7 +79,7 @@ export class EntityEditor extends TdcElement {
         flex: 0 0 90px;
       }
       .empty {
-        padding: 16px;
+        justify-content: center;
         text-align: center;
         color: var(--secondary-text-color);
       }

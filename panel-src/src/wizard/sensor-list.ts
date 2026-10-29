@@ -11,11 +11,15 @@ export class SensorList extends LitElement {
   @property({ attribute: false }) entities: EntityDef[] = [];
 
   static override styles = css`
+    :host {
+      --row-height: 40px;
+    }
     ul {
       list-style: none;
       margin: 0;
       padding: 0;
-      max-height: 180px;
+      height: calc(4 * var(--row-height) + 2px);
+      box-sizing: border-box;
       overflow-y: auto;
       border: 1px solid var(--divider-color);
       border-radius: 6px;
@@ -24,7 +28,9 @@ export class SensorList extends LitElement {
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 10px;
+      box-sizing: border-box;
+      height: var(--row-height);
+      padding: 0 10px;
       border-bottom: 1px solid var(--divider-color);
     }
     li:last-child {
