@@ -310,7 +310,7 @@ The config flow requires the confirmation "this is a test instance". The panel s
 - MQTT tests with the HA MQTT test fixtures: topics and payloads of discovery and Z2M, `/set` round trip, group set, cleanup of retained messages.
 - Error code test: unique, well-formed, translated, every code reachable (same idea as the `haac-bridge` test).
 - Performance test (marked `slow`, nightly): 1000 devices with 4 entities at a 10 s tick; the tick must finish within 50 % of the interval.
-- Panel: Vitest for the `api`, `i18n` and signal modules, shared vectors with pytest.
+- Panel: Vitest for the `api`, `i18n` and signal modules, shared vectors with pytest. Components are tested with `happy-dom` (a test file starts with `// @vitest-environment happy-dom`), for example the paging of the device list.
 - The Home Assistant tests do not run on Windows (needs `fcntl`). They run in Docker (`docker compose -f dev/docker-compose.test.yml run --rm tests`) and in CI.
 
 ## 12. Limits and performance

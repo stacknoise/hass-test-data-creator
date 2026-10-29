@@ -14,7 +14,7 @@ describe('i18n', () => {
   });
 
   it('fills fields and keeps unknown ones', () => {
-    expect(t('en', 'devicesOf', { shown: 3, total: 9 })).toBe('3 of 9 devices');
+    expect(t('en', 'devicesRange', { from: 1, to: 3, total: 9 })).toBe('1–3 of 9 devices');
     expect(t('en', 'namePatternHint')).toContain('{nn}');
   });
 });

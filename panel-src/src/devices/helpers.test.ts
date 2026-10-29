@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceInfo } from '../common/types';
-import { actionsFor, faultParams, knownAreas, usageEntries, valueParams } from './helpers';
+import {
+  actionsFor,
+  faultParams,
+  knownAreas,
+  lastPageOffset,
+  usageEntries,
+  valueParams,
+} from './helpers';
 
 const ACTIONS = {
   light: ['turn_on', 'turn_off', 'toggle', 'set_brightness', 'fault_unavailable', 'fault_late'],
@@ -72,5 +79,14 @@ describe('usageEntries', () => {
   it('is empty for a device that nothing uses, or one without the information', () => {
     expect(usageEntries({ schedules: [], scenarios: [], groups: [] })).toEqual([]);
     expect(usageEntries(undefined)).toEqual([]);
+  });
+});
+
+describe('lastPageOffset', () => {
+  it('gives the offset of the last page', () => {
+    expect(lastPageOffset(0, 50)).toBe(0);
+    expect(lastPageOffset(50, 50)).toBe(0);
+    expect(lastPageOffset(51, 50)).toBe(50);
+    expect(lastPageOffset(120, 50)).toBe(100);
   });
 });

@@ -18,13 +18,13 @@ import {
 import '../common/dialog';
 import '../wizard/creation-wizard';
 import './device-detail';
-import { knownAreas, usageEntries } from './helpers';
+import { knownAreas, lastPageOffset, usageEntries } from './helpers';
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
 
 const VALUES_SHOWN = 4;
 const COLUMN_COUNT = 6;
 
-const PAGE_SIZE = 200;
+export const PAGE_SIZE = 50;
 const REFRESH_MS = 10_000;
 const ACTION_BY_PLATFORM: Record<string, string> = {
   switch: 'toggle',
@@ -71,6 +71,7 @@ export class DeviceList extends TdcElement {
 
   @state() private devices: DeviceInfo[] = [];
   @state() private total = 0;
+  @state() private offset = 0;
   @state() private loaded = false;
   @state() private error = '';
   @state() private creating = false;
@@ -107,11 +108,14 @@ export class DeviceList extends TdcElement {
     this.expanded = toggled(this.expanded, id);
   }
 
-  /** Reload the devices that are shown now, at least the first page. */
-  async refresh(more = false): Promise<void> {
-    const count = Math.max(PAGE_SIZE, this.devices.length + (more ? PAGE_SIZE : 0));
+  /** Reload the page that is shown; after devices were removed, step back to the last page. */
+  async refresh(): Promise<void> {
     try {
-      const page = await this.api.devicesUpTo(count);
+      let page = await this.api.devices(this.offset, PAGE_SIZE);
+      if (page.devices.length === 0 && this.offset > 0) {
+        this.offset = lastPageOffset(page.total, PAGE_SIZE);
+        page = await this.api.devices(this.offset, PAGE_SIZE);
+      }
       this.devices = page.devices;
       this.total = page.total;
       this.error = '';
@@ -119,6 +123,12 @@ export class DeviceList extends TdcElement {
       this.error = describeError(err);
     }
     this.loaded = true;
+  }
+
+  /** Show another page of the list. */
+  private goTo(offset: number): void {
+    this.offset = offset;
+    void this.refresh();
   }
 
   /** Run the action of an entity and reload the list. */
@@ -284,16 +294,25 @@ export class DeviceList extends TdcElement {
                 </tbody>
               </table>
               <p class="row">
+                <button
+                  ?disabled=${this.offset === 0}
+                  @click=${() => this.goTo(Math.max(0, this.offset - PAGE_SIZE))}
+                >
+                  ${this.tr('pagePrevious')}
+                </button>
                 <small>
-                  ${this.tr('devicesOf', { shown: this.devices.length, total: this.total })}
+                  ${this.tr('devicesRange', {
+                    from: this.offset + 1,
+                    to: this.offset + this.devices.length,
+                    total: this.total,
+                  })}
                 </small>
-                ${
-                  this.devices.length < this.total
-                    ? html`<button @click=${() => void this.refresh(true)}>
-                        ${this.tr('loadMore')}
-                      </button>`
-                    : ''
-                }
+                <button
+                  ?disabled=${this.offset + this.devices.length >= this.total}
+                  @click=${() => this.goTo(this.offset + PAGE_SIZE)}
+                >
+                  ${this.tr('pageNext')}
+                </button>
               </p>`
       }
     `;

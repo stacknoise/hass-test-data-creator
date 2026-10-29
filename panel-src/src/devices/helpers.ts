@@ -82,3 +82,8 @@ export function usageEntries(used: DeviceUsage | undefined): UsageEntry[] {
     (used?.[kind] ?? []).map((item) => ({ kind, name: item.name })),
   );
 }
+
+/** Return the offset of the last page of `total` items in pages of `size`. */
+export function lastPageOffset(total: number, size: number): number {
+  return total <= 0 ? 0 : Math.floor((total - 1) / size) * size;
+}

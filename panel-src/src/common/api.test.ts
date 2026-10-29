@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { TdcApi, describeError } from './api';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { TdcApi, clearApiCache, describeError } from './api';
 import type { Hass } from './types';
 
 describe('describeError', () => {
@@ -81,5 +81,38 @@ describe('TdcApi', () => {
     expect(await api.deviceNames()).toEqual([{ id: 'a' }]);
     await api.device('a');
     expect(sent[1]).toEqual({ type: 'hass_test_data_creator/devices/get', device: 'a' });
+  });
+});
+
+describe('shared answers', () => {
+  beforeEach(() => clearApiCache());
+
+  it('asks for info and templates once however many tabs ask', async () => {
+    const sent: string[] = [];
+    const hass = {
+      language: 'en',
+      callWS: async (message: Record<string, unknown>) => {
+        sent.push(message.type as string);
+        return [];
+      },
+    } as unknown as Hass;
+    await Promise.all([new TdcApi(hass).info(), new TdcApi(hass).info()]);
+    await new TdcApi(hass).templates();
+    await new TdcApi(hass).templates();
+    expect(sent).toEqual(['hass_test_data_creator/info', 'hass_test_data_creator/templates/list']);
+  });
+
+  it('does not keep a failed answer', async () => {
+    let calls = 0;
+    const hass = {
+      language: 'en',
+      callWS: async () => {
+        calls += 1;
+        if (calls === 1) throw new Error('down');
+        return {};
+      },
+    } as unknown as Hass;
+    await expect(new TdcApi(hass).info()).rejects.toThrow('down');
+    await expect(new TdcApi(hass).info()).resolves.toEqual({});
   });
 });
