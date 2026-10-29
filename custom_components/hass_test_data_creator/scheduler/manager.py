@@ -16,7 +16,6 @@ from ..core.errors import ErrorCode, ScheduleError, TdcError
 from ..core.ids import new_id
 from ..core.keys import (
     KEY_ACTION,
-    KEY_DEVICE,
     KEY_ENABLED,
     KEY_ENTITY,
     KEY_NAME,
@@ -26,12 +25,11 @@ from ..core.keys import (
     KEY_TARGET,
     KEY_TRIGGER,
 )
-from ..model.models import DeviceDef, ScheduleDef
+from ..model.models import ScheduleDef
 from ..scenarios.manager import ScenarioManager
 from ..store.store import TdcStore
 from .planner import PlannedRun, SchedulePlanner
 from .runner import ActionRunner
-from .schema import device_references
 from .triggers import TriggerFactory
 
 TARGET_KEYS = ("device", "template", "run", "all")
@@ -177,14 +175,6 @@ class ScheduleManager:
         elif not any(data[KEY_ACTION] in names for names in self._runner.actions().values()):
             raise ScheduleError(ErrorCode.SCH_UNKNOWN_ACTION)
 
-    def ids_targeting(self, device: DeviceDef) -> list[str]:
-        """Return the ids of the schedules that name this device, alone or in a list."""
-        return [
-            item.id
-            for item in self._store.schedules()
-            if device_references(item.target.get(KEY_DEVICE)) & {device.id, device.name}
-        ]
-
     def forget(self, schedule_ids: list[str]) -> None:
         """Delete schedules without saving; the removal saves the store afterwards."""
         for schedule_id in schedule_ids:
@@ -218,12 +208,14 @@ class ScheduleManager:
         self._cancel_timer = None
         due = [run for run in self._queue if run.when <= now]
         self._queue = [run for run in self._queue if run.when > now]
-        for run in due:
-            await self._execute(run)
-        if self._queue:
-            self._cancel_timer = async_track_point_in_utc_time(
-                self._hass, self._fire, dt_util.as_utc(self._queue[0].when)
-            )
+        try:
+            for run in due:
+                await self._execute(run)
+        finally:
+            if self._queue:
+                self._cancel_timer = async_track_point_in_utc_time(
+                    self._hass, self._fire, dt_util.as_utc(self._queue[0].when)
+                )
 
     async def _execute(self, run: PlannedRun) -> None:
         """Run the action of one planned run on all devices of its target."""

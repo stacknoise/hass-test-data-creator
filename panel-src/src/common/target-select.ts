@@ -8,7 +8,6 @@ import { resolveTargetId, targetOptions, type TargetKind } from './targets';
 import type { DeviceInfo, TemplateInfo } from './types';
 import { KIND_DEVICE, KIND_TEMPLATE } from './constants';
 
-const DEVICE_LIMIT = 500;
 const KIND_LABELS: Record<TargetKind, TextKey> = {
   device: 'schTarget_device',
   template: 'schTarget_template',
@@ -35,7 +34,7 @@ export class TargetSelect extends TdcElement {
   /** Read the devices; the creations are derived from them. */
   private async loadDevices(): Promise<void> {
     try {
-      this.devices = (await this.api.devices(0, DEVICE_LIMIT)).devices;
+      this.devices = (await this.api.devicesUpTo(Infinity)).devices;
       this.error = '';
     } catch (err) {
       this.error = describeError(err);

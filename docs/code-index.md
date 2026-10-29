@@ -16,7 +16,8 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.binary_sensor` | `module` | `custom_components/hass_test_data_creator/binary_sensor.py` | The binary_sensor platform of the generated devices. |
 | `hass_test_data_creator.climate` | `module` | `custom_components/hass_test_data_creator/climate.py` | The climate platform of the generated devices. |
 | `hass_test_data_creator.config_flow` | `module` | `custom_components/hass_test_data_creator/config_flow.py` | Config flow: one entry, created after the test environment confirmation (concept 10.4). |
-| `_valid_topic` | `def _valid_topic(topic: str) -> bool` | `custom_components/hass_test_data_creator/config_flow.py` | Whether `topic` can be a base topic: not empty, no wildcards, no slash at the ends. |
+| `_valid_topic` | `def _valid_topic(topic: str) -> bool` | `custom_components/hass_test_data_creator/config_flow.py` | Whether `topic` can be a base topic: printable, no wildcards, not broker or discovery space. |
+| `_overlap` | `def _overlap(first: str, second: str) -> bool` | `custom_components/hass_test_data_creator/config_flow.py` | Whether the topics are equal or one lies below the other. |
 | `TestDataCreatorConfigFlow` | `class TestDataCreatorConfigFlow(ConfigFlow)` | `custom_components/hass_test_data_creator/config_flow.py` | Asks once whether this is a test instance and for the seed and tick interval. |
 | `TestDataCreatorConfigFlow.async_step_user` | `async def async_step_user(self, user_input: dict[str, Any] \| None=None) -> ConfigFlowResult` | `custom_components/hass_test_data_creator/config_flow.py` | Create the entry if the user confirms that this is a test environment. |
 | `TestDataCreatorConfigFlow.async_get_options_flow` | `def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow` | `custom_components/hass_test_data_creator/config_flow.py` | Return the options flow with the MQTT base topics and the time lapse. |
@@ -124,6 +125,7 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.async_load` | `async def async_load(self) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Load the stored content, if any. |
 | `TdcStore.devices` | `def devices(self) -> list[DeviceDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all stored devices in creation order. |
 | `TdcStore.device` | `def device(self, device_id: str) -> DeviceDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the device with `device_id`, or None. |
+| `TdcStore.device_id_of` | `def device_id_of(self, reference: str) -> str \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the id of the device whose id or name is `reference`, without building devices. |
 | `TdcStore.device_count` | `def device_count(self) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Return the number of stored devices. |
 | `TdcStore.add_device` | `def add_device(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `device`. |
 | `TdcStore.remove_device` | `def remove_device(self, device_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the device and its id in the run it belongs to. |
@@ -301,12 +303,14 @@ Lists every module, class and function of the integration with signature, file a
 | `TemplateFactory._check_content` | `def _check_content(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/templates/factory.py` | Check the rules that depend on the platform: signal, shape and device class. |
 | `hass_test_data_creator.templates.registry` | `module` | `custom_components/hass_test_data_creator/templates/registry.py` | Loads the bundled and the user's template files (concept 4.2). |
 | `_read_files` | `def _read_files(directory: Path) -> list[tuple[str, dict[str, Any]]]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return (file name, content) of every YAML file in `directory`; runs in the executor. |
+| `_read_user_files` | `def _read_user_files(directory: Path) -> list[tuple[str, dict[str, Any]]]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return the usable user files; a link, a large or an unreadable file is skipped and logged. |
 | `TemplateRegistry` | `class TemplateRegistry` | `custom_components/hass_test_data_creator/templates/registry.py` | Holds all templates by id. |
 | `TemplateRegistry.__init__` | `def __init__(self, factory: TemplateFactory) -> None` | `custom_components/hass_test_data_creator/templates/registry.py` | Create an empty registry that builds templates with `factory`. |
 | `TemplateRegistry.async_load` | `async def async_load(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/templates/registry.py` | Load the bundled templates and then the user's; a user template can replace one. |
 | `TemplateRegistry.get` | `def get(self, template_id: str) -> Template` | `custom_components/hass_test_data_creator/templates/registry.py` | Return the template with `template_id` or raise TPL_NOT_FOUND. |
 | `TemplateRegistry.all` | `def all(self) -> list[Template]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return all templates sorted by name. |
 | `hass_test_data_creator.templates.schema` | `module` | `custom_components/hass_test_data_creator/templates/schema.py` | Voluptuous schemas of templates and custom entities (concept 4.2). |
+| `_finite` | `def _finite(value: float) -> float` | `custom_components/hass_test_data_creator/templates/schema.py` | Return `value` as a finite number or raise `vol.Invalid`. |
 
 ## devices
 
@@ -448,6 +452,7 @@ Lists every module, class and function of the integration with signature, file a
 | `BehaviourRuntime.__init__` | `def __init__(self, parts: RuntimeParts) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Keep the parts. |
 | `BehaviourRuntime.require_connection` | `def require_connection(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Raise TDC-OUT-002 unless MQTT is usable. |
 | `BehaviourRuntime.async_check` | `async def async_check(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Raise unless the output may be used now; the default is a usable MQTT connection. |
+| `BehaviourRuntime.check_device` | `def check_device(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Raise if `device` cannot be published by this output; the default accepts every device. |
 | `BehaviourRuntime.async_start` | `async def async_start(self, devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Start the stored devices after a restart once MQTT is connected. |
 | `BehaviourRuntime.async_add` | `async def async_add(self, devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Start the behaviours of `devices` and publish what the output publishes at the start. |
 | `BehaviourRuntime.async_remove` | `async def async_remove(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Stop the behaviours of `device`; the removal deletes its retained topics. |
@@ -487,6 +492,7 @@ Lists every module, class and function of the integration with signature, file a
 | `Z2mDevices.__init__` | `def __init__(self, parts: RuntimeParts, profiles: Z2mProfileFactory, payloads: Z2mPayloadFactory, templates: TemplateRegistry, settings: Z2mSettings) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Keep the factories, the template registry and the settings. |
 | `Z2mDevices.set_groups` | `def set_groups(self, groups: list[GroupDef]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Hand over the stored groups; they are published when the devices start. |
 | `Z2mDevices.async_groups_changed` | `async def async_groups_changed(self, groups: list[GroupDef]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the groups after one was added, removed or lost a member. |
+| `Z2mDevices.check_device` | `def check_device(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Raise TDC-OUT-007 unless the device name is a valid friendly name. |
 | `Z2mDevices.async_check` | `async def async_check(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Raise unless MQTT is usable and the base topic may be used; then publish the bridge. |
 | `Z2mDevices._ensure_bridge` | `async def _ensure_bridge(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Refuse a foreign base topic, then publish `bridge/state` and `bridge/info`. |
 | `Z2mDevices._async_prepare` | `async def _async_prepare(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Make sure the bridge is up before devices start. |
@@ -506,6 +512,8 @@ Lists every module, class and function of the integration with signature, file a
 | `Z2mDevices._bridge_entry` | `def _bridge_entry(self, device: DeviceDef) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the description of a device for `bridge/devices`. |
 | `Z2mDevices._async_publish_device` | `async def _async_publish_device(self, device_id: str) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish availability and the state of a device; it is offline if any entity is. |
 | `Z2mDevices._z2m` | `def _z2m(self, entry: RuntimeEntry) -> _Entry` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the entry as one of this output. |
+| `hass_test_data_creator.outputs.z2m.names` | `module` | `custom_components/hass_test_data_creator/outputs/z2m/names.py` | Rules for the names that become Zigbee2MQTT topics (concept 7.3, 7.4). |
+| `is_friendly_name` | `def is_friendly_name(name: str) -> bool` | `custom_components/hass_test_data_creator/outputs/z2m/names.py` | Whether `name` can be a Zigbee2MQTT friendly name: a single, printable topic level. |
 | `hass_test_data_creator.outputs.z2m.payloads` | `module` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | The payloads of the Zigbee2MQTT bridge, created only here (concept 7.4, 13.2). |
 | `ieee_address` | `def ieee_address(device_id: str) -> str` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return a stable fake IEEE address for a device id. |
 | `network_address` | `def network_address(device_id: str) -> int` | `custom_components/hass_test_data_creator/outputs/z2m/payloads.py` | Return a stable fake network address (16 bit) for a device id. |
@@ -664,7 +672,6 @@ Lists every module, class and function of the integration with signature, file a
 | `ScheduleManager.async_set_enabled` | `async def async_set_enabled(self, schedule_id: str, enabled: bool) -> ScheduleDef` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Switch a schedule on or off. |
 | `ScheduleManager.preview` | `def preview(self, hours: int) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the planned runs of the next `hours` hours with the schedule names. |
 | `ScheduleManager._check_work` | `def _check_work(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Raise unless `data` names an existing scenario or a target with a known action. |
-| `ScheduleManager.ids_targeting` | `def ids_targeting(self, device: DeviceDef) -> list[str]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the ids of the schedules that name this device, alone or in a list. |
 | `ScheduleManager.forget` | `def forget(self, schedule_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Delete schedules without saving; the removal saves the store afterwards. |
 | `ScheduleManager._cancel` | `def _cancel(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Cancel the timer of the next run. |
 | `ScheduleManager._on_midnight` | `def _on_midnight(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the new day. |
@@ -686,6 +693,7 @@ Lists every module, class and function of the integration with signature, file a
 | `ActionRunner.async_run_on` | `async def async_run_on(self, devices: list[DeviceDef], key: str, action: str, params: dict[str, Any], label: str) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Run `action` on entity `key` (all that fit if empty) of every device; a failure is logged. |
 | `ActionRunner.find_device_id` | `def find_device_id(self, reference: str) -> str` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Return the id of the device whose id or name is `reference`. |
 | `ActionRunner.async_run` | `async def async_run(self, reference: str, key: str, action: str, params: dict[str, Any] \| None=None) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Run `action` on entity `key` of the device `reference` (id or name). |
+| `ActionRunner._run_device` | `async def _run_device(self, device_id: str, reference: str, key: str, action: str, params: dict[str, Any] \| None) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Run `action` on the entities of the device `device_id`; `reference` is audited. |
 | `ActionRunner._keys` | `def _keys(self, device_id: str, key: str, action: str) -> list[str]` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Return the keys of the entities that an action runs on: the one named, or all that fit. |
 | `hass_test_data_creator.scheduler.schema` | `module` | `custom_components/hass_test_data_creator/scheduler/schema.py` | Request fields of a schedule, shared by the services and the WebSocket commands. |
 | `device_references` | `def device_references(value: str \| list[str] \| None) -> set[str]` | `custom_components/hass_test_data_creator/scheduler/schema.py` | Return the ids or names that the `device` part of a target names: one text or a list. |

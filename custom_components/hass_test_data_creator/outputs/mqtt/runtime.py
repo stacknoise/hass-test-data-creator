@@ -71,6 +71,10 @@ class BehaviourRuntime(ABC):
         """Raise unless the output may be used now; the default is a usable MQTT connection."""
         self.require_connection()
 
+    def check_device(self, device: DeviceDef) -> None:
+        """Raise if `device` cannot be published by this output; the default accepts every device."""
+        return None
+
     async def async_start(self, devices: list[DeviceDef]) -> None:
         """Start the stored devices after a restart once MQTT is connected."""
         if await self._client.async_wait():
@@ -234,6 +238,6 @@ class BehaviourRuntime(ABC):
         """Publish; a failure while the system runs is logged and does not stop the rest."""
         try:
             await self._client.async_publish(topic, payload, retain=retain, device_id=device_id)
-        except HomeAssistantError as error:
+        except (HomeAssistantError, ValueError) as error:
             _LOGGER.debug("MQTT publish failed on %s: %s", topic, error)
             self._audit.record(self._audit_factory.mqtt_failed(topic, "publish failed"))

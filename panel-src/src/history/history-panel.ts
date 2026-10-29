@@ -9,8 +9,6 @@ import { MAX_DAYS, MIN_DAYS, clampDays, sensorEntities } from './helpers';
 
 const DEFAULT_DAYS = 7;
 
-const DEVICE_LIMIT = 500;
-
 /** Writes hourly statistics for the past days of the test sensors. */
 @customElement('tdc-history-panel')
 export class HistoryPanel extends TdcElement {
@@ -31,7 +29,7 @@ export class HistoryPanel extends TdcElement {
   /** Read the devices. */
   private async loadDevices(): Promise<void> {
     try {
-      this.devices = (await this.api.devices(0, DEVICE_LIMIT)).devices;
+      this.devices = (await this.api.devicesUpTo(Infinity)).devices;
     } catch (err) {
       this.error = describeError(err);
     }

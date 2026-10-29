@@ -300,3 +300,13 @@ async def test_the_panel_command_changes_a_group(
     assert reply["success"]
     assert reply["result"]["name"] == "Via panel"
     assert len(reply["result"]["members"]) == 1
+
+
+@pytest.mark.parametrize("name", ["a+b", "x#", "bridge", "a/b", "a\x00b"])
+async def test_a_group_name_that_is_not_a_topic_level_is_refused(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry, name: str
+) -> None:
+    await lamps(hass)
+    with pytest.raises(OutputError) as error:
+        await group(hass, name)
+    assert error.value.code is ErrorCode.OUT_GROUP_INVALID

@@ -78,7 +78,7 @@ class MqttDevices(BehaviourRuntime):
         entry = self._mqtt(found)
         try:
             entry.profile.command(entry.behaviour, facet, payload)
-        except ValueError, KeyError, TypeError, AttributeError:
+        except ValueError, KeyError, TypeError, AttributeError, OverflowError:
             self._audit.record(self._audit_factory.mqtt_failed(topic, "invalid command"))
 
     async def _async_announce(self, added: list[RuntimeEntry], devices: list[DeviceDef]) -> None:

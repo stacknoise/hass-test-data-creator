@@ -60,7 +60,7 @@ class ActionRunner:
         """Run `action` on entity `key` (all that fit if empty) of every device; a failure is logged."""
         for device in devices:
             try:
-                await self.async_run(device.id, key, action, params)
+                await self._run_device(device.id, device.id, key, action, params)
             except TdcError as error:
                 self._audit.record(
                     self._audit_factory.schedule_failed(label, device.name, error.code.value)
@@ -68,10 +68,10 @@ class ActionRunner:
 
     def find_device_id(self, reference: str) -> str:
         """Return the id of the device whose id or name is `reference`."""
-        for device in self._store.devices():
-            if reference in (device.id, device.name):
-                return device.id
-        raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+        device_id = self._store.device_id_of(reference)
+        if device_id is None:
+            raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+        return device_id
 
     async def async_run(
         self, reference: str, key: str, action: str, params: dict[str, Any] | None = None
@@ -81,7 +81,17 @@ class ActionRunner:
         An empty `key` means every entity of the device that can do the action; TDC-SCH-001 is
         raised if there is none.
         """
-        device_id = self.find_device_id(reference)
+        await self._run_device(self.find_device_id(reference), reference, key, action, params)
+
+    async def _run_device(
+        self,
+        device_id: str,
+        reference: str,
+        key: str,
+        action: str,
+        params: dict[str, Any] | None,
+    ) -> None:
+        """Run `action` on the entities of the device `device_id`; `reference` is audited."""
         for entity in self._keys(device_id, key, action):
             behaviour = self._live.get((device_id, entity))
             if behaviour is None:
