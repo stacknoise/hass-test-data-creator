@@ -66,9 +66,9 @@ export class EntityEditor extends TdcElement {
         min-width: 0;
       }
       .name div {
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
       .range {
         flex: 0 0 auto;
@@ -85,9 +85,10 @@ export class EntityEditor extends TdcElement {
       }
       .head {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 6px;
+        justify-content: space-between;
+        gap: 8px;
+        padding-bottom: 6px;
       }
       .draft {
         margin-top: 10px;

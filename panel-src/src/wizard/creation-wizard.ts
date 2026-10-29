@@ -7,7 +7,7 @@ import type { TextKey } from '../common/i18n';
 import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
 import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
 import './entity-editor';
-import './sensor-list';
+import './entity-list';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
 import { stateRate } from './helpers';
@@ -212,8 +212,8 @@ export class CreationWizard extends TdcElement {
       ${
         this.template !== CUSTOM
           ? html`<p>
-              <small>${this.tr('sensorList')}</small>
-              <tdc-sensor-list .entities=${this.entities()}></tdc-sensor-list>
+              <small>${this.tr('entityList')}</small>
+              <tdc-entity-list .hass=${this.hass} .entities=${this.entities()}></tdc-entity-list>
             </p>`
           : ''
       }
