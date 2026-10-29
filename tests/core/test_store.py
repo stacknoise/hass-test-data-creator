@@ -4,13 +4,21 @@ from __future__ import annotations
 
 from datetime import timedelta
 from typing import Any
+from unittest.mock import AsyncMock
 
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hass_test_data_creator.const import STORE_KEY, STORE_VERSION
-from custom_components.hass_test_data_creator.core.keys import KEY_DEVICES, KEY_TIME_LAPSE
+from custom_components.hass_test_data_creator.core.errors import ErrorCode
+from custom_components.hass_test_data_creator.core.keys import (
+    KEY_DEVICES,
+    KEY_GROUPS,
+    KEY_SCHEDULES,
+    KEY_TIME_LAPSE,
+)
 from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.store.migrate import migrate
 from custom_components.hass_test_data_creator.store.store import TdcStore
@@ -76,3 +84,31 @@ async def test_the_time_lapse_keeps_its_start_while_the_factor_stays(hass: HomeA
     assert store.time_lapse_start(120.0, later) == later
     assert store.time_lapse_start(120.0, later + timedelta(hours=1)) == later
     assert store.time_lapse_start(60.0, later + timedelta(hours=1)) == later + timedelta(hours=1)
+
+
+async def test_unknown_keys_are_dropped_and_unreadable_entries_are_skipped(
+    hass: HomeAssistant, entry: MockConfigEntry, caplog: pytest.LogCaptureFixture
+) -> None:
+    await create_devices(hass, count=2)
+    store = get_data(hass).store
+    first, second = store.devices()
+    stored = store._snapshot()
+    stored[KEY_DEVICES][first.id]["from_the_future"] = 1
+    stored[KEY_DEVICES][first.id]["entities"][0]["also_new"] = True
+    del stored[KEY_DEVICES][second.id]["seed"]
+    stored[KEY_DEVICES]["junk"] = "not a device"
+    stored[KEY_SCHEDULES] = {"s1": {"id": "s1"}}
+    stored[KEY_GROUPS] = ["not a mapping"]
+
+    reloaded = TdcStore(hass)
+    reloaded._store.async_load = AsyncMock(return_value=stored)  # type: ignore[method-assign]
+    await reloaded.async_load()
+
+    assert [device.id for device in reloaded.devices()] == [first.id]
+    assert reloaded.devices()[0] == first
+    assert reloaded.schedules() == []
+    assert reloaded.groups() == []
+    code = ErrorCode.INT_STORE_ENTRY.value
+    assert caplog.text.count(code) == 4
+    assert second.id in caplog.text
+    assert "junk" in caplog.text
