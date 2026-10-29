@@ -127,6 +127,14 @@ async def test_light_cover_and_thermostat(
     state = json.loads(sent(mqtt_mock)[f"tdc/{light}/light/state"])
     assert (state["state"], state["brightness"]) == ("ON", 90)
 
+    for payload, expected in (("99999", 255), ("-5", 1), ("1e999", 1)):
+        async_fire_mqtt_message(
+            hass, f"tdc/{light}/light/state/set", '{"state": "ON", "brightness": ' + payload + "}"
+        )
+        await hass.async_block_till_done()
+        state = json.loads(sent(mqtt_mock)[f"tdc/{light}/light/state"])
+        assert state["brightness"] == expected
+
     await hass.services.async_call(DOMAIN, "remove_all", {}, blocking=True)
     cover = await make(hass, "cover")
     assert sent(mqtt_mock)[f"tdc/{cover}/cover/position"] == "100"

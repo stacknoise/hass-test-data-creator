@@ -14,6 +14,7 @@ from ...engine.behaviours import Behaviour
 from ...model.models import DeviceDef, EntityDef, GroupDef
 from ...templates.registry import TemplateRegistry
 from ..mqtt.runtime import BehaviourRuntime, RuntimeEntry, RuntimeParts
+from .names import is_friendly_name
 from .payloads import Z2mPayloadFactory
 from .profiles import Z2mProfile, Z2mProfileFactory
 
@@ -75,6 +76,11 @@ class Z2mDevices(BehaviourRuntime):
         await self._async_bridge_groups()
         for group in groups:
             await self._async_publish_group(group)
+
+    def check_device(self, device: DeviceDef) -> None:
+        """Raise TDC-OUT-007 unless the device name is a valid friendly name."""
+        if not is_friendly_name(device.name):
+            raise OutputError(ErrorCode.OUT_INVALID_NAME)
 
     async def async_check(self) -> None:
         """Raise unless MQTT is usable and the base topic may be used; then publish the bridge."""
@@ -140,7 +146,7 @@ class Z2mDevices(BehaviourRuntime):
             data = json.loads(payload)
             for entry in entries:
                 entry.profile.apply(entry.definition, entry.behaviour, data)
-        except ValueError, KeyError, TypeError, AttributeError:
+        except ValueError, KeyError, TypeError, AttributeError, OverflowError:
             self._audit.record(self._audit_factory.mqtt_failed(topic, "invalid command"))
 
     def _targets(self, name: str) -> list[_Entry]:

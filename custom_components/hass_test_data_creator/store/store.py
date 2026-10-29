@@ -61,6 +61,13 @@ class TdcStore:
         item = self._data[KEY_DEVICES].get(device_id)
         return DeviceDef.from_dict(item) if item else None
 
+    def device_id_of(self, reference: str) -> str | None:
+        """Return the id of the device whose id or name is `reference`, without building devices."""
+        devices = self._data[KEY_DEVICES]
+        if reference in devices:
+            return reference
+        return next((i for i, item in devices.items() if item.get("name") == reference), None)
+
     def device_count(self) -> int:
         """Return the number of stored devices."""
         return len(self._data[KEY_DEVICES])

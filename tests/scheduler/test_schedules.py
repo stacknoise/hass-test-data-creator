@@ -6,6 +6,7 @@ from typing import Any
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
+from homeassistant.util import dt as dt_util
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
@@ -176,3 +177,33 @@ async def test_errors_carry_their_codes(
             DOMAIN, "remove_schedule", {"schedule_id": "nope"}, blocking=True
         )
     assert missing.value.code is ErrorCode.SCH_NOT_FOUND
+
+
+@pytest.mark.parametrize("duration", ["abc", [1], float("nan"), -1, 1e12])
+async def test_a_pulse_with_an_invalid_duration_is_refused(
+    hass: HomeAssistant, entry: MockConfigEntry, duration: object
+) -> None:
+    await create_devices(hass, template="motion_sensor", count=1, name_pattern="Motion {nn}")
+    with pytest.raises(ScheduleError) as error:
+        await get_data(hass).action_runner.async_run(
+            "Motion 01", "motion", "pulse", {"duration_s": duration}
+        )
+    assert error.value.code is ErrorCode.SCH_INVALID_PARAMS
+
+
+async def test_the_timer_is_armed_again_after_a_run_failed(
+    hass: HomeAssistant, noon: FrozenDateTimeFactory, entry: MockConfigEntry
+) -> None:
+    await create_devices(hass, count=1)
+    await add_schedule(hass, trigger={"type": "times", "times": ["12:30", "13:00"]})
+    manager = get_data(hass).schedules
+
+    async def failing(run: object) -> None:
+        raise RuntimeError
+
+    manager._execute = failing  # type: ignore[method-assign]
+    manager._cancel()
+    with pytest.raises(RuntimeError):
+        await manager._fire(dt_util.parse_datetime("2026-11-02 20:31:00+00:00"))
+
+    assert manager._cancel_timer is not None
