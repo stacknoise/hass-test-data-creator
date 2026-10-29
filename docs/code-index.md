@@ -665,7 +665,6 @@ Lists every module, class and function of the integration with signature, file a
 | `ScheduleManager.async_set_enabled` | `async def async_set_enabled(self, schedule_id: str, enabled: bool) -> ScheduleDef` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Switch a schedule on or off. |
 | `ScheduleManager.preview` | `def preview(self, hours: int) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the planned runs of the next `hours` hours with the schedule names. |
 | `ScheduleManager._check_work` | `def _check_work(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Raise unless `data` names an existing scenario or a target with a known action. |
-| `ScheduleManager.ids_targeting` | `def ids_targeting(self, device: DeviceDef) -> list[str]` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Return the ids of the schedules that name this device, alone or in a list. |
 | `ScheduleManager.forget` | `def forget(self, schedule_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Delete schedules without saving; the removal saves the store afterwards. |
 | `ScheduleManager._cancel` | `def _cancel(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Cancel the timer of the next run. |
 | `ScheduleManager._on_midnight` | `def _on_midnight(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the new day. |
