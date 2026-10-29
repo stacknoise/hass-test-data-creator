@@ -40,8 +40,8 @@
       }
     },
     "error": {
-      "invalid_topic": "Use a topic without wildcards (+, #) and without a slash at the start or the end",
-      "same_topic": "The two base topics must differ",
+      "invalid_topic": "Use a short topic without wildcards (+, #), without $ or homeassistant at the start and without a slash at the start or the end",
+      "same_topic": "The two base topics must differ and one must not lie inside the other",
       "unconfirmed_default_topic": "Confirm that the base topic zigbee2mqtt may be used"
     }
   },
@@ -117,6 +117,9 @@
     },
     "out_group_invalid": {
       "message": "The group needs Zigbee2MQTT devices as members and a free name"
+    },
+    "out_invalid_name": {
+      "message": "A Zigbee2MQTT device name needs one topic level: no slash, + or #, not bridge"
     },
     "out_group_not_found": {
       "message": "The group was not found"
