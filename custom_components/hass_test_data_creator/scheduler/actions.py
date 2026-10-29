@@ -21,7 +21,7 @@ from ..core.keys import (
     KEY_TURN_OFF,
     KEY_TURN_ON,
 )
-from ..faults.factory import ACTION_PREFIX, FaultFactory
+from ..faults.factory import ACTION_PREFIX, MAX_DURATION_SECONDS, FaultFactory
 
 Action = Callable[[Any, dict[str, Any]], Awaitable[None]]
 
@@ -53,7 +53,12 @@ async def _set_off(behaviour: Any, params: dict[str, Any]) -> None:
 
 async def _pulse(behaviour: Any, params: dict[str, Any]) -> None:
     """Switch a binary sensor on for `duration_s` seconds."""
-    behaviour.pulse(params.get(KEY_DURATION_S))
+    duration = (
+        _number(params, KEY_DURATION_S, 0, MAX_DURATION_SECONDS)
+        if KEY_DURATION_S in params
+        else None
+    )
+    behaviour.pulse(duration)
 
 
 async def _press(behaviour: Any, params: dict[str, Any]) -> None:
