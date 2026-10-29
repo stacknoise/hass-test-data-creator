@@ -52,6 +52,15 @@
       const answers = {
         info: () => data.info,
         'templates/list': () => data.templates,
+        'templates/save': (m) => {
+          const saved = { id: m.template_id, name: m.name, model: 'Custom', bundled: false, entities: m.entities };
+          data.templates = [...data.templates.filter((t) => t.id !== saved.id), saved];
+          return saved;
+        },
+        'templates/delete': (m) => {
+          data.templates = data.templates.filter((t) => t.id !== m.template_id);
+          return {};
+        },
         'devices/list': () => ({ total: data.devices.length, devices: data.devices }),
         'schedules/list': () => data.schedules,
         'schedules/preview': () => data.runs,
@@ -66,7 +75,7 @@
         areas: data.areas,
         callWS: async (message) => {
           const answer = answers[message.type.replace('hass_test_data_creator/', '')];
-          return answer ? copy(answer()) : {};
+          return answer ? copy(answer(message)) : {};
         },
       };
       // the panel reads the backend when it is added, so it gets `hass` first

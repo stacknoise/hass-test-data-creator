@@ -76,6 +76,15 @@
     "tpl_unknown_shape": {
       "message": "The signal shape is unknown"
     },
+    "tpl_bundled": {
+      "message": "A built-in template cannot be changed or deleted"
+    },
+    "tpl_limit": {
+      "message": "There are too many own templates. Delete one first"
+    },
+    "tpl_write": {
+      "message": "The template file could not be written or deleted"
+    },
     "gen_limit": {
       "message": "Too many devices. The limit is 2000 devices"
     },

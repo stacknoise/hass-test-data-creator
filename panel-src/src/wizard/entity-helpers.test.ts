@@ -3,6 +3,7 @@ import {
   entityProblem,
   keyOf,
   newEntity,
+  unitSuggestions,
   withItem,
   withoutItem,
   withPlatform,
@@ -44,5 +45,21 @@ describe('entity helpers', () => {
     expect(withItem([1, 2], -1, 3)).toEqual([1, 2, 3]);
     expect(withItem([1, 2], 0, 9)).toEqual([9, 2]);
     expect(withoutItem([1, 2, 3], 1)).toEqual([1, 3]);
+  });
+});
+
+describe('unit suggestions', () => {
+  it('offers the units of Home Assistant before common ones, once each', () => {
+    const hass = {
+      states: {
+        'sensor.a': { attributes: { unit_of_measurement: 'mol' } },
+        'sensor.b': { attributes: { unit_of_measurement: '°C' } },
+        'sensor.c': { attributes: {} },
+      },
+    } as never;
+    const units = unitSuggestions(hass);
+    expect(units).toContain('mol');
+    expect(units.filter((u) => u === '°C')).toHaveLength(1);
+    expect(unitSuggestions(undefined)).toContain('kWh');
   });
 });

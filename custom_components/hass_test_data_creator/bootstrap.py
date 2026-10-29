@@ -67,7 +67,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     live: Live = {}
     audit, audit_factory = AuditLog(), AuditEntryFactory()
     template_factory = TemplateFactory()
-    registry = TemplateRegistry(template_factory)
+    registry = TemplateRegistry(template_factory, audit, audit_factory)
     mqtt = MqttClient(hass, store)
     csv = CsvLibrary(hass)
     signals = SignalFactory(csv)

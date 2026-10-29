@@ -2,7 +2,7 @@ import { css, html, type PropertyValues, type TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { TdcElement } from './base';
 
-/** A modal popup with a heading; fires `tdc-close` when the user closes it with the button, a click outside or Escape. */
+/** A modal popup with a heading; fires `tdc-close` when the user closes it with the button or Escape; a click outside does not close it. */
 @customElement('tdc-dialog')
 export class Dialog extends TdcElement {
   @property({ type: Boolean }) open = false;
@@ -56,12 +56,7 @@ export class Dialog extends TdcElement {
 
   /** Render the element. */
   override render(): TemplateResult {
-    return html`<dialog
-      @close=${() => this.close()}
-      @click=${(e: Event) => {
-        if (e.target === this.dialog) this.close();
-      }}
-    >
+    return html`<dialog @close=${() => this.close()}>
       <div class="head">
         <h3>${this.heading}</h3>
         <button aria-label=${this.tr('detCancel')} @click=${() => this.close()}>✕</button>

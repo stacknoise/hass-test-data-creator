@@ -11,6 +11,7 @@ import {
   hasSignal,
   keyOf,
   newEntity,
+  unitSuggestions,
   withItem,
   withoutItem,
   withPlatform,
@@ -72,12 +73,6 @@ export class EntityEditor extends TdcElement {
         gap: 8px;
         justify-content: flex-end;
         align-items: center;
-      }
-      button.small {
-        padding: 2px 8px;
-      }
-      button.danger {
-        color: var(--error-color);
       }
     `,
   ];
@@ -193,12 +188,16 @@ export class EntityEditor extends TdcElement {
         </label>
         ${
           draft.platform === PLATFORM_SENSOR
-            ? html`<label style="flex: 0 1 90px"
+            ? html`<label style="flex: 0 1 130px"
                 >${this.tr('entUnit')}
                 <input
+                  list="units"
                   .value=${draft.unit ?? ''}
                   @input=${(e: Event) => this.setField('unit', (e.target as HTMLInputElement).value)}
                 />
+                <datalist id="units">
+                  ${unitSuggestions(this.hass).map((unit) => html`<option value=${unit}></option>`)}
+                </datalist>
               </label>`
             : ''
         }

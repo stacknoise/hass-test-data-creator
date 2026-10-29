@@ -5,7 +5,7 @@ import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
 import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
-import './entity-editor';
+import './entities-form';
 import './entity-list';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
@@ -35,7 +35,6 @@ export class CreationWizard extends TdcElement {
   @state() private seed = '';
   @state() private output = 'native';
   @state() private custom: EntityDef[] = [];
-  @state() private pendingBase = '';
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -55,57 +54,6 @@ export class CreationWizard extends TdcElement {
   private entities(): EntityDef[] {
     if (this.template === CUSTOM) return this.custom;
     return this.templates.find((t) => t.id === this.template)?.entities ?? [];
-  }
-
-  /** Take over the entities of the template `pendingBase` and drop the custom ones. */
-  private applyBase(): void {
-    const base = this.templates.find((t) => t.id === this.pendingBase);
-    if (base) this.custom = structuredClone(base.entities);
-    this.pendingBase = '';
-  }
-
-  /** Take over the template `id` at once when the list is empty, otherwise ask first. */
-  private chooseBase(id: string): void {
-    this.pendingBase = id;
-    if (this.custom.length === 0) this.applyBase();
-  }
-
-  /** Render the choice of a template as the start of the custom device, with the warning. */
-  private renderBase(): TemplateResult {
-    const lang = this.hass?.language;
-    const base = this.templates.find((t) => t.id === this.pendingBase);
-    return html`<div class="row form">
-        <label style="flex: 1 1 220px"
-          >${this.tr('baseTemplate')}
-          <select
-            .value=${this.pendingBase}
-            @change=${(e: Event) => this.chooseBase((e.target as HTMLSelectElement).value)}
-          >
-            <option value="">${this.tr('baseNone')}</option>
-            ${sortedByLabel(lang, this.templates, (t) => templateLabel(lang, t.id, t.name)).map(
-              (t) =>
-                html`<option value=${t.id} ?selected=${t.id === this.pendingBase}>
-                  ${templateLabel(lang, t.id, t.name)}
-                </option>`,
-            )}
-          </select>
-        </label>
-      </div>
-      ${
-        base
-          ? html`<p class="warning">
-              ${this.tr('baseReplace', {
-                old: this.custom.length,
-                count: base.entities.length,
-                name: templateLabel(lang, base.id, base.name),
-              })}
-              <button class="primary" @click=${() => this.applyBase()}>
-                ${this.tr('baseApply')}
-              </button>
-              <button @click=${() => (this.pendingBase = '')}>${this.tr('detCancel')}</button>
-            </p>`
-          : ''
-      }`;
   }
 
   /** Create the devices with the inputs of the form. */
@@ -146,37 +94,63 @@ export class CreationWizard extends TdcElement {
     </p>`;
   }
 
-  /** Return the templates and the custom device as `{id, label}`, sorted by label, with the custom device always last. */
-  private templateOptions(): { id: string; label: string }[] {
+  /** Return the built-in and the own templates and the custom device as `{id, label}`, sorted by label; the custom device is shown last. */
+  private templateOptions(): {
+    bundled: { id: string; label: string }[];
+    own: { id: string; label: string }[];
+    custom: { id: string; label: string };
+  } {
     const lang = this.hass?.language;
-    const options = this.templates.map((t) => ({
-      id: t.id,
-      label: templateLabel(lang, t.id, t.name),
-    }));
-    return [
-      ...sortedByLabel(lang, options, (option) => option.label),
-      { id: CUSTOM, label: this.tr('customTemplate') },
-    ];
+    const options = (own: boolean) =>
+      sortedByLabel(
+        lang,
+        this.templates
+          .filter((t) => !t.bundled === own)
+          .map((t) => ({ id: t.id, label: templateLabel(lang, t.id, t.name) })),
+        (option) => option.label,
+      );
+    return {
+      bundled: options(false),
+      own: options(true),
+      custom: { id: CUSTOM, label: this.tr('customTemplate') },
+    };
+  }
+
+  /** Render one entry of the template choice; the custom device is bold and marked. */
+  private option(option: { id: string; label: string }): TemplateResult {
+    const custom = option.id === CUSTOM;
+    return html`<option
+      value=${option.id}
+      ?selected=${option.id === this.template}
+      style=${custom ? 'font-weight: bold' : ''}
+    >
+      ${custom ? '✚ ' : ''}${option.label}
+    </option>`;
+  }
+
+  /** Select a template; leaving the custom device ends the editing of an own template. */
+  private choose(id: string): void {
+    this.template = id;
   }
 
   /** Render the element. */
   override render(): TemplateResult {
+    const options = this.templateOptions();
     return html`
       <div class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr(KIND_TEMPLATE)}
-          <select @change=${(e: Event) => (this.template = (e.target as HTMLSelectElement).value)}>
-            ${this.templateOptions().map(
-              (option) =>
-                html`${option.id === CUSTOM ? html`<hr />` : ''}
-                  <option
-                    value=${option.id}
-                    ?selected=${option.id === this.template}
-                    style=${option.id === CUSTOM ? 'font-weight: bold' : ''}
-                  >
-                    ${option.id === CUSTOM ? '✚ ' : ''}${option.label}
-                  </option>`,
-            )}
+          <select @change=${(e: Event) => this.choose((e.target as HTMLSelectElement).value)}>
+            ${options.bundled.map((option) => this.option(option))}
+            ${
+              options.own.length
+                ? html`<optgroup label=${this.tr('ownTemplates')}>
+                    ${options.own.map((option) => this.option(option))}
+                  </optgroup>`
+                : ''
+            }
+            <hr />
+            ${this.option(options.custom)}
           </select>
         </label>
         <label style="flex: 0 0 100px"
@@ -242,13 +216,14 @@ export class CreationWizard extends TdcElement {
       ${
         this.template === CUSTOM
           ? html`<div style="display: grid; gap: 20px">
-              ${this.renderBase()}<tdc-entity-editor
+              <tdc-entities-form
                 .hass=${this.hass}
+                .templates=${this.templates}
                 .entities=${this.custom}
                 .shapes=${this.info?.shapes ?? []}
                 .platforms=${this.info?.platforms ?? []}
                 @tdc-entities-change=${(e: CustomEvent<EntityDef[]>) => (this.custom = e.detail)}
-              ></tdc-entity-editor>
+              ></tdc-entities-form>
             </div>`
           : ''
       }

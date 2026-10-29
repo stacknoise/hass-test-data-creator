@@ -12,6 +12,9 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-TPL-001 | The template does not exist | The requested template does not exist. |
 | TDC-TPL-002 | A template or entity definition is invalid: {file} | A template file or a custom entity definition does not match the schema. |
 | TDC-TPL-003 | The signal shape is unknown | A template or custom entity names a signal shape that does not exist. |
+| TDC-TPL-004 | A built-in template cannot be changed or deleted | A built-in template, or the reserved id of the custom device, cannot be saved over or deleted. |
+| TDC-TPL-005 | There are too many own templates. Delete one first | There are already MAX_USER_TEMPLATES own templates. |
+| TDC-TPL-006 | The template file could not be written or deleted | The file of an own template could not be written or deleted. |
 | TDC-GEN-001 | Too many devices. The limit is 2000 devices | A creation job would exceed MAX_DEVICES. |
 | TDC-GEN-002 | Too many devices in one job. The limit is 500 | A creation job asks for more than MAX_BATCH devices. |
 | TDC-GEN-003 | The name pattern is invalid. Allowed placeholders are n, nn and template in curly braces | The name pattern uses a placeholder that does not exist. |

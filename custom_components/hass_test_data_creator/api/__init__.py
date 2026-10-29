@@ -16,7 +16,7 @@ from .devices import (
 )
 from .groups import ws_groups_add, ws_groups_list, ws_groups_remove, ws_groups_update
 from .history import ws_history_import
-from .info import ws_info, ws_templates_list
+from .info import ws_info, ws_templates_delete, ws_templates_list, ws_templates_save
 from .removal import (
     ws_removal_orphan_topics,
     ws_removal_orphan_topics_clear,
@@ -42,6 +42,8 @@ from .schedules import (
 COMMANDS = (
     ws_info,
     ws_templates_list,
+    ws_templates_save,
+    ws_templates_delete,
     ws_devices_get,
     ws_devices_list,
     ws_devices_names,

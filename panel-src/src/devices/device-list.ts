@@ -17,6 +17,7 @@ import {
 } from '../common/labels';
 import '../common/dialog';
 import '../wizard/creation-wizard';
+import '../wizard/template-manager';
 import './device-detail';
 import { knownAreas, lastPageOffset, usageEntries } from './helpers';
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
@@ -75,6 +76,7 @@ export class DeviceList extends TdcElement {
   @state() private loaded = false;
   @state() private error = '';
   @state() private creating = false;
+  @state() private templating = false;
   @state() private info?: Info;
   @state() private expanded = new Set<string>();
 
@@ -237,12 +239,15 @@ export class DeviceList extends TdcElement {
       }`;
   }
 
-  /** Render the button that opens the popup with the form for new devices. */
+  /** Render the buttons that open the popups to create devices and to manage the own templates. */
   private renderNew(): TemplateResult {
     return html`
       <p>
         <button class="primary" @click=${() => (this.creating = true)}>
           + ${this.tr('create')}
+        </button>
+        <button class="primary" @click=${() => (this.templating = true)}>
+          ${this.tr('tplManage')}
         </button>
       </p>
       <tdc-dialog
@@ -260,6 +265,18 @@ export class DeviceList extends TdcElement {
                   void this.refresh();
                 }}
               ></tdc-creation-wizard>`
+            : nothing
+        }
+      </tdc-dialog>
+      <tdc-dialog
+        .hass=${this.hass}
+        heading=${this.tr('tplManage')}
+        ?open=${this.templating}
+        @tdc-close=${() => (this.templating = false)}
+      >
+        ${
+          this.templating
+            ? html`<tdc-template-manager .hass=${this.hass}></tdc-template-manager>`
             : nothing
         }
       </tdc-dialog>

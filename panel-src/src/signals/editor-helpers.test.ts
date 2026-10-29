@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   fieldsFor,
   isDiscrete,
+  previewSeconds,
+  spanLabel,
   textFieldsFor,
   textOf,
   withField,
@@ -69,5 +71,20 @@ describe('curve editor helpers', () => {
     expect(fieldsFor('csv')).toEqual(['step_s', 'phase']);
     expect(withShape(chosen, 'csv').file).toBe('load.csv');
     expect(withShape(chosen, 'sine').file).toBeUndefined();
+  });
+});
+
+describe('preview window', () => {
+  it('covers a day unless a short period needs a closer look', () => {
+    expect(previewSeconds({ shape: 'sine', period_s: 7200 })).toBe(86400);
+    expect(previewSeconds({ shape: 'sine', period_s: 60 })).toBe(1440);
+    expect(previewSeconds({ shape: 'pv_day', period_s: 60 })).toBe(86400);
+    expect(previewSeconds({ shape: 'sine' })).toBe(86400);
+  });
+
+  it('labels a span in seconds, minutes or hours', () => {
+    expect(spanLabel(0)).toBe('0 s');
+    expect(spanLabel(720)).toBe('12 min');
+    expect(spanLabel(43200)).toBe('12 h');
   });
 });

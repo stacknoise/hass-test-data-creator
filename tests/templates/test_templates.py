@@ -7,6 +7,8 @@ from pathlib import Path
 from homeassistant.core import HomeAssistant
 import pytest
 
+from custom_components.hass_test_data_creator.audit.factory import AuditEntryFactory
+from custom_components.hass_test_data_creator.audit.log import AuditLog
 from custom_components.hass_test_data_creator.const import MAX_TEMPLATE_FILE_BYTES
 from custom_components.hass_test_data_creator.core.errors import (
     ErrorCode,
@@ -38,8 +40,13 @@ BUNDLED = {
 }
 
 
+def new_registry() -> TemplateRegistry:
+    """Return an empty registry with its own audit log."""
+    return TemplateRegistry(TemplateFactory(), AuditLog(), AuditEntryFactory())
+
+
 async def test_bundled_templates_load(hass: HomeAssistant) -> None:
-    registry = TemplateRegistry(TemplateFactory())
+    registry = new_registry()
     await registry.async_load(hass)
     assert {item.id for item in registry.all()} >= BUNDLED
     plug = registry.get("plug_metering")
@@ -62,6 +69,12 @@ def test_custom_template_is_validated() -> None:
         factory.custom([SENSOR, SENSOR])
     with pytest.raises(TemplateError):
         factory.custom([{**SENSOR, "device_class": "not_a_class"}])
+
+
+def test_fields_that_are_none_count_as_not_set() -> None:
+    entity = TemplateFactory().custom([{**SENSOR, "device_class": None, "unit": None}]).entities[0]
+    assert entity.device_class is None
+    assert entity.unit is None
 
 
 def test_too_many_entities_are_rejected() -> None:
@@ -138,9 +151,105 @@ async def test_a_bad_user_template_is_skipped_and_the_others_load(
     (folder / "secret.yaml").write_text("id: s\nname: !secret token\nentities: []\n")
     (folder / "link.yaml").symlink_to(folder / "good.yaml")
 
-    registry = TemplateRegistry(TemplateFactory())
+    registry = new_registry()
     await registry.async_load(hass)
 
     assert registry.get("mine").name == "Mine"
     assert {item.id for item in registry.all()} >= BUNDLED
     assert caplog.text.count("TDC-TPL-002 skipped user template") == 5
+
+
+OWN = {"id": "mine", "name": "Mine", "model": "M", "entities": [SENSOR]}
+
+
+async def test_an_own_template_is_saved_replaced_and_deleted(
+    hass: HomeAssistant, tmp_path: Path
+) -> None:
+    hass.config.config_dir = str(tmp_path)
+    registry = new_registry()
+    await registry.async_load(hass)
+
+    saved = await registry.async_save(hass, OWN)
+    assert saved.bundled is False
+    file = tmp_path / USER_DIR_NAME / "mine.yaml"
+    assert file.is_file()
+    assert "None" not in file.read_text(encoding="utf-8")
+
+    await registry.async_save(hass, {**OWN, "name": "Renamed"})
+    assert registry.get("mine").name == "Renamed"
+
+    reloaded = new_registry()
+    await reloaded.async_load(hass)
+    assert reloaded.get("mine").entities[0].key == "level"
+
+    await registry.async_delete(hass, "mine")
+    assert not file.exists()
+    with pytest.raises(TemplateError) as gone:
+        registry.get("mine")
+    assert gone.value.code is ErrorCode.TPL_NOT_FOUND
+
+
+async def test_a_built_in_template_cannot_be_saved_over_or_deleted(
+    hass: HomeAssistant, tmp_path: Path
+) -> None:
+    hass.config.config_dir = str(tmp_path)
+    registry = new_registry()
+    await registry.async_load(hass)
+    for call in (
+        registry.async_save(hass, {**OWN, "id": "plug_metering"}),
+        registry.async_save(hass, {**OWN, "id": "custom"}),
+        registry.async_delete(hass, "plug_metering"),
+    ):
+        with pytest.raises(TemplateError) as refused:
+            await call
+        assert refused.value.code is ErrorCode.TPL_BUNDLED
+    assert not (tmp_path / USER_DIR_NAME).exists()
+
+
+async def test_an_unknown_template_cannot_be_deleted(hass: HomeAssistant, tmp_path: Path) -> None:
+    hass.config.config_dir = str(tmp_path)
+    registry = new_registry()
+    await registry.async_load(hass)
+    with pytest.raises(TemplateError) as missing:
+        await registry.async_delete(hass, "nope")
+    assert missing.value.code is ErrorCode.TPL_NOT_FOUND
+
+
+async def test_an_invalid_template_is_not_written(hass: HomeAssistant, tmp_path: Path) -> None:
+    hass.config.config_dir = str(tmp_path)
+    registry = new_registry()
+    await registry.async_load(hass)
+    with pytest.raises(TemplateError) as invalid:
+        await registry.async_save(hass, {**OWN, "entities": [{"key": "a", "platform": "sensor"}]})
+    assert invalid.value.code is ErrorCode.TPL_INVALID
+    assert not (tmp_path / USER_DIR_NAME).exists()
+
+
+async def test_the_number_of_own_templates_is_limited(
+    hass: HomeAssistant, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hass.config.config_dir = str(tmp_path)
+    monkeypatch.setattr(
+        "custom_components.hass_test_data_creator.templates.registry.MAX_USER_TEMPLATES", 1
+    )
+    registry = new_registry()
+    await registry.async_load(hass)
+    await registry.async_save(hass, OWN)
+    await registry.async_save(hass, {**OWN, "name": "Again"})
+    with pytest.raises(TemplateError) as limit:
+        await registry.async_save(hass, {**OWN, "id": "second"})
+    assert limit.value.code is ErrorCode.TPL_LIMIT
+
+
+async def test_a_file_that_cannot_be_written_is_reported(
+    hass: HomeAssistant, tmp_path: Path
+) -> None:
+    hass.config.config_dir = str(tmp_path)
+    (tmp_path / "hass_test_data_creator").write_text("in the way")
+    registry = new_registry()
+    await registry.async_load(hass)
+    with pytest.raises(TemplateError) as failed:
+        await registry.async_save(hass, OWN)
+    assert failed.value.code is ErrorCode.TPL_WRITE
+    with pytest.raises(TemplateError):
+        registry.get("mine")

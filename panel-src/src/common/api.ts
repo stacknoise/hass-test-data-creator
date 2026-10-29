@@ -3,6 +3,7 @@ import type {
   DeviceInfo,
   DeviceName,
   DevicePage,
+  EntityDef,
   Hass,
   Info,
   PlannedRun,
@@ -58,6 +59,23 @@ export class TdcApi {
   /** Return all templates; shared by all tabs for `TEMPLATES_TTL_MS`. */
   templates(): Promise<TemplateInfo[]> {
     return cached('templates', TEMPLATES_TTL_MS, () => this.call<TemplateInfo[]>('templates/list'));
+  }
+
+  /** Save an own template (new, or replacing the one with the same id) and forget the shared list. */
+  async saveTemplate(id: string, name: string, entities: EntityDef[]): Promise<TemplateInfo> {
+    const saved = await this.call<TemplateInfo>('templates/save', {
+      template_id: id,
+      name,
+      entities,
+    });
+    cache.delete('templates');
+    return saved;
+  }
+
+  /** Delete an own template and forget the shared list. */
+  async deleteTemplate(id: string): Promise<void> {
+    await this.call('templates/delete', { template_id: id });
+    cache.delete('templates');
   }
 
   /** Return one device in full, with the curve of each entity. */

@@ -35,4 +35,10 @@ export const rowListStyles = css`
   tdc-signal-preview {
     flex: 0 0 100px;
   }
+  button.small {
+    padding: 2px 8px;
+  }
+  button.danger {
+    color: var(--error-color);
+  }
 `;

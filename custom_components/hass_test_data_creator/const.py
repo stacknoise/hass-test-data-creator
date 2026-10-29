@@ -109,6 +109,7 @@ PANEL_STATIC_URL: Final = "/hass_test_data_creator_static"
 
 # Custom template id of devices defined by hand.
 CUSTOM_TEMPLATE_ID: Final = "custom"
+DEFAULT_MODEL: Final = "Custom"
 
 # Seconds in the units of a time of day.
 SECONDS_PER_MINUTE: Final = 60

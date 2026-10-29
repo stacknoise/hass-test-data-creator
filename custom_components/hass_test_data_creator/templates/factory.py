@@ -12,7 +12,7 @@ from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.components.switch import SwitchDeviceClass
 import voluptuous as vol
 
-from ..const import CUSTOM_TEMPLATE_ID, MAX_ENTITIES_PER_DEVICE
+from ..const import CUSTOM_TEMPLATE_ID, DEFAULT_MODEL, MAX_ENTITIES_PER_DEVICE
 from ..core.errors import ErrorCode, GenerationError, TemplateError
 from ..core.keys import (
     KEY_BINARY_SENSOR,
@@ -68,14 +68,31 @@ class Template:
             KEY_ENTITIES: [entity.to_dict() for entity in self.entities],
         }
 
+    def to_file(self) -> dict[str, Any]:
+        """Return the content of the template file: only the fields that differ from the defaults."""
+        content: dict[str, Any] = {KEY_ID: self.id, KEY_NAME: self.name, KEY_MODEL: self.model}
+        content[KEY_ENTITIES] = [
+            {
+                key: value
+                for key, value in entity.to_dict().items()
+                if value is not None and value is not False
+            }
+            for entity in self.entities
+        ]
+        if self.z2m:
+            content["z2m"] = dict(self.z2m)
+        return content
+
 
 class TemplateFactory:
     """Creates templates and entity definitions from plain dictionaries."""
 
     def entity(self, data: dict[str, Any]) -> EntityDef:
-        """Return the validated entity definition for `data`."""
+        """Return the validated entity definition for `data`; fields that are `None` count as not set."""
         try:
-            checked = ENTITY_SCHEMA(data)
+            checked = ENTITY_SCHEMA(
+                {key: value for key, value in data.items() if value is not None}
+            )
         except vol.Invalid as err:
             raise TemplateError(ErrorCode.TPL_INVALID, file=str(err)) from err
         self._check_content(checked)
@@ -110,7 +127,7 @@ class TemplateFactory:
             {
                 KEY_ID: CUSTOM_TEMPLATE_ID,
                 KEY_NAME: "Custom device",
-                KEY_MODEL: "Custom",
+                KEY_MODEL: DEFAULT_MODEL,
                 KEY_ENTITIES: entities,
             },
             bundled=False,
