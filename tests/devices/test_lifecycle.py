@@ -18,6 +18,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.hass_test_data_creator.const import DOMAIN, MANUFACTURER, SIGNAL_TICK
 from custom_components.hass_test_data_creator.core.errors import ScheduleError
 from custom_components.hass_test_data_creator.data import get_data
+from custom_components.hass_test_data_creator.engine.behaviours import ClimateBehaviour
 from custom_components.hass_test_data_creator.engine.tick import signal_time
 from custom_components.hass_test_data_creator.platforms.actuators import TdcClimate
 
@@ -193,12 +194,30 @@ async def test_a_thermostat_writes_its_state_only_when_the_temperature_changed(
     await create_devices(hass, template="thermostat", count=1, name_pattern="Heat {nn}")
     now = get_data(hass).clock.now()
 
-    with patch.object(TdcClimate, "async_write_ha_state") as write:
+    seen: list[ClimateBehaviour] = []
+    real_tick = ClimateBehaviour.tick
+
+    def spy(self: ClimateBehaviour, at: float) -> bool:
+        """Remember the behaviour that is ticked."""
+        seen.append(self)
+        return real_tick(self, at)
+
+    with (
+        patch.object(ClimateBehaviour, "tick", spy),
+        patch.object(TdcClimate, "async_write_ha_state") as write,
+    ):
         async_dispatcher_send(hass, SIGNAL_TICK, now)
         await hass.async_block_till_done()
         assert write.call_count == 0
 
-        async_dispatcher_send(hass, SIGNAL_TICK, now + 1800)
-        async_dispatcher_send(hass, SIGNAL_TICK, now + 1800)
+        # the curve is a sine over a day: pick a time at which it reads differently
+        behaviour = seen[0]
+        later = next(
+            now + offset
+            for offset in (1800, 21600, 43200, 64800)
+            if behaviour._measure(now + offset) != behaviour.temperature
+        )
+        async_dispatcher_send(hass, SIGNAL_TICK, later)
+        async_dispatcher_send(hass, SIGNAL_TICK, later)
         await hass.async_block_till_done()
         assert write.call_count == 1
