@@ -14,6 +14,7 @@ markers = ["slow: performance tests, run nightly"]
 [tool.ruff]
 target-version = "py314"
 line-length = 100
+extend-exclude = ["docs/review"]
 
 [tool.ruff.lint]
 select = [
