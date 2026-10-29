@@ -81,6 +81,10 @@ class TemplateFactory:
         self._check_content(checked)
         return EntityDef.from_dict(checked)
 
+    def with_signal(self, definition: EntityDef, signal: dict[str, Any]) -> EntityDef:
+        """Return a copy of `definition` that has `signal` as its curve."""
+        return EntityDef(**{**definition.to_dict(), KEY_SIGNAL: signal})
+
     def template(self, data: dict[str, Any], *, bundled: bool = True) -> Template:
         """Return the validated template for `data`."""
         try:

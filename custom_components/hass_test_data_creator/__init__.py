@@ -8,7 +8,7 @@ from homeassistant.loader import async_get_integration
 
 from .api import async_register_commands
 from .bootstrap import build_data
-from .const import DOMAIN, OUTPUT_MQTT, OUTPUT_Z2M, PLATFORMS
+from .const import DOMAIN, PLATFORMS
 from .panel import async_register_panel, async_remove_panel
 from .removal.cleanup import async_cleanup_after_entry_removal
 from .services import async_register_services, async_remove_services
@@ -25,7 +25,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data.tick.start()
     data.schedules.async_start()
-    for output, runtime in ((OUTPUT_MQTT, data.mqtt_devices), (OUTPUT_Z2M, data.z2m_devices)):
+    for output, runtime in data.outputs.runtimes().items():
         stored = [item for item in data.store.devices() if item.output == output]
         if stored:
             entry.async_create_background_task(
@@ -52,8 +52,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data.tick.stop()
         data.schedules.async_stop()
         data.scenarios.async_stop()
-        await data.mqtt_devices.async_stop()
-        await data.z2m_devices.async_stop()
+        for runtime in data.outputs.runtimes().values():
+            await runtime.async_stop()
         await data.store.async_save()
         async_remove_services(hass)
         async_remove_panel(hass)
