@@ -5,8 +5,7 @@ import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
 import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
-import { keyOf } from './entity-helpers';
-import './entity-editor';
+import './entities-form';
 import './entity-list';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
@@ -36,9 +35,6 @@ export class CreationWizard extends TdcElement {
   @state() private seed = '';
   @state() private output = 'native';
   @state() private custom: EntityDef[] = [];
-  @state() private pendingBase = '';
-  @state() private templateName = '';
-  @state() private editingId = '';
   @state() private confirmDelete = false;
   @state() private busy = false;
   @state() private message = '';
@@ -69,15 +65,9 @@ export class CreationWizard extends TdcElement {
     return template && !template.bundled ? template : undefined;
   }
 
-  /** Load the selected own template into the custom device so that it can be changed. */
-  private editTemplate(): void {
-    const own = this.ownTemplate();
-    if (!own) return;
-    this.custom = structuredClone(own.entities);
-    this.templateName = own.name;
-    this.editingId = own.id;
-    this.confirmDelete = false;
-    this.template = CUSTOM;
+  /** Ask the page to open the form that changes the own template `own`. */
+  private editTemplate(own: TemplateInfo): void {
+    this.dispatchEvent(new CustomEvent('tdc-edit-template', { detail: own }));
   }
 
   /** Run `action`, show `done` as the message and the error otherwise. */
@@ -105,18 +95,6 @@ export class CreationWizard extends TdcElement {
     });
   }
 
-  /** Save the custom device as an own template; editing a template keeps its id. */
-  private saveTemplate(): Promise<void> {
-    const name = this.templateName.trim();
-    const id = this.editingId || keyOf(name);
-    return this.attempt(async () => {
-      await this.api.saveTemplate(id, name, this.custom);
-      await this.reloadTemplates(id);
-      this.editingId = '';
-      return this.tr('tplSaved', { name });
-    });
-  }
-
   /** Render the buttons to change or delete the selected own template, with the question before a delete. */
   private renderOwnActions(): TemplateResult {
     const own = this.ownTemplate();
@@ -131,91 +109,15 @@ export class CreationWizard extends TdcElement {
       </p>`;
     }
     return html`<p class="row">
-      <button @click=${() => this.editTemplate()}>${this.tr('tplEdit')}</button>
+      <button @click=${() => this.editTemplate(own)}>${this.tr('tplEdit')}</button>
       <button @click=${() => (this.confirmDelete = true)}>${this.tr('tplDelete')}</button>
     </p>`;
-  }
-
-  /** Render the name and the save button that turn the custom device into an own template. */
-  private renderSaveTemplate(): TemplateResult {
-    const name = this.templateName.trim();
-    const id = this.editingId || keyOf(name);
-    const exists = !this.editingId && this.templates.some((t) => t.id === id && !t.bundled);
-    const editing = this.templates.find((t) => t.id === this.editingId);
-    return html`<div class="row form" style="align-items: flex-end">
-        <label style="flex: 1 1 220px"
-          >${this.tr('tplName')}
-          <input
-            .value=${this.templateName}
-            @input=${(e: Event) => (this.templateName = (e.target as HTMLInputElement).value)}
-          />
-        </label>
-        <button
-          ?disabled=${this.busy || !id || this.custom.length === 0}
-          @click=${() => void this.saveTemplate()}
-        >
-          ${this.editingId ? this.tr('tplSaveChanges') : this.tr('tplSave')}
-        </button>
-      </div>
-      ${editing ? html`<small>${this.tr('tplEditing', { name: editing.name })}</small>` : ''}
-      ${exists ? html`<small class="warning">${this.tr('tplExists')}</small>` : ''}`;
   }
 
   /** Return the entity definitions of the selected template or of the custom device. */
   private entities(): EntityDef[] {
     if (this.template === CUSTOM) return this.custom;
     return this.templates.find((t) => t.id === this.template)?.entities ?? [];
-  }
-
-  /** Take over the entities of the template `pendingBase` and drop the custom ones. */
-  private applyBase(): void {
-    const base = this.templates.find((t) => t.id === this.pendingBase);
-    if (base) this.custom = structuredClone(base.entities);
-    this.pendingBase = '';
-  }
-
-  /** Take over the template `id` at once when the list is empty, otherwise ask first. */
-  private chooseBase(id: string): void {
-    this.pendingBase = id;
-    if (this.custom.length === 0) this.applyBase();
-  }
-
-  /** Render the choice of a template as the start of the custom device, with the warning. */
-  private renderBase(): TemplateResult {
-    const lang = this.hass?.language;
-    const base = this.templates.find((t) => t.id === this.pendingBase);
-    return html`<div class="row form">
-        <label style="flex: 1 1 220px"
-          >${this.tr('baseTemplate')}
-          <select
-            .value=${this.pendingBase}
-            @change=${(e: Event) => this.chooseBase((e.target as HTMLSelectElement).value)}
-          >
-            <option value="">${this.tr('baseNone')}</option>
-            ${sortedByLabel(lang, this.templates, (t) => templateLabel(lang, t.id, t.name)).map(
-              (t) =>
-                html`<option value=${t.id} ?selected=${t.id === this.pendingBase}>
-                  ${templateLabel(lang, t.id, t.name)}
-                </option>`,
-            )}
-          </select>
-        </label>
-      </div>
-      ${
-        base
-          ? html`<p class="warning">
-              ${this.tr('baseReplace', {
-                old: this.custom.length,
-                count: base.entities.length,
-                name: templateLabel(lang, base.id, base.name),
-              })}
-              <button class="primary" @click=${() => this.applyBase()}>
-                ${this.tr('baseApply')}
-              </button>
-              <button @click=${() => (this.pendingBase = '')}>${this.tr('detCancel')}</button>
-            </p>`
-          : ''
-      }`;
   }
 
   /** Create the devices with the inputs of the form. */
@@ -294,7 +196,6 @@ export class CreationWizard extends TdcElement {
   private choose(id: string): void {
     this.template = id;
     this.confirmDelete = false;
-    if (id !== CUSTOM) this.editingId = '';
   }
 
   /** Render the element. */
@@ -380,13 +281,14 @@ export class CreationWizard extends TdcElement {
       ${
         this.template === CUSTOM
           ? html`<div style="display: grid; gap: 20px">
-              ${this.renderBase()}${this.renderSaveTemplate()}<tdc-entity-editor
+              <tdc-entities-form
                 .hass=${this.hass}
+                .templates=${this.templates}
                 .entities=${this.custom}
                 .shapes=${this.info?.shapes ?? []}
                 .platforms=${this.info?.platforms ?? []}
                 @tdc-entities-change=${(e: CustomEvent<EntityDef[]>) => (this.custom = e.detail)}
-              ></tdc-entity-editor>
+              ></tdc-entities-form>
             </div>`
           : ''
       }
