@@ -1,6 +1,17 @@
 # Minimal configuration of the test instance.
 default_config:
 
+homeassistant:
+  # Test instance only: a request that reaches the container through the Docker network (the
+  # host, so the browser on this machine) logs in without a password. Other computers on the
+  # LAN are not in these ranges and still need the password.
+  auth_providers:
+    - type: trusted_networks
+      trusted_networks:
+        - 172.16.0.0/12
+        - 192.168.65.0/24
+    - type: homeassistant
+
 logger:
   default: warning
   logs:
