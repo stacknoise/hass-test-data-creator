@@ -3311,7 +3311,7 @@ var Br = 7, K = class extends F {
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devicesUpTo(Infinity)).devices;
+			this.devices = await this.api.deviceNames();
 		} catch (e) {
 			this.error = k(e);
 		}
@@ -3814,7 +3814,7 @@ var gi = [
 	}
 	async loadDevices() {
 		try {
-			this.devices = (await this.api.devicesUpTo(Infinity)).devices, this.loaded = !0, this.error = "";
+			this.devices = await this.api.deviceNames(), this.loaded = !0, this.error = "";
 		} catch (e) {
 			this.error = k(e);
 		}
@@ -4285,13 +4285,12 @@ var Ti = 6, Ei = 24, Di = 50, Q = class extends W {
 	}
 	async refresh() {
 		try {
-			let e;
-			[this.schedules, this.runs, this.scenarios, e] = await Promise.all([
+			[this.schedules, this.runs, this.scenarios, this.devices] = await Promise.all([
 				this.api.schedules(),
 				this.api.schedulePreview(Ei),
 				this.api.scenarios(),
-				this.api.devicesUpTo(Infinity)
-			]), this.devices = e.devices, this.error = "";
+				this.api.deviceNames()
+			]), this.error = "";
 		} catch (e) {
 			this.error = k(e);
 		}

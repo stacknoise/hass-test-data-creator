@@ -4,7 +4,7 @@ import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import '../common/multi-select';
 import { entityName, sortedByLabel } from '../common/labels';
-import type { DeviceInfo } from '../common/types';
+import type { DeviceName } from '../common/types';
 import { MAX_DAYS, MIN_DAYS, clampDays, sensorEntities } from './helpers';
 
 const DEFAULT_DAYS = 7;
@@ -15,7 +15,7 @@ export class HistoryPanel extends TdcElement {
   @state() private days = DEFAULT_DAYS;
   @state() private chosen: string[] = [];
   @state() private entity = '';
-  @state() private devices: DeviceInfo[] = [];
+  @state() private devices: DeviceName[] = [];
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -29,7 +29,7 @@ export class HistoryPanel extends TdcElement {
   /** Read the devices. */
   private async loadDevices(): Promise<void> {
     try {
-      this.devices = (await this.api.devicesUpTo(Infinity)).devices;
+      this.devices = await this.api.deviceNames();
     } catch (err) {
       this.error = describeError(err);
     }

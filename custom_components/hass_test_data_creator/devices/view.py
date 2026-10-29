@@ -64,7 +64,7 @@ class DeviceView:
         return self._device(device, self._usage.index(), with_signal=True)
 
     def names(self) -> list[dict[str, Any]]:
-        """Return what pickers and run lists need of every device, without its entities."""
+        """Return what pickers and run lists need of every device: entities with key, name, platform."""
         return [
             {
                 KEY_ID: device.id,
@@ -74,6 +74,16 @@ class DeviceView:
                 KEY_OUTPUT: device.output,
                 KEY_RUN_ID: device.run_id,
                 "created_at": device.created_at,
+                KEY_ENTITIES: [
+                    {
+                        "key": item.key,
+                        KEY_NAME: item.name,
+                        KEY_PLATFORM: item.platform,
+                        KEY_STATE_CLASS: item.state_class,
+                        KEY_SHAPE: (item.signal or {}).get(KEY_SHAPE),
+                    }
+                    for item in device.entities
+                ],
             }
             for device in self._store.devices()
         ]

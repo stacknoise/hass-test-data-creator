@@ -144,7 +144,18 @@ async def test_names_are_light_and_get_reports_a_missing_device(
 
     names = (await call(client, "devices/names"))["result"]["devices"]
     assert len(names) == 2
-    assert set(names[0]) == {"id", "name", "template", "model", "output", "run_id", "created_at"}
+    assert set(names[0]) == {
+        "id",
+        "name",
+        "template",
+        "model",
+        "output",
+        "run_id",
+        "created_at",
+        "entities",
+    }
+    assert names[0]["entities"]
+    assert set(names[0]["entities"][0]) == {"key", "name", "platform", "state_class", "shape"}
 
     missing = await call(client, "devices/get", device="nope")
     assert not missing["success"]
