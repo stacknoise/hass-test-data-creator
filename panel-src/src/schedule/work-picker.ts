@@ -5,7 +5,7 @@ import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import { actionLabel, entityName, sortedByLabel } from '../common/labels';
 import '../common/target-select';
-import type { DeviceInfo, TemplateInfo } from '../common/types';
+import type { DeviceName, TemplateInfo } from '../common/types';
 import {
   availableActions,
   entityChoices,
@@ -25,7 +25,7 @@ export class WorkPicker extends TdcElement {
   @property({ attribute: false }) actions: Record<string, string[]> = {};
   @property({ attribute: false }) templates: TemplateInfo[] = [];
 
-  @state() private devices: DeviceInfo[] = [];
+  @state() private devices: DeviceName[] = [];
   @state() private loaded = false;
   @state() private error = '';
 
@@ -38,7 +38,7 @@ export class WorkPicker extends TdcElement {
   /** Read the devices. */
   private async loadDevices(): Promise<void> {
     try {
-      this.devices = (await this.api.devicesUpTo(Infinity)).devices;
+      this.devices = await this.api.deviceNames();
       this.loaded = true;
       this.error = '';
     } catch (err) {

@@ -384,7 +384,7 @@ Lists every module, class and function of the integration with signature, file a
 | `DeviceView.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, usage: DeviceUsage, live: Live) -> None` | `custom_components/hass_test_data_creator/devices/view.py` | Keep the collaborators. |
 | `DeviceView.page` | `def page(self, offset: int, limit: int) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return `limit` devices from `offset` with the state of their entities and their users. |
 | `DeviceView.one` | `def one(self, device_id: str) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return one device in full, including the signal of each entity. |
-| `DeviceView.names` | `def names(self) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/devices/view.py` | Return what pickers and run lists need of every device, without its entities. |
+| `DeviceView.names` | `def names(self) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/devices/view.py` | Return what pickers and run lists need of every device: entities with key, name, platform. |
 | `DeviceView._device` | `def _device(self, device: DeviceDef, index: UsageIndex, *, with_signal: bool) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return the reply for one device. |
 | `DeviceView._entity` | `def _entity(self, registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef, *, with_signal: bool) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return key, entity id and current state of one entity; the signal only when asked. |
 

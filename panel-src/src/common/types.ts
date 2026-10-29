@@ -75,6 +75,15 @@ export interface EntityState {
   fault: string | null;
 }
 
+/** What a picker needs of an entity: no state, no curve. */
+export interface PickerEntity {
+  key: string;
+  name: string;
+  platform: string;
+  state_class?: string | null;
+  shape?: string | null;
+}
+
 /** What pickers and run lists need of a generated device (`devices/names`). */
 export interface DeviceName {
   id: string;
@@ -84,6 +93,7 @@ export interface DeviceName {
   output: string;
   run_id: string;
   created_at: number;
+  entities: PickerEntity[];
 }
 
 /** A generated device as listed by the backend. */

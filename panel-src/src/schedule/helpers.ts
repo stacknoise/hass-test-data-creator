@@ -1,5 +1,5 @@
 import type {
-  DeviceInfo,
+  DeviceName,
   ScheduleInfo,
   ScheduleTarget,
   TemplateInfo,
@@ -165,7 +165,7 @@ export function defaultWork(actions: Record<string, string[]>): WorkForm {
 export function platformSetsOfTarget(
   kind: TargetKind,
   ids: string[],
-  devices: DeviceInfo[],
+  devices: DeviceName[],
   templates: TemplateInfo[],
 ): Set<string>[] | undefined {
   const of = (entities: { platform: string }[]): Set<string> =>
@@ -220,7 +220,7 @@ export interface EntityChoice {
 export function entityChoices(
   kind: TargetKind,
   ids: string[],
-  devices: DeviceInfo[],
+  devices: DeviceName[],
   templates: TemplateInfo[],
   actions: Record<string, string[]>,
   action: string,

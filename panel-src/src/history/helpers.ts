@@ -1,4 +1,4 @@
-import type { DeviceInfo } from '../common/types';
+import type { DeviceName } from '../common/types';
 import { isDiscrete } from '../signals/editor-helpers';
 import { PLATFORM_SENSOR } from '../common/constants';
 
@@ -19,7 +19,7 @@ export interface Sensor {
 }
 
 /** Return the sensors that every chosen device has (or every device, if none is chosen). */
-export function sensorEntities(devices: DeviceInfo[], deviceIds: string[]): Sensor[] {
+export function sensorEntities(devices: DeviceName[], deviceIds: string[]): Sensor[] {
   const chosen = deviceIds.length
     ? devices.filter((device) => deviceIds.includes(device.id))
     : devices;

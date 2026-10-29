@@ -8,7 +8,7 @@ import type { TextKey } from '../common/i18n';
 import { workLabel } from '../common/labels';
 import { targetName } from '../common/targets';
 import type {
-  DeviceInfo,
+  DeviceName,
   PlannedRun,
   ScenarioInfo,
   ScheduleInfo,
@@ -53,7 +53,7 @@ export class SchedulePanel extends TdcPollingElement {
   @state() private schedules: ScheduleInfo[] = [];
   @state() private runs: PlannedRun[] = [];
   @state() private scenarios: ScenarioInfo[] = [];
-  @state() private devices: DeviceInfo[] = [];
+  @state() private devices: DeviceName[] = [];
   @state() private previewOpen = false;
 
   @query('tdc-schedule-form#new') private newForm?: ScheduleForm;
@@ -66,14 +66,12 @@ export class SchedulePanel extends TdcPollingElement {
   /** Reload the schedules and the planned runs. */
   protected async refresh(): Promise<void> {
     try {
-      let page;
-      [this.schedules, this.runs, this.scenarios, page] = await Promise.all([
+      [this.schedules, this.runs, this.scenarios, this.devices] = await Promise.all([
         this.api.schedules(),
         this.api.schedulePreview(PREVIEW_HOURS),
         this.api.scenarios(),
-        this.api.devicesUpTo(Infinity),
+        this.api.deviceNames(),
       ]);
-      this.devices = page.devices;
       this.error = '';
     } catch (err) {
       this.error = describeError(err);
