@@ -109,9 +109,9 @@ export class DeviceList extends TdcElement {
 
   /** Reload the devices that are shown now, at least the first page. */
   async refresh(more = false): Promise<void> {
-    const limit = Math.max(PAGE_SIZE, this.devices.length + (more ? PAGE_SIZE : 0));
+    const count = Math.max(PAGE_SIZE, this.devices.length + (more ? PAGE_SIZE : 0));
     try {
-      const page = await this.api.devices(0, limit);
+      const page = await this.api.devicesUpTo(count);
       this.devices = page.devices;
       this.total = page.total;
       this.error = '';

@@ -24,7 +24,6 @@ const COLUMN_COUNT = 6;
 
 const PREVIEW_HOURS = 24;
 const PREVIEW_ROWS = 50;
-const DEVICE_LIMIT = 500;
 
 /** Creates schedules, previews their next runs, and lists, changes, switches and removes them. */
 @customElement('tdc-schedule-panel')
@@ -72,7 +71,7 @@ export class SchedulePanel extends TdcPollingElement {
         this.api.schedules(),
         this.api.schedulePreview(PREVIEW_HOURS),
         this.api.scenarios(),
-        this.api.devices(0, DEVICE_LIMIT),
+        this.api.devicesUpTo(Infinity),
       ]);
       this.devices = page.devices;
       this.error = '';
