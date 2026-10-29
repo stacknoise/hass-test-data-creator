@@ -203,7 +203,7 @@ Every error is a `TdcError` with an `ErrorCode`.
 - It does not repeat the concept. Details link to the chapter of `docs/concept.md`.
 - Examples in the README are copied from working calls; a changed service field changes its example.
 - Before merging, read the README once against the diff: the feature list, the service table and the status line must match the code.
-- The screenshots in `docs/images` are rendered with demo data: after a visible change of the panel run `npm run build` and `npm run screenshots` in `panel-src` and commit the images (`SHOT_LANG=de` writes the German set to `panel-src/screenshots/out-de` for the homepage; it is not committed). The images are linked with absolute `raw.githubusercontent.com` URLs so that HACS renders them.
+- The screenshots in `docs/images` are rendered with demo data: after a visible change of the panel run `npm run build` and `npm run screenshots` in `panel-src` and commit the images (set `CHROMIUM_PATH` to use another browser than Edge; `SHOT_LANG=de` writes the German set to `panel-src/screenshots/out-de` for the homepage; it is not committed). The images are linked with absolute `raw.githubusercontent.com` URLs so that HACS renders them.
 - Workflows: `validate.yml` (hassfest, HACS validation, nightly), `tests.yml` (lint, CPD, pytest, panel job), `release.yml`, `codeql.yml`. A GitHub default CodeQL setup and a CodeQL workflow exclude each other; this repository uses the workflow.
 
 ### The concept document

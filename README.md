@@ -38,33 +38,37 @@ Not planned for now: YAML import and export, sharing of templates. See [docs/con
 
 The panel in the sidebar of Home Assistant (admin only). The images are rendered with demo data by `npm run screenshots` in `panel-src`.
 
-**Devices**: every generated device with its values; open one to change its area and the curve of a sensor, and to see where it is used.
+**Devices**: every generated device with its values; open one to change its area and the curve of a sensor, and to see where it is used. "Create devices" has an entity editor for custom devices, and "Manage own templates" lists, edits and deletes your own templates.
 
-![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=1)
+![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=2)
 
-![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=1)
+![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=2)
 
-![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=1)
+![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=2)
+
+![A custom device that starts from a template, with the entity editor](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-custom-device.png?v=2)
+
+![The popup that manages the own templates](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/own-templates.png?v=2)
 
 **Schedules and scenarios**: schedules with the planned runs of the next 24 hours, and scenarios as timed steps.
 
-![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=1)
+![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=2)
 
-![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=1)
+![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=2)
 
-![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=1)
+![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=2)
 
 **MQTT groups, history and removal**
 
-![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=1)
+![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=2)
 
-![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=1)
+![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=2)
 
-![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=1)
+![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=2)
 
 ## Status
 
-Version 1.0.0 (panel API version 2: `devices/list` no longer returns the curves, use the new `devices/get`; the new `devices/names` serves the pickers with the key, name, platform, state class and curve shape of each entity). Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md)). New since 0.3.0: statistics backfill, time lapse, CSV replay, and a reworked panel (popups to create and change devices, schedules, scenarios and MQTT groups, device details with the curve editor, targets of several devices with only the actions that all of them can do, protection of devices that are in use, and screenshots in this README). Tried in a running test instance of Home Assistant with a Mosquitto broker; native Home Assistant groups are not created.
+Version 1.0.0 (panel API version 2: `devices/list` no longer returns the curves, use the new `devices/get`; the new `devices/names` serves the pickers with the key, name, platform, state class and curve shape of each entity). Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md)). New since 0.3.0: own templates (saved, edited and deleted in the panel), an entity editor for custom devices, a curve preview that zooms in on short periods, unit suggestions from Home Assistant, statistics backfill, time lapse, CSV replay, and a reworked panel (popups to create and change devices, schedules, scenarios and MQTT groups, device details with the curve editor, targets of several devices with only the actions that all of them can do, protection of devices that are in use, and screenshots in this README). Tried in a running test instance of Home Assistant with a Mosquitto broker; native Home Assistant groups are not created.
 
 ## Installation (HACS)
 

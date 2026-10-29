@@ -204,6 +204,7 @@ const WORDS = {
 const ent = (device, base, state, extra = {}) => ({
   key: base.key,
   name: base.name,
+  shape: base.signal ? base.signal.shape : null,
   signal: base.signal,
   platform: base.platform,
   entity_id: `${base.platform}.${device}_${base.key}`,
@@ -213,6 +214,40 @@ const ent = (device, base, state, extra = {}) => ({
   fault: null,
   ...extra,
 });
+
+/** The own templates of the demo: what a user saved with the template form. */
+const ownTemplates = (lang) =>
+  [
+    ['balcony_sensor', 'Balcony sensor', 'Balkonsensor', 'temperature'],
+    ['weather_station', 'Weather station', 'Wetterstation', 'pressure'],
+  ].map(([id, en, de, kind]) => ({
+    id,
+    name: lang === 'de' ? de : en,
+    model: 'Custom',
+    bundled: false,
+    entities: [
+      def('temperature', 'sensor', 'Temperature', {
+        device_class: 'temperature',
+        unit: '°C',
+        signal: { shape: 'sine', min: 8, max: 24, period_s: 86400, noise: 0.02, decimals: 1 },
+      }),
+      def('humidity', 'sensor', 'Humidity', {
+        device_class: 'humidity',
+        unit: '%',
+        signal: { shape: 'random_walk', min: 40, max: 90, period_s: 3600, decimals: 0 },
+      }),
+      ...(kind === 'pressure'
+        ? [
+            def('pressure', 'sensor', 'Pressure', {
+              device_class: 'pressure',
+              unit: 'hPa',
+              signal: { shape: 'random_walk', min: 990, max: 1030, period_s: 21600, decimals: 1 },
+            }),
+          ]
+        : []),
+      battery(),
+    ],
+  }));
 
 const template = (id) => TEMPLATES.find((t) => t.id === id);
 const entityOf = (id, key) => template(id).entities.find((e) => e.key === key);
@@ -433,7 +468,7 @@ export function fixtures(lang) {
     now: NOW,
     areas,
     info,
-    templates: TEMPLATES.map((t) => ({ ...t, bundled: true })),
+    templates: [...TEMPLATES.map((t) => ({ ...t, bundled: true })), ...ownTemplates(lang)],
     devices,
     schedules,
     scenarios,
