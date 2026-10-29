@@ -10,6 +10,8 @@ from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.hass_test_data_creator.const import API_VERSION
 
+from ..conftest import create_devices
+
 PREFIX = "hass_test_data_creator"
 
 
@@ -26,7 +28,7 @@ async def test_info_and_templates(
     info = await call(client, "info")
     assert info["success"]
     assert info["result"]["api_version"] == API_VERSION
-    assert info["result"]["version"] == "0.4.0"
+    assert info["result"]["version"] == "1.0.0"
     assert info["result"]["outputs"] == ["native"]
     assert info["result"]["mqtt"] is False
     assert "sine" in info["result"]["shapes"]
@@ -132,3 +134,18 @@ async def test_schedule_commands(
     assert removed["success"]
     again = await call(client, "schedules/remove", schedule_id=schedule_id)
     assert again["error"]["code"] == "TDC-SCH-004"
+
+
+async def test_names_are_light_and_get_reports_a_missing_device(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    await create_devices(hass, count=2)
+
+    names = (await call(client, "devices/names"))["result"]["devices"]
+    assert len(names) == 2
+    assert set(names[0]) == {"id", "name", "template", "model", "output", "run_id", "created_at"}
+
+    missing = await call(client, "devices/get", device="nope")
+    assert not missing["success"]
+    assert missing["error"]["code"] == "TDC-SCH-002"

@@ -6,7 +6,7 @@ import { describeError } from '../common/api';
 import { TdcElement, containerHost } from '../common/base';
 import type { SelectItem } from '../common/multi-select';
 import { TdcPollingElement } from '../common/polling';
-import type { DeviceInfo, GroupInfo } from '../common/types';
+import type { DeviceName, GroupInfo } from '../common/types';
 import './group-form';
 import type { GroupForm, GroupRequest } from './group-form';
 import { LIST_SEPARATOR } from '../common/constants';
@@ -32,7 +32,7 @@ export class GroupPanel extends TdcPollingElement {
   ];
 
   @state() private groups: GroupInfo[] = [];
-  @state() private devices: DeviceInfo[] = [];
+  @state() private devices: DeviceName[] = [];
 
   @query('tdc-group-form#new') private newForm?: GroupForm;
 
@@ -44,9 +44,7 @@ export class GroupPanel extends TdcPollingElement {
   /** Reload the groups and the devices. */
   protected async refresh(): Promise<void> {
     try {
-      const [groups, page] = await Promise.all([this.api.groups(), this.api.devicesUpTo(Infinity)]);
-      this.groups = groups;
-      this.devices = page.devices;
+      [this.groups, this.devices] = await Promise.all([this.api.groups(), this.api.deviceNames()]);
     } catch (err) {
       this.error = describeError(err);
     }

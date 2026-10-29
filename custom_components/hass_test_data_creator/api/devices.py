@@ -6,7 +6,6 @@ from typing import Any
 
 from homeassistant.components.websocket_api import ActiveConnection
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
 import voluptuous as vol
 
 from ..const import (
@@ -23,52 +22,17 @@ from ..core.keys import (
     KEY_AREA,
     KEY_DEVICE,
     KEY_DEVICES,
-    KEY_ENTITIES,
     KEY_ENTITY,
     KEY_ID,
     KEY_LABEL,
-    KEY_MODEL,
-    KEY_NAME,
     KEY_OFFSET,
-    KEY_OUTPUT,
     KEY_PARAMS,
-    KEY_PLATFORM,
     KEY_RUN_ID,
     KEY_SIGNAL,
-    KEY_STATE,
-    KEY_STATE_CLASS,
-    KEY_TEMPLATE,
-    KEY_UNIT,
 )
 from ..core.runtime import get_data
-from ..devices.entity_ids import entity_id_of
 from ..devices.schema import CREATE_FIELDS, job_from_request
-from ..model.models import DeviceDef
 from ..templates.schema import SIGNAL_SCHEMA
-
-
-def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any]]:
-    """Return key, entity id and current state of every entity of `device`."""
-    registry = er.async_get(hass)
-    live = get_data(hass).live
-    result: list[dict[str, Any]] = []
-    for definition in device.entities:
-        entity_id = entity_id_of(registry, device, definition)
-        state = hass.states.get(entity_id) if entity_id else None
-        result.append(
-            {
-                "key": definition.key,
-                KEY_NAME: definition.name,
-                KEY_PLATFORM: definition.platform,
-                "entity_id": entity_id,
-                KEY_STATE: state.state if state else None,
-                KEY_UNIT: definition.unit,
-                KEY_STATE_CLASS: definition.state_class,
-                KEY_SIGNAL: definition.signal,
-                "fault": getattr(live.get((device.id, definition.key)), "fault_kind", None),
-            }
-        )
-    return result
 
 
 @tdc_command(
@@ -84,26 +48,23 @@ async def ws_devices_list(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
     """Return one page of devices with the current state of their entities."""
-    devices = get_data(hass).store.devices()
-    page = devices[msg[KEY_OFFSET] : msg[KEY_OFFSET] + msg["limit"]]
-    return {
-        "total": len(devices),
-        KEY_DEVICES: [
-            {
-                KEY_ID: device.id,
-                KEY_NAME: device.name,
-                KEY_TEMPLATE: device.template,
-                KEY_MODEL: device.model,
-                KEY_AREA: device.area,
-                KEY_OUTPUT: device.output,
-                KEY_RUN_ID: device.run_id,
-                "created_at": device.created_at,
-                KEY_ENTITIES: _entity_states(hass, device),
-                "used_by": get_data(hass).usage.of(device),
-            }
-            for device in page
-        ],
-    }
+    return get_data(hass).device_view.page(msg[KEY_OFFSET], msg["limit"])
+
+
+@tdc_command(f"{DOMAIN}/devices/get", {vol.Required(KEY_DEVICE): str})
+async def ws_devices_get(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Return one device in full, with the signal of each entity."""
+    return get_data(hass).device_view.one(msg[KEY_DEVICE])
+
+
+@tdc_command(f"{DOMAIN}/devices/names", {})
+async def ws_devices_names(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Return what pickers need of every device: no entities, states or users."""
+    return {KEY_DEVICES: get_data(hass).device_view.names()}
 
 
 @tdc_command(f"{DOMAIN}/devices/create", CREATE_FIELDS)

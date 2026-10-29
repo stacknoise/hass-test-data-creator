@@ -15,7 +15,6 @@ from ..core.keys import (
     KEY_DEVICES,
     KEY_GROUPS,
     KEY_PUBLISHED_TOPICS,
-    KEY_RUN_ID,
     KEY_RUNS,
     KEY_SCENARIOS,
     KEY_SCHEDULES,
@@ -45,45 +44,52 @@ class TdcStore:
         """Create the store; call `async_load` before use."""
         self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
         self._data: dict[str, Any] = _empty()
+        self._devices: dict[str, DeviceDef] = {}
 
     async def async_load(self) -> None:
         """Load the stored content, if any."""
         loaded = await self._store.async_load()
         if loaded:
             self._data = {**_empty(), **loaded}
+        self._devices = {
+            device_id: DeviceDef.from_dict(item)
+            for device_id, item in self._data[KEY_DEVICES].items()
+        }
+
+    def _snapshot(self) -> dict[str, Any]:
+        """Return the content to write: the devices are serialised here, not on every change."""
+        return {**self._data, KEY_DEVICES: {i: d.to_dict() for i, d in self._devices.items()}}
 
     def devices(self) -> list[DeviceDef]:
-        """Return all stored devices in creation order."""
-        return [DeviceDef.from_dict(item) for item in self._data[KEY_DEVICES].values()]
+        """Return all stored devices in creation order; they are the working copy, so copy to edit."""
+        return list(self._devices.values())
 
     def device(self, device_id: str) -> DeviceDef | None:
-        """Return the device with `device_id`, or None."""
-        item = self._data[KEY_DEVICES].get(device_id)
-        return DeviceDef.from_dict(item) if item else None
+        """Return the stored device with `device_id`, or None."""
+        return self._devices.get(device_id)
 
     def device_id_of(self, reference: str) -> str | None:
-        """Return the id of the device whose id or name is `reference`, without building devices."""
-        devices = self._data[KEY_DEVICES]
-        if reference in devices:
+        """Return the id of the device whose id or name is `reference`."""
+        if reference in self._devices:
             return reference
-        return next((i for i, item in devices.items() if item.get("name") == reference), None)
+        return next((i for i, item in self._devices.items() if item.name == reference), None)
 
     def device_count(self) -> int:
         """Return the number of stored devices."""
-        return len(self._data[KEY_DEVICES])
+        return len(self._devices)
 
     def add_device(self, device: DeviceDef) -> None:
-        """Store `device`."""
-        self._data[KEY_DEVICES][device.id] = device.to_dict()
+        """Store `device`, replacing one with the same id."""
+        self._devices[device.id] = device
 
     def remove_device(self, device_id: str) -> None:
         """Delete the device and its id in the run it belongs to."""
-        item = self._data[KEY_DEVICES].pop(device_id, None)
-        run = self._data[KEY_RUNS].get(item[KEY_RUN_ID]) if item else None
-        if run and device_id in run[KEY_DEVICE_IDS]:
+        item = self._devices.pop(device_id, None)
+        run = self._data[KEY_RUNS].get(item.run_id) if item else None
+        if item and run and device_id in run[KEY_DEVICE_IDS]:
             run[KEY_DEVICE_IDS].remove(device_id)
             if not run[KEY_DEVICE_IDS]:
-                del self._data[KEY_RUNS][item[KEY_RUN_ID]]
+                del self._data[KEY_RUNS][item.run_id]
 
     def runs(self) -> list[RunRecord]:
         """Return all runs."""
@@ -208,13 +214,14 @@ class TdcStore:
 
     def schedule_save(self) -> None:
         """Save after a short delay; used for frequent writes."""
-        self._store.async_delay_save(lambda: self._data, SAVE_DELAY_SECONDS)
+        self._store.async_delay_save(self._snapshot, SAVE_DELAY_SECONDS)
 
     async def async_save(self) -> None:
         """Save at once; used for changes made by the user."""
-        await self._store.async_save(self._data)
+        await self._store.async_save(self._snapshot())
 
     async def async_remove(self) -> None:
         """Delete the storage file."""
         await self._store.async_remove()
         self._data = _empty()
+        self._devices = {}

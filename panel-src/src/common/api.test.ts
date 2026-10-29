@@ -65,4 +65,21 @@ describe('TdcApi', () => {
     expect((await api.devicesUpTo(Infinity)).devices).toHaveLength(1200);
     expect(sent.every((item) => item.limit <= 500)).toBe(true);
   });
+
+  it('reads the device names and one full device with their own commands', async () => {
+    const sent: Record<string, unknown>[] = [];
+    const hass = {
+      language: 'en',
+      callWS: async (message: Record<string, unknown>) => {
+        sent.push(message);
+        return message.type === 'hass_test_data_creator/devices/names'
+          ? { devices: [{ id: 'a' }] }
+          : {};
+      },
+    } as unknown as Hass;
+    const api = new TdcApi(hass);
+    expect(await api.deviceNames()).toEqual([{ id: 'a' }]);
+    await api.device('a');
+    expect(sent[1]).toEqual({ type: 'hass_test_data_creator/devices/get', device: 'a' });
+  });
 });

@@ -123,11 +123,12 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore` | `class TdcStore` | `custom_components/hass_test_data_creator/store/store.py` | Holds the generated devices, the runs and the list of areas the integration created. |
 | `TdcStore.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Create the store; call `async_load` before use. |
 | `TdcStore.async_load` | `async def async_load(self) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Load the stored content, if any. |
-| `TdcStore.devices` | `def devices(self) -> list[DeviceDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all stored devices in creation order. |
-| `TdcStore.device` | `def device(self, device_id: str) -> DeviceDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the device with `device_id`, or None. |
-| `TdcStore.device_id_of` | `def device_id_of(self, reference: str) -> str \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the id of the device whose id or name is `reference`, without building devices. |
+| `TdcStore._snapshot` | `def _snapshot(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/store.py` | Return the content to write: the devices are serialised here, not on every change. |
+| `TdcStore.devices` | `def devices(self) -> list[DeviceDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all stored devices in creation order; they are the working copy, so copy to edit. |
+| `TdcStore.device` | `def device(self, device_id: str) -> DeviceDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the stored device with `device_id`, or None. |
+| `TdcStore.device_id_of` | `def device_id_of(self, reference: str) -> str \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the id of the device whose id or name is `reference`. |
 | `TdcStore.device_count` | `def device_count(self) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Return the number of stored devices. |
-| `TdcStore.add_device` | `def add_device(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `device`. |
+| `TdcStore.add_device` | `def add_device(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `device`, replacing one with the same id. |
 | `TdcStore.remove_device` | `def remove_device(self, device_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the device and its id in the run it belongs to. |
 | `TdcStore.runs` | `def runs(self) -> list[RunRecord]` | `custom_components/hass_test_data_creator/store/store.py` | Return all runs. |
 | `TdcStore.add_run` | `def add_run(self, run: RunRecord) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `run`. |
@@ -334,10 +335,24 @@ Lists every module, class and function of the integration with signature, file a
 | `SignalEditor.__init__` | `def __init__(self, store: TdcStore, live: Live, behaviours: BehaviourFactory, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Keep the collaborators. |
 | `SignalEditor.async_set` | `async def async_set(self, device_id: str, key: str, signal: dict[str, Any]) -> EntityDef` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Give entity `key` of the device the numeric signal `signal`; return the entity. |
 | `hass_test_data_creator.devices.usage` | `module` | `custom_components/hass_test_data_creator/devices/usage.py` | Where a generated device is used: the schedules, scenarios and groups that name it (concept 10). |
+| `UsageIndex` | `class UsageIndex` | `custom_components/hass_test_data_creator/devices/usage.py` | The users of devices, looked up by device id or name; build it once per request. |
+| `UsageIndex.__init__` | `def __init__(self, store: TdcStore) -> None` | `custom_components/hass_test_data_creator/devices/usage.py` | Read the schedules, scenarios and groups once. |
+| `UsageIndex._add` | `def _add(table: dict[str, list[tuple[int, dict[str, str]]]], references: set[str], position: int, item_id: str, name: str) -> None` | `custom_components/hass_test_data_creator/devices/usage.py` | Record that the item at `position` names each of `references`. |
+| `UsageIndex.of` | `def of(self, device: DeviceDef) -> Usage` | `custom_components/hass_test_data_creator/devices/usage.py` | Return `{kind: [{id, name}]}` for the three kinds of user of `device`. |
+| `UsageIndex._users` | `def _users(table: dict[str, list[tuple[int, dict[str, str]]]], *references: str) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/devices/usage.py` | Return the items that name one of `references`, once each, in creation order. |
 | `DeviceUsage` | `class DeviceUsage` | `custom_components/hass_test_data_creator/devices/usage.py` | Finds the schedules, scenarios and groups that name a device itself. |
 | `DeviceUsage.__init__` | `def __init__(self, store: TdcStore) -> None` | `custom_components/hass_test_data_creator/devices/usage.py` | Keep the store. |
+| `DeviceUsage.index` | `def index(self) -> UsageIndex` | `custom_components/hass_test_data_creator/devices/usage.py` | Return the users of all devices, read once. |
 | `DeviceUsage.of` | `def of(self, device: DeviceDef) -> Usage` | `custom_components/hass_test_data_creator/devices/usage.py` | Return `{kind: [{id, name}]}` for the three kinds of user of `device`. |
 | `DeviceUsage.is_used` | `def is_used(usage: Usage) -> bool` | `custom_components/hass_test_data_creator/devices/usage.py` | Whether anything uses the device. |
+| `hass_test_data_creator.devices.view` | `module` | `custom_components/hass_test_data_creator/devices/view.py` | What the panel shows of devices: pages with live states, one device in full, and light name lists. |
+| `DeviceView` | `class DeviceView` | `custom_components/hass_test_data_creator/devices/view.py` | Builds the replies of the device commands from the store, the registry and the states. |
+| `DeviceView.__init__` | `def __init__(self, hass: HomeAssistant, store: TdcStore, usage: DeviceUsage, live: Live) -> None` | `custom_components/hass_test_data_creator/devices/view.py` | Keep the collaborators. |
+| `DeviceView.page` | `def page(self, offset: int, limit: int) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return `limit` devices from `offset` with the state of their entities and their users. |
+| `DeviceView.one` | `def one(self, device_id: str) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return one device in full, including the signal of each entity. |
+| `DeviceView.names` | `def names(self) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/devices/view.py` | Return what pickers and run lists need of every device, without its entities. |
+| `DeviceView._device` | `def _device(self, device: DeviceDef, index: UsageIndex, *, with_signal: bool) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return the reply for one device. |
+| `DeviceView._entity` | `def _entity(self, registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef, *, with_signal: bool) -> dict[str, Any]` | `custom_components/hass_test_data_creator/devices/view.py` | Return key, entity id and current state of one entity; the signal only when asked. |
 
 ## areas
 
@@ -783,8 +798,9 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.api.__init__` | `module` | `custom_components/hass_test_data_creator/api/__init__.py` | The hass_test_data_creator/* WebSocket commands of the panel (concept 8.2). |
 | `async_register_commands` | `def async_register_commands(hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/api/__init__.py` | Register every panel command. |
 | `hass_test_data_creator.api.devices` | `module` | `custom_components/hass_test_data_creator/api/devices.py` | Commands about devices (concept 8.2). |
-| `_entity_states` | `def _entity_states(hass: HomeAssistant, device: DeviceDef) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/devices.py` | Return key, entity id and current state of every entity of `device`. |
 | `ws_devices_list` | `async def ws_devices_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Return one page of devices with the current state of their entities. |
+| `ws_devices_get` | `async def ws_devices_get(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Return one device in full, with the signal of each entity. |
+| `ws_devices_names` | `async def ws_devices_names(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Return what pickers need of every device: no entities, states or users. |
 | `ws_devices_create` | `async def ws_devices_create(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Create the devices of a job and return the run. |
 | `ws_devices_update` | `async def ws_devices_update(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Put a device into another area, or into none, and return its new area. |
 | `ws_devices_signal` | `async def ws_devices_signal(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/devices.py` | Give a sensor of a device another curve and return the new signal. |

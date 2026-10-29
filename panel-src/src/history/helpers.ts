@@ -26,7 +26,7 @@ export function sensorEntities(devices: DeviceInfo[], deviceIds: string[]): Sens
   const perDevice = chosen.map((device) => {
     const sensors = new Map<string, Sensor>();
     for (const entity of device.entities) {
-      const shape = entity.signal?.shape;
+      const shape = entity.shape;
       if (
         entity.platform === PLATFORM_SENSOR &&
         entity.state_class &&

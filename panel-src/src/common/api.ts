@@ -1,5 +1,7 @@
 import type {
   CreateRequest,
+  DeviceInfo,
+  DeviceName,
   DevicePage,
   Hass,
   Info,
@@ -34,6 +36,16 @@ export class TdcApi {
   /** Return all templates. */
   templates(): Promise<TemplateInfo[]> {
     return this.call('templates/list');
+  }
+
+  /** Return one device in full, with the curve of each entity. */
+  device(device: string): Promise<DeviceInfo> {
+    return this.call('devices/get', { device });
+  }
+
+  /** Return id, name, template, model, output, run and creation time of every device. */
+  async deviceNames(): Promise<DeviceName[]> {
+    return (await this.call<{ devices: DeviceName[] }>('devices/names')).devices;
   }
 
   /** Return one page of devices. */

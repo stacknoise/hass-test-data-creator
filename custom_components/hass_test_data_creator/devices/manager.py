@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import time
 from typing import Any
 
@@ -71,10 +71,10 @@ class DevicesManager:
 
     async def async_set_area(self, device_id: str, area: str | None) -> DeviceDef:
         """Put the device into the area `area` (created if new), or into none; return the device."""
-        device = self._store.device(device_id)
-        if device is None:
+        stored = self._store.device(device_id)
+        if stored is None:
             raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
-        device.area = area or None
+        device = replace(stored, area=area or None)
         self._store.add_device(device)
         self._areas.move(device, device.area)
         self._areas.delete_empty_created()

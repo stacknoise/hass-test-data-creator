@@ -9,10 +9,11 @@ MANUFACTURER: Final = "HASS Test Data Creator"
 LABEL_NAME: Final = "test data"
 
 # WebSocket API for the panel (concept 8.2).
-API_VERSION: Final = 1
+API_VERSION: Final = 2
 FEATURES: Final = (
     "areas",
     "csv_replay",
+    "device_names",
     "faults",
     "mqtt_discovery",
     "native_output",

@@ -26,7 +26,7 @@ describe('sensorEntities', () => {
     name: key,
     platform,
     state_class: stateClass,
-    signal: shape ? { shape } : null,
+    shape: shape ?? null,
   });
   const devices = [
     { id: 'a', entities: [entity('power', 'sensor', 'sine'), entity('state', 'switch')] },

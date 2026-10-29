@@ -48,16 +48,23 @@ async def test_a_new_curve_replaces_the_old_one_at_once(
     assert _stored_shape(hass, 1, "power") != "constant"
 
 
-async def test_the_device_list_shows_the_signal(
+async def test_the_list_names_the_shape_and_get_returns_the_signal(
     hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
 ) -> None:
     await create_devices(hass, count=1)
     client = await hass_ws_client(hass)
     await client.send_json_auto_id({"type": f"{DOMAIN}/devices/list"})
     reply = await client.receive_json()
-    entities = {item["key"]: item for item in reply["result"]["devices"][0]["entities"]}
-    assert entities["power"]["signal"]["shape"] == "random_walk"
-    assert entities["state"]["signal"] is None
+    listed = reply["result"]["devices"][0]
+    entities = {item["key"]: item for item in listed["entities"]}
+    assert entities["power"]["shape"] == "random_walk"
+    assert entities["state"]["shape"] is None
+    assert all("signal" not in item for item in listed["entities"])
+
+    await client.send_json_auto_id({"type": f"{DOMAIN}/devices/get", "device": listed["id"]})
+    full = {item["key"]: item for item in (await client.receive_json())["result"]["entities"]}
+    assert full["power"]["signal"]["shape"] == "random_walk"
+    assert full["state"]["signal"] is None
 
 
 async def test_wrong_requests_leave_the_curve_as_it_was(

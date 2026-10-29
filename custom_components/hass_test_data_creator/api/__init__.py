@@ -8,7 +8,9 @@ from homeassistant.core import HomeAssistant
 from .devices import (
     ws_devices_create,
     ws_devices_fire,
+    ws_devices_get,
     ws_devices_list,
+    ws_devices_names,
     ws_devices_signal,
     ws_devices_update,
 )
@@ -35,7 +37,9 @@ from .schedules import (
 COMMANDS = (
     ws_info,
     ws_templates_list,
+    ws_devices_get,
     ws_devices_list,
+    ws_devices_names,
     ws_devices_create,
     ws_devices_fire,
     ws_devices_update,

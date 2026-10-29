@@ -264,7 +264,7 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, create, update, fire, signal), `templates/list`, `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, get, names, create, update, fire, signal; `list` returns the state and the shape of each entity, `get` the full device with its signals, `names` only id, name, template, model, output, run and creation time for pickers), `templates/list`, `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 

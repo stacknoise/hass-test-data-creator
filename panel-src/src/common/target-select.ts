@@ -5,7 +5,7 @@ import { TdcElement } from './base';
 import type { TextKey } from './i18n';
 import './multi-select';
 import { resolveTargetId, targetOptions, type TargetKind } from './targets';
-import type { DeviceInfo, TemplateInfo } from './types';
+import type { DeviceName, TemplateInfo } from './types';
 import { KIND_DEVICE, KIND_TEMPLATE } from './constants';
 
 const KIND_LABELS: Record<TargetKind, TextKey> = {
@@ -22,7 +22,7 @@ export class TargetSelect extends TdcElement {
   @property({ type: Boolean }) multiple = false;
   @property({ attribute: false }) templates: TemplateInfo[] = [];
 
-  @state() private devices: DeviceInfo[] = [];
+  @state() private devices: DeviceName[] = [];
   @state() private error = '';
 
   /** Load the devices when the kind needs them. */
@@ -34,7 +34,7 @@ export class TargetSelect extends TdcElement {
   /** Read the devices; the creations are derived from them. */
   private async loadDevices(): Promise<void> {
     try {
-      this.devices = (await this.api.devicesUpTo(Infinity)).devices;
+      this.devices = await this.api.deviceNames();
       this.error = '';
     } catch (err) {
       this.error = describeError(err);
