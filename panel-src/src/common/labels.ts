@@ -241,16 +241,27 @@ export function stateLabel(code: string | undefined, state: string | null): stri
   return state === null ? '–' : labelOf(code, 'state', state);
 }
 
+const collators = new Map<Language, Intl.Collator>();
+
+/** Return the collator of a language; it is created once, because creating one is the costly part. */
+export function collatorOf(code: string | undefined): Intl.Collator {
+  const language = languageOf(code);
+  let collator = collators.get(language);
+  if (collator === undefined) {
+    collator = new Intl.Collator(language, { numeric: true, sensitivity: 'base' });
+    collators.set(language, collator);
+  }
+  return collator;
+}
+
 /** Return `items` sorted by the text that `label` gives them, in the rules of the language. */
 export function sortedByLabel<T>(
   code: string | undefined,
   items: readonly T[],
   label: (item: T) => string,
 ): T[] {
-  const locale = languageOf(code);
-  return [...items].sort((a, b) =>
-    label(a).localeCompare(label(b), locale, { numeric: true, sensitivity: 'base' }),
-  );
+  const collator = collatorOf(code);
+  return [...items].sort((a, b) => collator.compare(label(a), label(b)));
 }
 
 /** Return the ids of a kind that exist in one language, for the test that both are complete. */

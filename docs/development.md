@@ -36,7 +36,7 @@ pytest                                      # Linux, WSL, container or CI
 cd panel-src
 npm run typecheck                           # tsc --noEmit, strict
 npm run lint                                # eslint incl. TSDoc rule
-npm test                                    # Vitest
+npm test                                    # Vitest; components run in happy-dom
 npm run build                               # writes custom_components/hass_test_data_creator/frontend/
 git diff --exit-code ../custom_components/hass_test_data_creator/frontend   # built file is up to date
 ```

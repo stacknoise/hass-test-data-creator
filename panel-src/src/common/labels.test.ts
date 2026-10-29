@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   actionLabel,
+  collatorOf,
   entityName,
   labelIds,
   labelOf,
@@ -67,5 +68,12 @@ describe('sortedByLabel', () => {
       'Zett',
     ]);
     expect(sortedByLabel('en', ['Plug 10', 'Plug 2'], (s) => s)).toEqual(['Plug 2', 'Plug 10']);
+  });
+});
+
+describe('collatorOf', () => {
+  it('creates one collator per language', () => {
+    expect(collatorOf('de')).toBe(collatorOf('de-AT'));
+    expect(collatorOf('en')).not.toBe(collatorOf('de'));
   });
 });

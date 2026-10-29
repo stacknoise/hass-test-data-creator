@@ -23,19 +23,41 @@ import { MAX_PAGE_SIZE } from './constants';
 
 const PREFIX = 'hass_test_data_creator';
 
+/** How long the answer of `info` is shared by the tabs. */
+const INFO_TTL_MS = 30_000;
+/** How long the list of templates is shared; templates only change with a restart. */
+const TEMPLATES_TTL_MS = 300_000;
+
+const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+
+/** Return the answer of `load`, shared by all callers until `ttl` has passed; a failure is not kept. */
+function cached<T>(key: string, ttl: number, load: () => Promise<T>): Promise<T> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.value as Promise<T>;
+  const value = load();
+  cache.set(key, { at: Date.now(), value });
+  value.catch(() => cache.delete(key));
+  return value;
+}
+
+/** Forget the shared answers, for example after the options of the integration changed. */
+export function clearApiCache(): void {
+  cache.clear();
+}
+
 /** Typed access to the `hass_test_data_creator/*` WebSocket commands. */
 export class TdcApi {
   /** Create the client for one `hass` connection. */
   constructor(private readonly hass: Hass) {}
 
-  /** Return version, limits and capabilities. */
+  /** Return version, limits and capabilities; shared by all tabs for `INFO_TTL_MS`. */
   info(): Promise<Info> {
-    return this.call('info');
+    return cached('info', INFO_TTL_MS, () => this.call<Info>('info'));
   }
 
-  /** Return all templates. */
+  /** Return all templates; shared by all tabs for `TEMPLATES_TTL_MS`. */
   templates(): Promise<TemplateInfo[]> {
-    return this.call('templates/list');
+    return cached('templates', TEMPLATES_TTL_MS, () => this.call<TemplateInfo[]>('templates/list'));
   }
 
   /** Return one device in full, with the curve of each entity. */
