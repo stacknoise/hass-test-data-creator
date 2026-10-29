@@ -114,7 +114,10 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         entry=entry,
         store=store,
         tick=Tick(
-            hass, seconds, lambda took, every: audit.record(audit_factory.tick_slow(took, every))
+            hass,
+            seconds,
+            clock.now,
+            lambda took, every: audit.record(audit_factory.tick_slow(took, every)),
         ),
         manager=DevicesManager(
             store,

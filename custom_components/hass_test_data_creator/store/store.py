@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
+from homeassistant.util import dt as dt_util
 
 from ..const import SAVE_DELAY_SECONDS, STORE_KEY, STORE_VERSION
 from ..core.keys import (
@@ -18,8 +20,10 @@ from ..core.keys import (
     KEY_RUNS,
     KEY_SCENARIOS,
     KEY_SCHEDULES,
+    KEY_TIME_LAPSE,
 )
 from ..model.models import DeviceDef, GroupDef, RunRecord, ScenarioDef, ScheduleDef
+from .migrate import migrate
 
 
 def _empty() -> dict[str, Any]:
@@ -33,8 +37,19 @@ def _empty() -> dict[str, Any]:
         KEY_CREATED_STATISTICS: {},
         KEY_GROUPS: {},
         KEY_CREATED_AREAS: [],
+        KEY_TIME_LAPSE: None,
         "counters": {},
     }
+
+
+class _Storage(Store[dict[str, Any]]):
+    """The storage file of the integration; older versions are migrated when they are loaded."""
+
+    async def _async_migrate_func(
+        self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Return the data of an older version in the current layout."""
+        return migrate(old_major_version, old_data)
 
 
 class TdcStore:
@@ -42,7 +57,7 @@ class TdcStore:
 
     def __init__(self, hass: HomeAssistant) -> None:
         """Create the store; call `async_load` before use."""
-        self._store: Store[dict[str, Any]] = Store(hass, STORE_VERSION, STORE_KEY)
+        self._store = _Storage(hass, STORE_VERSION, STORE_KEY)
         self._data: dict[str, Any] = _empty()
         self._devices: dict[str, DeviceDef] = {}
 
@@ -223,6 +238,15 @@ class TdcStore:
         """Forget an area, for example after it was deleted."""
         if area_id in self._data[KEY_CREATED_AREAS]:
             self._data[KEY_CREATED_AREAS].remove(area_id)
+
+    def time_lapse_start(self, factor: float, now: datetime) -> datetime:
+        """Return when the time lapse of `factor` began; a new factor begins at `now` and is kept."""
+        saved = self._data[KEY_TIME_LAPSE]
+        if saved and saved["factor"] == factor:
+            return dt_util.utc_from_timestamp(saved["start"])
+        self._data[KEY_TIME_LAPSE] = {"factor": factor, "start": now.timestamp()}
+        self.schedule_save()
+        return now
 
     def schedule_save(self) -> None:
         """Save after a short delay; used for frequent writes."""

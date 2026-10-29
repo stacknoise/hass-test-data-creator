@@ -144,7 +144,7 @@ Everything the integration creates is marked, so that nothing has to be searched
 
 ### 5.1 Time and determinism
 
-`value_at(spec, t, seed, origin)` is a pure function. `t` is the signal time in seconds: local wall-clock time of the instance (so daily curves follow the local day) mapped by the time-lapse clock (v0.4): from the start of the config entry on, signal time runs `factor` times faster than real time, `signal = base + (real - base) * factor`, with `base` the signal time at the start. The factor is the option `time_lapse` (1 to 10000, default 1); changing it reloads the entry and starts the clock again, so counters and state shapes may jump. Only the signals are accelerated: schedules, scenarios, fault durations, pulses and the tick stay in real time, and the statistics backfill uses real time. Noise and spikes use an integer hash of `(seed, n)`, not a stateful generator, so a value can be computed for any `t` without history. This is also what makes statistics backfill and the curve preview in the panel possible. The panel computes the preview with the same shapes.
+`value_at(spec, t, seed, origin)` is a pure function. `t` is the signal time in seconds: local wall-clock time of the instance (so daily curves follow the local day) mapped by the time-lapse clock (v0.4): from the start of the time lapse on, signal time runs `factor` times faster than real time, `signal = base + (real - base) * factor`, with `base` the signal time at the start. The factor is the option `time_lapse` (1 to 10000, default 1). The start is stored with the factor (store version 2, key `time_lapse`), so a restart or a reload continues the same time lapse and the curves do not jump back; only a changed factor starts a new time lapse at that moment, so counters and state shapes may jump then. Only the signals are accelerated: schedules, scenarios, fault durations, pulses and the tick stay in real time, and the statistics backfill uses real time. Noise and spikes use an integer hash of `(seed, n)`, not a stateful generator, so a value can be computed for any `t` without history. This is also what makes statistics backfill and the curve preview in the panel possible. The panel computes the preview with the same shapes.
 
 ### 5.2 Shapes
 
@@ -164,7 +164,7 @@ A shape is created only by `SignalFactory` (13.2). Adding a shape is a new entry
 
 ### 5.3 Tick
 
-One `Tick` per config entry calls `async_dispatcher_send` every `tick_seconds` (default 10, minimum 1). Entities subscribe to it and compute their own value. An entity whose interval is longer than the tick skips ticks. The tick measures its own duration; if it takes longer than 50 % of the interval, a warning with code `TDC-GEN-005` is shown once (12).
+One `Tick` per config entry calls `async_dispatcher_send` every `tick_seconds` (default 10, minimum 1) and passes the signal time, computed once per tick. Entities subscribe to it and compute their own value for that time. An entity whose interval is longer than the tick skips ticks. A thermostat writes its state only when the rounded temperature changed. The MQTT outputs start one task per tick that publishes everything that changed; the Zigbee2MQTT output publishes each changed device once. The tick measures its own duration up to the end of the event loop iteration, so the tasks the listeners started count too; if it takes longer than 50 % of the interval, a warning with code `TDC-GEN-005` is shown, and again after a tick that was fast in between (12).
 
 ### 5.3a Statistics backfill (v0.4)
 

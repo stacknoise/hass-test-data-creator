@@ -138,8 +138,13 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.store.__init__` | `module` | `custom_components/hass_test_data_creator/store/__init__.py` | Store package of the HASS Test Data Creator. |
+| `hass_test_data_creator.store.migrate` | `module` | `custom_components/hass_test_data_creator/store/migrate.py` | Migrates the stored data of older versions to the current layout (concept 4.3). |
+| `_to_version_2` | `def _to_version_2(data: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/migrate.py` | Version 2 remembers when the time lapse began; older data has no such base. |
+| `migrate` | `def migrate(version: int, data: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/migrate.py` | Return `data` of `version` in the layout of the current version, one step at a time. |
 | `hass_test_data_creator.store.store` | `module` | `custom_components/hass_test_data_creator/store/store.py` | Persistent storage of devices, runs and markers (concept 4.3, 4.4). |
 | `_empty` | `def _empty() -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/store.py` | Return the content of a new store. |
+| `_Storage` | `class _Storage(Store[dict[str, Any]])` | `custom_components/hass_test_data_creator/store/store.py` | The storage file of the integration; older versions are migrated when they are loaded. |
+| `_Storage._async_migrate_func` | `async def _async_migrate_func(self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/store.py` | Return the data of an older version in the current layout. |
 | `TdcStore` | `class TdcStore` | `custom_components/hass_test_data_creator/store/store.py` | Holds the generated devices, the runs and the list of areas the integration created. |
 | `TdcStore.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Create the store; call `async_load` before use. |
 | `TdcStore.async_load` | `async def async_load(self) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Load the stored content, if any. |
@@ -178,6 +183,7 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.created_areas` | `def created_areas(self) -> list[str]` | `custom_components/hass_test_data_creator/store/store.py` | Return the ids of the areas the integration created itself. |
 | `TdcStore.add_created_area` | `def add_created_area(self, area_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Remember that the integration created the area. |
 | `TdcStore.forget_area` | `def forget_area(self, area_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Forget an area, for example after it was deleted. |
+| `TdcStore.time_lapse_start` | `def time_lapse_start(self, factor: float, now: datetime) -> datetime` | `custom_components/hass_test_data_creator/store/store.py` | Return when the time lapse of `factor` began; a new factor begins at `now` and is kept. |
 | `TdcStore.schedule_save` | `def schedule_save(self) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Save after a short delay; used for frequent writes. |
 | `TdcStore.async_save` | `async def async_save(self) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Save at once; used for changes made by the user. |
 | `TdcStore.async_remove` | `async def async_remove(self) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the storage file. |
@@ -249,8 +255,9 @@ Lists every module, class and function of the integration with signature, file a
 | `ClimateBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start in heat mode at the default target temperature. |
 | `ClimateBehaviour.current_temperature` | `def current_temperature(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature at signal time `now`. |
 | `ClimateBehaviour.replace_signal` | `def replace_signal(self, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Measure another curve from now on. |
+| `ClimateBehaviour._measure` | `def _measure(self, now: float) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the measured temperature at `now`, rounded to what a thermostat reports. |
 | `ClimateBehaviour.measured` | `def measured(self) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature now. |
-| `ClimateBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature moves all the time, so every tick is a change. |
+| `ClimateBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Measure again; True only if the rounded temperature differs from the last one. |
 | `ClimateBehaviour.restore` | `def restore(self, heating: bool, target: float \| None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last mode and target without telling anyone. |
 | `ClimateBehaviour.update` | `def update(self, *, heating: bool \| None=None, target: float \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Change the mode and the target together and report once. |
 | `ClimateBehaviour.set_heating` | `def set_heating(self, heating: bool) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch between heat and off. |
@@ -260,6 +267,7 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.engine.clock` | `module` | `custom_components/hass_test_data_creator/engine/clock.py` | The clock of the signals, with an optional time lapse (concept 5.1). |
 | `Clock` | `class Clock` | `custom_components/hass_test_data_creator/engine/clock.py` | Maps real moments to signal time; from its start on, signal time runs `factor` times faster. |
 | `Clock.__init__` | `def __init__(self, factor: float=1.0, start: datetime \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/clock.py` | Start the clock at `start` (default: now); up to then signal time equals real time. |
+| `Clock.resume` | `def resume(self, start: datetime) -> None` | `custom_components/hass_test_data_creator/engine/clock.py` | Continue a time lapse that began at `start`, for example before a restart. |
 | `Clock.at` | `def at(self, moment: datetime) -> float` | `custom_components/hass_test_data_creator/engine/clock.py` | Return the signal time in seconds that belongs to the real `moment`. |
 | `Clock.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/engine/clock.py` | Return the current signal time in seconds. |
 | `hass_test_data_creator.engine.signal_factory` | `module` | `custom_components/hass_test_data_creator/engine/signal_factory.py` | Factory that creates a signal per shape (concept 13.2). |
@@ -299,10 +307,11 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.engine.tick` | `module` | `custom_components/hass_test_data_creator/engine/tick.py` | The tick that drives all signals with one timer (concept 5.3). |
 | `signal_time` | `def signal_time(now: datetime \| None=None) -> float` | `custom_components/hass_test_data_creator/engine/tick.py` | Return the signal time: seconds of the local wall clock, so daily curves follow the day. |
 | `Tick` | `class Tick` | `custom_components/hass_test_data_creator/engine/tick.py` | Sends one dispatcher signal per interval and reports a tick that takes too long. |
-| `Tick.__init__` | `def __init__(self, hass: HomeAssistant, seconds: int, on_slow: Callable[[float, float], None]) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Keep the interval in seconds and the callback `on_slow(duration, interval)`. |
+| `Tick.__init__` | `def __init__(self, hass: HomeAssistant, seconds: int, now: Callable[[], float], on_slow: Callable[[float, float], None]) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Keep the interval in seconds, the source of the signal time and `on_slow(duration, interval)`. |
 | `Tick.start` | `def start(self) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Start the timer. |
 | `Tick.stop` | `def stop(self) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Stop the timer. |
-| `Tick._fire` | `def _fire(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Send the tick signal and warn once if it took more than the allowed share. |
+| `Tick._fire` | `def _fire(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Send the tick with the signal time, computed once; measure it to the end of the iteration. |
+| `Tick._measure` | `def _measure(self, started: float) -> None` | `custom_components/hass_test_data_creator/engine/tick.py` | Warn when the tick took too long; warn again after a fast tick has passed in between. |
 
 ## templates
 
@@ -504,7 +513,8 @@ Lists every module, class and function of the integration with signature, file a
 | `BehaviourRuntime._device_entries` | `def _device_entries(self, device_id: str) -> list[RuntimeEntry]` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Return the started entries of one device without scanning the others. |
 | `BehaviourRuntime._async_listen` | `async def _async_listen(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Subscribe to the commands and follow the tick, once. |
 | `BehaviourRuntime._stop_listening` | `def _stop_listening(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Cancel the subscription and the tick. |
-| `BehaviourRuntime._on_tick` | `def _on_tick(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Publish the entities whose value changed. |
+| `BehaviourRuntime._on_tick` | `def _on_tick(self, now: float) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Publish the entities whose value changed, from one task for the whole tick. |
+| `BehaviourRuntime._async_changed_many` | `async def _async_changed_many(self, entries: list[RuntimeEntry]) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Publish what changed on several entities; the default publishes them one after another. |
 | `BehaviourRuntime._async_deliver` | `async def _async_deliver(self, behaviours: list[Behaviour], topic: str, payload: str, device_id: str, *, retain: bool=True) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Publish a state or an event, held back by a late fault and repeated by a duplicate one. |
 | `BehaviourRuntime._async_deliver.fire` | `def fire(_now: datetime) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Send the held back message. |
 | `BehaviourRuntime._async_copies` | `async def _async_copies(self, topic: str, payload: str, device_id: str, copies: int, retain: bool) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Publish the same message `copies` times. |
@@ -536,6 +546,7 @@ Lists every module, class and function of the integration with signature, file a
 | `Z2mDevices._on_message` | `def _on_message(self, topic: str, payload: str) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Apply a `/set` message to every entity of the device with that friendly name. |
 | `Z2mDevices._targets` | `def _targets(self, name: str) -> list[_Entry]` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Return the entries a `/set` to `name` reaches: one device, or the members of a group. |
 | `Z2mDevices._async_announce` | `async def _async_announce(self, added: list[RuntimeEntry], devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish `bridge/devices` and the state and availability of the new devices. |
+| `Z2mDevices._async_changed_many` | `async def _async_changed_many(self, entries: list[RuntimeEntry]) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish each changed device once, however many of its entities changed. |
 | `Z2mDevices._async_changed` | `async def _async_changed(self, entry: RuntimeEntry) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Publish the state of the device once, however many of its entities changed. |
 | `Z2mDevices._enter` | `def _enter(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Note that a device publish is under way. |
 | `Z2mDevices._leave` | `def _leave(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | Note that a device publish is over; wake the group flush when none is left. |
@@ -629,7 +640,7 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcClimate.target_temperature` | `def target_temperature(self) -> float` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The target temperature. |
 | `TdcClimate.current_temperature` | `def current_temperature(self) -> float` | `custom_components/hass_test_data_creator/platforms/actuators.py` | The measured temperature, computed from the signal. |
 | `TdcClimate.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Restore mode and target, then follow the tick. |
-| `TdcClimate._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Publish the new measured temperature. |
+| `TdcClimate._handle_tick` | `def _handle_tick(self, now: float) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Publish the measured temperature if it changed. |
 | `TdcClimate.async_set_hvac_mode` | `async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Switch between off and heat. |
 | `TdcClimate.async_set_temperature` | `async def async_set_temperature(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/actuators.py` | Set the target temperature and, if given, the mode. |
 | `hass_test_data_creator.platforms.entities` | `module` | `custom_components/hass_test_data_creator/platforms/entities.py` | Entity classes of the native output: thin shells around the behaviours (concept 5.4, 7.2). |
@@ -646,7 +657,7 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcSensor.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: SensorBehaviour, live: Live) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Create the sensor; sensors with states get the enum device class and their options. |
 | `TdcSensor.native_value` | `def native_value(self) -> float \| str` | `custom_components/hass_test_data_creator/platforms/entities.py` | The current value. |
 | `TdcSensor.async_added_to_hass` | `async def async_added_to_hass(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Follow the tick. |
-| `TdcSensor._handle_tick` | `def _handle_tick(self) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Compute a new value if the interval of the signal has passed. |
+| `TdcSensor._handle_tick` | `def _handle_tick(self, now: float) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Compute a new value if the interval of the signal has passed. |
 | `TdcBinarySensor` | `class TdcBinarySensor(TdcStatefulEntity, BinarySensorEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A binary sensor that is set by actions; motion sensors switch off after a pulse. |
 | `TdcSwitch` | `class TdcSwitch(TdcStatefulEntity, SwitchEntity)` | `custom_components/hass_test_data_creator/platforms/entities.py` | A switch that keeps its state. |
 | `TdcSwitch.async_turn_on` | `async def async_turn_on(self, **kwargs: Any) -> None` | `custom_components/hass_test_data_creator/platforms/entities.py` | Switch on. |

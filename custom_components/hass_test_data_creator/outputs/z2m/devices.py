@@ -185,6 +185,15 @@ class Z2mDevices(BehaviourRuntime):
         for group in self._groups.values():
             await self._async_publish_group(group)
 
+    async def _async_changed_many(self, entries: list[RuntimeEntry]) -> None:
+        """Publish each changed device once, however many of its entities changed."""
+        self._enter()
+        try:
+            for device_id in dict.fromkeys(entry.device.id for entry in entries):
+                await self._async_publish_device(device_id)
+        finally:
+            self._leave()
+
     async def _async_changed(self, entry: RuntimeEntry) -> None:
         """Publish the state of the device once, however many of its entities changed."""
         device_id = entry.device.id

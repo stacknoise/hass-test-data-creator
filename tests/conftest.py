@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, mock_component
 
@@ -15,7 +16,9 @@ from custom_components.hass_test_data_creator.const import (
     CONF_SEED,
     CONF_TICK_SECONDS,
     DOMAIN,
+    SIGNAL_TICK,
 )
+from custom_components.hass_test_data_creator.data import get_data
 
 SEED = "tdc-test"
 
@@ -84,3 +87,8 @@ def state_of(hass: HomeAssistant, device_name: str, key: str) -> State | None:
         definition.platform, DOMAIN, f"{device.id}_{key}"
     )
     return hass.states.get(entity_id) if entity_id else None
+
+
+def fire_tick(hass: HomeAssistant) -> None:
+    """Send one tick with the current signal time, as the timer does."""
+    async_dispatcher_send(hass, SIGNAL_TICK, get_data(hass).clock.now())

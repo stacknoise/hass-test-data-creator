@@ -18,6 +18,7 @@ FULL_BRIGHTNESS = 255
 OPEN = 100
 CLOSED = 0
 DEFAULT_TARGET_TEMPERATURE = 21.0
+TEMPERATURE_DIGITS = 2
 MIN_TEMPERATURE = 5.0
 MAX_TEMPERATURE = 30.0
 
@@ -301,6 +302,7 @@ class ClimateBehaviour(Behaviour):
         self.signal = signal
         self.heating = True
         self.target = DEFAULT_TARGET_TEMPERATURE
+        self.temperature = self._measure(scheduler.now())
 
     def current_temperature(self, now: float) -> float | str:
         """The measured temperature at signal time `now`."""
@@ -309,14 +311,23 @@ class ClimateBehaviour(Behaviour):
     def replace_signal(self, signal: Signal) -> None:
         """Measure another curve from now on."""
         self.signal = signal
+        self.temperature = self._measure(self._scheduler.now())
         self.on_change()
+
+    def _measure(self, now: float) -> float:
+        """Return the measured temperature at `now`, rounded to what a thermostat reports."""
+        return round(float(self.signal.value(now)), TEMPERATURE_DIGITS)
 
     def measured(self) -> float | str:
         """The measured temperature now."""
         return self.signal.value(self._scheduler.now())
 
     def tick(self, now: float) -> bool:
-        """The measured temperature moves all the time, so every tick is a change."""
+        """Measure again; True only if the rounded temperature differs from the last one."""
+        measured = self._measure(now)
+        if measured == self.temperature:
+            return False
+        self.temperature = measured
         return True
 
     def restore(self, heating: bool, target: float | None) -> None:

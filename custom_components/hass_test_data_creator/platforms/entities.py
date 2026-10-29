@@ -118,9 +118,9 @@ class TdcSensor(TdcEntity, SensorEntity):
         self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_TICK, self._handle_tick))
 
     @callback
-    def _handle_tick(self) -> None:
+    def _handle_tick(self, now: float) -> None:
         """Compute a new value if the interval of the signal has passed."""
-        if self._behaviour.tick(self._behaviour.now()):
+        if self._behaviour.tick(now):
             self.async_write_ha_state()
 
 

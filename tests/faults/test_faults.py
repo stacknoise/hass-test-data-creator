@@ -4,16 +4,15 @@ from __future__ import annotations
 
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_time_changed
 
-from custom_components.hass_test_data_creator.const import DOMAIN, SIGNAL_TICK
+from custom_components.hass_test_data_creator.const import DOMAIN
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, ScheduleError
 from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.faults.factory import FaultFactory
 
-from ..conftest import create_devices, state_of
+from ..conftest import create_devices, fire_tick, state_of
 
 
 async def fault(hass: HomeAssistant, key: str, kind: str, **params: float) -> None:
@@ -32,7 +31,7 @@ async def advance(hass: HomeAssistant, freezer: FrozenDateTimeFactory, seconds: 
     freezer.tick(seconds)
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
-    async_dispatcher_send(hass, SIGNAL_TICK)
+    fire_tick(hass)
     await hass.async_block_till_done()
 
 

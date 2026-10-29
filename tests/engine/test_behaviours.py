@@ -167,6 +167,26 @@ def test_cover_clamps_and_thermostat_changes_together() -> None:
     assert climate.current_temperature(0) == 20
 
 
+def test_a_thermostat_reports_a_change_only_when_the_rounded_temperature_moves() -> None:
+    clock = FakeScheduler()
+    flat = SignalFactory().create({"shape": "constant", "min": 20, "max": 20}, 1, 0.0)
+    climate = ClimateBehaviour("d", definition("climate"), clock, flat)
+    assert climate.tick(0) is False
+    assert climate.tick(60) is False
+    assert climate.temperature == 20.0
+
+    moving = SignalFactory().create(
+        {"shape": "sine", "min": 10, "max": 30, "period_s": 3600}, 1, 0.0
+    )
+    climate.replace_signal(moving)
+    changed = [climate.tick(float(second)) for second in range(0, 600, 60)]
+    assert changed[0] is False or climate.temperature != 20.0
+    assert any(changed)
+    last = climate.temperature
+    assert climate.tick(540.0) is False
+    assert climate.temperature == last
+
+
 def test_events_go_to_the_listener() -> None:
     behaviour = EventBehaviour(
         "d", definition("event", event_types=["single", "hold"]), FakeScheduler()
