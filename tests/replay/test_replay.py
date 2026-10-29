@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from pathlib import Path
+import shutil
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -84,6 +86,15 @@ def test_the_phase_shifts_the_start_and_the_origin_sets_zero() -> None:
 
     assert value_at(_spec(table, 30.0, phase=1 / 3), 0.0) == 10.0
     assert value_at(_spec(table, 30.0, origin=100.0), 105.0) == 5.0
+
+
+@pytest.fixture(autouse=True)
+async def clean_csv_folder(hass: HomeAssistant) -> AsyncIterator[None]:
+    """Remove the csv folder around each test: the config folder of the tests is shared."""
+    folder = Path(hass.config.path(*FOLDER))
+    await hass.async_add_executor_job(shutil.rmtree, folder, True)
+    yield
+    await hass.async_add_executor_job(shutil.rmtree, folder, True)
 
 
 async def _put(hass: HomeAssistant, name: str, text: str) -> None:
