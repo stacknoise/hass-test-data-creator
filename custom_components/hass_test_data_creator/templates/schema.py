@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import math
+
 from homeassistant.components.sensor import SensorStateClass
 from homeassistant.helpers import config_validation as cv
 import voluptuous as vol
 
-from ..const import MAX_ENTITIES_PER_DEVICE, PLATFORMS
+from ..const import (
+    MAX_ENTITIES_PER_DEVICE,
+    MAX_RATE_PER_HOUR,
+    MAX_SIGNAL_PERIOD_SECONDS,
+    PLATFORMS,
+)
 from ..core.keys import (
     KEY_DESCRIPTION,
     KEY_DEVICE_CLASS,
@@ -32,27 +39,38 @@ from ..core.keys import (
     KEY_VENDOR,
 )
 
+
+def _finite(value: float) -> float:
+    """Return `value` as a finite number or raise `vol.Invalid`."""
+    if not math.isfinite(value):
+        raise vol.Invalid("a finite number is required")
+    return value
+
+
+_FINITE = vol.All(vol.Coerce(float), _finite)
+_PERIOD = vol.All(_FINITE, vol.Range(min=1, max=MAX_SIGNAL_PERIOD_SECONDS))
+
 SIGNAL_SCHEMA = vol.Schema(
     {
         vol.Required(KEY_SHAPE): str,
-        vol.Optional(KEY_MIN): vol.Coerce(float),
-        vol.Optional(KEY_MAX): vol.Coerce(float),
-        vol.Optional("period_s"): vol.All(vol.Coerce(float), vol.Range(min=1)),
-        vol.Optional("interval_s"): vol.All(vol.Coerce(float), vol.Range(min=1)),
+        vol.Optional(KEY_MIN): _FINITE,
+        vol.Optional(KEY_MAX): _FINITE,
+        vol.Optional("period_s"): _PERIOD,
+        vol.Optional("interval_s"): _PERIOD,
         vol.Optional(KEY_NOISE): vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
         vol.Optional("decimals"): vol.All(int, vol.Range(min=0, max=6)),
-        vol.Optional("phase"): vol.Coerce(float),
-        vol.Optional("rate_per_hour"): vol.Coerce(float),
+        vol.Optional("phase"): _FINITE,
+        vol.Optional("rate_per_hour"): vol.All(_FINITE, vol.Range(min=0, max=MAX_RATE_PER_HOUR)),
         vol.Optional("file"): vol.All(str, vol.Match(r"^[A-Za-z0-9_.-]{1,64}\.csv$")),
-        vol.Optional("step_s"): vol.All(vol.Coerce(float), vol.Range(min=1)),
+        vol.Optional("step_s"): _PERIOD,
         vol.Optional(KEY_VALUES): vol.All([str], vol.Length(min=1, max=50)),
-        vol.Optional("weights"): vol.All([vol.Coerce(float)], vol.Length(min=1, max=50)),
+        vol.Optional("weights"): vol.All([_FINITE], vol.Length(min=1, max=50)),
         vol.Optional(KEY_STATES): vol.All(
             [
                 vol.Schema(
                     {
                         vol.Required(KEY_VALUE): str,
-                        vol.Required(KEY_DURATION_S): vol.All(vol.Coerce(float), vol.Range(min=1)),
+                        vol.Required(KEY_DURATION_S): _PERIOD,
                     }
                 )
             ],

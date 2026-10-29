@@ -302,8 +302,33 @@ async def test_the_options_flow_checks_the_topics(
     assert (await submit(mqtt_base_topic="a/#"))["errors"] == {"mqtt_base_topic": "invalid_topic"}
     assert (await submit(z2m_base_topic="/x"))["errors"] == {"z2m_base_topic": "invalid_topic"}
     assert (await submit(z2m_base_topic="tdc"))["errors"] == {"z2m_base_topic": "same_topic"}
+    assert (await submit(z2m_base_topic="tdc/z2m"))["errors"] == {"z2m_base_topic": "same_topic"}
+    assert (await submit(mqtt_base_topic="tdc_z2m/x"))["errors"] == {"z2m_base_topic": "same_topic"}
+    for bad in ("$SYS", "homeassistant", "homeassistant/x", "a//b", "a\x00b", "x" * 65):
+        assert (await submit(mqtt_base_topic=bad))["errors"] == {"mqtt_base_topic": "invalid_topic"}
     unconfirmed = await submit(z2m_base_topic="zigbee2mqtt")
     assert unconfirmed["errors"] == {"z2m_base_topic": "unconfirmed_default_topic"}
     saved = await submit(mqtt_base_topic="my/tdc")
     assert saved["type"] == "create_entry"
     assert saved["data"]["mqtt_base_topic"] == "my/tdc"
+
+
+@pytest.mark.parametrize("name", ["a+b", "x#", "bridge", "bridge/state", "a/b", "a\x00b", "a\nb"])
+async def test_a_device_name_that_is_not_a_topic_level_is_refused(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry, name: str
+) -> None:
+    with pytest.raises(OutputError) as error:
+        await make(hass, "plug_metering", name=name)
+    assert error.value.code is ErrorCode.OUT_INVALID_NAME
+    assert get_data(hass).store.devices() == []
+
+
+async def test_a_command_with_an_infinite_number_is_ignored(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await make(hass, "light", name="Lamp")
+    async_fire_mqtt_message(hass, f"{BASE}/Lamp/set", '{"brightness": 100}')
+    await hass.async_block_till_done()
+    async_fire_mqtt_message(hass, f"{BASE}/Lamp/set", '{"brightness": 1e999}')
+    await hass.async_block_till_done()
+    assert json_of(mqtt_mock, f"{BASE}/Lamp")["brightness"] == 100

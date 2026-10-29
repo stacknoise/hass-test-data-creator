@@ -17,6 +17,8 @@ import type {
   TemplateInfo,
 } from './types';
 
+import { MAX_PAGE_SIZE } from './constants';
+
 const PREFIX = 'hass_test_data_creator';
 
 /** Typed access to the `hass_test_data_creator/*` WebSocket commands. */
@@ -37,6 +39,22 @@ export class TdcApi {
   /** Return one page of devices. */
   devices(offset: number, limit: number): Promise<DevicePage> {
     return this.call('devices/list', { offset, limit });
+  }
+
+  /** Return the first `count` devices (all if fewer exist), fetched in pages the server accepts. */
+  async devicesUpTo(count: number): Promise<DevicePage> {
+    const devices: DevicePage['devices'] = [];
+    let total = 0;
+    while (devices.length < count) {
+      const page = await this.devices(
+        devices.length,
+        Math.min(MAX_PAGE_SIZE, count - devices.length),
+      );
+      total = page.total;
+      devices.push(...page.devices);
+      if (page.devices.length === 0 || devices.length >= total) break;
+    }
+    return { total, devices };
   }
 
   /** Create the devices of a job. */

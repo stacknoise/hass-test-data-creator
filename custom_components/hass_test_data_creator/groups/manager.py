@@ -10,11 +10,10 @@ from ..core.ids import new_id
 from ..model.models import DeviceDef, GroupDef
 from ..outputs.mqtt.client import MqttClient
 from ..outputs.z2m.devices import Z2mDevices
+from ..outputs.z2m.names import is_friendly_name
 from ..store.store import TdcStore
 
 GROUP_COUNTER = "__group__"
-RESERVED_NAMES = ("bridge",)
-MAX_NAME_LENGTH = 64
 
 
 class GroupManager:
@@ -107,5 +106,4 @@ class GroupManager:
         """Whether `name` can be a group name: not reserved and used by no device or other group."""
         taken = {device.name for device in self._store.devices()}
         taken |= {group.name for group in self._store.groups() if group.id != own_id}
-        taken |= set(RESERVED_NAMES)
-        return 0 < len(name) <= MAX_NAME_LENGTH and "/" not in name and name not in taken
+        return is_friendly_name(name) and name not in taken
