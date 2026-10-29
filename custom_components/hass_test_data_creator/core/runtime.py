@@ -121,6 +121,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
             entry.options.get(CONF_Z2M_BASE_TOPIC, DEFAULT_Z2M_BASE_TOPIC),
             entry.options.get(CONF_Z2M_CONFIRM_DEFAULT, False),
         ),
+        store,
     )
     groups = GroupManager(store, mqtt, z2m_devices)
     outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices, z2m_devices, groups)

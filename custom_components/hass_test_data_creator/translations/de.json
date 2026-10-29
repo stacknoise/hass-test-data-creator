@@ -136,6 +136,9 @@
     "rem_in_use": {
       "message": "Ein Gerät, das noch verwendet wird, lässt sich nicht entfernen. Nimm es zuerst aus den Zeitplänen, Szenarien und Gruppen: {usage}"
     },
+    "out_duplicate_name": {
+      "message": "Ein Zigbee2MQTT-Gerät oder eine Gruppe mit diesem Namen gibt es schon"
+    },
     "rem_failed": {
       "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"
     },

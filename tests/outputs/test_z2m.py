@@ -23,6 +23,7 @@ from custom_components.hass_test_data_creator.const import (
 )
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, OutputError
 from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.outputs.mqtt import client as client_module
 from custom_components.hass_test_data_creator.outputs.mqtt.client import MqttClient
 
 from ..conftest import create_devices
@@ -245,7 +246,7 @@ async def test_a_foreign_bridge_on_the_base_topic_stops_the_output(
     ):
         await make(hass, "plug_metering")
     assert error.value.code is ErrorCode.OUT_FOREIGN_BRIDGE
-    foreign.assert_awaited_with(BASE)
+    foreign.assert_awaited_with(BASE, long=False)
     assert get_data(hass).store.devices() == []
 
 
@@ -339,3 +340,40 @@ async def test_a_command_with_an_infinite_number_is_ignored(
     async_fire_mqtt_message(hass, f"{BASE}/Lamp/set", '{"brightness": 1e999}')
     await hass.async_block_till_done()
     assert json_of(mqtt_mock, f"{BASE}/Lamp")["brightness"] == 100
+
+
+async def test_a_second_device_or_group_with_a_taken_name_is_refused(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await make(hass, "plug_metering", name="Same")
+    with pytest.raises(OutputError) as same_device:
+        await make(hass, "plug_metering", name="Same")
+    assert same_device.value.code is ErrorCode.OUT_DUPLICATE_NAME
+
+    await hass.services.async_call(
+        DOMAIN, "add_group", {"name": "Crowd", "members": ["Same"]}, blocking=True
+    )
+    with pytest.raises(OutputError) as same_group:
+        await make(hass, "plug_metering", name="Crowd")
+    assert same_group.value.code is ErrorCode.OUT_DUPLICATE_NAME
+    assert len(get_data(hass).store.devices()) == 1
+
+    with pytest.raises(OutputError) as same_batch:
+        await create_devices(hass, count=2, name_pattern="Twin", output="z2m")
+    assert same_batch.value.code is ErrorCode.OUT_DUPLICATE_NAME
+
+
+async def test_the_probe_on_the_foreign_default_topic_is_longer(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    mqtt = get_data(hass).mqtt
+    for base, long in ((BASE, False), ("zigbee2mqtt", True)):
+        started = asyncio.get_running_loop().time()
+        assert await mqtt.async_foreign_topic(base, long=long) is None
+        took = asyncio.get_running_loop().time() - started
+        limit = (
+            client_module.FOREIGN_PROBE_LONG_SECONDS
+            if long
+            else client_module.FOREIGN_PROBE_SECONDS
+        )
+        assert limit * 0.9 <= took < limit * 2

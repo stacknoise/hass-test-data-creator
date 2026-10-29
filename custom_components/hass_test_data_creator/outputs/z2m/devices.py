@@ -9,9 +9,11 @@ from typing import Any, cast
 
 from homeassistant.core import callback
 
+from ...const import OUTPUT_Z2M
 from ...core.errors import ErrorCode, OutputError, TdcError
 from ...engine.behaviours import Behaviour
 from ...model.models import DeviceDef, EntityDef, GroupDef
+from ...store.store import TdcStore
 from ...templates.registry import TemplateRegistry
 from ..mqtt.runtime import BehaviourRuntime, RuntimeEntry, RuntimeParts
 from .names import is_friendly_name
@@ -51,9 +53,11 @@ class Z2mDevices(BehaviourRuntime):
         payloads: Z2mPayloadFactory,
         templates: TemplateRegistry,
         settings: Z2mSettings,
+        store: TdcStore,
     ) -> None:
-        """Keep the factories, the template registry and the settings."""
+        """Keep the factories, the template registry, the settings and the store."""
         super().__init__(parts)
+        self._store = store
         self._profiles = profiles
         self._payloads = payloads
         self._templates = templates
@@ -84,9 +88,13 @@ class Z2mDevices(BehaviourRuntime):
             await self._async_publish_group(group)
 
     def check_device(self, device: DeviceDef) -> None:
-        """Raise TDC-OUT-007 unless the device name is a valid friendly name."""
+        """Raise TDC-OUT-007 unless the name is a valid friendly name, TDC-OUT-008 if it is taken."""
         if not is_friendly_name(device.name):
             raise OutputError(ErrorCode.OUT_INVALID_NAME)
+        taken = {item.name for item in self._store.devices() if item.output == OUTPUT_Z2M}
+        taken |= {group.name for group in self._store.groups()}
+        if device.name in taken:
+            raise OutputError(ErrorCode.OUT_DUPLICATE_NAME)
 
     async def async_check(self) -> None:
         """Raise unless MQTT is usable and the base topic may be used; then publish the bridge."""
@@ -100,7 +108,9 @@ class Z2mDevices(BehaviourRuntime):
         if self._base == FOREIGN_BASE_TOPIC and not self._confirmed:
             raise OutputError(ErrorCode.OUT_Z2M_DEFAULT_TOPIC)
         state_topic = f"{self._base}/bridge/state"
-        if await self._client.async_foreign_topic(self._base) is not None:
+        if await self._client.async_foreign_topic(
+            self._base, long=self._base == FOREIGN_BASE_TOPIC
+        ):
             raise OutputError(ErrorCode.OUT_FOREIGN_BRIDGE)
         await self._async_publish(state_topic, self._payloads.bridge_state(True), None)
         await self._async_publish(

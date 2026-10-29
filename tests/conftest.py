@@ -28,9 +28,9 @@ def _enable_custom_integrations(enable_custom_integrations: None) -> None:
 @pytest.fixture(autouse=True)
 def _short_foreign_probe(monkeypatch: pytest.MonkeyPatch) -> None:
     """Shorten the wait for foreign retained topics; the mocked broker never answers."""
-    monkeypatch.setattr(
-        "custom_components.hass_test_data_creator.outputs.mqtt.client.FOREIGN_PROBE_SECONDS", 0.3
-    )
+    client = "custom_components.hass_test_data_creator.outputs.mqtt.client"
+    monkeypatch.setattr(f"{client}.FOREIGN_PROBE_SECONDS", 0.3)
+    monkeypatch.setattr(f"{client}.FOREIGN_PROBE_LONG_SECONDS", 0.6)
 
 
 @pytest.fixture
