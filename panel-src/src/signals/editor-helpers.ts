@@ -25,6 +25,8 @@ export const DISCRETE_SHAPES = [SHAPE_ENUM, SHAPE_STATE_MACHINE];
 const PERIODIC = ['sine', 'saw', 'square', 'triangle', 'random_walk', 'discharge'];
 const NO_PARAMETERS = ['constant', 'household_load', 'pv_day'];
 const DEFAULT_HOLD_S = 600;
+const DAY_SECONDS = 86400;
+const PERIODS_SHOWN = 24;
 
 /** Return whether the value of `shape` is a state name. */
 export function isDiscrete(shape: string): boolean {
@@ -42,6 +44,20 @@ export function fieldsFor(shape: string): SignalField[] {
   if (PERIODIC.includes(shape)) return ['period_s', FIELD_PHASE, FIELD_NOISE];
   if (NO_PARAMETERS.includes(shape)) return [FIELD_NOISE];
   return [];
+}
+
+/** Return the seconds a preview covers: a day, or fewer for a short period so the curve stays resolved. */
+export function previewSeconds(def: SignalDef): number {
+  const period = def.period_s;
+  if (!fieldsFor(def.shape).includes('period_s') || !period || period <= 0) return DAY_SECONDS;
+  return Math.min(DAY_SECONDS, period * PERIODS_SHOWN);
+}
+
+/** Return `seconds` as a short label such as `30 s`, `12 min` or `6 h`. */
+export function spanLabel(seconds: number): string {
+  if (seconds < 120) return `${Number(seconds.toFixed(1))} s`;
+  if (seconds < 2 * 3600) return `${Number((seconds / 60).toFixed(1))} min`;
+  return `${Number((seconds / 3600).toFixed(1))} h`;
 }
 
 /** Return the list parameters that `shape` takes. */
