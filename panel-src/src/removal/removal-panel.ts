@@ -220,7 +220,7 @@ export class RemovalPanel extends TdcElement {
                 }}
               ></tdc-target-select>`
         }
-        <div class="row">
+        <div class="row wide">
           <button
             ?disabled=${this.target !== KIND_ALL && !this.targetId}
             @click=${() => void this.showPlan()}

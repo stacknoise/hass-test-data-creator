@@ -3919,7 +3919,7 @@ var si = 20, ci = {
 			this.targetId = e.detail[0] ?? "", this.plan = void 0;
 		}}
               ></tdc-target-select>`}
-        <div class="row">
+        <div class="row wide">
           <button
             ?disabled=${this.target !== "all" && !this.targetId}
             @click=${() => void this.showPlan()}
