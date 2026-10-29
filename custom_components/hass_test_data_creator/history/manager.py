@@ -11,7 +11,7 @@ from homeassistant.util import dt as dt_util
 
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
-from ..const import MAX_HISTORY_ROWS
+from ..const import HISTORY_CHUNK_ROWS, MAX_HISTORY_ROWS
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..core.keys import KEY_SENSOR
 from ..devices.entity_ids import entity_id_of
@@ -66,11 +66,14 @@ class HistoryManager:
         targets, skipped = self._targets(device, entity)
         if len(targets) * len(hours) > MAX_HISTORY_ROWS:
             raise GenerationError(ErrorCode.GEN_HISTORY_LIMIT)
-        built = await self._hass.async_add_executor_job(self._build, targets, hours)
-        for (owner, _, entity_id), series in zip(targets, built, strict=True):
-            self._client.write(series.metadata, series.rows)
-            self._store.add_statistic(entity_id, owner.id)
-        await self._store.async_save()
+        size = max(1, HISTORY_CHUNK_ROWS // len(hours))
+        for start in range(0, len(targets), size):
+            chunk = targets[start : start + size]
+            built = await self._hass.async_add_executor_job(self._build, chunk, hours)
+            for (owner, _, entity_id), series in zip(chunk, built, strict=True):
+                self._client.write(series.metadata, series.rows)
+                self._store.add_statistic(entity_id, owner.id)
+            await self._store.async_save()
         rows = len(targets) * len(hours)
         self._audit.record(self._audit_factory.history_imported(len(targets), rows))
         return {"series": len(targets), "rows": rows, "skipped": skipped}

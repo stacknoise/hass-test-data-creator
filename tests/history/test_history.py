@@ -273,3 +273,18 @@ async def test_import_takes_a_list_of_devices(hass: HomeAssistant, entry: MockCo
     stored = get_data(hass).store.statistics()
     assert len(stored) == 2
     assert _entity_id(hass, "Plug 02", "power") not in stored
+
+
+async def test_a_large_import_is_built_and_written_in_chunks(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    await create_devices(hass, count=2)
+    manager = get_data(hass).history
+    with (
+        patch("custom_components.hass_test_data_creator.history.manager.HISTORY_CHUNK_ROWS", 72),
+        patch.object(manager, "_build", wraps=manager._build) as build,
+    ):
+        result = await _import(hass, days=1)
+    assert result == {"series": 10, "rows": 240, "skipped": 0}
+    assert [len(call.args[0]) for call in build.call_args_list] == [3, 3, 3, 1]
+    assert len(get_data(hass).store.statistics()) == 10
