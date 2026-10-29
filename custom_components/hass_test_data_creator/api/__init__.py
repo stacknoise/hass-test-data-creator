@@ -17,7 +17,12 @@ from .devices import (
 from .groups import ws_groups_add, ws_groups_list, ws_groups_remove, ws_groups_update
 from .history import ws_history_import
 from .info import ws_info, ws_templates_list
-from .removal import ws_removal_plan, ws_removal_run
+from .removal import (
+    ws_removal_orphan_topics,
+    ws_removal_orphan_topics_clear,
+    ws_removal_plan,
+    ws_removal_run,
+)
 from .scenarios import (
     ws_scenarios_add,
     ws_scenarios_list,
@@ -46,6 +51,8 @@ COMMANDS = (
     ws_devices_signal,
     ws_removal_plan,
     ws_removal_run,
+    ws_removal_orphan_topics,
+    ws_removal_orphan_topics_clear,
     ws_schedules_list,
     ws_schedules_add,
     ws_schedules_update,

@@ -28,6 +28,24 @@ describe('TdcApi', () => {
     expect(sent[0]).toEqual({ type: 'hass_test_data_creator/removal/plan', target: 'all' });
   });
 
+  it('sends the leftover topic commands', async () => {
+    const sent: Record<string, unknown>[] = [];
+    const hass = {
+      language: 'en',
+      callWS: async (message: Record<string, unknown>) => {
+        sent.push(message);
+        return { topics: [], cleared: [] };
+      },
+    } as unknown as Hass;
+    const api = new TdcApi(hass);
+    await api.orphanTopics();
+    await api.clearOrphanTopics(['tdc/a']);
+    expect(sent).toEqual([
+      { type: 'hass_test_data_creator/removal/orphan_topics' },
+      { type: 'hass_test_data_creator/removal/orphan_topics_clear', topics: ['tdc/a'] },
+    ]);
+  });
+
   it('sends the history import with only the fields that are set', async () => {
     const sent: Record<string, unknown>[] = [];
     const hass = {

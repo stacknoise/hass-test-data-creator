@@ -58,6 +58,10 @@ class AuditEntryFactory:
             {KEY_TARGET: target, KEY_DEVICES: devices, KEY_AREAS: areas},
         )
 
+    def orphan_topics_cleared(self, count: int) -> AuditEntry:
+        """Return the entry for deleted retained topics of generated devices that nobody recorded."""
+        return AuditEntry(logging.INFO, "orphan topics cleared", {"topics": count})
+
     def history_imported(self, series: int, rows: int) -> AuditEntry:
         """Return the entry for a finished statistics import."""
         return AuditEntry(logging.INFO, "history imported", {"series": series, "rows": rows})

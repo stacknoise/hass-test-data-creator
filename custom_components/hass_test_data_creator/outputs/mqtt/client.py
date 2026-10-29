@@ -15,6 +15,7 @@ from ...store.store import TdcStore
 MESSAGE_CALLBACK = Callable[[str, str], None]
 FOREIGN_PROBE_SECONDS = 3.0
 FOREIGN_PROBE_LONG_SECONDS = 10.0
+SCAN_SECONDS = 3.0
 
 
 class MqttClient:
@@ -67,6 +68,27 @@ class MqttClient:
             return None
         finally:
             unsubscribe()
+
+    async def async_collect(self, patterns: list[str]) -> set[str]:
+        """Return the retained topics that match `patterns` and show up within `SCAN_SECONDS`."""
+        self.require()
+        found: set[str] = set()
+
+        @hass_callback
+        def received(message: mqtt.ReceiveMessage) -> None:
+            """Note the topic of a retained message that is not empty."""
+            if message.retain and message.payload:
+                found.add(message.topic)
+
+        unsubscribes = [
+            await mqtt.async_subscribe(self._hass, pattern, received) for pattern in patterns
+        ]
+        try:
+            await asyncio.sleep(SCAN_SECONDS)
+        finally:
+            for unsubscribe in unsubscribes:
+                unsubscribe()
+        return found
 
     async def async_publish(
         self, topic: str, payload: str, *, retain: bool = True, device_id: str | None = None

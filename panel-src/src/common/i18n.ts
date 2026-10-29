@@ -177,6 +177,11 @@ const en = {
   planNothing: 'Nothing to remove.',
   confirmRemove: 'Remove now',
   removed: '{count} devices removed',
+  scanTopics: 'Search the broker for leftover topics',
+  leftoverTopics: '{count} leftover topics of generated devices on the broker',
+  leftoverNone: 'The broker holds no leftover topics.',
+  deleteLeftover: 'Delete these topics',
+  leftoverDeleted: '{count} topics deleted',
   error: 'Error',
 } as const;
 
@@ -360,6 +365,11 @@ const de: Record<TextKey, string> = {
   planNothing: 'Es gibt nichts zu entfernen.',
   confirmRemove: 'Jetzt entfernen',
   removed: '{count} Geräte entfernt',
+  scanTopics: 'Im Broker nach übrig gebliebenen Topics suchen',
+  leftoverTopics: '{count} übrig gebliebene Topics erzeugter Geräte im Broker',
+  leftoverNone: 'Der Broker enthält keine übrig gebliebenen Topics.',
+  deleteLeftover: 'Diese Topics löschen',
+  leftoverDeleted: '{count} Topics gelöscht',
   error: 'Fehler',
 };
 

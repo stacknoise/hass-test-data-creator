@@ -265,7 +265,7 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, get, names, create, update, fire, signal; `list` returns the state and the shape of each entity, `get` the full device with its signals, `names` only id, name, template, model, output, run and creation time for pickers), `templates/list`, `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, get, names, create, update, fire, signal; `list` returns the state and the shape of each entity, `get` the full device with its signals, `names` only id, name, template, model, output, run and creation time for pickers), `templates/list`, `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `removal/orphan_topics` (scan the broker for retained topics of generated devices that the store did not record), `removal/orphan_topics_clear` (delete those of the given topics that a new scan reports), `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 
@@ -286,7 +286,7 @@ All generated data must be removable at any time, completely, and without touchi
 
 ### 10.2 Plan before removal
 
-`removal/plan` returns what would be removed: devices, entities, groups, areas, schedules, statistics, MQTT topics. The panel shows this list before the user confirms. A removal can target one device, one group, a template, a run, or everything.
+`removal/plan` returns what would be removed: devices, entities, groups, areas, schedules, statistics, MQTT topics. The panel shows this list before the user confirms. After a lost or damaged store the retained topics are no longer known: `removal/orphan_topics` listens for `SCAN_SECONDS` (3) to the own base topics (`<mqtt base>/#` limited to ids of generated devices, `<z2m base>/#` unless it is the foreign default `zigbee2mqtt`) and to `homeassistant/+/tdc_+/+/config`, and reports the retained topics that are not in `published_topics`. `removal/orphan_topics_clear` deletes only topics that a fresh scan reports, whatever the request names. The registry devices that MQTT discovery creates for generated devices get the label "test data" (`MqttLabeler`) when they are created and at every start. A removal can target one device, one group, a template, a run, or everything.
 
 ### 10.3 Execution
 
