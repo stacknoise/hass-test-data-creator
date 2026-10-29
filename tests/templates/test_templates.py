@@ -71,6 +71,12 @@ def test_custom_template_is_validated() -> None:
         factory.custom([{**SENSOR, "device_class": "not_a_class"}])
 
 
+def test_fields_that_are_none_count_as_not_set() -> None:
+    entity = TemplateFactory().custom([{**SENSOR, "device_class": None, "unit": None}]).entities[0]
+    assert entity.device_class is None
+    assert entity.unit is None
+
+
 def test_too_many_entities_are_rejected() -> None:
     entities = [{**SENSOR, "key": f"s{i}"} for i in range(41)]
     with pytest.raises(GenerationError) as error:

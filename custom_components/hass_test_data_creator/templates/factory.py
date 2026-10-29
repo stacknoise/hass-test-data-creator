@@ -88,9 +88,11 @@ class TemplateFactory:
     """Creates templates and entity definitions from plain dictionaries."""
 
     def entity(self, data: dict[str, Any]) -> EntityDef:
-        """Return the validated entity definition for `data`."""
+        """Return the validated entity definition for `data`; fields that are `None` count as not set."""
         try:
-            checked = ENTITY_SCHEMA(data)
+            checked = ENTITY_SCHEMA(
+                {key: value for key, value in data.items() if value is not None}
+            )
         except vol.Invalid as err:
             raise TemplateError(ErrorCode.TPL_INVALID, file=str(err)) from err
         self._check_content(checked)
