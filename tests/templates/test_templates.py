@@ -135,6 +135,7 @@ async def test_a_bad_user_template_is_skipped_and_the_others_load(
     (folder / "broken.yaml").write_text("id: [unclosed")
     (folder / "invalid.yaml").write_text("id: bad\nname: Bad\nentities: nope\n")
     (folder / "large.yaml").write_text(good + "#" * MAX_TEMPLATE_FILE_BYTES)
+    (folder / "secret.yaml").write_text("id: s\nname: !secret token\nentities: []\n")
     (folder / "link.yaml").symlink_to(folder / "good.yaml")
 
     registry = TemplateRegistry(TemplateFactory())
@@ -142,4 +143,4 @@ async def test_a_bad_user_template_is_skipped_and_the_others_load(
 
     assert registry.get("mine").name == "Mine"
     assert {item.id for item in registry.all()} >= BUNDLED
-    assert caplog.text.count("TDC-TPL-002 skipped user template") == 4
+    assert caplog.text.count("TDC-TPL-002 skipped user template") == 5

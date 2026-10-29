@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.util.yaml import load_yaml_dict
+import yaml
 
 from ..const import DOMAIN, MAX_TEMPLATE_FILE_BYTES, MAX_USER_TEMPLATES
 from ..core.errors import ErrorCode, TemplateError
@@ -30,6 +30,7 @@ def _read_files(directory: Path) -> list[tuple[str, dict[str, Any]]]:
 def _read_user_files(directory: Path) -> list[tuple[str, dict[str, Any]]]:
     """Return the usable user files; a link, a large or an unreadable file is skipped and logged.
 
+    The files are read with `yaml.safe_load`, so `!secret` and `!include` are not understood.
     Runs in the executor. At most `MAX_USER_TEMPLATES` files are read.
     """
     if not directory.is_dir():
@@ -40,8 +41,12 @@ def _read_user_files(directory: Path) -> list[tuple[str, dict[str, Any]]]:
             _LOGGER.warning("%s skipped user template %s: link or too large", _CODE, path.name)
             continue
         try:
-            files.append((path.name, load_yaml_dict(str(path))))
-        except HomeAssistantError:
+            content = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except OSError, UnicodeDecodeError, yaml.YAMLError:
+            content = None
+        if isinstance(content, dict):
+            files.append((path.name, content))
+        else:
             _LOGGER.warning("%s skipped user template %s: not readable", _CODE, path.name)
     return files
 
