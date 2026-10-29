@@ -14,6 +14,7 @@ from ...store.store import TdcStore
 
 MESSAGE_CALLBACK = Callable[[str, str], None]
 FOREIGN_PROBE_SECONDS = 3.0
+FOREIGN_PROBE_LONG_SECONDS = 10.0
 
 
 class MqttClient:
@@ -35,11 +36,11 @@ class MqttClient:
         """Wait until the MQTT integration is connected; False if it is not set up."""
         return await async_wait_for_mqtt_client(self._hass)
 
-    async def async_foreign_topic(self, base: str) -> str | None:
+    async def async_foreign_topic(self, base: str, *, long: bool = False) -> str | None:
         """Return a retained topic under `base` that this integration did not publish, if one shows up.
 
-        The probe listens to `<base>/#` for `FOREIGN_PROBE_SECONDS`; a broker that delivers its
-        retained messages later than that is not noticed.
+        The probe listens to `<base>/#` for `FOREIGN_PROBE_SECONDS` (`FOREIGN_PROBE_LONG_SECONDS`
+        with `long`); a broker that delivers its retained messages later than that is not noticed.
         """
         self.require()
         ours = set(self._store.topics())
@@ -58,7 +59,9 @@ class MqttClient:
 
         unsubscribe = await mqtt.async_subscribe(self._hass, f"{base}/#", received)
         try:
-            async with asyncio.timeout(FOREIGN_PROBE_SECONDS):
+            async with asyncio.timeout(
+                FOREIGN_PROBE_LONG_SECONDS if long else FOREIGN_PROBE_SECONDS
+            ):
                 return await found
         except TimeoutError:
             return None

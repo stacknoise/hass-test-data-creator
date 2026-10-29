@@ -136,6 +136,9 @@
     "rem_in_use": {
       "message": "A device that is still used cannot be removed. Take it out of the schedules, scenarios and groups first: {usage}"
     },
+    "out_duplicate_name": {
+      "message": "A Zigbee2MQTT device or group with this name already exists"
+    },
     "rem_failed": {
       "message": "The removal was interrupted. Run it again to finish it"
     },

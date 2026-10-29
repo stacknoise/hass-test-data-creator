@@ -40,6 +40,7 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-OUT-005 | The group needs Zigbee2MQTT devices as members and a free name | A group needs members that are Zigbee2MQTT devices and a free name without a slash. |
 | TDC-OUT-006 | The group was not found | The group does not exist. |
 | TDC-OUT-007 | A Zigbee2MQTT device name needs one topic level: no slash, + or #, not bridge | A Zigbee2MQTT device name must be one topic level: no slash, wildcard or control character, not bridge. |
+| TDC-OUT-008 | A Zigbee2MQTT device or group with this name already exists | Another Zigbee2MQTT device or group already has this friendly name. |
 | TDC-REM-001 | The removal was interrupted. Run it again to finish it | A step of a removal failed; the removal can be run again. |
 | TDC-REM-002 | A device that is still used cannot be removed. Take it out of the schedules, scenarios and groups first: {usage} | A device that a schedule, scenario or group names cannot be removed until it is not used. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |
