@@ -74,7 +74,7 @@ export class CreationWizard extends TdcElement {
   private renderBase(): TemplateResult {
     const lang = this.hass?.language;
     const base = this.templates.find((t) => t.id === this.pendingBase);
-    return html`<div class="row form" style="padding-bottom: 20px">
+    return html`<div class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr('baseTemplate')}
           <select
@@ -241,13 +241,15 @@ export class CreationWizard extends TdcElement {
       </p>
       ${
         this.template === CUSTOM
-          ? html`${this.renderBase()}<tdc-entity-editor
+          ? html`<div style="display: grid; gap: 20px">
+              ${this.renderBase()}<tdc-entity-editor
                 .hass=${this.hass}
                 .entities=${this.custom}
                 .shapes=${this.info?.shapes ?? []}
                 .platforms=${this.info?.platforms ?? []}
                 @tdc-entities-change=${(e: CustomEvent<EntityDef[]>) => (this.custom = e.detail)}
-              ></tdc-entity-editor>`
+              ></tdc-entity-editor>
+            </div>`
           : ''
       }
       ${

@@ -2739,7 +2739,7 @@ var Nr = 10, Pr = 10, B = "custom", Fr = 50, Ir = ["even", "random"], Lr = {
 	}
 	renderBase() {
 		let e = this.hass?.language, t = this.templates.find((e) => e.id === this.pendingBase);
-		return v`<div class="row form" style="padding-bottom: 20px">
+		return v`<div class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr("baseTemplate")}
           <select
@@ -2874,13 +2874,15 @@ var Nr = 10, Pr = 10, B = "custom", Fr = 50, Ir = ["even", "random"], Lr = {
           <small>${this.tr("seedHint")}</small>
         </label>
       </p>
-      ${this.template === B ? v`${this.renderBase()}<tdc-entity-editor
+      ${this.template === B ? v`<div style="display: grid; gap: 20px">
+              ${this.renderBase()}<tdc-entity-editor
                 .hass=${this.hass}
                 .entities=${this.custom}
                 .shapes=${this.info?.shapes ?? []}
                 .platforms=${this.info?.platforms ?? []}
                 @tdc-entities-change=${(e) => this.custom = e.detail}
-              ></tdc-entity-editor>` : ""}
+              ></tdc-entity-editor>
+            </div>` : ""}
       ${this.template === B ? "" : v`<p>
               <small>${this.tr("entityList")}</small>
               <tdc-entity-list .hass=${this.hass} .entities=${this.entities()}></tdc-entity-list>
