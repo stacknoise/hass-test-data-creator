@@ -85,6 +85,46 @@ def _fixed(level: float) -> Transform:
     return apply
 
 
+def _plain(**flags: bool) -> Callable[[str, float, dict[str, Any]], Fault]:
+    """Return the builder of a fault that only sets flags."""
+    return lambda kind, duration, checked: Fault(kind, duration, **flags)
+
+
+def _spike(kind: str, duration: float, checked: dict[str, Any]) -> Fault:
+    """Return the fault that multiplies the values."""
+    factor = checked.get("factor", DEFAULT_SPIKE_FACTOR)
+    return Fault(kind, duration, transform=_scaled(factor))
+
+
+def _late(kind: str, duration: float, checked: dict[str, Any]) -> Fault:
+    """Return the fault that holds messages back."""
+    return Fault(kind, duration, message_delay_s=checked.get("delay_s", DEFAULT_MESSAGE_DELAY_S))
+
+
+def _duplicate(kind: str, duration: float, checked: dict[str, Any]) -> Fault:
+    """Return the fault that publishes messages again."""
+    return Fault(kind, duration, message_repeats=checked.get("copies", DEFAULT_COPIES))
+
+
+def _fixed_level(default: float) -> Callable[[str, float, dict[str, Any]], Fault]:
+    """Return the builder of a fault that replaces the values by a level."""
+    return lambda kind, duration, checked: Fault(
+        kind, duration, transform=_fixed(checked.get(KEY_VALUE, default))
+    )
+
+
+_BUILDERS: dict[str, Callable[[str, float, dict[str, Any]], Fault]] = {
+    "unavailable": _plain(unavailable=True),
+    "dropout": _plain(unavailable=True),
+    "frozen": _plain(frozen=True),
+    "spike": _spike,
+    "battery_low": _fixed_level(DEFAULT_BATTERY_LOW),
+    "linkquality_drop": _fixed_level(DEFAULT_LINKQUALITY_DROP),
+    "late": _late,
+    "duplicate": _duplicate,
+}
+
+
 class FaultFactory:
     """Creates the fault for a kind and its parameters."""
 
@@ -108,19 +148,4 @@ class FaultFactory:
         except vol.Invalid as err:
             raise ScheduleError(ErrorCode.SCH_INVALID_FAULT) from err
         duration = checked.get(KEY_DURATION_S, spec.default_duration_s)
-        if kind in ("unavailable", "dropout"):
-            return Fault(kind, duration, unavailable=True)
-        if kind == "frozen":
-            return Fault(kind, duration, frozen=True)
-        if kind == "spike":
-            return Fault(
-                kind, duration, transform=_scaled(checked.get("factor", DEFAULT_SPIKE_FACTOR))
-            )
-        if kind == "late":
-            return Fault(
-                kind, duration, message_delay_s=checked.get("delay_s", DEFAULT_MESSAGE_DELAY_S)
-            )
-        if kind == "duplicate":
-            return Fault(kind, duration, message_repeats=checked.get("copies", DEFAULT_COPIES))
-        default = DEFAULT_BATTERY_LOW if kind == "battery_low" else DEFAULT_LINKQUALITY_DROP
-        return Fault(kind, duration, transform=_fixed(checked.get(KEY_VALUE, default)))
+        return _BUILDERS[kind](kind, duration, checked)

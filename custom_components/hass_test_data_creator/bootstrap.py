@@ -144,6 +144,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         ),
         template_registry=registry,
         entity_factory=EntityFactory(behaviours, live),
+        outputs=outputs,
         mqtt=mqtt,
         mqtt_devices=mqtt_devices,
         z2m_devices=z2m_devices,
@@ -152,7 +153,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         clock=clock,
         usage=usage,
         device_view=DeviceView(hass, store, usage, live),
-        signal_editor=SignalEditor(store, live, behaviours, audit, audit_factory),
+        signal_editor=SignalEditor(store, live, behaviours, template_factory, audit, audit_factory),
         csv=csv,
         live=live,
     )

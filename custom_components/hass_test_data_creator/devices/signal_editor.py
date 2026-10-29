@@ -7,12 +7,13 @@ from typing import Any
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError, TemplateError
-from ..core.keys import KEY_SHAPE, KEY_SIGNAL
+from ..core.keys import KEY_SHAPE
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import ClimateBehaviour, Live, SensorBehaviour
 from ..engine.signals import DISCRETE_SHAPES
 from ..model.models import EntityDef
 from ..store.store import TdcStore
+from ..templates.factory import TemplateFactory
 
 SIGNAL_PLATFORMS = ("sensor", "climate")
 
@@ -25,6 +26,7 @@ class SignalEditor:
         store: TdcStore,
         live: Live,
         behaviours: BehaviourFactory,
+        templates: TemplateFactory,
         audit: AuditLog,
         audit_factory: AuditEntryFactory,
     ) -> None:
@@ -32,6 +34,7 @@ class SignalEditor:
         self._store = store
         self._live = live
         self._behaviours = behaviours
+        self._templates = templates
         self._audit = audit
         self._audit_factory = audit_factory
 
@@ -52,7 +55,7 @@ class SignalEditor:
             signal.get(KEY_SHAPE) in DISCRETE_SHAPES
         ):
             raise TemplateError(ErrorCode.TPL_INVALID, file=f"{key}: signal")
-        changed = EntityDef(**{**definition.to_dict(), KEY_SIGNAL: signal})
+        changed = self._templates.with_signal(definition, signal)
         new_signal = self._behaviours.signal_for(device, changed)
         definition.signal = signal
         self._store.add_device(device)

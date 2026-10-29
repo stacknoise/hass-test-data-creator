@@ -7,7 +7,6 @@ from collections.abc import Callable
 from typing import Any
 
 from ...const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION, TEMPERATURE_STEP
-from ...core.errors import ErrorCode, OutputError
 from ...core.keys import (
     KEY_ACCESS,
     KEY_ACTION,
@@ -53,6 +52,7 @@ from ...engine.behaviours import (
     SensorBehaviour,
 )
 from ...model.models import EntityDef
+from ..profile_factory import ProfileFactory
 
 ON = "ON"
 OFF = "OFF"
@@ -357,12 +357,9 @@ _PROFILES: dict[str, type[Z2mProfile]] = {
 }
 
 
-class Z2mProfileFactory:
+class Z2mProfileFactory(ProfileFactory[Z2mProfile]):
     """Creates the Zigbee2MQTT profile for a platform."""
 
-    def create(self, platform: str) -> Z2mProfile:
-        """Return the profile of `platform` or raise TDC-OUT-001."""
-        profile = _PROFILES.get(platform)
-        if profile is None:
-            raise OutputError(ErrorCode.OUT_UNSUPPORTED)
-        return profile()
+    def __init__(self) -> None:
+        """Use the table of this output."""
+        super().__init__(_PROFILES)

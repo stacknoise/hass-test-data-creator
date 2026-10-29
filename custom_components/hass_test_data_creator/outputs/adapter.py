@@ -12,6 +12,7 @@ from .base import OutputAdapter
 from .mqtt.adapter import MqttAdapter
 from .mqtt.client import MqttClient
 from .mqtt.devices import MqttDevices
+from .mqtt.runtime import BehaviourRuntime
 from .native.adapter import NativeAdapter
 from .z2m.devices import Z2mDevices
 
@@ -49,6 +50,22 @@ class OutputAdapterFactory:
         """Delete the retained messages on `topics`; raises TDC-OUT-002 if MQTT is not usable."""
         if topics:
             await self._mqtt.async_clear(topics)
+
+    def runtime_for(self, output: str) -> BehaviourRuntime | None:
+        """Return the runtime of an MQTT-based output, or None for the native output."""
+        if output == OUTPUT_MQTT:
+            return self._mqtt_devices
+        if output == OUTPUT_Z2M:
+            return self._z2m_devices
+        return None
+
+    def runtimes(self) -> dict[str, BehaviourRuntime]:
+        """Return the runtimes of all MQTT-based outputs by output name."""
+        return {
+            output: runtime
+            for output in (OUTPUT_MQTT, OUTPUT_Z2M)
+            if (runtime := self.runtime_for(output)) is not None
+        }
 
     def create(self, output: str) -> OutputAdapter:
         """Return the adapter for `output`; native, MQTT discovery or Zigbee2MQTT."""
