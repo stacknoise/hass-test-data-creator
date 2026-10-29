@@ -11,8 +11,8 @@ from ..core.keys import (
     KEY_SCHEDULES,
     KEY_TARGET,
 )
+from ..core.targets import device_references
 from ..model.models import DeviceDef
-from ..scheduler.schema import device_references
 from ..store.store import TdcStore
 
 KINDS = ("schedules", "scenarios", "groups")

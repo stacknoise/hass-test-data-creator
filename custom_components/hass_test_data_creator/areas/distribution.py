@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..engine.signals import hash01
+from ..core.hashing import hash01
 
 MODE_EVEN = "even"
 MODE_RANDOM = "random"

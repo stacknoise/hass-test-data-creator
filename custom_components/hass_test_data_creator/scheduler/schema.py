@@ -9,40 +9,17 @@ import voluptuous as vol
 from ..const import CONF_SEED, MAX_PARAMS_BYTES, MAX_TRIGGER_BYTES
 from ..core.keys import (
     KEY_ACTION,
-    KEY_DEVICE,
     KEY_ENABLED,
     KEY_ENTITY,
     KEY_NAME,
     KEY_PARAMS,
-    KEY_RUN,
     KEY_SCENARIO,
     KEY_SCHEDULE_ID,
     KEY_TARGET,
-    KEY_TEMPLATE,
     KEY_TRIGGER,
 )
 from ..core.limits import SHORT_TEXT, json_object
-
-MAX_TARGET_DEVICES = 500
-
-TARGET_SCHEMA = vol.Any(
-    {
-        vol.Required(KEY_DEVICE): vol.Any(
-            SHORT_TEXT, vol.All([SHORT_TEXT], vol.Length(min=1, max=MAX_TARGET_DEVICES))
-        )
-    },
-    {vol.Required(KEY_TEMPLATE): SHORT_TEXT},
-    {vol.Required(KEY_RUN): SHORT_TEXT},
-    {vol.Required("all"): True},
-)
-
-
-def device_references(value: str | list[str] | None) -> set[str]:
-    """Return the ids or names that the `device` part of a target names: one text or a list."""
-    if value is None:
-        return set()
-    return {value} if isinstance(value, str) else set(value)
-
+from ..core.targets import TARGET_SCHEMA
 
 SCHEDULE_FIELDS: dict[Any, Any] = {
     vol.Required(KEY_NAME): vol.All(str, vol.Length(min=1, max=64)),

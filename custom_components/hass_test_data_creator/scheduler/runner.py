@@ -8,11 +8,11 @@ from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..core.errors import ErrorCode, ScheduleError, TdcError
 from ..core.keys import KEY_DEVICE, KEY_RUN, KEY_TEMPLATE
+from ..core.targets import device_references
 from ..engine.behaviours import Live
 from ..model.models import DeviceDef
 from ..store.store import TdcStore
 from .actions import ActionFactory
-from .schema import device_references
 
 
 class ActionRunner:

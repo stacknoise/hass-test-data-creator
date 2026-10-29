@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import math
 from typing import Any
 
+from ..core.hashing import hash01
 from ..core.keys import (
     KEY_DURATION_S,
     KEY_ENUM,
@@ -22,10 +23,6 @@ from ..core.keys import (
     KEY_VALUES,
 )
 
-_MASK = (1 << 64) - 1
-_GOLDEN = 0x9E3779B97F4A7C15
-_MIX_A = 0xBF58476D1CE4E5B9
-_MIX_B = 0x94D049BB133111EB
 SECONDS_PER_HOUR = 3600
 HALF = 0.5
 SMOOTHSTEP_LINEAR = 3.0
@@ -35,11 +32,6 @@ DEFAULT_PERIOD_S = 3600.0
 DEFAULT_INTERVAL_S = 10.0
 DEFAULT_STEP_S = 60.0
 # The shifts of the SplitMix64 mixer and the bits of the mantissa of a double.
-MIX_SHIFT_FIRST = 30
-MIX_SHIFT_SECOND = 27
-MIX_SHIFT_LAST = 31
-UNIT_SHIFT = 11
-UNIT_BITS = 53
 SECONDS_PER_DAY = 86400
 HOURS_PER_DAY = 24
 LOAD_BASE = 0.12
@@ -110,15 +102,6 @@ class SignalSpec:
             seed=seed,
             origin=origin,
         )
-
-
-def hash01(seed: int, n: int) -> float:
-    """Return a deterministic number in [0, 1) for the integers `seed` and `n` (SplitMix64)."""
-    x = (seed * _GOLDEN + (n & _MASK) * _MIX_A + _MIX_B) & _MASK
-    x = ((x ^ (x >> MIX_SHIFT_FIRST)) * _MIX_A) & _MASK
-    x = ((x ^ (x >> MIX_SHIFT_SECOND)) * _MIX_B) & _MASK
-    x ^= x >> MIX_SHIFT_LAST
-    return (x >> UNIT_SHIFT) / (1 << UNIT_BITS)
 
 
 def _cycle(spec: SignalSpec, t: float) -> float:

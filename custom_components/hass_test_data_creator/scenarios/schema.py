@@ -9,7 +9,7 @@ import voluptuous as vol
 from ..const import MAX_PARAMS_BYTES
 from ..core.keys import KEY_ACTION, KEY_ENTITY, KEY_NAME, KEY_PARAMS, KEY_STEPS, KEY_TARGET
 from ..core.limits import SHORT_TEXT, json_object
-from ..scheduler.schema import TARGET_SCHEMA
+from ..core.targets import TARGET_SCHEMA
 
 MAX_STEPS = 50
 MAX_STEP_DELAY_SECONDS = 86400

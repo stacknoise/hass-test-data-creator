@@ -10,6 +10,7 @@ from typing import Any
 
 from ...const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION, MANUFACTURER, TEMPERATURE_STEP
 from ...core.errors import ErrorCode, OutputError
+from ...core.identifiers import mqtt_device_identifier, mqtt_unique_id
 from ...core.keys import (
     KEY_AVAILABILITY,
     KEY_BINARY_SENSOR,
@@ -61,16 +62,6 @@ ONLINE = "online"
 OFFLINE = "offline"
 SET = "set"
 Send = Callable[[str, str], None]
-
-
-def mqtt_device_identifier(device_id: str) -> str:
-    """Return the identifier of the registry device that MQTT discovery creates for `device_id`."""
-    return f"tdc_{device_id}"
-
-
-def mqtt_unique_id(device_id: str, key: str) -> str:
-    """Return the unique id of the MQTT entity of `key` of a device."""
-    return f"tdc_{device_id}_{key}"
 
 
 @dataclass(frozen=True)
