@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.config_entries import (
@@ -35,6 +36,9 @@ from .const import (
     MIN_TICK_SECONDS,
     MIN_TIME_LAPSE,
 )
+from .core.errors import ErrorCode
+
+_LOGGER = logging.getLogger(__name__)
 
 ERROR_NOT_TEST_ENVIRONMENT = "not_test_environment"
 ERROR_INVALID_TOPIC = "invalid_topic"
@@ -80,6 +84,9 @@ class TestDataCreatorConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_TICK_SECONDS: user_input[CONF_TICK_SECONDS],
                     },
                 )
+            _LOGGER.warning(
+                "%s the test environment was not confirmed", ErrorCode.CFG_NOT_TEST_ENV.value
+            )
             errors["base"] = ERROR_NOT_TEST_ENVIRONMENT
         schema = vol.Schema(
             {
