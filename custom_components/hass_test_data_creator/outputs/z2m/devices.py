@@ -62,6 +62,12 @@ class Z2mDevices(BehaviourRuntime):
         self._devices: dict[str, DeviceDef] = {}
         self._groups: dict[str, GroupDef] = {}
         self._pending: set[str] = set()
+        self._active = 0
+        self._idle = asyncio.Event()
+        self._idle.set()
+        self._values: dict[str, dict[str, Any]] = {}
+        self._dirty_groups: set[str] = set()
+        self._flush_scheduled = False
         self._bridge_ready = False
 
     def set_groups(self, groups: list[GroupDef]) -> None:
@@ -152,11 +158,11 @@ class Z2mDevices(BehaviourRuntime):
     def _targets(self, name: str) -> list[_Entry]:
         """Return the entries a `/set` to `name` reaches: one device, or the members of a group."""
         group = next((item for item in self._groups.values() if item.name == name), None)
-        return [
-            self._z2m(item)
-            for item in self._entries.values()
-            if (item.device.id in group.members if group else item.device.name == name)
-        ]
+        if group is not None:
+            ids = list(group.members)
+        else:
+            ids = [device.id for device in self._devices.values() if device.name == name]
+        return [self._z2m(item) for device_id in ids for item in self._device_entries(device_id)]
 
     async def _async_announce(self, added: list[RuntimeEntry], devices: list[DeviceDef]) -> None:
         """Publish `bridge/devices` and the state and availability of the new devices."""
@@ -166,6 +172,7 @@ class Z2mDevices(BehaviourRuntime):
         await self._async_bridge_groups()
         for device in devices:
             await self._async_publish_device(device.id)
+        self._dirty_groups.clear()
         for group in self._groups.values():
             await self._async_publish_group(group)
 
@@ -175,9 +182,25 @@ class Z2mDevices(BehaviourRuntime):
         if device_id in self._pending:
             return
         self._pending.add(device_id)
-        await asyncio.sleep(0)
-        self._pending.discard(device_id)
-        await self._async_publish_device(device_id)
+        self._enter()
+        try:
+            await asyncio.sleep(0)
+            self._pending.discard(device_id)
+            await self._async_publish_device(device_id)
+        finally:
+            self._pending.discard(device_id)
+            self._leave()
+
+    def _enter(self) -> None:
+        """Note that a device publish is under way."""
+        self._active += 1
+        self._idle.clear()
+
+    def _leave(self) -> None:
+        """Note that a device publish is over; wake the group flush when none is left."""
+        self._active -= 1
+        if self._active == 0:
+            self._idle.set()
 
     async def _async_offline(self, entries: list[RuntimeEntry]) -> None:
         """Mark the devices and the bridge offline."""
@@ -190,10 +213,12 @@ class Z2mDevices(BehaviourRuntime):
                 f"{self._base}/bridge/state", self._payloads.bridge_state(False), None
             )
         self._bridge_ready = False
+        self._values.clear()
 
     async def _async_removed(self, device: DeviceDef) -> None:
         """Publish `bridge/devices` without the removed device."""
         self._devices.pop(device.id, None)
+        self._values.pop(device.id, None)
         if self._bridge_ready and self._client.available():
             await self._async_bridge_devices()
 
@@ -211,7 +236,7 @@ class Z2mDevices(BehaviourRuntime):
 
     async def _async_publish_group(self, group: GroupDef) -> None:
         """Publish the state of a group, derived from the states of its started members."""
-        members = [self._device_values(device_id) for device_id in group.members]
+        members = [self._values.get(device_id) for device_id in group.members]
         states = [item for item in members if item]
         if not states:
             return
@@ -219,15 +244,6 @@ class Z2mDevices(BehaviourRuntime):
         await self._async_publish(
             f"{self._base}/{group.name}", self._payloads.device_state(properties), group.id
         )
-
-    def _device_values(self, device_id: str) -> dict[str, Any]:
-        """Return the state properties of all started entities of a device."""
-        properties: dict[str, Any] = {}
-        for item in self._entries.values():
-            if item.device.id == device_id:
-                mine = self._z2m(item)
-                properties.update(mine.profile.values(mine.definition, mine.behaviour))
-        return properties
 
     async def _async_bridge_devices(self) -> None:
         """Publish the device list of the bridge."""
@@ -250,15 +266,19 @@ class Z2mDevices(BehaviourRuntime):
 
     async def _async_publish_device(self, device_id: str) -> None:
         """Publish availability and the state of a device; it is offline if any entity is."""
-        entries = [
-            self._z2m(item) for item in self._entries.values() if item.device.id == device_id
-        ]
+        entries = [self._z2m(item) for item in self._device_entries(device_id)]
         if not entries:
             return
+        await self._async_publish_entries(device_id, entries)
+        self._mark_groups(device_id)
+
+    async def _async_publish_entries(self, device_id: str, entries: list[_Entry]) -> None:
+        """Publish availability and state of one device from its started entries."""
         name = entries[0].device.name
         properties: dict[str, Any] = {}
         for entry in entries:
             properties.update(entry.profile.values(entry.definition, entry.behaviour))
+        self._values[device_id] = properties
         online = all(entry.behaviour.available for entry in entries)
         await self._async_publish(
             f"{self._base}/{name}/availability", self._payloads.availability(online), device_id
@@ -269,9 +289,27 @@ class Z2mDevices(BehaviourRuntime):
             self._payloads.device_state(properties),
             device_id,
         )
-        for group in self._groups.values():
-            if device_id in group.members:
-                await self._async_publish_group(group)
+
+    def _mark_groups(self, device_id: str) -> None:
+        """Mark the groups of a device dirty and flush them once the devices are published."""
+        self._dirty_groups.update(
+            group.id for group in self._groups.values() if device_id in group.members
+        )
+        if self._dirty_groups and not self._flush_scheduled:
+            self._flush_scheduled = True
+            self._schedule(self._async_flush_groups())
+
+    async def _async_flush_groups(self) -> None:
+        """Publish each dirty group once, after the device publishes of this round are done."""
+        try:
+            await self._idle.wait()
+            dirty, self._dirty_groups = self._dirty_groups, set()
+            for group_id in dirty:
+                group = self._groups.get(group_id)
+                if group is not None and self._bridge_ready:
+                    await self._async_publish_group(group)
+        finally:
+            self._flush_scheduled = False
 
     def _z2m(self, entry: RuntimeEntry) -> _Entry:
         """Return the entry as one of this output."""

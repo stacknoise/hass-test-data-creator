@@ -56,6 +56,7 @@ class BehaviourRuntime(ABC):
         self._audit = parts.audit
         self._audit_factory = parts.audit_factory
         self._entries: dict[tuple[str, str], RuntimeEntry] = {}
+        self._by_device: dict[str, dict[str, RuntimeEntry]] = {}
         self._unsubscribe: Callable[[], None] | None = None
         self._unsubscribe_tick: CALLBACK_TYPE | None = None
         self._late: dict[str, set[CALLBACK_TYPE]] = {}
@@ -92,9 +93,12 @@ class BehaviourRuntime(ABC):
         """Stop the behaviours of `device`; the removal deletes its retained topics."""
         for definition in device.entities:
             entry = self._entries.pop((device.id, definition.key), None)
+            self._by_device.get(device.id, {}).pop(definition.key, None)
             if entry is not None:
                 entry.behaviour.close()
                 self._live.pop((device.id, definition.key), None)
+        if not self._by_device.get(device.id):
+            self._by_device.pop(device.id, None)
         self._cancel_late(device.id)
         if not self._entries:
             self._stop_listening()
@@ -108,6 +112,7 @@ class BehaviourRuntime(ABC):
             entry.behaviour.close()
             self._live.pop((entry.device.id, entry.definition.key), None)
         self._entries.clear()
+        self._by_device.clear()
         for device_id in list(self._late):
             self._cancel_late(device_id)
         self._stop_listening()
@@ -158,11 +163,16 @@ class BehaviourRuntime(ABC):
         self._wire(entry)
         self._live[(device.id, definition.key)] = behaviour
         self._entries[(device.id, definition.key)] = entry
+        self._by_device.setdefault(device.id, {})[definition.key] = entry
         return entry
 
     def _schedule(self, work: Any) -> None:
         """Run `work` on the event loop without waiting for it."""
         self._hass.async_create_task(work)
+
+    def _device_entries(self, device_id: str) -> list[RuntimeEntry]:
+        """Return the started entries of one device without scanning the others."""
+        return list(self._by_device.get(device_id, {}).values())
 
     async def _async_listen(self) -> None:
         """Subscribe to the commands and follow the tick, once."""
