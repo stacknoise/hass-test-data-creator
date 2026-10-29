@@ -98,3 +98,26 @@ async def test_a_scenario_step_without_an_entity_runs(
     await data.scenarios.async_run(scenario["id"])
 
     assert state_of(hass, "Plug 01", "state").state == "on"
+
+
+async def test_an_action_on_many_devices_builds_no_device_per_lookup(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    await create_devices(hass, count=5)
+    data = get_data(hass)
+    calls = 0
+    original = data.store.devices
+
+    def counting() -> list:
+        nonlocal calls
+        calls += 1
+        return original()
+
+    data.store.devices = counting  # type: ignore[method-assign]
+    devices = data.action_runner.devices_for({"all": True})
+    await data.action_runner.async_run_on(devices, "", "turn_on", {}, "all")
+
+    assert calls == 1
+    assert data.action_runner.find_device_id("Plug 02") == devices[1].id
+    with pytest.raises(ScheduleError):
+        data.action_runner.find_device_id("missing")
