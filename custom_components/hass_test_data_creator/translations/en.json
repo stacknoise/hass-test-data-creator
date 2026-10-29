@@ -58,6 +58,15 @@
     "gen_history_limit": {
       "message": "The import would write too many statistics rows. Choose fewer days or fewer entities"
     },
+    "gen_schedule_limit": {
+      "message": "There are too many schedules. Remove one first"
+    },
+    "gen_scenario_limit": {
+      "message": "There are too many scenarios. Remove one first"
+    },
+    "gen_group_limit": {
+      "message": "There are too many groups. Remove one first"
+    },
     "tpl_not_found": {
       "message": "The template does not exist"
     },

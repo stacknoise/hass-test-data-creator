@@ -11,7 +11,8 @@ from homeassistant.util import dt as dt_util
 
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
-from ..core.errors import ErrorCode, ScheduleError
+from ..const import MAX_SCENARIOS
+from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..core.ids import new_id
 from ..core.keys import KEY_ACTION, KEY_ENTITY, KEY_NAME, KEY_PARAMS, KEY_STEPS, KEY_TARGET
 from ..model.models import ScenarioDef
@@ -66,6 +67,8 @@ class ScenarioManager:
 
     async def async_add(self, data: dict[str, Any]) -> ScenarioDef:
         """Validate and store a scenario; `data` has a name and the list of steps."""
+        if self._store.scenario_count() >= MAX_SCENARIOS:
+            raise GenerationError(ErrorCode.GEN_SCENARIO_LIMIT)
         self._check_steps(data)
         scenario = ScenarioDef(
             id=new_id(),

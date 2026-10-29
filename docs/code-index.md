@@ -79,6 +79,10 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.core.ids` | `module` | `custom_components/hass_test_data_creator/core/ids.py` | Identifier helpers. |
 | `new_id` | `def new_id() -> str` | `custom_components/hass_test_data_creator/core/ids.py` | Return a new time-ordered hexadecimal identifier (26 characters). |
 | `hass_test_data_creator.core.keys` | `module` | `custom_components/hass_test_data_creator/core/keys.py` | Names of the keys and values that several modules use. |
+| `hass_test_data_creator.core.limits` | `module` | `custom_components/hass_test_data_creator/core/limits.py` | Validators that bound free-form request fields (concept 12). |
+| `json_size` | `def json_size(max_bytes: int) -> Callable[[Any], Any]` | `custom_components/hass_test_data_creator/core/limits.py` | Return a validator for a value whose JSON text is at most `max_bytes` long. |
+| `json_size._bounded` | `def _bounded(value: Any) -> Any` | `custom_components/hass_test_data_creator/core/limits.py` | Return `value` or raise vol.Invalid if it is too large to store. |
+| `json_object` | `def json_object(max_bytes: int) -> vol.All` | `custom_components/hass_test_data_creator/core/limits.py` | Return a validator for a dict whose JSON text is at most `max_bytes` long. |
 | `hass_test_data_creator.core.response_factory` | `module` | `custom_components/hass_test_data_creator/core/response_factory.py` | Factory for WebSocket replies (concept 13.2). |
 | `ResponseFactory` | `class ResponseFactory` | `custom_components/hass_test_data_creator/core/response_factory.py` | Creates the result and error replies of the panel commands. |
 | `ResponseFactory.result` | `def result(self, msg_id: int, payload: Any) -> dict[str, Any]` | `custom_components/hass_test_data_creator/core/response_factory.py` | Return the success reply with `payload`. |
@@ -133,14 +137,17 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcStore.runs` | `def runs(self) -> list[RunRecord]` | `custom_components/hass_test_data_creator/store/store.py` | Return all runs. |
 | `TdcStore.add_run` | `def add_run(self, run: RunRecord) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `run`. |
 | `TdcStore.schedules` | `def schedules(self) -> list[ScheduleDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all schedules in creation order. |
+| `TdcStore.schedule_count` | `def schedule_count(self) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Return the number of stored schedules. |
 | `TdcStore.schedule` | `def schedule(self, schedule_id: str) -> ScheduleDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the schedule with `schedule_id`, or None. |
 | `TdcStore.put_schedule` | `def put_schedule(self, schedule: ScheduleDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `schedule`, replacing one with the same id. |
 | `TdcStore.remove_schedule` | `def remove_schedule(self, schedule_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the schedule `schedule_id`. |
 | `TdcStore.scenarios` | `def scenarios(self) -> list[ScenarioDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all scenarios in creation order. |
+| `TdcStore.scenario_count` | `def scenario_count(self) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Return the number of stored scenarios. |
 | `TdcStore.scenario` | `def scenario(self, scenario_id: str) -> ScenarioDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the scenario with `scenario_id`, or None. |
 | `TdcStore.put_scenario` | `def put_scenario(self, scenario: ScenarioDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `scenario`, replacing one with the same id. |
 | `TdcStore.remove_scenario` | `def remove_scenario(self, scenario_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the scenario `scenario_id`. |
 | `TdcStore.groups` | `def groups(self) -> list[GroupDef]` | `custom_components/hass_test_data_creator/store/store.py` | Return all groups in creation order. |
+| `TdcStore.group_count` | `def group_count(self) -> int` | `custom_components/hass_test_data_creator/store/store.py` | Return the number of stored groups. |
 | `TdcStore.group` | `def group(self, group_id: str) -> GroupDef \| None` | `custom_components/hass_test_data_creator/store/store.py` | Return the group with `group_id`, or None. |
 | `TdcStore.put_group` | `def put_group(self, group: GroupDef) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Store `group`, replacing one with the same id. |
 | `TdcStore.remove_group` | `def remove_group(self, group_id: str) -> None` | `custom_components/hass_test_data_creator/store/store.py` | Delete the group `group_id`. |
@@ -695,7 +702,8 @@ Lists every module, class and function of the integration with signature, file a
 | `ScheduleManager.forget` | `def forget(self, schedule_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Delete schedules without saving; the removal saves the store afterwards. |
 | `ScheduleManager._cancel` | `def _cancel(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Cancel the timer of the next run. |
 | `ScheduleManager._on_midnight` | `def _on_midnight(self, _now: datetime) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the new day. |
-| `ScheduleManager._replan` | `def _replan(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the rest of today and arm the timer for the first run. |
+| `ScheduleManager._replan` | `def _replan(self, schedule_ids: list[str] \| None=None) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Plan the rest of today for all schedules, or only for `schedule_ids`, and arm the timer. |
+| `ScheduleManager._arm` | `def _arm(self) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Arm the timer for the first planned run, if there is one. |
 | `ScheduleManager._fire` | `async def _fire(self, now: datetime) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Run every planned run that is due, then arm the timer for the next one. |
 | `ScheduleManager._execute` | `async def _execute(self, run: PlannedRun) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Run the action of one planned run on all devices of its target. |
 | `ScheduleManager._run_scenario` | `async def _run_scenario(self, schedule: ScheduleDef) -> None` | `custom_components/hass_test_data_creator/scheduler/manager.py` | Start the scenario of a schedule; a missing scenario is logged. |

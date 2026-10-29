@@ -15,6 +15,7 @@ from ..const import (
     DOMAIN,
     MAX_AREA_NAME,
     MAX_PAGE_SIZE,
+    MAX_PARAMS_BYTES,
 )
 from ..core.command import tdc_command
 from ..core.keys import (
@@ -30,6 +31,7 @@ from ..core.keys import (
     KEY_RUN_ID,
     KEY_SIGNAL,
 )
+from ..core.limits import SHORT_TEXT, json_object
 from ..core.runtime import get_data
 from ..devices.schema import CREATE_FIELDS, job_from_request
 from ..templates.schema import SIGNAL_SCHEMA
@@ -118,10 +120,10 @@ async def ws_devices_signal(
 @tdc_command(
     f"{DOMAIN}/devices/fire",
     {
-        vol.Required(KEY_DEVICE): str,
-        vol.Required(KEY_ENTITY): str,
-        vol.Required(KEY_ACTION): str,
-        vol.Optional(KEY_PARAMS, default=dict): dict,
+        vol.Required(KEY_DEVICE): SHORT_TEXT,
+        vol.Required(KEY_ENTITY): SHORT_TEXT,
+        vol.Required(KEY_ACTION): SHORT_TEXT,
+        vol.Optional(KEY_PARAMS, default=dict): json_object(MAX_PARAMS_BYTES),
     },
 )
 async def ws_devices_fire(

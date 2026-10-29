@@ -6,7 +6,9 @@ from typing import Any
 
 import voluptuous as vol
 
+from ..const import MAX_PARAMS_BYTES
 from ..core.keys import KEY_ACTION, KEY_ENTITY, KEY_NAME, KEY_PARAMS, KEY_STEPS, KEY_TARGET
+from ..core.limits import SHORT_TEXT, json_object
 from ..scheduler.schema import TARGET_SCHEMA
 
 MAX_STEPS = 50
@@ -18,9 +20,9 @@ STEP_SCHEMA = vol.Schema(
             vol.Coerce(float), vol.Range(min=0, max=MAX_STEP_DELAY_SECONDS)
         ),
         vol.Required(KEY_TARGET): TARGET_SCHEMA,
-        vol.Optional(KEY_ENTITY, default=""): str,
-        vol.Required(KEY_ACTION): str,
-        vol.Optional(KEY_PARAMS, default=dict): dict,
+        vol.Optional(KEY_ENTITY, default=""): SHORT_TEXT,
+        vol.Required(KEY_ACTION): SHORT_TEXT,
+        vol.Optional(KEY_PARAMS, default=dict): json_object(MAX_PARAMS_BYTES),
     }
 )
 

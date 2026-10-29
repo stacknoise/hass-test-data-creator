@@ -18,6 +18,9 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-GEN-004 | A device can have at most 40 entities | A device would have more than MAX_ENTITIES_PER_DEVICE entities. |
 | TDC-GEN-005 | The update took too long. Raise the tick interval or create fewer entities | One tick took longer than half of the tick interval. |
 | TDC-GEN-006 | The import would write too many statistics rows. Choose fewer days or fewer entities | A statistics import would write more than MAX_HISTORY_ROWS rows. |
+| TDC-GEN-007 | There are too many schedules. Remove one first | There are already MAX_SCHEDULES schedules. |
+| TDC-GEN-008 | There are too many scenarios. Remove one first | There are already MAX_SCENARIOS scenarios. |
+| TDC-GEN-009 | There are too many groups. Remove one first | There are already MAX_GROUPS groups. |
 | TDC-SIG-001 | The signal shape is unknown | The signal shape is not registered in the SignalFactory. |
 | TDC-SIG-002 | The minimum must not be greater than the maximum | The minimum of a signal is greater than its maximum. |
 | TDC-SIG-003 | The states of the signal are invalid | The states, weights or durations of an enum or state machine signal are invalid. |

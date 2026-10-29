@@ -100,7 +100,7 @@ data:
 
 Actions of `fire_event` per entity type: switch `turn_on`, `turn_off`, `toggle`; binary sensor `set_on`, `set_off`, `pulse` (optional `duration_s`); event `press` (optional `event_type`).
 
-Limits: at most 500 devices per call, 2000 devices and 40 entities per device in total.
+Limits: at most 500 devices per call, 2000 devices and 40 entities per device in total, 200 schedules, 100 scenarios and 100 groups (TDC-GEN-007 to TDC-GEN-009). Free-form fields are bounded: names and ids 128 characters, action parameters 2 KiB, a trigger 4 KiB, custom entities 64 KiB.
 
 Schedules: the target is one of `device` (id or name), `template`, `run` or `all`. The trigger has a `type`:
 

@@ -103,6 +103,10 @@ class TdcStore:
         """Return all schedules in creation order."""
         return [ScheduleDef.from_dict(item) for item in self._data[KEY_SCHEDULES].values()]
 
+    def schedule_count(self) -> int:
+        """Return the number of stored schedules."""
+        return len(self._data[KEY_SCHEDULES])
+
     def schedule(self, schedule_id: str) -> ScheduleDef | None:
         """Return the schedule with `schedule_id`, or None."""
         item = self._data[KEY_SCHEDULES].get(schedule_id)
@@ -120,6 +124,10 @@ class TdcStore:
         """Return all scenarios in creation order."""
         return [ScenarioDef.from_dict(item) for item in self._data[KEY_SCENARIOS].values()]
 
+    def scenario_count(self) -> int:
+        """Return the number of stored scenarios."""
+        return len(self._data[KEY_SCENARIOS])
+
     def scenario(self, scenario_id: str) -> ScenarioDef | None:
         """Return the scenario with `scenario_id`, or None."""
         item = self._data[KEY_SCENARIOS].get(scenario_id)
@@ -136,6 +144,10 @@ class TdcStore:
     def groups(self) -> list[GroupDef]:
         """Return all groups in creation order."""
         return [GroupDef.from_dict(item) for item in self._data[KEY_GROUPS].values()]
+
+    def group_count(self) -> int:
+        """Return the number of stored groups."""
+        return len(self._data[KEY_GROUPS])
 
     def group(self, group_id: str) -> GroupDef | None:
         """Return the group with `group_id`, or None."""
