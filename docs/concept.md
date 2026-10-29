@@ -107,7 +107,7 @@ dev/           docker-compose setup with Home Assistant and Mosquitto
 
 ### 4.2 Template files
 
-A template is a YAML file in `templates/` (bundled) or in the user's config folder `hass_test_data_creator/templates/` (own). It lists entities with their default signal. The loader validates it with a `voluptuous` schema and reports errors with a code (`TDC-TPL-*`). Own templates can be created from any existing device in the panel.
+A template is a YAML file in `templates/` (bundled) or in the user's config folder `hass_test_data_creator/templates/` (own). It lists entities with their default signal. The loader validates it with a `voluptuous` schema and reports errors with a code (`TDC-TPL-*`). Own templates can be created from any existing device in the panel. Own templates are read up to 200 files of 256 KiB; a link, an unreadable or an invalid own file (own files are read with `yaml.safe_load`, so `!secret` and `!include` are not understood) is skipped with a `TDC-TPL-002` warning and does not stop the integration (a bundled file that is invalid still does). Signal numbers must be finite, periods are limited to 366 days and `rate_per_hour` to 3600. Discrete shapes (`enum`, `state_machine`) are allowed on sensors only.
 
 ```yaml
 id: plug_metering

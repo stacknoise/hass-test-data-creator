@@ -151,7 +151,7 @@ data:
   trigger: { type: random_window, count: 3, start: "18:00", end: "23:00" }
 ```
 
-Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2.
+Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2. Up to 200 files of at most 256 KiB are read; links, unreadable and invalid files (and files with `!secret` or `!include`) are skipped with a `TDC-TPL-002` warning in the log, the others still load.
 
 ## Development
 

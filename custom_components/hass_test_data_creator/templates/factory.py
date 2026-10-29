@@ -135,6 +135,8 @@ class TemplateFactory:
         if signal is not None and signal[KEY_SHAPE] not in SHAPE_NAMES:
             raise TemplateError(ErrorCode.TPL_UNKNOWN_SHAPE)
         if signal is not None and signal[KEY_SHAPE] in DISCRETE_SHAPES:
+            if platform != KEY_SENSOR:
+                raise TemplateError(ErrorCode.TPL_INVALID, file=f"{data['key']}: signal")
             self._check_discrete(data, signal)
         if platform == KEY_EVENT and not data.get(KEY_EVENT_TYPES):
             raise TemplateError(ErrorCode.TPL_INVALID, file=f"{data['key']}: event_types missing")
