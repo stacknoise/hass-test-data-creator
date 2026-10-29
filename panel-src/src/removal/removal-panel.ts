@@ -103,9 +103,12 @@ export class RemovalPanel extends TdcElement {
           >${topics.slice(0, LISTED_MAX).join(LIST_SEPARATOR)}${topics.length > LISTED_MAX ? ' …' : ''}</small
         >
       </p>
-      <button class="primary" ?disabled=${this.busy} @click=${() => void this.deleteLeftover()}>
-        ${this.tr('deleteLeftover')}
-      </button>`;
+      <div class="row">
+        <button class="primary" ?disabled=${this.busy} @click=${() => void this.deleteLeftover()}>
+          ${this.tr('deleteLeftover')}
+        </button>
+        <button @click=${() => (this.leftover = undefined)}>${this.tr('keep')}</button>
+      </div>`;
   }
 
   /** Render the list of what will be removed. */
@@ -174,13 +177,16 @@ export class RemovalPanel extends TdcElement {
               </ul>`
           : ''
       }
-      <button
-        class="primary"
-        ?disabled=${this.busy || plan.in_use.length > 0}
-        @click=${() => void this.confirm()}
-      >
-        ${this.tr('confirmRemove')}
-      </button>`;
+      <div class="row">
+        <button
+          class="primary"
+          ?disabled=${this.busy || plan.in_use.length > 0}
+          @click=${() => void this.confirm()}
+        >
+          ${this.tr('confirmRemove')}
+        </button>
+        <button @click=${() => (this.plan = undefined)}>${this.tr('keep')}</button>
+      </div>`;
   }
 
   /** Render the element. */
@@ -220,22 +226,20 @@ export class RemovalPanel extends TdcElement {
                 }}
               ></tdc-target-select>`
         }
-        <div>
+        <div class="row wide">
           <button
             ?disabled=${this.target !== KIND_ALL && !this.targetId}
             @click=${() => void this.showPlan()}
           >
             ${this.tr('showPlan')}
           </button>
+          <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
+            ${this.tr('scanTopics')}
+          </button>
         </div>
       </div>
       ${this.plan ? html`<div class="plan">${this.renderPlan(this.plan)}</div>` : ''}
-      <div class="plan">
-        <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
-          ${this.tr('scanTopics')}
-        </button>
-        ${this.leftover ? this.renderLeftover(this.leftover) : ''}
-      </div>
+      ${this.leftover ? html`<div class="plan">${this.renderLeftover(this.leftover)}</div>` : ''}
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;
   }

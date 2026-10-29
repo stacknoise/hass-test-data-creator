@@ -5,7 +5,6 @@ import {
   FIELD_PHASE,
   FIELD_SHAPE,
   LIST_SEPARATOR,
-  PLATFORM_SENSOR,
   SHAPE_ENUM,
   SHAPE_STATE_MACHINE,
 } from '../common/constants';
@@ -125,44 +124,4 @@ export function withShape(signal: SignalDef, shape: string): SignalDef {
   const merged = { ...defaultsFor(shape), ...signal, shape };
   const next = Object.fromEntries(Object.entries(merged).filter(([k]) => keep.has(k)));
   return next as unknown as SignalDef;
-}
-
-/** The sensors of a custom entity list that have a signal: their position and name. */
-export interface EditableSensor {
-  index: number;
-  name: string;
-  signal: SignalDef;
-}
-
-/** Parse the JSON text of custom entities; an invalid text gives an empty list. */
-function parseEntities(json: string): Record<string, unknown>[] {
-  try {
-    const parsed: unknown = JSON.parse(json);
-    return Array.isArray(parsed) ? (parsed as Record<string, unknown>[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** Return the sensors with a signal in the JSON text of custom entities. */
-export function editableSensors(json: string): EditableSensor[] {
-  return parseEntities(json).flatMap((entity, index) =>
-    entity.platform === PLATFORM_SENSOR && entity.signal
-      ? [
-          {
-            index,
-            name: String(entity.name ?? entity.key ?? index),
-            signal: entity.signal as SignalDef,
-          },
-        ]
-      : [],
-  );
-}
-
-/** Return the JSON text with the signal of the entity at `index` replaced; invalid text stays as it is. */
-export function withSignal(json: string, index: number, signal: SignalDef): string {
-  const entities = parseEntities(json);
-  if (!entities[index]) return json;
-  entities[index] = { ...entities[index], signal };
-  return JSON.stringify(entities, null, 2);
 }
