@@ -23,8 +23,10 @@ from .history.manager import HistoryManager
 from .outputs.adapter import OutputAdapterFactory
 from .outputs.mqtt.client import MqttClient
 from .outputs.mqtt.devices import MqttDevices
+from .outputs.mqtt.labels import MqttLabeler
 from .outputs.z2m.devices import Z2mDevices
 from .platforms.factory import EntityFactory
+from .removal.orphans import OrphanScanner
 from .removal.planner import RemovalPlanner
 from .removal.runner import RemovalRunner
 from .replay.library import CsvLibrary
@@ -51,6 +53,8 @@ class TdcData:
     template_registry: TemplateRegistry
     entity_factory: EntityFactory
     outputs: OutputAdapterFactory
+    orphans: OrphanScanner
+    labeler: MqttLabeler
     mqtt: MqttClient
     mqtt_devices: MqttDevices
     z2m_devices: Z2mDevices

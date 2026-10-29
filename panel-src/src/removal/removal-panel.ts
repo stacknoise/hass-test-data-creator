@@ -38,6 +38,7 @@ export class RemovalPanel extends TdcElement {
 
   @state() private plan?: RemovalPlan;
   @state() private busy = false;
+  @state() private leftover?: string[];
   @state() private message = '';
   @state() private error = '';
 
@@ -64,6 +65,47 @@ export class RemovalPanel extends TdcElement {
       this.error = describeError(err);
     }
     this.busy = false;
+  }
+
+  /** Ask the broker for retained topics of generated devices that the store does not know. */
+  private async scanTopics(): Promise<void> {
+    this.message = '';
+    this.error = '';
+    this.busy = true;
+    try {
+      this.leftover = (await this.api.orphanTopics()).topics;
+    } catch (err) {
+      this.leftover = undefined;
+      this.error = describeError(err);
+    }
+    this.busy = false;
+  }
+
+  /** Delete the leftover topics that were shown. */
+  private async deleteLeftover(): Promise<void> {
+    this.busy = true;
+    try {
+      const result = await this.api.clearOrphanTopics(this.leftover ?? []);
+      this.message = this.tr('leftoverDeleted', { count: result.cleared.length });
+      this.leftover = undefined;
+    } catch (err) {
+      this.error = describeError(err);
+    }
+    this.busy = false;
+  }
+
+  /** Render the leftover topics and the button that deletes them. */
+  private renderLeftover(topics: string[]): TemplateResult {
+    if (topics.length === 0) return html`<p>${this.tr('leftoverNone')}</p>`;
+    return html`<p>${this.tr('leftoverTopics', { count: topics.length })}</p>
+      <p>
+        <small
+          >${topics.slice(0, LISTED_MAX).join(LIST_SEPARATOR)}${topics.length > LISTED_MAX ? ' …' : ''}</small
+        >
+      </p>
+      <button class="primary" ?disabled=${this.busy} @click=${() => void this.deleteLeftover()}>
+        ${this.tr('deleteLeftover')}
+      </button>`;
   }
 
   /** Render the list of what will be removed. */
@@ -188,6 +230,12 @@ export class RemovalPanel extends TdcElement {
         </div>
       </div>
       ${this.plan ? html`<div class="plan">${this.renderPlan(this.plan)}</div>` : ''}
+      <div class="plan">
+        <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
+          ${this.tr('scanTopics')}
+        </button>
+        ${this.leftover ? this.renderLeftover(this.leftover) : ''}
+      </div>
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;
   }

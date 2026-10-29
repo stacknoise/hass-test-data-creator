@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr, label_registry as lr
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from ...const import DOMAIN, LABEL_NAME, MANUFACTURER, SIGNAL_DEVICES_ADDED
+from ...const import DOMAIN, MANUFACTURER, SIGNAL_DEVICES_ADDED
+from ...core.labels import marker_label_id
 from ...model.models import DeviceDef
 from ..base import OutputAdapter
 
@@ -22,8 +23,6 @@ class NativeAdapter(OutputAdapter):
 
     async def create(self, device: DeviceDef, area_id: str | None) -> None:
         """Add `device` to the device registry with the entry, manufacturer and test label."""
-        labels = lr.async_get(self._hass)
-        label = labels.async_get_label_by_name(LABEL_NAME) or labels.async_create(LABEL_NAME)
         registry = dr.async_get(self._hass)
         entry = registry.async_get_or_create(
             config_entry_id=self._entry.entry_id,
@@ -32,7 +31,9 @@ class NativeAdapter(OutputAdapter):
             manufacturer=MANUFACTURER,
             model=device.model,
         )
-        registry.async_update_device(entry.id, area_id=area_id, labels={label.label_id})
+        registry.async_update_device(
+            entry.id, area_id=area_id, labels={marker_label_id(self._hass)}
+        )
 
     async def announce(self, devices: list[DeviceDef]) -> None:
         """Tell the platforms to add the entities of `devices`."""

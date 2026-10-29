@@ -14,6 +14,7 @@ from ..core.keys import KEY_TARGET, KEY_TARGET_ID
 from ..data import get_data
 from ..removal.planner import TARGETS
 
+MAX_ORPHAN_TOPICS = 5000
 REMOVAL_FIELDS = {
     vol.Required(KEY_TARGET): vol.In(TARGETS),
     vol.Optional(KEY_TARGET_ID): str,
@@ -27,6 +28,25 @@ async def ws_removal_plan(
     """Return what a removal of the target would delete."""
     plan = get_data(hass).removal_planner.plan(msg[KEY_TARGET], msg.get(KEY_TARGET_ID))
     return plan.to_dict()
+
+
+@tdc_command(f"{DOMAIN}/removal/orphan_topics")
+async def ws_removal_orphan_topics(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Return the retained topics of generated devices that the store does not know."""
+    return {"topics": await get_data(hass).orphans.async_scan()}
+
+
+@tdc_command(
+    f"{DOMAIN}/removal/orphan_topics_clear",
+    {vol.Required("topics"): vol.All([str], vol.Length(max=MAX_ORPHAN_TOPICS))},
+)
+async def ws_removal_orphan_topics_clear(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Delete those of the given topics that a new scan reports as left behind."""
+    return {"cleared": await get_data(hass).orphans.async_clear(msg["topics"])}
 
 
 @tdc_command(f"{DOMAIN}/removal/run", REMOVAL_FIELDS)

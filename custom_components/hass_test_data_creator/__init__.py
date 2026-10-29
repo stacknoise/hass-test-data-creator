@@ -27,6 +27,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     data.tick.start()
     data.schedules.async_start()
+    data.labeler.start()
     for output, runtime in data.outputs.runtimes().items():
         stored = [item for item in data.store.devices() if item.output == output]
         if stored:
@@ -52,6 +53,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unloaded:
         data = hass.data.pop(DOMAIN)
         data.tick.stop()
+        data.labeler.stop()
         data.schedules.async_stop()
         data.scenarios.async_stop()
         for runtime in data.outputs.runtimes().values():
