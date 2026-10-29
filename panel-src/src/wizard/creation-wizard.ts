@@ -46,6 +46,7 @@ export class CreationWizard extends TdcElement {
   @state() private seed = '';
   @state() private output = 'native';
   @state() private custom: EntityDef[] = SAMPLE_ENTITIES;
+  @state() private pendingBase = '';
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -65,6 +66,51 @@ export class CreationWizard extends TdcElement {
   private entities(): EntityDef[] {
     if (this.template === CUSTOM) return this.custom;
     return this.templates.find((t) => t.id === this.template)?.entities ?? [];
+  }
+
+  /** Take over the entities of the template `pendingBase` and drop the custom ones. */
+  private applyBase(): void {
+    const base = this.templates.find((t) => t.id === this.pendingBase);
+    if (base) this.custom = structuredClone(base.entities);
+    this.pendingBase = '';
+  }
+
+  /** Render the choice of a template as the start of the custom device, with the warning. */
+  private renderBase(): TemplateResult {
+    const lang = this.hass?.language;
+    const base = this.templates.find((t) => t.id === this.pendingBase);
+    return html`<div class="row form">
+        <label style="flex: 1 1 220px"
+          >${this.tr('baseTemplate')}
+          <select
+            .value=${this.pendingBase}
+            @change=${(e: Event) => (this.pendingBase = (e.target as HTMLSelectElement).value)}
+          >
+            <option value="">${this.tr('baseNone')}</option>
+            ${sortedByLabel(lang, this.templates, (t) => templateLabel(lang, t.id, t.name)).map(
+              (t) =>
+                html`<option value=${t.id} ?selected=${t.id === this.pendingBase}>
+                  ${templateLabel(lang, t.id, t.name)}
+                </option>`,
+            )}
+          </select>
+        </label>
+      </div>
+      ${
+        base
+          ? html`<p class="warning">
+              ${this.tr('baseReplace', {
+                old: this.custom.length,
+                count: base.entities.length,
+                name: templateLabel(lang, base.id, base.name),
+              })}
+              <button class="primary" @click=${() => this.applyBase()}>
+                ${this.tr('baseApply')}
+              </button>
+              <button @click=${() => (this.pendingBase = '')}>${this.tr('detCancel')}</button>
+            </p>`
+          : ''
+      }`;
   }
 
   /** Create the devices with the inputs of the form. */
@@ -200,13 +246,13 @@ export class CreationWizard extends TdcElement {
       </p>
       ${
         this.template === CUSTOM
-          ? html`<tdc-entity-editor
-              .hass=${this.hass}
-              .entities=${this.custom}
-              .shapes=${this.info?.shapes ?? []}
-              .platforms=${this.info?.platforms ?? []}
-              @tdc-entities-change=${(e: CustomEvent<EntityDef[]>) => (this.custom = e.detail)}
-            ></tdc-entity-editor>`
+          ? html`${this.renderBase()}<tdc-entity-editor
+                .hass=${this.hass}
+                .entities=${this.custom}
+                .shapes=${this.info?.shapes ?? []}
+                .platforms=${this.info?.platforms ?? []}
+                @tdc-entities-change=${(e: CustomEvent<EntityDef[]>) => (this.custom = e.detail)}
+              ></tdc-entity-editor>`
           : ''
       }
       ${

@@ -6,7 +6,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 
 - Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor, dimmable light, blind, radiator thermostat, washing machine) or from your own entity definitions.
 - Assign the devices to areas on creation.
-- For a custom device the create dialog has an entity editor instead of a JSON field: "Add entity" opens a form (name, key, platform, unit, curve), and each entity in the scrollable list can be edited or deleted.
+- For a custom device the create dialog has an entity editor instead of a JSON field: "Add entity" opens a form (name, key, platform, unit, curve), and each entity in the scrollable list can be edited or deleted. "Start from a template" copies the entities of a template into the editor after a warning that it replaces the current ones.
 - The create dialog lists "Custom device" last in the template dropdown (highlighted) and shows all entities of the chosen template (sensors with value range, unit and a small 24-hour curve) in a scrollable list.
 - Value curves: constant, sine, saw, square, triangle, noise, random walk, counter, and the daily profiles `household_load` and `pv_day`, a staircase (`steps`), a battery `discharge`, and the state shapes `enum` (states drawn by weight) and `state_machine` (a cycle of states with durations, as in the `washer` template). Every curve is a function of time and seed, so the same seed gives the same values.
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).

@@ -157,6 +157,11 @@ const en = {
   seed: 'Seed',
   seedHint: 'Empty uses the seed of the integration',
   customEntities: 'Entities',
+  baseTemplate: 'Start from a template',
+  baseNone: 'Choose a template …',
+  baseReplace:
+    'This replaces the {old} entities of the custom device with the {count} entities of "{name}". Your changes are lost.',
+  baseApply: 'Replace entities',
   entAdd: 'Add entity',
   entEdit: 'Edit',
   entDelete: 'Delete',
@@ -360,6 +365,11 @@ const de: Record<TextKey, string> = {
   seed: 'Seed',
   seedHint: 'Leer nutzt den Seed der Integration',
   customEntities: 'Entitäten',
+  baseTemplate: 'Von einer Vorlage ausgehen',
+  baseNone: 'Vorlage wählen …',
+  baseReplace:
+    'Das ersetzt die {old} Entitäten des eigenen Geräts durch die {count} Entitäten von „{name}“. Deine Änderungen gehen verloren.',
+  baseApply: 'Entitäten ersetzen',
   entAdd: 'Entität hinzufügen',
   entEdit: 'Bearbeiten',
   entDelete: 'Löschen',
