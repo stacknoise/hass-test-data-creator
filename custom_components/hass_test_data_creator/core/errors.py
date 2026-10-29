@@ -102,6 +102,9 @@ class ErrorCode(StrEnum):
     OUT_GROUP_NOT_FOUND = "TDC-OUT-006"
     """The group does not exist."""
 
+    OUT_INVALID_NAME = "TDC-OUT-007"
+    """A Zigbee2MQTT device name must be one topic level: no slash, wildcard or control character, not bridge."""
+
     REM_FAILED = "TDC-REM-001"
     """A step of a removal failed; the removal can be run again."""
 

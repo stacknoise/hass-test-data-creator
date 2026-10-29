@@ -6,6 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Protocol
 
+from ..const import MAX_LIGHT_BRIGHTNESS
 from ..faults.factory import Fault
 from ..model.models import EntityDef
 from .signal_factory import Signal
@@ -200,7 +201,7 @@ class LightBehaviour(OnOffBehaviour):
     def turn_on(self, brightness: int | None = None) -> None:
         """Switch on, at `brightness` or the last one."""
         if brightness is not None:
-            self.brightness = brightness
+            self.brightness = max(1, min(MAX_LIGHT_BRIGHTNESS, brightness))
         super().turn_on()
 
 

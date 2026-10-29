@@ -40,8 +40,8 @@
       }
     },
     "error": {
-      "invalid_topic": "Nutze ein Topic ohne Platzhalter (+, #) und ohne Schrägstrich am Anfang oder Ende",
-      "same_topic": "Die beiden Basis-Topics müssen sich unterscheiden",
+      "invalid_topic": "Nutze ein kurzes Topic ohne Platzhalter (+, #), ohne $ oder homeassistant am Anfang und ohne Schrägstrich am Anfang oder Ende",
+      "same_topic": "Die beiden Basis-Topics müssen sich unterscheiden und dürfen nicht ineinander liegen",
       "unconfirmed_default_topic": "Bestätige, dass das Basis-Topic zigbee2mqtt benutzt werden darf"
     }
   },
@@ -117,6 +117,9 @@
     },
     "out_group_invalid": {
       "message": "Die Gruppe braucht Zigbee2MQTT-Geräte als Mitglieder und einen freien Namen"
+    },
+    "out_invalid_name": {
+      "message": "Ein Zigbee2MQTT-Gerätename braucht eine Topic-Ebene: kein Schrägstrich, + oder #, nicht bridge"
     },
     "out_group_not_found": {
       "message": "Die Gruppe wurde nicht gefunden"
