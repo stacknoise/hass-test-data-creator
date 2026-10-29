@@ -5,9 +5,8 @@ import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
-import type { CreateRequest, EntityDef, Info, SignalDef, TemplateInfo } from '../common/types';
-import { editableSensors, withSignal } from '../signals/editor-helpers';
-import '../signals/curve-editor';
+import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
+import './entity-editor';
 import './sensor-list';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
@@ -24,19 +23,15 @@ const MODE_LABELS: Record<(typeof MODES)[number], TextKey> = {
   even: 'modeEven',
   random: 'modeRandom',
 };
-const SAMPLE_ENTITIES = JSON.stringify(
-  [
-    {
-      key: 'level',
-      platform: PLATFORM_SENSOR,
-      name: 'Level',
-      unit: '%',
-      signal: { shape: 'sine', min: 0, max: DEFAULT_MAX },
-    },
-  ],
-  null,
-  2,
-);
+const SAMPLE_ENTITIES: EntityDef[] = [
+  {
+    key: 'level',
+    platform: PLATFORM_SENSOR,
+    name: 'Level',
+    unit: '%',
+    signal: { shape: 'sine', min: 0, max: DEFAULT_MAX },
+  },
+];
 
 /** The wizard that creates many devices from a template or from custom entities. */
 @customElement('tdc-creation-wizard')
@@ -50,8 +45,7 @@ export class CreationWizard extends TdcElement {
   @state() private mode: 'even' | 'random' = 'even';
   @state() private seed = '';
   @state() private output = 'native';
-  @state() private custom = SAMPLE_ENTITIES;
-  @state() private editIndex = -1;
+  @state() private custom: EntityDef[] = SAMPLE_ENTITIES;
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -67,47 +61,10 @@ export class CreationWizard extends TdcElement {
     }
   }
 
-  /** Return the entity definitions of the selected template, or the parsed custom ones. */
+  /** Return the entity definitions of the selected template or of the custom device. */
   private entities(): EntityDef[] {
-    if (this.template === CUSTOM) {
-      try {
-        return JSON.parse(this.custom) as EntityDef[];
-      } catch {
-        return [];
-      }
-    }
+    if (this.template === CUSTOM) return this.custom;
     return this.templates.find((t) => t.id === this.template)?.entities ?? [];
-  }
-
-  /** Write a signal changed in the curve editor back into the JSON of the custom entities. */
-  private changeSignal(index: number, event: CustomEvent<SignalDef>): void {
-    this.custom = withSignal(this.custom, index, event.detail);
-  }
-
-  /** Render the curve editor for one sensor of the custom entities. */
-  private renderEditor(): TemplateResult {
-    const sensors = editableSensors(this.custom);
-    const current = sensors.find((s) => s.index === this.editIndex) ?? sensors[0];
-    if (!current) return html``;
-    return html`<h3>${this.tr('edSensor')}</h3>
-      <p>
-        <select
-          @change=${(e: Event) => (this.editIndex = Number((e.target as HTMLSelectElement).value))}
-        >
-          ${sortedByLabel(this.hass?.language, sensors, (s) => s.name).map(
-            (s) =>
-              html`<option value=${s.index} ?selected=${s.index === current.index}>
-                ${s.name}
-              </option>`,
-          )}
-        </select>
-      </p>
-      <tdc-curve-editor
-        .hass=${this.hass}
-        .signal=${current.signal}
-        .shapes=${this.info?.shapes ?? []}
-        @tdc-signal-change=${(e: CustomEvent<SignalDef>) => this.changeSignal(current.index, e)}
-      ></tdc-curve-editor>`;
   }
 
   /** Create the devices with the inputs of the form. */
@@ -124,7 +81,7 @@ export class CreationWizard extends TdcElement {
       output: this.output,
       ...(this.seed ? { seed: this.seed } : {}),
       ...(this.template === CUSTOM
-        ? { entities: this.entities() as unknown as Record<string, unknown>[] }
+        ? { entities: this.custom as unknown as Record<string, unknown>[] }
         : {}),
     };
     try {
@@ -243,17 +200,15 @@ export class CreationWizard extends TdcElement {
       </p>
       ${
         this.template === CUSTOM
-          ? html`<label
-              >${this.tr('customEntities')}
-              <textarea
-                rows="8"
-                .value=${this.custom}
-                @input=${(e: Event) => (this.custom = (e.target as HTMLTextAreaElement).value)}
-              ></textarea>
-            </label>`
+          ? html`<tdc-entity-editor
+              .hass=${this.hass}
+              .entities=${this.custom}
+              .shapes=${this.info?.shapes ?? []}
+              .platforms=${this.info?.platforms ?? []}
+              @tdc-entities-change=${(e: CustomEvent<EntityDef[]>) => (this.custom = e.detail)}
+            ></tdc-entity-editor>`
           : ''
       }
-      ${this.template === CUSTOM ? this.renderEditor() : ''}
       ${
         this.template !== CUSTOM
           ? html`<p>
