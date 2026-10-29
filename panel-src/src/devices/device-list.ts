@@ -5,7 +5,7 @@ import { describeError } from '../common/api';
 import { TdcElement, containerHost, toggled } from '../common/base';
 import '../common/menu-button';
 import type { MenuItem } from '../common/menu-button';
-import type { DeviceInfo, EntityState, Info, TemplateInfo } from '../common/types';
+import type { DeviceInfo, EntityState, Info } from '../common/types';
 import {
   OUTPUT_LABELS,
   actionLabel,
@@ -17,7 +17,7 @@ import {
 } from '../common/labels';
 import '../common/dialog';
 import '../wizard/creation-wizard';
-import '../wizard/template-wizard';
+import '../wizard/template-manager';
 import './device-detail';
 import { knownAreas, lastPageOffset, usageEntries } from './helpers';
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
@@ -77,7 +77,6 @@ export class DeviceList extends TdcElement {
   @state() private error = '';
   @state() private creating = false;
   @state() private templating = false;
-  @state() private editedTemplate?: TemplateInfo;
   @state() private info?: Info;
   @state() private expanded = new Set<string>();
 
@@ -240,22 +239,15 @@ export class DeviceList extends TdcElement {
       }`;
   }
 
-  /** Open the popup of the template form, for a new template or to change `template`. */
-  private openTemplate(template?: TemplateInfo): void {
-    this.creating = false;
-    this.editedTemplate = template;
-    this.templating = true;
-  }
-
-  /** Render the buttons that open the popups with the forms for new devices and new templates. */
+  /** Render the buttons that open the popups to create devices and to manage the own templates. */
   private renderNew(): TemplateResult {
     return html`
       <p>
         <button class="primary" @click=${() => (this.creating = true)}>
           + ${this.tr('create')}
         </button>
-        <button class="primary" @click=${() => this.openTemplate()}>
-          + ${this.tr('tplCreate')}
+        <button class="primary" @click=${() => (this.templating = true)}>
+          ${this.tr('tplManage')}
         </button>
       </p>
       <tdc-dialog
@@ -268,7 +260,6 @@ export class DeviceList extends TdcElement {
           this.creating
             ? html`<tdc-creation-wizard
                 .hass=${this.hass}
-                @tdc-edit-template=${(e: CustomEvent<TemplateInfo>) => this.openTemplate(e.detail)}
                 @tdc-created=${() => {
                   this.creating = false;
                   void this.refresh();
@@ -279,17 +270,13 @@ export class DeviceList extends TdcElement {
       </tdc-dialog>
       <tdc-dialog
         .hass=${this.hass}
-        heading=${this.editedTemplate ? this.tr('tplEdit') : this.tr('tplCreate')}
+        heading=${this.tr('tplManage')}
         ?open=${this.templating}
         @tdc-close=${() => (this.templating = false)}
       >
         ${
           this.templating
-            ? html`<tdc-template-wizard
-                .hass=${this.hass}
-                .editing=${this.editedTemplate}
-                @tdc-template-saved=${() => (this.templating = false)}
-              ></tdc-template-wizard>`
+            ? html`<tdc-template-manager .hass=${this.hass}></tdc-template-manager>`
             : nothing
         }
       </tdc-dialog>

@@ -35,7 +35,6 @@ export class CreationWizard extends TdcElement {
   @state() private seed = '';
   @state() private output = 'native';
   @state() private custom: EntityDef[] = [];
-  @state() private confirmDelete = false;
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -49,69 +48,6 @@ export class CreationWizard extends TdcElement {
     } catch (err) {
       this.error = describeError(err);
     }
-  }
-
-  /** Reload the templates and select `id` when it exists. */
-  private async reloadTemplates(id: string): Promise<void> {
-    this.templates = await this.api.templates();
-    this.template = this.templates.some((t) => t.id === id)
-      ? id
-      : (this.templates[0]?.id ?? CUSTOM);
-  }
-
-  /** Return the selected template when it is one of the user's own. */
-  private ownTemplate(): TemplateInfo | undefined {
-    const template = this.templates.find((t) => t.id === this.template);
-    return template && !template.bundled ? template : undefined;
-  }
-
-  /** Ask the page to open the form that changes the own template `own`. */
-  private editTemplate(own: TemplateInfo): void {
-    this.dispatchEvent(new CustomEvent('tdc-edit-template', { detail: own }));
-  }
-
-  /** Run `action`, show `done` as the message and the error otherwise. */
-  private async attempt(action: () => Promise<string>): Promise<void> {
-    this.busy = true;
-    this.message = '';
-    this.error = '';
-    try {
-      this.message = await action();
-    } catch (err) {
-      this.error = describeError(err);
-    }
-    this.busy = false;
-  }
-
-  /** Delete the selected own template. */
-  private deleteTemplate(): Promise<void> {
-    const own = this.ownTemplate();
-    if (!own) return Promise.resolve();
-    return this.attempt(async () => {
-      await this.api.deleteTemplate(own.id);
-      this.confirmDelete = false;
-      await this.reloadTemplates('');
-      return this.tr('tplDeleted', { name: own.name });
-    });
-  }
-
-  /** Render the buttons to change or delete the selected own template, with the question before a delete. */
-  private renderOwnActions(): TemplateResult {
-    const own = this.ownTemplate();
-    if (!own) return html``;
-    if (this.confirmDelete) {
-      return html`<p class="warning row">
-        ${this.tr('tplDeleteAsk', { name: own.name })}
-        <button ?disabled=${this.busy} @click=${() => void this.deleteTemplate()}>
-          ${this.tr('tplDeleteConfirm')}
-        </button>
-        <button @click=${() => (this.confirmDelete = false)}>${this.tr('detCancel')}</button>
-      </p>`;
-    }
-    return html`<p class="row">
-      <button @click=${() => this.editTemplate(own)}>${this.tr('tplEdit')}</button>
-      <button @click=${() => (this.confirmDelete = true)}>${this.tr('tplDelete')}</button>
-    </p>`;
   }
 
   /** Return the entity definitions of the selected template or of the custom device. */
@@ -195,7 +131,6 @@ export class CreationWizard extends TdcElement {
   /** Select a template; leaving the custom device ends the editing of an own template. */
   private choose(id: string): void {
     this.template = id;
-    this.confirmDelete = false;
   }
 
   /** Render the element. */
@@ -292,7 +227,6 @@ export class CreationWizard extends TdcElement {
             </div>`
           : ''
       }
-      ${this.template === CUSTOM ? '' : this.renderOwnActions()}
       ${
         this.template !== CUSTOM
           ? html`<p>

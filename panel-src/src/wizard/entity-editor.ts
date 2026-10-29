@@ -74,12 +74,6 @@ export class EntityEditor extends TdcElement {
         justify-content: flex-end;
         align-items: center;
       }
-      button.small {
-        padding: 2px 8px;
-      }
-      button.danger {
-        color: var(--error-color);
-      }
     `,
   ];
 
