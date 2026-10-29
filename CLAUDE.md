@@ -17,7 +17,7 @@ docs/            concept.md, development.md, code-index.md (GENERATED), error-co
 scripts/code_index.py
 custom_components/hass_test_data_creator/
   __init__.py config_flow.py const.py manifest.json services.yaml translations/{en,de}.json
-  core/ model/ store/ templates/ engine/ scheduler/ faults/ outputs/ platforms/ areas/ removal/ audit/ api/
+  core/ model/ store/ templates/ engine/ scheduler/ scenarios/ faults/ outputs/ platforms/ devices/ groups/ history/ replay/ areas/ removal/ audit/ api/
   frontend/      BUILT panel (never edit by hand)
 panel-src/       TypeScript, Lit, Vite, Vitest
 tests/  dev/  .github/workflows/

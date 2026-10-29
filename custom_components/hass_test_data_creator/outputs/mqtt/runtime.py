@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-import logging
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
@@ -21,8 +20,6 @@ from ...engine.behaviour_factory import BehaviourFactory
 from ...engine.behaviours import Behaviour, Live
 from ...model.models import DeviceDef, EntityDef
 from .client import MqttClient
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class RuntimeEntry:
@@ -234,6 +231,5 @@ class BehaviourRuntime(ABC):
         """Publish; a failure while the system runs is logged and does not stop the rest."""
         try:
             await self._client.async_publish(topic, payload, retain=retain, device_id=device_id)
-        except HomeAssistantError as error:
-            _LOGGER.debug("MQTT publish failed on %s: %s", topic, error)
+        except HomeAssistantError:
             self._audit.record(self._audit_factory.mqtt_failed(topic, "publish failed"))

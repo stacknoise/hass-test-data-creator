@@ -2,7 +2,9 @@ import type { DeviceInfo } from '../common/types';
 import { isDiscrete } from '../signals/editor-helpers';
 import { PLATFORM_SENSOR } from '../common/constants';
 
+/** The fewest days of history that can be imported. */
 export const MIN_DAYS = 1;
+/** The most days of history that can be imported; it matches the backend limit. */
 export const MAX_DAYS = 365;
 
 /** Returns `days` as a whole number inside the allowed range; anything else becomes the minimum. */

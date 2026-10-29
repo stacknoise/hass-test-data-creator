@@ -57,7 +57,7 @@ Besides these, CI runs `hassfest`, the HACS validation (`hacs/action`), PMD CPD 
 custom_components/hass_test_data_creator/
   __init__.py  config_flow.py  const.py  manifest.json  services.yaml
   translations/   en.json, de.json
-  core/ model/ store/ templates/ engine/ scheduler/ faults/ outputs/ platforms/ areas/ removal/ audit/ api/
+  core/ model/ store/ templates/ engine/ scheduler/ scenarios/ faults/ outputs/ platforms/ devices/ groups/ history/ replay/ areas/ removal/ audit/ api/
   frontend/       BUILT panel, never edited by hand
 panel-src/        TypeScript, Lit, Vite, Vitest
 scripts/code_index.py
@@ -162,7 +162,7 @@ Every error is a `TdcError` with an `ErrorCode`.
 ## 7. No duplicate code and code style (concept 13.6)
 
 - Code needed in a second place is extracted into its own function right away, in the topic module or in `core/`.
-- CI runs PMD CPD over `custom_components`, `scripts` and `panel-src/src` and fails from **100 duplicated tokens**. This includes tests: shared fakes belong in `conftest.py` or one shared test module.
+- CI runs PMD CPD over `custom_components`, `scripts` and `panel-src/src` and fails from **100 duplicated tokens**. Python tests are outside the scope; keep shared fakes in `conftest.py` or one shared test module anyway.
 - `ruff` (`pyproject.toml`): line length 100, Google docstrings, McCabe complexity at most 10, isort with `force-sort-within-sections`, bandit (`S`), async pitfalls (`ASYNC`), blind-except (`BLE`, only allowed in `core/command.py`). Tests are exempt from docstring and assert rules.
 - TypeScript: `strict`, no `any`, no unused code, Prettier formatting, line length 100, no hard-coded colours (use Home Assistant CSS variables).
 - Async code only. No blocking I/O in the event loop: file access (templates, CSV) runs in the executor.

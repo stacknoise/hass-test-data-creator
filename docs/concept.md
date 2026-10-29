@@ -260,11 +260,11 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.1 Services
 
-`hass_test_data_creator.create_devices`, `fire_event`, `add_schedule`, `remove_schedule`, `set_schedule_enabled`, `add_scenario`, `remove_scenario`, `run_scenario`, `add_group`, `remove_group`, `inject_fault`, `import_history` (v0.4), `remove` (target: device, template, run or all) and `remove_all`. Services are described in `services.yaml` and have schemas.
+`hass_test_data_creator.create_devices`, `fire_event`, `add_schedule`, `remove_schedule`, `set_schedule_enabled`, `add_scenario`, `remove_scenario`, `run_scenario`, `add_group`, `remove_group`, `import_history` (v0.4), `remove` (target: device or run) and `remove_all`. Services are described in `services.yaml` and have schemas.
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Groups: `devices/*` (list, create, update, remove), `templates/*`, `schedules/*` (list, add, remove, enable, preview), `scenarios/*` (list, add, remove, run), `groups/*` (list, add, remove), `signals/preview`, `removal/plan`, `removal/run`, `settings/*`, `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, create, update, fire, signal), `templates/list`, `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 

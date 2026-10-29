@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import logging
 from typing import Any
 
+from ..core.errors import ErrorCode
 from ..core.keys import (
     KEY_ACTION,
     KEY_AREA,
@@ -109,6 +110,6 @@ class AuditEntryFactory:
         """Return the warning for a tick that took too long (TDC-GEN-005)."""
         return AuditEntry(
             logging.WARNING,
-            "TDC-GEN-005 tick took too long",
+            f"{ErrorCode.GEN_TICK_SLOW.value} tick took too long",
             {"seconds": round(duration, SECONDS_DECIMALS), KEY_INTERVAL: interval},
         )
