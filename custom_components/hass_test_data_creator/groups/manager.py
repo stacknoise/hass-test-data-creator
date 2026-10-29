@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from homeassistant.util import dt as dt_util
 
-from ..const import OUTPUT_Z2M
-from ..core.errors import ErrorCode, OutputError
+from ..const import MAX_GROUPS, OUTPUT_Z2M
+from ..core.errors import ErrorCode, GenerationError, OutputError
 from ..core.ids import new_id
 from ..model.models import DeviceDef, GroupDef
 from ..outputs.mqtt.client import MqttClient
@@ -42,6 +42,8 @@ class GroupManager:
 
     async def async_add(self, name: str, members: list[str]) -> GroupDef:
         """Add a group of Zigbee2MQTT devices given by id or name and publish it."""
+        if self._store.group_count() >= MAX_GROUPS:
+            raise GenerationError(ErrorCode.GEN_GROUP_LIMIT)
         await self._z2m.async_check()
         devices = [self._member(reference) for reference in members]
         if not devices or not self._name_is_free(name):

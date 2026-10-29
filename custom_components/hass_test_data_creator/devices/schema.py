@@ -7,20 +7,34 @@ from typing import Any
 import voluptuous as vol
 
 from ..areas.distribution import MODE_EVEN, MODES
-from ..const import CONF_SEED, OUTPUT_NATIVE, OUTPUTS
+from ..const import (
+    CONF_SEED,
+    MAX_AREAS_PER_JOB,
+    MAX_ENTITIES_BYTES,
+    MAX_ENTITIES_PER_DEVICE,
+    OUTPUT_NATIVE,
+    OUTPUTS,
+)
 from ..core.keys import KEY_AREAS, KEY_COUNT, KEY_ENTITIES, KEY_LABEL, KEY_OUTPUT, KEY_TEMPLATE
+from ..core.limits import SHORT_TEXT, json_size
 from .manager import CreationJob
 
+_entities_size = json_size(MAX_ENTITIES_BYTES)
+
 CREATE_FIELDS: dict[Any, Any] = {
-    vol.Required(KEY_TEMPLATE): str,
+    vol.Required(KEY_TEMPLATE): SHORT_TEXT,
     vol.Required(KEY_COUNT): vol.All(int, vol.Range(min=1)),
     vol.Optional("name_pattern", default="{template} {nn}"): vol.All(str, vol.Length(max=64)),
-    vol.Optional(KEY_AREAS, default=list): [vol.All(str, vol.Length(min=1, max=64))],
+    vol.Optional(KEY_AREAS, default=list): vol.All(
+        [vol.All(str, vol.Length(min=1, max=64))], vol.Length(max=MAX_AREAS_PER_JOB)
+    ),
     vol.Optional("area_mode", default=MODE_EVEN): vol.In(MODES),
     vol.Optional(CONF_SEED): vol.All(str, vol.Length(min=1, max=64)),
     vol.Optional(KEY_LABEL, default=""): vol.All(str, vol.Length(max=64)),
     vol.Optional(KEY_OUTPUT, default=OUTPUT_NATIVE): vol.In(OUTPUTS),
-    vol.Optional(KEY_ENTITIES): [dict],
+    vol.Optional(KEY_ENTITIES): vol.All(
+        [dict], vol.Length(max=MAX_ENTITIES_PER_DEVICE), _entities_size
+    ),
 }
 
 

@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.helpers.service import async_register_admin_service
 import voluptuous as vol
 
-from .const import CONF_SEED, DEFAULT_SEED, DOMAIN
+from .const import CONF_SEED, DEFAULT_SEED, DOMAIN, MAX_PARAMS_BYTES
 from .core.keys import (
     KEY_ACTION,
     KEY_DAYS,
@@ -27,6 +27,7 @@ from .core.keys import (
     KEY_TARGET,
     KEY_TARGET_ID,
 )
+from .core.limits import SHORT_TEXT, json_object
 from .core.runtime import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
 from .groups.schema import GROUP_FIELDS
@@ -157,10 +158,10 @@ def async_register_services(hass: HomeAssistant) -> None:
             _fire,
             vol.Schema(
                 {
-                    vol.Required(KEY_DEVICE): str,
-                    vol.Required(KEY_ENTITY): str,
-                    vol.Required(KEY_ACTION): str,
-                    vol.Optional(KEY_PARAMS, default=dict): dict,
+                    vol.Required(KEY_DEVICE): SHORT_TEXT,
+                    vol.Required(KEY_ENTITY): SHORT_TEXT,
+                    vol.Required(KEY_ACTION): SHORT_TEXT,
+                    vol.Optional(KEY_PARAMS, default=dict): json_object(MAX_PARAMS_BYTES),
                 }
             ),
             SupportsResponse.NONE,

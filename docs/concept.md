@@ -314,7 +314,7 @@ The config flow requires the confirmation "this is a test instance". The panel s
 
 ## 12. Limits and performance
 
-Constants in `const.py`: `MAX_DEVICES = 2000`, `MAX_ENTITIES_PER_DEVICE = 40`, `MIN_TICK_SECONDS = 1`, `MAX_BATCH = 500` per creation job. A creation job above 500 entities runs in chunks and yields to the event loop between them. The wizard shows the estimated state rate (entities / interval) before the job starts and warns above 50 states per second.
+Constants in `const.py`: `MAX_DEVICES = 2000`, `MAX_ENTITIES_PER_DEVICE = 40`, `MIN_TICK_SECONDS = 1`, `MAX_BATCH = 500` per creation job, `MAX_SCHEDULES = 200`, `MAX_SCENARIOS = 100`, `MAX_GROUPS = 100` (`TDC-GEN-007` to `009`). Free-form request fields are bounded in `core/limits.py`: `MAX_SHORT_TEXT = 128`, `MAX_PARAMS_BYTES = 2048`, `MAX_TRIGGER_BYTES = 4096`, `MAX_ENTITIES_BYTES = 65536`, `MAX_AREAS_PER_JOB = 100`. The scheduler keeps its plan of the day in a heap and replans only the schedule that changed. A creation job above 500 entities runs in chunks and yields to the event loop between them. The wizard shows the estimated state rate (entities / interval) before the job starts and warns above 50 states per second.
 
 ## 13. Development rules
 

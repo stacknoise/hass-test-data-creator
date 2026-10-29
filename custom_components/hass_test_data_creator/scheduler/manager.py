@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+import heapq
 from typing import Any
 
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
@@ -11,8 +12,8 @@ from homeassistant.util import dt as dt_util
 
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
-from ..const import CONF_SEED
-from ..core.errors import ErrorCode, ScheduleError, TdcError
+from ..const import CONF_SEED, MAX_SCHEDULES
+from ..core.errors import ErrorCode, GenerationError, ScheduleError, TdcError
 from ..core.ids import new_id
 from ..core.keys import (
     KEY_ACTION,
@@ -59,7 +60,7 @@ class ScheduleManager:
         self._scenarios = scenarios
         self._audit = audit
         self._audit_factory = audit_factory
-        self._queue: list[PlannedRun] = []
+        self._queue: list[PlannedRun] = []  # a heap: the next run is `_queue[0]`
         self._cancel_timer: CALLBACK_TYPE | None = None
         self._cancel_midnight: CALLBACK_TYPE | None = None
 
@@ -90,6 +91,8 @@ class ScheduleManager:
 
     async def async_add(self, data: dict[str, Any], default_seed: str) -> ScheduleDef:
         """Validate and store a schedule: a scenario, or a target with entity and action."""
+        if self._store.schedule_count() >= MAX_SCHEDULES:
+            raise GenerationError(ErrorCode.GEN_SCHEDULE_LIMIT)
         self._triggers.create(data[KEY_TRIGGER])
         self._check_work(data)
         schedule = ScheduleDef(
@@ -107,7 +110,7 @@ class ScheduleManager:
         )
         self._store.put_schedule(schedule)
         await self._store.async_save()
-        self._replan()
+        self._replan([schedule.id])
         return schedule
 
     async def async_update(self, schedule_id: str, data: dict[str, Any]) -> ScheduleDef:
@@ -129,7 +132,7 @@ class ScheduleManager:
         schedule.enabled = data.get(KEY_ENABLED, schedule.enabled)
         self._store.put_schedule(schedule)
         await self._store.async_save()
-        self._replan()
+        self._replan([schedule.id])
         self._audit.record(self._audit_factory.schedule_changed(schedule.name))
         return schedule
 
@@ -138,7 +141,7 @@ class ScheduleManager:
         self.get(schedule_id)
         self._store.remove_schedule(schedule_id)
         await self._store.async_save()
-        self._replan()
+        self._replan([schedule_id])
 
     async def async_set_enabled(self, schedule_id: str, enabled: bool) -> ScheduleDef:
         """Switch a schedule on or off."""
@@ -146,7 +149,7 @@ class ScheduleManager:
         schedule.enabled = enabled
         self._store.put_schedule(schedule)
         await self._store.async_save()
-        self._replan()
+        self._replan([schedule_id])
         return schedule
 
     def preview(self, hours: int) -> list[dict[str, str]]:
@@ -179,7 +182,7 @@ class ScheduleManager:
         """Delete schedules without saving; the removal saves the store afterwards."""
         for schedule_id in schedule_ids:
             self._store.remove_schedule(schedule_id)
-        self._replan()
+        self._replan(schedule_ids)
 
     def _cancel(self) -> None:
         """Cancel the timer of the next run."""
@@ -192,12 +195,26 @@ class ScheduleManager:
         """Plan the new day."""
         self._replan()
 
-    def _replan(self) -> None:
-        """Plan the rest of today and arm the timer for the first run."""
+    def _replan(self, schedule_ids: list[str] | None = None) -> None:
+        """Plan the rest of today for all schedules, or only for `schedule_ids`, and arm the timer."""
         self._cancel()
         now = dt_util.now()
         end = dt_util.start_of_local_day(now.date() + timedelta(days=1))
-        self._queue = self._planner.plan(self._store.schedules(), now, end)
+        if schedule_ids is None:
+            self._queue = []
+            schedules = self._store.schedules()
+        else:
+            changed = set(schedule_ids)
+            self._queue = [run for run in self._queue if run.schedule_id not in changed]
+            heapq.heapify(self._queue)
+            found = (self._store.schedule(item) for item in schedule_ids)
+            schedules = [item for item in found if item is not None]
+        for run in self._planner.plan(schedules, now, end):
+            heapq.heappush(self._queue, run)
+        self._arm()
+
+    def _arm(self) -> None:
+        """Arm the timer for the first planned run, if there is one."""
         if self._queue:
             self._cancel_timer = async_track_point_in_utc_time(
                 self._hass, self._fire, dt_util.as_utc(self._queue[0].when)
@@ -206,16 +223,14 @@ class ScheduleManager:
     async def _fire(self, now: datetime) -> None:
         """Run every planned run that is due, then arm the timer for the next one."""
         self._cancel_timer = None
-        due = [run for run in self._queue if run.when <= now]
-        self._queue = [run for run in self._queue if run.when > now]
+        due: list[PlannedRun] = []
+        while self._queue and self._queue[0].when <= now:
+            due.append(heapq.heappop(self._queue))
         try:
             for run in due:
                 await self._execute(run)
         finally:
-            if self._queue:
-                self._cancel_timer = async_track_point_in_utc_time(
-                    self._hass, self._fire, dt_util.as_utc(self._queue[0].when)
-                )
+            self._arm()
 
     async def _execute(self, run: PlannedRun) -> None:
         """Run the action of one planned run on all devices of its target."""

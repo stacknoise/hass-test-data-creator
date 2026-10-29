@@ -6,7 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 
-from ..const import CONF_SEED
+from ..const import CONF_SEED, MAX_PARAMS_BYTES, MAX_TRIGGER_BYTES
 from ..core.keys import (
     KEY_ACTION,
     KEY_DEVICE,
@@ -21,17 +21,18 @@ from ..core.keys import (
     KEY_TEMPLATE,
     KEY_TRIGGER,
 )
+from ..core.limits import SHORT_TEXT, json_object
 
 MAX_TARGET_DEVICES = 500
 
 TARGET_SCHEMA = vol.Any(
     {
         vol.Required(KEY_DEVICE): vol.Any(
-            str, vol.All([str], vol.Length(min=1, max=MAX_TARGET_DEVICES))
+            SHORT_TEXT, vol.All([SHORT_TEXT], vol.Length(min=1, max=MAX_TARGET_DEVICES))
         )
     },
-    {vol.Required(KEY_TEMPLATE): str},
-    {vol.Required(KEY_RUN): str},
+    {vol.Required(KEY_TEMPLATE): SHORT_TEXT},
+    {vol.Required(KEY_RUN): SHORT_TEXT},
     {vol.Required("all"): True},
 )
 
@@ -46,11 +47,11 @@ def device_references(value: str | list[str] | None) -> set[str]:
 SCHEDULE_FIELDS: dict[Any, Any] = {
     vol.Required(KEY_NAME): vol.All(str, vol.Length(min=1, max=64)),
     vol.Optional(KEY_TARGET): TARGET_SCHEMA,
-    vol.Optional(KEY_ENTITY): str,
-    vol.Optional(KEY_ACTION): str,
-    vol.Optional(KEY_SCENARIO): str,
-    vol.Optional(KEY_PARAMS, default=dict): dict,
-    vol.Required(KEY_TRIGGER): dict,
+    vol.Optional(KEY_ENTITY): SHORT_TEXT,
+    vol.Optional(KEY_ACTION): SHORT_TEXT,
+    vol.Optional(KEY_SCENARIO): SHORT_TEXT,
+    vol.Optional(KEY_PARAMS, default=dict): json_object(MAX_PARAMS_BYTES),
+    vol.Required(KEY_TRIGGER): json_object(MAX_TRIGGER_BYTES),
     vol.Optional(CONF_SEED): vol.All(str, vol.Length(min=1, max=64)),
     vol.Optional(KEY_ENABLED, default=True): bool,
 }

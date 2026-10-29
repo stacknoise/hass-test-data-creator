@@ -48,6 +48,15 @@ class ErrorCode(StrEnum):
     GEN_HISTORY_LIMIT = "TDC-GEN-006"
     """A statistics import would write more than MAX_HISTORY_ROWS rows."""
 
+    GEN_SCHEDULE_LIMIT = "TDC-GEN-007"
+    """There are already MAX_SCHEDULES schedules."""
+
+    GEN_SCENARIO_LIMIT = "TDC-GEN-008"
+    """There are already MAX_SCENARIOS scenarios."""
+
+    GEN_GROUP_LIMIT = "TDC-GEN-009"
+    """There are already MAX_GROUPS groups."""
+
     SIG_UNKNOWN_SHAPE = "TDC-SIG-001"
     """The signal shape is not registered in the SignalFactory."""
 

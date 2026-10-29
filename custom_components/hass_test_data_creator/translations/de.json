@@ -58,6 +58,15 @@
     "gen_history_limit": {
       "message": "Der Import würde zu viele Statistikzeilen schreiben. Wähle weniger Tage oder weniger Entitäten"
     },
+    "gen_schedule_limit": {
+      "message": "Es gibt zu viele Zeitpläne. Entferne zuerst einen"
+    },
+    "gen_scenario_limit": {
+      "message": "Es gibt zu viele Szenarien. Entferne zuerst eins"
+    },
+    "gen_group_limit": {
+      "message": "Es gibt zu viele Gruppen. Entferne zuerst eine"
+    },
     "tpl_not_found": {
       "message": "Die Vorlage gibt es nicht"
     },
