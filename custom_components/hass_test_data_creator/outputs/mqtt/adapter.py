@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...model.models import DeviceDef
-from ..adapter import OutputAdapter
+from ..base import OutputAdapter
 from .runtime import BehaviourRuntime
 
 

@@ -9,7 +9,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from ...const import DOMAIN, LABEL_NAME, MANUFACTURER, SIGNAL_DEVICES_ADDED
 from ...model.models import DeviceDef
-from ..adapter import OutputAdapter
+from ..base import OutputAdapter
 
 
 class NativeAdapter(OutputAdapter):
