@@ -1,4 +1,3 @@
-import { DEFAULT_MAX } from '../signals/signals';
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
@@ -23,16 +22,6 @@ const MODE_LABELS: Record<(typeof MODES)[number], TextKey> = {
   even: 'modeEven',
   random: 'modeRandom',
 };
-const SAMPLE_ENTITIES: EntityDef[] = [
-  {
-    key: 'level',
-    platform: PLATFORM_SENSOR,
-    name: 'Level',
-    unit: '%',
-    signal: { shape: 'sine', min: 0, max: DEFAULT_MAX },
-  },
-];
-
 /** The wizard that creates many devices from a template or from custom entities. */
 @customElement('tdc-creation-wizard')
 export class CreationWizard extends TdcElement {
@@ -45,7 +34,7 @@ export class CreationWizard extends TdcElement {
   @state() private mode: 'even' | 'random' = 'even';
   @state() private seed = '';
   @state() private output = 'native';
-  @state() private custom: EntityDef[] = SAMPLE_ENTITIES;
+  @state() private custom: EntityDef[] = [];
   @state() private pendingBase = '';
   @state() private busy = false;
   @state() private message = '';
@@ -267,7 +256,7 @@ export class CreationWizard extends TdcElement {
       <p class="row">
         <button
           class="primary"
-          ?disabled=${this.busy || !this.template}
+          ?disabled=${this.busy || !this.template || this.entities().length === 0}
           @click=${() => void this.submit()}
         >
           ${this.busy ? this.tr('creating') : this.tr('create')}
