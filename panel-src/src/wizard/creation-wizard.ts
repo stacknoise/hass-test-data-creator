@@ -74,7 +74,7 @@ export class CreationWizard extends TdcElement {
   private renderBase(): TemplateResult {
     const lang = this.hass?.language;
     const base = this.templates.find((t) => t.id === this.pendingBase);
-    return html`<div class="row form">
+    return html`<div class="row form" style="padding-bottom: 20px">
         <label style="flex: 1 1 220px"
           >${this.tr('baseTemplate')}
           <select

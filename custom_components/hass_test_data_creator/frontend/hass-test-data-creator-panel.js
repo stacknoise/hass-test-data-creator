@@ -2739,7 +2739,7 @@ var Nr = 10, Pr = 10, B = "custom", Fr = 50, Ir = ["even", "random"], Lr = {
 	}
 	renderBase() {
 		let e = this.hass?.language, t = this.templates.find((e) => e.id === this.pendingBase);
-		return v`<div class="row form">
+		return v`<div class="row form" style="padding-bottom: 20px">
         <label style="flex: 1 1 220px"
           >${this.tr("baseTemplate")}
           <select
