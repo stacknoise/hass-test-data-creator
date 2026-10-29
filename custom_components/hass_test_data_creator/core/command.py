@@ -31,15 +31,19 @@ def tdc_command(
 ) -> Callable[[Handler], Any]:
     """Return a decorator that turns `handler` into an admin-only WebSocket command.
 
-    The handler returns the payload or raises a TdcError. Errors are logged once with their code
-    and sent as an error reply.
+    The handler returns the payload or raises a TdcError. The request is validated here, not by
+    Home Assistant, so that a schema error is answered with TDC-WS-001. Errors are logged once with
+    their code and sent as an error reply.
     """
-    schema = {vol.Required(KEY_TYPE): command_type, **(fields or {})}
+    request_schema = websocket_api.messages.BASE_COMMAND_MESSAGE_SCHEMA.extend(
+        {vol.Required(KEY_TYPE): command_type, **(fields or {})}
+    )
+    routing = vol.All(vol.Schema({vol.Required(KEY_TYPE): command_type}, extra=vol.ALLOW_EXTRA))
 
     def decorator(handler: Handler) -> Any:
         """Wrap `handler` with schema, admin check and error conversion."""
 
-        @websocket_api.websocket_command(schema)
+        @websocket_api.websocket_command(routing)
         @websocket_api.require_admin
         @websocket_api.async_response
         async def command(
@@ -52,6 +56,7 @@ def tdc_command(
                 data.response_factory if isinstance(data, HasReplies) else _FALLBACK_RESPONSES
             )
             try:
+                msg = request_schema(msg)
                 payload = await handler(hass, connection, msg)
             except asyncio.CancelledError:
                 raise

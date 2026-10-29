@@ -1,4 +1,4 @@
-"""Requests with oversized, wrong or hostile values are refused with a TDC error or a format error."""
+"""Requests with oversized, wrong or hostile values are refused with a TDC error."""
 
 from __future__ import annotations
 
@@ -71,7 +71,14 @@ async def test_hostile_requests_are_refused(
     client = await hass_ws_client(hass)
     reply = await call(client, command, **fields)
     assert not reply["success"]
-    assert reply["error"]["code"] in {"invalid_format", "TDC-WS-001"} or reply["error"][
-        "code"
-    ].startswith("TDC-")
+    assert reply["error"]["code"].startswith("TDC-")
     assert reply["error"]["code"] != "TDC-INT-001"
+
+
+async def test_a_schema_error_is_answered_with_the_request_code(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    reply = await call(client, "devices/create", template="plug_metering", count="many")
+    assert not reply["success"]
+    assert reply["error"]["code"] == "TDC-WS-001"
