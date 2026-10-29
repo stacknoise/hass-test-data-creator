@@ -28,11 +28,13 @@ class Tick:
         self,
         hass: HomeAssistant,
         seconds: int,
+        now: Callable[[], float],
         on_slow: Callable[[float, float], None],
     ) -> None:
-        """Keep the interval in seconds and the callback `on_slow(duration, interval)`."""
+        """Keep the interval in seconds, the source of the signal time and `on_slow(duration, interval)`."""
         self._hass = hass
         self.seconds = seconds
+        self._now = now
         self._on_slow = on_slow
         self._unsub: CALLBACK_TYPE | None = None
         self._warned = False
@@ -51,10 +53,16 @@ class Tick:
 
     @callback
     def _fire(self, _now: datetime) -> None:
-        """Send the tick signal and warn once if it took more than the allowed share."""
+        """Send the tick with the signal time, computed once; measure it to the end of the iteration."""
         started = time.monotonic()
-        async_dispatcher_send(self._hass, SIGNAL_TICK)
+        async_dispatcher_send(self._hass, SIGNAL_TICK, self._now())
+        # Tasks that the listeners created start in the next iteration, before this callback.
+        self._hass.loop.call_soon(self._measure, started)
+
+    def _measure(self, started: float) -> None:
+        """Warn when the tick took too long; warn again after a fast tick has passed in between."""
         duration = time.monotonic() - started
-        if duration > self.seconds * SLOW_TICK_RATIO and not self._warned:
-            self._warned = True
+        slow = duration > self.seconds * SLOW_TICK_RATIO
+        if slow and not self._warned:
             self._on_slow(duration, float(self.seconds))
+        self._warned = slow

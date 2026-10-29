@@ -8,7 +8,6 @@ from datetime import UTC, datetime, timedelta
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import InvalidData
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.util import dt as dt_util
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -18,13 +17,12 @@ from custom_components.hass_test_data_creator.const import (
     CONF_TICK_SECONDS,
     CONF_TIME_LAPSE,
     DOMAIN,
-    SIGNAL_TICK,
 )
 from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.clock import Clock
 from custom_components.hass_test_data_creator.engine.tick import signal_time
 
-from ..conftest import SEED, create_devices, state_of
+from ..conftest import SEED, create_devices, fire_tick, state_of
 
 START = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)
 
@@ -67,7 +65,7 @@ async def test_a_counter_runs_faster_with_a_lapse(
     before = float(state_of(hass, "Plug 01", "energy").state)
 
     freezer.tick(timedelta(seconds=10))
-    async_dispatcher_send(hass, SIGNAL_TICK)
+    fire_tick(hass)
     await hass.async_block_till_done()
 
     # 10 s of real time are 10 hours of signal time at 0.35 kWh per hour

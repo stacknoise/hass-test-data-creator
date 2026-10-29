@@ -19,8 +19,9 @@ from custom_components.hass_test_data_creator.const import DOMAIN, MANUFACTURER,
 from custom_components.hass_test_data_creator.core.errors import ScheduleError
 from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.tick import signal_time
+from custom_components.hass_test_data_creator.platforms.actuators import TdcClimate
 
-from ..conftest import create_devices, our_devices, state_of
+from ..conftest import create_devices, fire_tick, our_devices, state_of
 
 PLUG_ENTITIES = 6
 
@@ -93,7 +94,7 @@ async def test_tick_updates_sensors_whose_interval_has_passed(
         "custom_components.hass_test_data_creator.engine.clock.Clock.now",
         lambda _: signal_time() + 36000,
     ):
-        async_dispatcher_send(hass, SIGNAL_TICK)
+        fire_tick(hass)
         await hass.async_block_till_done()
     assert float(state_of(hass, "Plug 01", "energy").state) > before + 3
 
@@ -184,3 +185,20 @@ async def test_removing_the_entry_cleans_up(hass: HomeAssistant, entry: MockConf
 
     assert not dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
     assert areas.async_get_area_by_name("Temp area") is None
+
+
+async def test_a_thermostat_writes_its_state_only_when_the_temperature_changed(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    await create_devices(hass, template="thermostat", count=1, name_pattern="Heat {nn}")
+    now = get_data(hass).clock.now()
+
+    with patch.object(TdcClimate, "async_write_ha_state") as write:
+        async_dispatcher_send(hass, SIGNAL_TICK, now)
+        await hass.async_block_till_done()
+        assert write.call_count == 0
+
+        async_dispatcher_send(hass, SIGNAL_TICK, now + 1800)
+        async_dispatcher_send(hass, SIGNAL_TICK, now + 1800)
+        await hass.async_block_till_done()
+        assert write.call_count == 1

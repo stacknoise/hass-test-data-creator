@@ -26,7 +26,7 @@ from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.outputs.mqtt import client as client_module
 from custom_components.hass_test_data_creator.outputs.mqtt.client import MqttClient
 
-from ..conftest import create_devices
+from ..conftest import create_devices, fire_tick
 
 BASE = "tdc_z2m"
 
@@ -200,6 +200,31 @@ async def test_a_fault_takes_the_device_offline_and_back(
     async_fire_time_changed(hass)
     await hass.async_block_till_done()
     assert json_of(mqtt_mock, f"{BASE}/Dev 01/availability") == {"state": "online"}
+
+
+async def test_one_tick_publishes_a_device_once_from_one_task(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await make(hass, "plug_metering")
+    runtime = get_data(hass).z2m_devices
+    state_topic = f"{BASE}/Dev 01"
+    published = lambda: [  # noqa: E731
+        call for call in mqtt_mock.async_publish.call_args_list if call.args[0] == state_topic
+    ]
+    before = len(published())
+
+    with (
+        patch(
+            "custom_components.hass_test_data_creator.engine.clock.Clock.now",
+            lambda _: 10**10,
+        ),
+        patch.object(runtime, "_schedule", wraps=runtime._schedule) as schedule,
+    ):
+        fire_tick(hass)
+        await hass.async_block_till_done()
+
+    assert schedule.call_count == 1
+    assert len(published()) == before + 1
 
 
 async def test_removing_a_device_updates_the_device_list_and_deletes_its_topics(

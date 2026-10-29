@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 import pytest
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -16,12 +15,12 @@ from pytest_homeassistant_custom_component.common import (
     async_fire_time_changed,
 )
 
-from custom_components.hass_test_data_creator.const import DOMAIN, SIGNAL_TICK
+from custom_components.hass_test_data_creator.const import DOMAIN
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, OutputError
 from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.tick import signal_time
 
-from ..conftest import create_devices
+from ..conftest import create_devices, fire_tick
 
 
 @pytest.fixture
@@ -210,9 +209,31 @@ async def test_the_tick_publishes_new_sensor_values(
         "custom_components.hass_test_data_creator.engine.clock.Clock.now",
         lambda _: signal_time() + 36000,
     ):
-        async_dispatcher_send(hass, SIGNAL_TICK)
+        fire_tick(hass)
         await hass.async_block_till_done()
     assert float(sent(mqtt_mock)[topic]) > before + 3
+
+
+async def test_one_tick_starts_one_task_for_all_changed_entities(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    device_id = await make(hass, "plug_metering")
+    runtime = get_data(hass).mqtt_devices
+    before = dict(sent(mqtt_mock))
+
+    with (
+        patch(
+            "custom_components.hass_test_data_creator.engine.clock.Clock.now",
+            lambda _: signal_time() + 36000,
+        ),
+        patch.object(runtime, "_schedule", wraps=runtime._schedule) as schedule,
+    ):
+        fire_tick(hass)
+        await hass.async_block_till_done()
+
+    assert schedule.call_count == 1
+    changed = [topic for topic, payload in sent(mqtt_mock).items() if before.get(topic) != payload]
+    assert f"tdc/{device_id}/energy/state" in changed
 
 
 async def test_removing_the_device_deletes_all_its_retained_topics(

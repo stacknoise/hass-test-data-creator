@@ -135,7 +135,7 @@ class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity):
     @property
     def current_temperature(self) -> float:
         """The measured temperature, computed from the signal."""
-        return float(self._behaviour.current_temperature(self._behaviour.now()))
+        return self._behaviour.temperature
 
     async def async_added_to_hass(self) -> None:
         """Restore mode and target, then follow the tick."""
@@ -149,9 +149,10 @@ class TdcClimate(TdcEntity, RestoreEntity, ClimateEntity):
         self.async_on_remove(async_dispatcher_connect(self.hass, SIGNAL_TICK, self._handle_tick))
 
     @callback
-    def _handle_tick(self) -> None:
-        """Publish the new measured temperature."""
-        self.async_write_ha_state()
+    def _handle_tick(self, now: float) -> None:
+        """Publish the measured temperature if it changed."""
+        if self._behaviour.tick(now):
+            self.async_write_ha_state()
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
         """Switch between off and heat."""

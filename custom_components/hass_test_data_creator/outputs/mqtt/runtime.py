@@ -196,11 +196,16 @@ class BehaviourRuntime(ABC):
             self._unsubscribe_tick = None
 
     @callback
-    def _on_tick(self) -> None:
-        """Publish the entities whose value changed."""
-        for entry in list(self._entries.values()):
-            if entry.behaviour.tick(entry.behaviour.now()):
-                self._schedule(self._async_changed(entry))
+    def _on_tick(self, now: float) -> None:
+        """Publish the entities whose value changed, from one task for the whole tick."""
+        changed = [entry for entry in self._entries.values() if entry.behaviour.tick(now)]
+        if changed:
+            self._schedule(self._async_changed_many(changed))
+
+    async def _async_changed_many(self, entries: list[RuntimeEntry]) -> None:
+        """Publish what changed on several entities; the default publishes them one after another."""
+        for entry in entries:
+            await self._async_changed(entry)
 
     async def _async_deliver(
         self,

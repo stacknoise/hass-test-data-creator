@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
+from homeassistant.util import dt as dt_util
 
 from .api import async_register_commands
 from .bootstrap import build_data
@@ -18,6 +19,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Load the store and templates, set up the platforms, start the tick, register the panel."""
     data = build_data(hass, entry)
     await data.store.async_load()
+    data.clock.resume(data.store.time_lapse_start(data.clock.factor, dt_util.now()))
     await data.template_registry.async_load(hass)
     await data.csv.async_refresh()
     data.groups.load()

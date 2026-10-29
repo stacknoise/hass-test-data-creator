@@ -9,15 +9,14 @@ import time
 from unittest.mock import MagicMock
 
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.dispatcher import async_dispatcher_send
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry, async_fire_mqtt_message
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
-from custom_components.hass_test_data_creator.const import DOMAIN, MAX_BATCH, SIGNAL_TICK
+from custom_components.hass_test_data_creator.const import DOMAIN, MAX_BATCH
 from custom_components.hass_test_data_creator.data import get_data
 
-from ..conftest import create_devices
+from ..conftest import create_devices, fire_tick
 
 pytestmark = pytest.mark.slow
 
@@ -42,7 +41,7 @@ async def test_a_thousand_devices_keep_the_tick_actions_and_lists_fast(
 
     started = time.perf_counter()
     for _ in range(TICKS):
-        async_dispatcher_send(hass, SIGNAL_TICK)
+        fire_tick(hass)
         await hass.async_block_till_done()
     per_tick = (time.perf_counter() - started) / TICKS
     assert per_tick < TICK_INTERVAL_SECONDS / 2

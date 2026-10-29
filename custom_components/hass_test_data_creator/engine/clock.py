@@ -17,6 +17,10 @@ class Clock:
         self.factor = factor
         self._base = signal_time(dt_util.as_local(start) if start else None)
 
+    def resume(self, start: datetime) -> None:
+        """Continue a time lapse that began at `start`, for example before a restart."""
+        self._base = signal_time(dt_util.as_local(start))
+
     def at(self, moment: datetime) -> float:
         """Return the signal time in seconds that belongs to the real `moment`."""
         return self._base + (signal_time(dt_util.as_local(moment)) - self._base) * self.factor
