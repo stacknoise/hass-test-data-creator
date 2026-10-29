@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from homeassistant.core import HomeAssistant
 import pytest
 
+from custom_components.hass_test_data_creator.const import MAX_TEMPLATE_FILE_BYTES
 from custom_components.hass_test_data_creator.core.errors import (
     ErrorCode,
     GenerationError,
@@ -16,7 +19,10 @@ from custom_components.hass_test_data_creator.templates.device_factory import (
     format_name,
 )
 from custom_components.hass_test_data_creator.templates.factory import TemplateFactory
-from custom_components.hass_test_data_creator.templates.registry import TemplateRegistry
+from custom_components.hass_test_data_creator.templates.registry import (
+    USER_DIR_NAME,
+    TemplateRegistry,
+)
 
 SENSOR = {"key": "level", "platform": "sensor", "name": "Level", "signal": {"shape": "sine"}}
 BUNDLED = {
@@ -92,3 +98,48 @@ def test_devices_are_numbered_and_seeded_deterministically() -> None:
     assert [d.seed for d in first] == [d.seed for d in second]
     assert first[0].seed == device_seed("s", "custom", 5)
     assert first[0].id != second[0].id
+
+
+@pytest.mark.parametrize(
+    "signal",
+    [
+        {"shape": "sine", "min": float("nan")},
+        {"shape": "sine", "max": float("inf")},
+        {"shape": "sine", "phase": float("nan")},
+        {"shape": "sine", "period_s": 1e12},
+        {"shape": "counter", "rate_per_hour": float("inf")},
+        {"shape": "counter", "rate_per_hour": 1e9},
+    ],
+)
+def test_a_signal_with_a_non_finite_or_huge_number_is_refused(signal: dict) -> None:
+    with pytest.raises(TemplateError) as error:
+        TemplateFactory().custom([{**SENSOR, "signal": signal}])
+    assert error.value.code is ErrorCode.TPL_INVALID
+
+
+def test_a_discrete_signal_is_refused_on_a_climate_entity() -> None:
+    climate = {"key": "t", "platform": "climate", "name": "T"}
+    with pytest.raises(TemplateError) as error:
+        TemplateFactory().custom([{**climate, "signal": {"shape": "enum", "values": ["a", "b"]}}])
+    assert error.value.code is ErrorCode.TPL_INVALID
+
+
+async def test_a_bad_user_template_is_skipped_and_the_others_load(
+    hass: HomeAssistant, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    hass.config.config_dir = str(tmp_path)
+    folder = tmp_path / USER_DIR_NAME
+    folder.mkdir(parents=True)
+    good = "id: mine\nname: Mine\nmodel: M\nentities:\n  - {key: a, platform: sensor, name: A, signal: {shape: sine}}\n"
+    (folder / "good.yaml").write_text(good)
+    (folder / "broken.yaml").write_text("id: [unclosed")
+    (folder / "invalid.yaml").write_text("id: bad\nname: Bad\nentities: nope\n")
+    (folder / "large.yaml").write_text(good + "#" * MAX_TEMPLATE_FILE_BYTES)
+    (folder / "link.yaml").symlink_to(folder / "good.yaml")
+
+    registry = TemplateRegistry(TemplateFactory())
+    await registry.async_load(hass)
+
+    assert registry.get("mine").name == "Mine"
+    assert {item.id for item in registry.all()} >= BUNDLED
+    assert caplog.text.count("TDC-TPL-002 skipped user template") == 4

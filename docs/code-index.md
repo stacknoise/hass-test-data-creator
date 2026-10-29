@@ -301,12 +301,14 @@ Lists every module, class and function of the integration with signature, file a
 | `TemplateFactory._check_content` | `def _check_content(self, data: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/templates/factory.py` | Check the rules that depend on the platform: signal, shape and device class. |
 | `hass_test_data_creator.templates.registry` | `module` | `custom_components/hass_test_data_creator/templates/registry.py` | Loads the bundled and the user's template files (concept 4.2). |
 | `_read_files` | `def _read_files(directory: Path) -> list[tuple[str, dict[str, Any]]]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return (file name, content) of every YAML file in `directory`; runs in the executor. |
+| `_read_user_files` | `def _read_user_files(directory: Path) -> list[tuple[str, dict[str, Any]]]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return the usable user files; a link, a large or an unreadable file is skipped and logged. |
 | `TemplateRegistry` | `class TemplateRegistry` | `custom_components/hass_test_data_creator/templates/registry.py` | Holds all templates by id. |
 | `TemplateRegistry.__init__` | `def __init__(self, factory: TemplateFactory) -> None` | `custom_components/hass_test_data_creator/templates/registry.py` | Create an empty registry that builds templates with `factory`. |
 | `TemplateRegistry.async_load` | `async def async_load(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/templates/registry.py` | Load the bundled templates and then the user's; a user template can replace one. |
 | `TemplateRegistry.get` | `def get(self, template_id: str) -> Template` | `custom_components/hass_test_data_creator/templates/registry.py` | Return the template with `template_id` or raise TPL_NOT_FOUND. |
 | `TemplateRegistry.all` | `def all(self) -> list[Template]` | `custom_components/hass_test_data_creator/templates/registry.py` | Return all templates sorted by name. |
 | `hass_test_data_creator.templates.schema` | `module` | `custom_components/hass_test_data_creator/templates/schema.py` | Voluptuous schemas of templates and custom entities (concept 4.2). |
+| `_finite` | `def _finite(value: float) -> float` | `custom_components/hass_test_data_creator/templates/schema.py` | Return `value` as a finite number or raise `vol.Invalid`. |
 
 ## devices
 
