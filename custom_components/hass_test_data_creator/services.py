@@ -28,7 +28,7 @@ from .core.keys import (
     KEY_TARGET_ID,
 )
 from .core.limits import SHORT_TEXT, json_object
-from .core.runtime import get_data
+from .data import get_data
 from .devices.schema import CREATE_FIELDS, job_from_request
 from .groups.schema import GROUP_FIELDS
 from .history.schema import HISTORY_FIELDS

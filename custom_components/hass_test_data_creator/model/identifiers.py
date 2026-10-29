@@ -5,7 +5,7 @@ from __future__ import annotations
 from homeassistant.helpers import entity_registry as er
 
 from ..const import DOMAIN, OUTPUT_MQTT
-from ..model.models import DeviceDef, EntityDef
+from .models import DeviceDef, EntityDef
 
 
 def mqtt_device_identifier(device_id: str) -> str:

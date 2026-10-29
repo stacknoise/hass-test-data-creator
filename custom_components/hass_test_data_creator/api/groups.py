@@ -11,7 +11,7 @@ import voluptuous as vol
 from ..const import DOMAIN
 from ..core.command import tdc_command
 from ..core.keys import KEY_GROUP_ID, KEY_MEMBERS, KEY_NAME
-from ..core.runtime import get_data
+from ..data import get_data
 from ..groups.schema import GROUP_FIELDS
 
 

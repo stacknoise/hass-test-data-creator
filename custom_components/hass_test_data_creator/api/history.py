@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from ..const import DOMAIN
 from ..core.command import tdc_command
 from ..core.keys import KEY_DAYS, KEY_DEVICE, KEY_ENTITY
-from ..core.runtime import get_data
+from ..data import get_data
 from ..history.schema import HISTORY_FIELDS
 
 

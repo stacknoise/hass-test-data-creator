@@ -16,8 +16,8 @@ from ..const import DOMAIN
 from .error_factory import ErrorFactory
 from .errors import TdcError
 from .keys import KEY_ID, KEY_TYPE
+from .protocols import HasReplies
 from .response_factory import ResponseFactory
-from .runtime import TdcData
 
 _LOGGER = logging.getLogger(__name__)
 _FALLBACK_ERRORS = ErrorFactory()
@@ -47,8 +47,10 @@ def tdc_command(
         ) -> None:
             """Run the handler and send its result or the converted error."""
             data = hass.data.get(DOMAIN)
-            errors = data.error_factory if isinstance(data, TdcData) else _FALLBACK_ERRORS
-            responses = data.response_factory if isinstance(data, TdcData) else _FALLBACK_RESPONSES
+            errors = data.error_factory if isinstance(data, HasReplies) else _FALLBACK_ERRORS
+            responses = (
+                data.response_factory if isinstance(data, HasReplies) else _FALLBACK_RESPONSES
+            )
             try:
                 payload = await handler(hass, connection, msg)
             except asyncio.CancelledError:

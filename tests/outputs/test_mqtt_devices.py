@@ -18,7 +18,7 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.hass_test_data_creator.const import DOMAIN, SIGNAL_TICK
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, OutputError
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.tick import signal_time
 
 from ..conftest import create_devices

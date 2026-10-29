@@ -10,7 +10,6 @@ from typing import Any
 
 from ...const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION, MANUFACTURER, TEMPERATURE_STEP
 from ...core.errors import ErrorCode, OutputError
-from ...core.identifiers import mqtt_device_identifier, mqtt_unique_id
 from ...core.keys import (
     KEY_AVAILABILITY,
     KEY_BINARY_SENSOR,
@@ -54,6 +53,7 @@ from ...engine.behaviours import (
     OnOffBehaviour,
     SensorBehaviour,
 )
+from ...model.identifiers import mqtt_device_identifier, mqtt_unique_id
 from ...model.models import DeviceDef, EntityDef
 
 ON = "ON"

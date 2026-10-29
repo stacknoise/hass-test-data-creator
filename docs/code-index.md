@@ -14,6 +14,8 @@ Lists every module, class and function of the integration with signature, file a
 | `async_unload_entry` | `async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool` | `custom_components/hass_test_data_creator/__init__.py` | Stop the tick, unload the platforms and remove services and panel. |
 | `async_remove_entry` | `async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None` | `custom_components/hass_test_data_creator/__init__.py` | Delete everything left behind: created areas and the storage file. |
 | `hass_test_data_creator.binary_sensor` | `module` | `custom_components/hass_test_data_creator/binary_sensor.py` | The binary_sensor platform of the generated devices. |
+| `hass_test_data_creator.bootstrap` | `module` | `custom_components/hass_test_data_creator/bootstrap.py` | Builds the runtime data of a config entry: creates the factories and managers and wires them together (concept 2). |
+| `build_data` | `def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData` | `custom_components/hass_test_data_creator/bootstrap.py` | Create the factories and managers of `entry` and wire them together. |
 | `hass_test_data_creator.climate` | `module` | `custom_components/hass_test_data_creator/climate.py` | The climate platform of the generated devices. |
 | `hass_test_data_creator.config_flow` | `module` | `custom_components/hass_test_data_creator/config_flow.py` | Config flow: one entry, created after the test environment confirmation (concept 10.4). |
 | `_valid_topic` | `def _valid_topic(topic: str) -> bool` | `custom_components/hass_test_data_creator/config_flow.py` | Whether `topic` can be a base topic: printable, no wildcards, not broker or discovery space. |
@@ -26,6 +28,9 @@ Lists every module, class and function of the integration with signature, file a
 | `TestDataCreatorOptionsFlow._errors` | `def _errors(self, values: dict[str, Any]) -> dict[str, str]` | `custom_components/hass_test_data_creator/config_flow.py` | Return the error of the first wrong field. |
 | `hass_test_data_creator.const` | `module` | `custom_components/hass_test_data_creator/const.py` | Constants of the HASS Test Data Creator. |
 | `hass_test_data_creator.cover` | `module` | `custom_components/hass_test_data_creator/cover.py` | The cover platform of the generated devices. |
+| `hass_test_data_creator.data` | `module` | `custom_components/hass_test_data_creator/data.py` | Runtime data: the factories and managers of one loaded config entry (concept 2). |
+| `TdcData` | `class TdcData` | `custom_components/hass_test_data_creator/data.py` | Everything a loaded config entry needs; created once in `async_setup_entry`. |
+| `get_data` | `def get_data(hass: HomeAssistant) -> TdcData` | `custom_components/hass_test_data_creator/data.py` | Return the runtime data or raise TDC-CFG-002 if the integration is not loaded. |
 | `hass_test_data_creator.event` | `module` | `custom_components/hass_test_data_creator/event.py` | The event platform of the generated devices. |
 | `hass_test_data_creator.light` | `module` | `custom_components/hass_test_data_creator/light.py` | The light platform of the generated devices. |
 | `hass_test_data_creator.panel` | `module` | `custom_components/hass_test_data_creator/panel.py` | Registers the sidebar panel and serves the built panel file (concept 9). |
@@ -78,10 +83,6 @@ Lists every module, class and function of the integration with signature, file a
 | `InternalError` | `class InternalError(TdcError)` | `custom_components/hass_test_data_creator/core/errors.py` | Unexpected error that is not caused by the user. |
 | `hass_test_data_creator.core.hashing` | `module` | `custom_components/hass_test_data_creator/core/hashing.py` | The deterministic hash that signals, triggers and area distribution share (concept 5). |
 | `hash01` | `def hash01(seed: int, n: int) -> float` | `custom_components/hass_test_data_creator/core/hashing.py` | Return a deterministic number in [0, 1) for the integers `seed` and `n` (SplitMix64). |
-| `hass_test_data_creator.core.identifiers` | `module` | `custom_components/hass_test_data_creator/core/identifiers.py` | The names a generated device and its entities carry in Home Assistant and in MQTT discovery. |
-| `mqtt_device_identifier` | `def mqtt_device_identifier(device_id: str) -> str` | `custom_components/hass_test_data_creator/core/identifiers.py` | Return the identifier of the registry device that MQTT discovery creates for `device_id`. |
-| `mqtt_unique_id` | `def mqtt_unique_id(device_id: str, key: str) -> str` | `custom_components/hass_test_data_creator/core/identifiers.py` | Return the unique id of the MQTT entity of `key` of a device. |
-| `entity_id_of` | `def entity_id_of(registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef) -> str \| None` | `custom_components/hass_test_data_creator/core/identifiers.py` | Return the entity id of `definition` (native or MQTT unique id), or None if not registered. |
 | `hass_test_data_creator.core.ids` | `module` | `custom_components/hass_test_data_creator/core/ids.py` | Identifier helpers. |
 | `new_id` | `def new_id() -> str` | `custom_components/hass_test_data_creator/core/ids.py` | Return a new time-ordered hexadecimal identifier (26 characters). |
 | `hass_test_data_creator.core.keys` | `module` | `custom_components/hass_test_data_creator/core/keys.py` | Names of the keys and values that several modules use. |
@@ -95,14 +96,11 @@ Lists every module, class and function of the integration with signature, file a
 | `ScenarioRunner.async_run` | `async def async_run(self, scenario_id: str) -> int` | `custom_components/hass_test_data_creator/core/protocols.py` | Run the scenario and return the number of actions it ran. |
 | `GroupPublisher` | `class GroupPublisher(Protocol)` | `custom_components/hass_test_data_creator/core/protocols.py` | What the outputs need of the groups: drop groups and take devices out of the others. |
 | `GroupPublisher.async_drop` | `async def async_drop(self, group_ids: list[str], device_ids: set[str]) -> None` | `custom_components/hass_test_data_creator/core/protocols.py` | Delete groups and remove `device_ids` from the remaining groups. |
+| `HasReplies` | `class HasReplies(Protocol)` | `custom_components/hass_test_data_creator/core/protocols.py` | The runtime data as far as the command wrapper needs it: the reply and error factories. |
 | `hass_test_data_creator.core.response_factory` | `module` | `custom_components/hass_test_data_creator/core/response_factory.py` | Factory for WebSocket replies (concept 13.2). |
 | `ResponseFactory` | `class ResponseFactory` | `custom_components/hass_test_data_creator/core/response_factory.py` | Creates the result and error replies of the panel commands. |
 | `ResponseFactory.result` | `def result(self, msg_id: int, payload: Any) -> dict[str, Any]` | `custom_components/hass_test_data_creator/core/response_factory.py` | Return the success reply with `payload`. |
 | `ResponseFactory.error` | `def error(self, msg_id: int, error: TdcError) -> dict[str, Any]` | `custom_components/hass_test_data_creator/core/response_factory.py` | Return the error reply: the TDC code as error code, the translated text as message. |
-| `hass_test_data_creator.core.runtime` | `module` | `custom_components/hass_test_data_creator/core/runtime.py` | Runtime data: the factories and managers of one loaded config entry (concept 2). |
-| `TdcData` | `class TdcData` | `custom_components/hass_test_data_creator/core/runtime.py` | Everything a loaded config entry needs; created once in `async_setup_entry`. |
-| `build_data` | `def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData` | `custom_components/hass_test_data_creator/core/runtime.py` | Create the factories and managers of `entry` and wire them together. |
-| `get_data` | `def get_data(hass: HomeAssistant) -> TdcData` | `custom_components/hass_test_data_creator/core/runtime.py` | Return the runtime data or raise TDC-CFG-002 if the integration is not loaded. |
 | `hass_test_data_creator.core.targets` | `module` | `custom_components/hass_test_data_creator/core/targets.py` | What a schedule, a scenario step or a history import aims at: the target and its schema. |
 | `device_references` | `def device_references(value: str \| list[str] \| None) -> set[str]` | `custom_components/hass_test_data_creator/core/targets.py` | Return the ids or names that the `device` part of a target names: one text or a list. |
 
@@ -111,6 +109,10 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.model.__init__` | `module` | `custom_components/hass_test_data_creator/model/__init__.py` | Model package of the HASS Test Data Creator. |
+| `hass_test_data_creator.model.identifiers` | `module` | `custom_components/hass_test_data_creator/model/identifiers.py` | The names a generated device and its entities carry in Home Assistant and in MQTT discovery. |
+| `mqtt_device_identifier` | `def mqtt_device_identifier(device_id: str) -> str` | `custom_components/hass_test_data_creator/model/identifiers.py` | Return the identifier of the registry device that MQTT discovery creates for `device_id`. |
+| `mqtt_unique_id` | `def mqtt_unique_id(device_id: str, key: str) -> str` | `custom_components/hass_test_data_creator/model/identifiers.py` | Return the unique id of the MQTT entity of `key` of a device. |
+| `entity_id_of` | `def entity_id_of(registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef) -> str \| None` | `custom_components/hass_test_data_creator/model/identifiers.py` | Return the entity id of `definition` (native or MQTT unique id), or None if not registered. |
 | `hass_test_data_creator.model.models` | `module` | `custom_components/hass_test_data_creator/model/models.py` | Data classes of devices, entities and creation runs (concept 4.1). |
 | `EntityDef` | `class EntityDef` | `custom_components/hass_test_data_creator/model/models.py` | Definition of one entity of a device. |
 | `EntityDef.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the JSON-serialisable form. |

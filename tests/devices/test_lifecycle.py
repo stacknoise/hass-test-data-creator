@@ -17,7 +17,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hass_test_data_creator.const import DOMAIN, MANUFACTURER, SIGNAL_TICK
 from custom_components.hass_test_data_creator.core.errors import ScheduleError
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.tick import signal_time
 
 from ..conftest import create_devices, our_devices, state_of

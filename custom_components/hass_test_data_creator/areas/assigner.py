@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 
 from ..const import DOMAIN, OUTPUT_MQTT
-from ..core.identifiers import mqtt_device_identifier
+from ..model.identifiers import mqtt_device_identifier
 from ..model.models import DeviceDef
 from ..store.store import TdcStore
 

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
+
+from .error_factory import ErrorFactory
+from .response_factory import ResponseFactory
 
 
 class ScenarioRunner(Protocol):
@@ -20,3 +23,11 @@ class GroupPublisher(Protocol):
 
     async def async_drop(self, group_ids: list[str], device_ids: set[str]) -> None:
         """Delete groups and remove `device_ids` from the remaining groups."""
+
+
+@runtime_checkable
+class HasReplies(Protocol):
+    """The runtime data as far as the command wrapper needs it: the reply and error factories."""
+
+    error_factory: ErrorFactory
+    response_factory: ResponseFactory

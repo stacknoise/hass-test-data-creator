@@ -6,7 +6,7 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.hass_test_data_creator.core.keys import KEY_DEVICES
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.store.store import TdcStore
 
 from ..conftest import create_devices

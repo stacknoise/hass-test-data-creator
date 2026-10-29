@@ -108,7 +108,7 @@ panel ──WebSocket──▶ HA websocket_api ──▶ command wrapper (core/
 
 **Rule:** whenever the kind of an object depends on a type or on runtime data, a factory creates it. Outside a factory no code branches on the entity platform, the shape name, the trigger type or the output type to construct objects. A new platform or shape is then added in one place.
 
-Factories are plain classes created once in `async_setup`, stored in the runtime data (`core/runtime.py`) and replaced by fakes in tests. The list of factories is in concept 13.2.
+Factories are plain classes created once in `async_setup`, stored in the runtime data (`data.py`, built in `bootstrap.py`) and replaced by fakes in tests. The list of factories is in concept 13.2.
 
 Adding a factory (or a kind to one):
 

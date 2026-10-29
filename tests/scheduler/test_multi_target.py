@@ -9,7 +9,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 import voluptuous as vol
 
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, RemovalError
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 
 from ..conftest import create_devices, state_of
 from .test_schedules import add_schedule, advance, noon  # noqa: F401
