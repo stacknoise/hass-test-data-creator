@@ -254,7 +254,9 @@ export class DeviceList extends TdcElement {
         <button class="primary" @click=${() => (this.creating = true)}>
           + ${this.tr('create')}
         </button>
-        <button @click=${() => this.openTemplate()}>+ ${this.tr('tplCreate')}</button>
+        <button class="primary" @click=${() => this.openTemplate()}>
+          + ${this.tr('tplCreate')}
+        </button>
       </p>
       <tdc-dialog
         .hass=${this.hass}

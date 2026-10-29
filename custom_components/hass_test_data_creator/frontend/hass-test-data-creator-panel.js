@@ -3530,7 +3530,9 @@ var Xr = 4, Zr = 6, Qr = 1e4, $r = {
         <button class="primary" @click=${() => this.creating = !0}>
           + ${this.tr("create")}
         </button>
-        <button @click=${() => this.openTemplate()}>+ ${this.tr("tplCreate")}</button>
+        <button class="primary" @click=${() => this.openTemplate()}>
+          + ${this.tr("tplCreate")}
+        </button>
       </p>
       <tdc-dialog
         .hass=${this.hass}
