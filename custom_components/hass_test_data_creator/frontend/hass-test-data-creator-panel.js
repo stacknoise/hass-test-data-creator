@@ -1885,12 +1885,7 @@ var Qt = class extends F {
 		this.dispatchEvent(new CustomEvent("tdc-close"));
 	}
 	render() {
-		return v`<dialog
-      @close=${() => this.close()}
-      @click=${(e) => {
-			e.target === this.dialog && this.close();
-		}}
-    >
+		return v`<dialog @close=${() => this.close()}>
       <div class="head">
         <h3>${this.heading}</h3>
         <button aria-label=${this.tr("detCancel")} @click=${() => this.close()}>✕</button>
