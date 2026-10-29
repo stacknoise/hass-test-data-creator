@@ -20,6 +20,7 @@ from .engine.clock import Clock
 from .engine.tick import Tick
 from .groups.manager import GroupManager
 from .history.manager import HistoryManager
+from .outputs.adapter import OutputAdapterFactory
 from .outputs.mqtt.client import MqttClient
 from .outputs.mqtt.devices import MqttDevices
 from .outputs.z2m.devices import Z2mDevices
@@ -49,6 +50,7 @@ class TdcData:
     removal_runner: RemovalRunner
     template_registry: TemplateRegistry
     entity_factory: EntityFactory
+    outputs: OutputAdapterFactory
     mqtt: MqttClient
     mqtt_devices: MqttDevices
     z2m_devices: Z2mDevices

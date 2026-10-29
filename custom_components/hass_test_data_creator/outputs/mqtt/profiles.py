@@ -9,7 +9,6 @@ import json
 from typing import Any
 
 from ...const import COVER_CLOSED_POSITION, COVER_OPEN_POSITION, MANUFACTURER, TEMPERATURE_STEP
-from ...core.errors import ErrorCode, OutputError
 from ...core.keys import (
     KEY_AVAILABILITY,
     KEY_BINARY_SENSOR,
@@ -55,6 +54,7 @@ from ...engine.behaviours import (
 )
 from ...model.identifiers import mqtt_device_identifier, mqtt_unique_id
 from ...model.models import DeviceDef, EntityDef
+from ..profile_factory import ProfileFactory
 
 ON = "ON"
 OFF = "OFF"
@@ -340,12 +340,9 @@ _PROFILES: dict[str, type[MqttProfile]] = {
 }
 
 
-class MqttProfileFactory:
+class MqttProfileFactory(ProfileFactory[MqttProfile]):
     """Creates the MQTT profile for a platform."""
 
-    def create(self, platform: str) -> MqttProfile:
-        """Return the profile of `platform` or raise TDC-OUT-001."""
-        profile = _PROFILES.get(platform)
-        if profile is None:
-            raise OutputError(ErrorCode.OUT_UNSUPPORTED)
-        return profile()
+    def __init__(self) -> None:
+        """Use the table of this output."""
+        super().__init__(_PROFILES)

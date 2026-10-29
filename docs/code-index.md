@@ -319,6 +319,7 @@ Lists every module, class and function of the integration with signature, file a
 | `Template.to_summary` | `def to_summary(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/templates/factory.py` | Return the description sent to the panel. |
 | `TemplateFactory` | `class TemplateFactory` | `custom_components/hass_test_data_creator/templates/factory.py` | Creates templates and entity definitions from plain dictionaries. |
 | `TemplateFactory.entity` | `def entity(self, data: dict[str, Any]) -> EntityDef` | `custom_components/hass_test_data_creator/templates/factory.py` | Return the validated entity definition for `data`. |
+| `TemplateFactory.with_signal` | `def with_signal(self, definition: EntityDef, signal: dict[str, Any]) -> EntityDef` | `custom_components/hass_test_data_creator/templates/factory.py` | Return a copy of `definition` that has `signal` as its curve. |
 | `TemplateFactory.template` | `def template(self, data: dict[str, Any], *, bundled: bool=True) -> Template` | `custom_components/hass_test_data_creator/templates/factory.py` | Return the validated template for `data`. |
 | `TemplateFactory.custom` | `def custom(self, entities: list[dict[str, Any]]) -> Template` | `custom_components/hass_test_data_creator/templates/factory.py` | Return a template for a device whose entities the user defined by hand. |
 | `TemplateFactory._check_unique` | `def _check_unique(self, entities: list[EntityDef]) -> None` | `custom_components/hass_test_data_creator/templates/factory.py` | Raise if two entities of one template share a key. |
@@ -352,7 +353,7 @@ Lists every module, class and function of the integration with signature, file a
 | `job_from_request` | `def job_from_request(data: dict[str, Any], default_seed: str) -> CreationJob` | `custom_components/hass_test_data_creator/devices/schema.py` | Return the creation job for a validated request; `default_seed` is used without a seed. |
 | `hass_test_data_creator.devices.signal_editor` | `module` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Changes the curve of a sensor of a generated device (concept 5). |
 | `SignalEditor` | `class SignalEditor` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Replaces the signal of a stored entity and of its live behaviour. |
-| `SignalEditor.__init__` | `def __init__(self, store: TdcStore, live: Live, behaviours: BehaviourFactory, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Keep the collaborators. |
+| `SignalEditor.__init__` | `def __init__(self, store: TdcStore, live: Live, behaviours: BehaviourFactory, templates: TemplateFactory, audit: AuditLog, audit_factory: AuditEntryFactory) -> None` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Keep the collaborators. |
 | `SignalEditor.async_set` | `async def async_set(self, device_id: str, key: str, signal: dict[str, Any]) -> EntityDef` | `custom_components/hass_test_data_creator/devices/signal_editor.py` | Give entity `key` of the device the numeric signal `signal`; return the entity. |
 | `hass_test_data_creator.devices.usage` | `module` | `custom_components/hass_test_data_creator/devices/usage.py` | Where a generated device is used: the schedules, scenarios and groups that name it (concept 10). |
 | `UsageIndex` | `class UsageIndex` | `custom_components/hass_test_data_creator/devices/usage.py` | The users of devices, looked up by device id or name; build it once per request. |
@@ -399,6 +400,8 @@ Lists every module, class and function of the integration with signature, file a
 | `OutputAdapterFactory.async_drop_groups` | `async def async_drop_groups(self, group_ids: list[str], device_ids: set[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Delete groups and take removed devices out of the other groups. |
 | `OutputAdapterFactory.check_clearable` | `def check_clearable(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Raise TDC-OUT-002 if there are topics to clear and MQTT is not usable. |
 | `OutputAdapterFactory.async_clear_topics` | `async def async_clear_topics(self, topics: list[str]) -> None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Delete the retained messages on `topics`; raises TDC-OUT-002 if MQTT is not usable. |
+| `OutputAdapterFactory.runtime_for` | `def runtime_for(self, output: str) -> BehaviourRuntime \| None` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Return the runtime of an MQTT-based output, or None for the native output. |
+| `OutputAdapterFactory.runtimes` | `def runtimes(self) -> dict[str, BehaviourRuntime]` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Return the runtimes of all MQTT-based outputs by output name. |
 | `OutputAdapterFactory.create` | `def create(self, output: str) -> OutputAdapter` | `custom_components/hass_test_data_creator/outputs/adapter.py` | Return the adapter for `output`; native, MQTT discovery or Zigbee2MQTT. |
 | `hass_test_data_creator.outputs.base` | `module` | `custom_components/hass_test_data_creator/outputs/base.py` | The interface of an output adapter (concept 7.1). |
 | `OutputAdapter` | `class OutputAdapter(ABC)` | `custom_components/hass_test_data_creator/outputs/base.py` | Turns a device description into Home Assistant objects or MQTT messages. |
@@ -475,8 +478,8 @@ Lists every module, class and function of the integration with signature, file a
 | `EventProfile.platform_fields` | `def platform_fields(self, topics: Topics, definition: EntityDef) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Return the event topic and the event types. |
 | `EventProfile.states` | `def states(self, behaviour: EventBehaviour) -> dict[str, str]` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Events have no state to publish. |
 | `EventProfile.attach` | `def attach(self, behaviour: Behaviour, send: Send) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Publish every event of the behaviour as `{"event_type": ...}`. |
-| `MqttProfileFactory` | `class MqttProfileFactory` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Creates the MQTT profile for a platform. |
-| `MqttProfileFactory.create` | `def create(self, platform: str) -> MqttProfile` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Return the profile of `platform` or raise TDC-OUT-001. |
+| `MqttProfileFactory` | `class MqttProfileFactory(ProfileFactory[MqttProfile])` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Creates the MQTT profile for a platform. |
+| `MqttProfileFactory.__init__` | `def __init__(self) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Use the table of this output. |
 | `hass_test_data_creator.outputs.mqtt.runtime` | `module` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Base of the MQTT outputs: runs the behaviours of their devices and publishes for them. |
 | `RuntimeEntry` | `class RuntimeEntry` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | One entity of an MQTT output: its device, definition and behaviour. |
 | `RuntimeEntry.__init__` | `def __init__(self, device: DeviceDef, definition: EntityDef, behaviour: Behaviour) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/runtime.py` | Keep the parts. |
@@ -517,6 +520,10 @@ Lists every module, class and function of the integration with signature, file a
 | `NativeAdapter.create` | `async def create(self, device: DeviceDef, area_id: str \| None) -> None` | `custom_components/hass_test_data_creator/outputs/native/adapter.py` | Add `device` to the device registry with the entry, manufacturer and test label. |
 | `NativeAdapter.announce` | `async def announce(self, devices: list[DeviceDef]) -> None` | `custom_components/hass_test_data_creator/outputs/native/adapter.py` | Tell the platforms to add the entities of `devices`. |
 | `NativeAdapter.remove` | `async def remove(self, device: DeviceDef) -> None` | `custom_components/hass_test_data_creator/outputs/native/adapter.py` | Remove the registry device of `device`; Home Assistant removes its entities. |
+| `hass_test_data_creator.outputs.profile_factory` | `module` | `custom_components/hass_test_data_creator/outputs/profile_factory.py` | Generic factory for the per-platform profiles of an MQTT output (concept 13.2). |
+| `ProfileFactory` | `class ProfileFactory` | `custom_components/hass_test_data_creator/outputs/profile_factory.py` | Creates the profile of a platform from a table of profile classes. |
+| `ProfileFactory.__init__` | `def __init__(self, profiles: dict[str, type[T]]) -> None` | `custom_components/hass_test_data_creator/outputs/profile_factory.py` | Keep the table of profile classes by platform. |
+| `ProfileFactory.create` | `def create(self, platform: str) -> T` | `custom_components/hass_test_data_creator/outputs/profile_factory.py` | Return the profile of `platform` or raise TDC-OUT-001. |
 | `hass_test_data_creator.outputs.z2m.__init__` | `module` | `custom_components/hass_test_data_creator/outputs/z2m/__init__.py` | Zigbee2MQTT emulation of the HASS Test Data Creator (concept 7.4). |
 | `hass_test_data_creator.outputs.z2m.devices` | `module` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | The devices of the Zigbee2MQTT output: bridge topics, device states and commands (concept 7.4). |
 | `Z2mSettings` | `class Z2mSettings` | `custom_components/hass_test_data_creator/outputs/z2m/devices.py` | The options of the Zigbee2MQTT output. |
@@ -601,8 +608,8 @@ Lists every module, class and function of the integration with signature, file a
 | `EventProfile.expose` | `def expose(self, definition: EntityDef) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Return the action enum. |
 | `EventProfile.values` | `def values(self, definition: EntityDef, behaviour: EventBehaviour) -> dict[str, Any]` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Events are not part of the state. |
 | `EventProfile.attach` | `def attach(self, definition: EntityDef, behaviour: Behaviour, send: SendAction) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Publish every event of the behaviour as an action. |
-| `Z2mProfileFactory` | `class Z2mProfileFactory` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Creates the Zigbee2MQTT profile for a platform. |
-| `Z2mProfileFactory.create` | `def create(self, platform: str) -> Z2mProfile` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Return the profile of `platform` or raise TDC-OUT-001. |
+| `Z2mProfileFactory` | `class Z2mProfileFactory(ProfileFactory[Z2mProfile])` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Creates the Zigbee2MQTT profile for a platform. |
+| `Z2mProfileFactory.__init__` | `def __init__(self) -> None` | `custom_components/hass_test_data_creator/outputs/z2m/profiles.py` | Use the table of this output. |
 
 ## platforms
 
@@ -862,6 +869,11 @@ Lists every module, class and function of the integration with signature, file a
 | `_scaled.apply` | `def apply(value: float) -> float` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the value multiplied by the factor. |
 | `_fixed` | `def _fixed(level: float) -> Transform` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the transformation that replaces every value by `level`. |
 | `_fixed.apply` | `def apply(value: float) -> float` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fixed level. |
+| `_plain` | `def _plain(**flags: bool) -> Callable[[str, float, dict[str, Any]], Fault]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the builder of a fault that only sets flags. |
+| `_spike` | `def _spike(kind: str, duration: float, checked: dict[str, Any]) -> Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fault that multiplies the values. |
+| `_late` | `def _late(kind: str, duration: float, checked: dict[str, Any]) -> Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fault that holds messages back. |
+| `_duplicate` | `def _duplicate(kind: str, duration: float, checked: dict[str, Any]) -> Fault` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the fault that publishes messages again. |
+| `_fixed_level` | `def _fixed_level(default: float) -> Callable[[str, float, dict[str, Any]], Fault]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the builder of a fault that replaces the values by a level. |
 | `FaultFactory` | `class FaultFactory` | `custom_components/hass_test_data_creator/faults/factory.py` | Creates the fault for a kind and its parameters. |
 | `FaultFactory.kinds` | `def kinds(self) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the names of all kinds of fault. |
 | `FaultFactory.platforms` | `def platforms(self, kind: str) -> tuple[str, ...]` | `custom_components/hass_test_data_creator/faults/factory.py` | Return the platforms a kind of fault applies to; empty if the kind is unknown. |
