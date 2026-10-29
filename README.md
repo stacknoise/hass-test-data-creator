@@ -7,6 +7,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor, dimmable light, blind, radiator thermostat, washing machine) or from your own entity definitions.
 - Assign the devices to areas on creation.
 - For a custom device the create dialog has an entity editor instead of a JSON field: "Add entity" opens a form (name, key, platform, unit, curve), and each entity in the scrollable list can be edited or deleted. "Start from a template" copies the entities of a template into the editor after a warning that it replaces the current ones.
+- Own templates can be saved from the custom device (name field and "Save as template"), appear in their own group of the template dropdown, and can be edited or deleted there. Built-in templates cannot be changed or deleted. Own templates are stored as YAML files in `<config>/hass_test_data_creator/templates/` (up to 200).
 - The create dialog lists "Custom device" last in the template dropdown (highlighted) and shows all entities of the chosen template (sensors with value range, unit and a small 24-hour curve) in a scrollable list.
 - Value curves: constant, sine, saw, square, triangle, noise, random walk, counter, and the daily profiles `household_load` and `pv_day`, a staircase (`steps`), a battery `discharge`, and the state shapes `enum` (states drawn by weight) and `state_machine` (a cycle of states with durations, as in the `washer` template). Every curve is a function of time and seed, so the same seed gives the same values.
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
@@ -153,7 +154,7 @@ data:
   trigger: { type: random_window, count: 3, start: "18:00", end: "23:00" }
 ```
 
-Own templates: put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2. Up to 200 files of at most 256 KiB are read; links, unreadable and invalid files (and files with `!secret` or `!include`) are skipped with a `TDC-TPL-002` warning in the log, the others still load.
+Own templates: save them in the create dialog (see above), or put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2. Up to 200 files of at most 256 KiB are read; links, unreadable and invalid files (and files with `!secret` or `!include`) are skipped with a `TDC-TPL-002` warning in the log, the others still load.
 
 ## Development
 

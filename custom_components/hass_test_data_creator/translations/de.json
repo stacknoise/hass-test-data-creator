@@ -76,6 +76,15 @@
     "tpl_unknown_shape": {
       "message": "Die Kurvenform ist unbekannt"
     },
+    "tpl_bundled": {
+      "message": "Eine mitgelieferte Vorlage lässt sich nicht ändern oder löschen"
+    },
+    "tpl_limit": {
+      "message": "Es gibt zu viele eigene Vorlagen. Lösche zuerst eine"
+    },
+    "tpl_write": {
+      "message": "Die Vorlagendatei konnte nicht geschrieben oder gelöscht werden"
+    },
     "gen_limit": {
       "message": "Zu viele Geräte. Das Limit sind 2000 Geräte"
     },

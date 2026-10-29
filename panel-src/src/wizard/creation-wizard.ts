@@ -5,6 +5,7 @@ import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
 import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
+import { keyOf } from './entity-helpers';
 import './entity-editor';
 import './entity-list';
 import '../common/multi-select';
@@ -36,6 +37,9 @@ export class CreationWizard extends TdcElement {
   @state() private output = 'native';
   @state() private custom: EntityDef[] = [];
   @state() private pendingBase = '';
+  @state() private templateName = '';
+  @state() private editingId = '';
+  @state() private confirmDelete = false;
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -49,6 +53,112 @@ export class CreationWizard extends TdcElement {
     } catch (err) {
       this.error = describeError(err);
     }
+  }
+
+  /** Reload the templates and select `id` when it exists. */
+  private async reloadTemplates(id: string): Promise<void> {
+    this.templates = await this.api.templates();
+    this.template = this.templates.some((t) => t.id === id)
+      ? id
+      : (this.templates[0]?.id ?? CUSTOM);
+  }
+
+  /** Return the selected template when it is one of the user's own. */
+  private ownTemplate(): TemplateInfo | undefined {
+    const template = this.templates.find((t) => t.id === this.template);
+    return template && !template.bundled ? template : undefined;
+  }
+
+  /** Load the selected own template into the custom device so that it can be changed. */
+  private editTemplate(): void {
+    const own = this.ownTemplate();
+    if (!own) return;
+    this.custom = structuredClone(own.entities);
+    this.templateName = own.name;
+    this.editingId = own.id;
+    this.confirmDelete = false;
+    this.template = CUSTOM;
+  }
+
+  /** Run `action`, show `done` as the message and the error otherwise. */
+  private async attempt(action: () => Promise<string>): Promise<void> {
+    this.busy = true;
+    this.message = '';
+    this.error = '';
+    try {
+      this.message = await action();
+    } catch (err) {
+      this.error = describeError(err);
+    }
+    this.busy = false;
+  }
+
+  /** Delete the selected own template. */
+  private deleteTemplate(): Promise<void> {
+    const own = this.ownTemplate();
+    if (!own) return Promise.resolve();
+    return this.attempt(async () => {
+      await this.api.deleteTemplate(own.id);
+      this.confirmDelete = false;
+      await this.reloadTemplates('');
+      return this.tr('tplDeleted', { name: own.name });
+    });
+  }
+
+  /** Save the custom device as an own template; editing a template keeps its id. */
+  private saveTemplate(): Promise<void> {
+    const name = this.templateName.trim();
+    const id = this.editingId || keyOf(name);
+    return this.attempt(async () => {
+      await this.api.saveTemplate(id, name, this.custom);
+      await this.reloadTemplates(id);
+      this.editingId = '';
+      return this.tr('tplSaved', { name });
+    });
+  }
+
+  /** Render the buttons to change or delete the selected own template, with the question before a delete. */
+  private renderOwnActions(): TemplateResult {
+    const own = this.ownTemplate();
+    if (!own) return html``;
+    if (this.confirmDelete) {
+      return html`<p class="warning row">
+        ${this.tr('tplDeleteAsk', { name: own.name })}
+        <button ?disabled=${this.busy} @click=${() => void this.deleteTemplate()}>
+          ${this.tr('tplDeleteConfirm')}
+        </button>
+        <button @click=${() => (this.confirmDelete = false)}>${this.tr('detCancel')}</button>
+      </p>`;
+    }
+    return html`<p class="row">
+      <button @click=${() => this.editTemplate()}>${this.tr('tplEdit')}</button>
+      <button @click=${() => (this.confirmDelete = true)}>${this.tr('tplDelete')}</button>
+    </p>`;
+  }
+
+  /** Render the name and the save button that turn the custom device into an own template. */
+  private renderSaveTemplate(): TemplateResult {
+    const name = this.templateName.trim();
+    const id = this.editingId || keyOf(name);
+    const exists = !this.editingId && this.templates.some((t) => t.id === id && !t.bundled);
+    const editing = this.templates.find((t) => t.id === this.editingId);
+    return html`<div class="row form">
+        <label style="flex: 1 1 220px"
+          >${this.tr('tplName')}
+          <input
+            .value=${this.templateName}
+            @input=${(e: Event) => (this.templateName = (e.target as HTMLInputElement).value)}
+          />
+        </label>
+        <button
+          ?disabled=${this.busy || !id || this.custom.length === 0}
+          @click=${() => void this.saveTemplate()}
+        >
+          ${this.editingId ? this.tr('tplSaveChanges') : this.tr('tplSave')}
+        </button>
+      </div>
+      ${editing ? html`<small>${this.tr('tplEditing', { name: editing.name })}</small>` : ''}
+      ${exists ? html`<small class="warning">${this.tr('tplExists')}</small>` : ''}`;
   }
 
   /** Return the entity definitions of the selected template or of the custom device. */
@@ -146,37 +256,65 @@ export class CreationWizard extends TdcElement {
     </p>`;
   }
 
-  /** Return the templates and the custom device as `{id, label}`, sorted by label, with the custom device always last. */
-  private templateOptions(): { id: string; label: string }[] {
+  /** Return the built-in and the own templates and the custom device as `{id, label}`, sorted by label; the custom device is shown last. */
+  private templateOptions(): {
+    bundled: { id: string; label: string }[];
+    own: { id: string; label: string }[];
+    custom: { id: string; label: string };
+  } {
     const lang = this.hass?.language;
-    const options = this.templates.map((t) => ({
-      id: t.id,
-      label: templateLabel(lang, t.id, t.name),
-    }));
-    return [
-      ...sortedByLabel(lang, options, (option) => option.label),
-      { id: CUSTOM, label: this.tr('customTemplate') },
-    ];
+    const options = (own: boolean) =>
+      sortedByLabel(
+        lang,
+        this.templates
+          .filter((t) => !t.bundled === own)
+          .map((t) => ({ id: t.id, label: templateLabel(lang, t.id, t.name) })),
+        (option) => option.label,
+      );
+    return {
+      bundled: options(false),
+      own: options(true),
+      custom: { id: CUSTOM, label: this.tr('customTemplate') },
+    };
+  }
+
+  /** Render one entry of the template choice; the custom device is bold and marked. */
+  private option(option: { id: string; label: string }): TemplateResult {
+    const custom = option.id === CUSTOM;
+    return html`<option
+      value=${option.id}
+      ?selected=${option.id === this.template}
+      style=${custom ? 'font-weight: bold' : ''}
+    >
+      ${custom ? '✚ ' : ''}${option.label}
+    </option>`;
+  }
+
+  /** Select a template; leaving the custom device ends the editing of an own template. */
+  private choose(id: string): void {
+    this.template = id;
+    this.confirmDelete = false;
+    if (id !== CUSTOM) this.editingId = '';
   }
 
   /** Render the element. */
   override render(): TemplateResult {
+    const options = this.templateOptions();
     return html`
       <div class="row form">
         <label style="flex: 1 1 220px"
           >${this.tr(KIND_TEMPLATE)}
-          <select @change=${(e: Event) => (this.template = (e.target as HTMLSelectElement).value)}>
-            ${this.templateOptions().map(
-              (option) =>
-                html`${option.id === CUSTOM ? html`<hr />` : ''}
-                  <option
-                    value=${option.id}
-                    ?selected=${option.id === this.template}
-                    style=${option.id === CUSTOM ? 'font-weight: bold' : ''}
-                  >
-                    ${option.id === CUSTOM ? '✚ ' : ''}${option.label}
-                  </option>`,
-            )}
+          <select @change=${(e: Event) => this.choose((e.target as HTMLSelectElement).value)}>
+            ${options.bundled.map((option) => this.option(option))}
+            ${
+              options.own.length
+                ? html`<optgroup label=${this.tr('ownTemplates')}>
+                    ${options.own.map((option) => this.option(option))}
+                  </optgroup>`
+                : ''
+            }
+            <hr />
+            ${this.option(options.custom)}
           </select>
         </label>
         <label style="flex: 0 0 100px"
@@ -242,7 +380,7 @@ export class CreationWizard extends TdcElement {
       ${
         this.template === CUSTOM
           ? html`<div style="display: grid; gap: 20px">
-              ${this.renderBase()}<tdc-entity-editor
+              ${this.renderBase()}${this.renderSaveTemplate()}<tdc-entity-editor
                 .hass=${this.hass}
                 .entities=${this.custom}
                 .shapes=${this.info?.shapes ?? []}
@@ -252,6 +390,7 @@ export class CreationWizard extends TdcElement {
             </div>`
           : ''
       }
+      ${this.template === CUSTOM ? '' : this.renderOwnActions()}
       ${
         this.template !== CUSTOM
           ? html`<p>

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -35,6 +36,32 @@ async def test_info_and_templates(
 
     templates = await call(client, "templates/list")
     assert {item["id"] for item in templates["result"]} >= {"plug_metering", "wall_button"}
+
+
+async def test_save_and_delete_an_own_template(
+    hass: HomeAssistant,
+    hass_ws_client: WebSocketGenerator,
+    entry: MockConfigEntry,
+    tmp_path: Path,
+) -> None:
+    hass.config.config_dir = str(tmp_path)
+    client = await hass_ws_client(hass)
+    entities = [
+        {"key": "level", "platform": "sensor", "name": "Level", "signal": {"shape": "sine"}}
+    ]
+    saved = await call(client, "templates/save", template_id="mine", name="Mine", entities=entities)
+    assert saved["success"]
+    assert saved["result"]["model"] == "Custom"
+    assert saved["result"]["bundled"] is False
+    listed = await call(client, "templates/list")
+    assert "mine" in {item["id"] for item in listed["result"]}
+
+    refused = await call(client, "templates/delete", template_id="plug_metering")
+    assert refused["error"]["code"] == "TDC-TPL-004"
+    removed = await call(client, "templates/delete", template_id="mine")
+    assert removed["success"]
+    listed = await call(client, "templates/list")
+    assert "mine" not in {item["id"] for item in listed["result"]}
 
 
 async def test_create_list_and_remove(

@@ -98,6 +98,16 @@ class AuditEntryFactory:
         """Return the entry for a scenario that was changed."""
         return AuditEntry(logging.INFO, "scenario changed", {KEY_SCENARIO: name})
 
+    def template_saved(self, template: str, entities: int) -> AuditEntry:
+        """Return the entry for an own template that was saved."""
+        return AuditEntry(
+            logging.INFO, "template saved", {KEY_TEMPLATE: template, "entities": entities}
+        )
+
+    def template_deleted(self, template: str) -> AuditEntry:
+        """Return the entry for an own template that was deleted."""
+        return AuditEntry(logging.INFO, "template deleted", {KEY_TEMPLATE: template})
+
     def mqtt_failed(self, topic: str, reason: str) -> AuditEntry:
         """Return the warning for an MQTT message that could not be sent or applied."""
         return AuditEntry(logging.WARNING, "mqtt failed", {"topic": topic, "reason": reason})

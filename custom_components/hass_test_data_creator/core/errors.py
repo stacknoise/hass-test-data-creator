@@ -30,6 +30,15 @@ class ErrorCode(StrEnum):
     TPL_UNKNOWN_SHAPE = "TDC-TPL-003"
     """A template or custom entity names a signal shape that does not exist."""
 
+    TPL_BUNDLED = "TDC-TPL-004"
+    """A built-in template, or the reserved id of the custom device, cannot be saved over or deleted."""
+
+    TPL_LIMIT = "TDC-TPL-005"
+    """There are already MAX_USER_TEMPLATES own templates."""
+
+    TPL_WRITE = "TDC-TPL-006"
+    """The file of an own template could not be written or deleted."""
+
     GEN_LIMIT = "TDC-GEN-001"
     """A creation job would exceed MAX_DEVICES."""
 
