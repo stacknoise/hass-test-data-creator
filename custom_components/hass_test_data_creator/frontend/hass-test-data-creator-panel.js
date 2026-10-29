@@ -1373,7 +1373,7 @@ var wt = o`
     button.primary {
       background: var(--primary-color);
       border-color: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--text-primary-color);
     }
     button:disabled {
       opacity: 0.5;

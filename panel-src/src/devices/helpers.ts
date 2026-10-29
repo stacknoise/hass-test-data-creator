@@ -16,7 +16,9 @@ export const VALUE_ACTIONS: Record<string, ValueAction> = {
   set_temperature: { param: 'temperature', min: 5, max: 30, start: 21 },
 };
 
+/** The prefix of the action names that start a fault. */
 export const FAULT_PREFIX = 'fault_';
+/** The duration that a fault gets when the user enters none. */
 export const DEFAULT_FAULT_SECONDS = 60;
 
 /** The actions of one entity, sorted by how the detail view shows them. */
