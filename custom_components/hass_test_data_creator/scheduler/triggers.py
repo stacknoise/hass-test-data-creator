@@ -11,6 +11,7 @@ import voluptuous as vol
 
 from ..const import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 from ..core.errors import ErrorCode, ScheduleError
+from ..core.hashing import hash01
 from ..core.keys import (
     KEY_COUNT,
     KEY_END,
@@ -21,7 +22,6 @@ from ..core.keys import (
     KEY_TIMES,
     KEY_TYPE,
 )
-from ..engine.signals import hash01
 
 SECONDS_PER_DAY = 86400
 TIME_PARTS = (2, 3)

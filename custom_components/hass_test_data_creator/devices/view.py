@@ -8,6 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
 from ..core.errors import ErrorCode, ScheduleError
+from ..core.identifiers import entity_id_of
 from ..core.keys import (
     KEY_AREA,
     KEY_DEVICES,
@@ -28,7 +29,6 @@ from ..core.keys import (
 from ..engine.behaviours import Live
 from ..model.models import DeviceDef, EntityDef
 from ..store.store import TdcStore
-from .entity_ids import entity_id_of
 from .usage import DeviceUsage, UsageIndex
 
 

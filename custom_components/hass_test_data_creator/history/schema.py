@@ -8,7 +8,7 @@ import voluptuous as vol
 
 from ..const import DEFAULT_HISTORY_DAYS, MAX_HISTORY_DAYS
 from ..core.keys import KEY_DAYS, KEY_DEVICE, KEY_ENTITY
-from ..scheduler.schema import MAX_TARGET_DEVICES
+from ..core.targets import MAX_TARGET_DEVICES
 
 HISTORY_FIELDS: dict[Any, Any] = {
     vol.Optional(KEY_DAYS, default=DEFAULT_HISTORY_DAYS): vol.All(

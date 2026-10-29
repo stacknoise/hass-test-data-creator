@@ -76,6 +76,12 @@ Lists every module, class and function of the integration with signature, file a
 | `RemovalError` | `class RemovalError(TdcError)` | `custom_components/hass_test_data_creator/core/errors.py` | Error while removing generated data. |
 | `RequestError` | `class RequestError(TdcError)` | `custom_components/hass_test_data_creator/core/errors.py` | Error in the format of a WebSocket request. |
 | `InternalError` | `class InternalError(TdcError)` | `custom_components/hass_test_data_creator/core/errors.py` | Unexpected error that is not caused by the user. |
+| `hass_test_data_creator.core.hashing` | `module` | `custom_components/hass_test_data_creator/core/hashing.py` | The deterministic hash that signals, triggers and area distribution share (concept 5). |
+| `hash01` | `def hash01(seed: int, n: int) -> float` | `custom_components/hass_test_data_creator/core/hashing.py` | Return a deterministic number in [0, 1) for the integers `seed` and `n` (SplitMix64). |
+| `hass_test_data_creator.core.identifiers` | `module` | `custom_components/hass_test_data_creator/core/identifiers.py` | The names a generated device and its entities carry in Home Assistant and in MQTT discovery. |
+| `mqtt_device_identifier` | `def mqtt_device_identifier(device_id: str) -> str` | `custom_components/hass_test_data_creator/core/identifiers.py` | Return the identifier of the registry device that MQTT discovery creates for `device_id`. |
+| `mqtt_unique_id` | `def mqtt_unique_id(device_id: str, key: str) -> str` | `custom_components/hass_test_data_creator/core/identifiers.py` | Return the unique id of the MQTT entity of `key` of a device. |
+| `entity_id_of` | `def entity_id_of(registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef) -> str \| None` | `custom_components/hass_test_data_creator/core/identifiers.py` | Return the entity id of `definition` (native or MQTT unique id), or None if not registered. |
 | `hass_test_data_creator.core.ids` | `module` | `custom_components/hass_test_data_creator/core/ids.py` | Identifier helpers. |
 | `new_id` | `def new_id() -> str` | `custom_components/hass_test_data_creator/core/ids.py` | Return a new time-ordered hexadecimal identifier (26 characters). |
 | `hass_test_data_creator.core.keys` | `module` | `custom_components/hass_test_data_creator/core/keys.py` | Names of the keys and values that several modules use. |
@@ -91,6 +97,8 @@ Lists every module, class and function of the integration with signature, file a
 | `TdcData` | `class TdcData` | `custom_components/hass_test_data_creator/core/runtime.py` | Everything a loaded config entry needs; created once in `async_setup_entry`. |
 | `build_data` | `def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData` | `custom_components/hass_test_data_creator/core/runtime.py` | Create the factories and managers of `entry` and wire them together. |
 | `get_data` | `def get_data(hass: HomeAssistant) -> TdcData` | `custom_components/hass_test_data_creator/core/runtime.py` | Return the runtime data or raise TDC-CFG-002 if the integration is not loaded. |
+| `hass_test_data_creator.core.targets` | `module` | `custom_components/hass_test_data_creator/core/targets.py` | What a schedule, a scenario step or a history import aims at: the target and its schema. |
+| `device_references` | `def device_references(value: str \| list[str] \| None) -> set[str]` | `custom_components/hass_test_data_creator/core/targets.py` | Return the ids or names that the `device` part of a target names: one text or a list. |
 
 ## model
 
@@ -259,7 +267,6 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.engine.signals` | `module` | `custom_components/hass_test_data_creator/engine/signals.py` | Pure signal functions: the value of a signal is a function of time and seed (concept 5). |
 | `SignalSpec` | `class SignalSpec` | `custom_components/hass_test_data_creator/engine/signals.py` | Parameters of one signal; `seed` and `origin` are set per entity. |
 | `SignalSpec.from_dict` | `def from_dict(cls, data: dict[str, Any], seed: int, origin: float) -> SignalSpec` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the spec of a template signal `data` for one entity. |
-| `hash01` | `def hash01(seed: int, n: int) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a deterministic number in [0, 1) for the integers `seed` and `n` (SplitMix64). |
 | `_cycle` | `def _cycle(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the position inside one period in [0, 1) including the phase. |
 | `_constant` | `def _constant(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return the middle of the range. |
 | `_sine` | `def _sine(spec: SignalSpec, t: float) -> float` | `custom_components/hass_test_data_creator/engine/signals.py` | Return a sine wave between 0 and 1. |
@@ -325,8 +332,6 @@ Lists every module, class and function of the integration with signature, file a
 | Symbol | Signature | File | Description |
 | --- | --- | --- | --- |
 | `hass_test_data_creator.devices.__init__` | `module` | `custom_components/hass_test_data_creator/devices/__init__.py` | Devices package of the HASS Test Data Creator. |
-| `hass_test_data_creator.devices.entity_ids` | `module` | `custom_components/hass_test_data_creator/devices/entity_ids.py` | Finds the entity id of an entity of a generated device, whatever its output. |
-| `entity_id_of` | `def entity_id_of(registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef) -> str \| None` | `custom_components/hass_test_data_creator/devices/entity_ids.py` | Return the entity id of `definition` (native or MQTT unique id), or None if not registered. |
 | `hass_test_data_creator.devices.manager` | `module` | `custom_components/hass_test_data_creator/devices/manager.py` | Creates devices for a creation job (concept 4.1, 12). |
 | `CreationJob` | `class CreationJob` | `custom_components/hass_test_data_creator/devices/manager.py` | The inputs of one creation job. |
 | `DevicesManager` | `class DevicesManager` | `custom_components/hass_test_data_creator/devices/manager.py` | Creates devices with their registry entries, areas and entities. |
@@ -425,8 +430,6 @@ Lists every module, class and function of the integration with signature, file a
 | `MqttDevices._async_send` | `async def _async_send(self, entry: _Entry, facet: str, payload: str, *, retain: bool=True) -> None` | `custom_components/hass_test_data_creator/outputs/mqtt/devices.py` | Publish `payload` on the topic of `facet`. |
 | `MqttDevices._mqtt` | `def _mqtt(self, entry: RuntimeEntry) -> _Entry` | `custom_components/hass_test_data_creator/outputs/mqtt/devices.py` | Return the entry as one of this output. |
 | `hass_test_data_creator.outputs.mqtt.profiles` | `module` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | How each platform looks over MQTT discovery: config, states and commands (concept 7.3). |
-| `mqtt_device_identifier` | `def mqtt_device_identifier(device_id: str) -> str` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Return the identifier of the registry device that MQTT discovery creates for `device_id`. |
-| `mqtt_unique_id` | `def mqtt_unique_id(device_id: str, key: str) -> str` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Return the unique id of the MQTT entity of `key` of a device. |
 | `Topics` | `class Topics` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | The topics of one entity below the base topic: `<base>/<device>/<key>/<facet>[/set]`. |
 | `Topics.facet` | `def facet(self, name: str, *, command: bool=False) -> str` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | Return the state topic of `name`, or its command topic. |
 | `MqttProfile` | `class MqttProfile(ABC)` | `custom_components/hass_test_data_creator/outputs/mqtt/profiles.py` | What one platform publishes and accepts; created only by the MqttProfileFactory. |
@@ -723,7 +726,6 @@ Lists every module, class and function of the integration with signature, file a
 | `ActionRunner._run_device` | `async def _run_device(self, device_id: str, reference: str, key: str, action: str, params: dict[str, Any] \| None) -> None` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Run `action` on the entities of the device `device_id`; `reference` is audited. |
 | `ActionRunner._keys` | `def _keys(self, device_id: str, key: str, action: str) -> list[str]` | `custom_components/hass_test_data_creator/scheduler/runner.py` | Return the keys of the entities that an action runs on: the one named, or all that fit. |
 | `hass_test_data_creator.scheduler.schema` | `module` | `custom_components/hass_test_data_creator/scheduler/schema.py` | Request fields of a schedule, shared by the services and the WebSocket commands. |
-| `device_references` | `def device_references(value: str \| list[str] \| None) -> set[str]` | `custom_components/hass_test_data_creator/scheduler/schema.py` | Return the ids or names that the `device` part of a target names: one text or a list. |
 | `hass_test_data_creator.scheduler.triggers` | `module` | `custom_components/hass_test_data_creator/scheduler/triggers.py` | Schedule triggers and their factory (concept 6.1, 13.2). |
 | `parse_clock` | `def parse_clock(text: str) -> int` | `custom_components/hass_test_data_creator/scheduler/triggers.py` | Return the seconds after midnight of a clock time `HH:MM` or `HH:MM:SS` (24:00 allowed). |
 | `Trigger` | `class Trigger(ABC)` | `custom_components/hass_test_data_creator/scheduler/triggers.py` | Computes the times of one day at which a schedule runs. |
