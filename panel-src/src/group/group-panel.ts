@@ -13,7 +13,6 @@ import { LIST_SEPARATOR } from '../common/constants';
 
 const COLUMN_COUNT = 3;
 
-const DEVICE_LIMIT = 500;
 const Z2M_OUTPUT = 'z2m';
 
 /** Creates, lists, changes and removes groups of Zigbee2MQTT devices. */
@@ -45,10 +44,7 @@ export class GroupPanel extends TdcPollingElement {
   /** Reload the groups and the devices. */
   protected async refresh(): Promise<void> {
     try {
-      const [groups, page] = await Promise.all([
-        this.api.groups(),
-        this.api.devices(0, DEVICE_LIMIT),
-      ]);
+      const [groups, page] = await Promise.all([this.api.groups(), this.api.devicesUpTo(Infinity)]);
       this.groups = groups;
       this.devices = page.devices;
     } catch (err) {

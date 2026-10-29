@@ -17,7 +17,6 @@ import {
 import { KIND_ALL, KIND_DEVICE, KIND_RUN, KIND_TEMPLATE } from '../common/constants';
 
 const TARGET_KINDS: TargetKind[] = [KIND_ALL, KIND_TEMPLATE, KIND_DEVICE, KIND_RUN];
-const DEVICE_LIMIT = 500;
 
 /** Picks what runs where: a target, an action and, for one device or template, an entity. */
 @customElement('tdc-work-picker')
@@ -39,7 +38,7 @@ export class WorkPicker extends TdcElement {
   /** Read the devices. */
   private async loadDevices(): Promise<void> {
     try {
-      this.devices = (await this.api.devices(0, DEVICE_LIMIT)).devices;
+      this.devices = (await this.api.devicesUpTo(Infinity)).devices;
       this.loaded = true;
       this.error = '';
     } catch (err) {

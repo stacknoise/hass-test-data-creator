@@ -24,6 +24,9 @@ export const FIELD_SHAPE = 'shape';
 /** The platform of the entities that have a curve. */
 export const PLATFORM_SENSOR = 'sensor';
 
+/** The largest page that `devices/list` returns; it matches `MAX_PAGE_SIZE` of the backend. */
+export const MAX_PAGE_SIZE = 500;
+
 /** The tabs of the panel that are named more than once. */
 export const TAB_DEVICES = 'devices';
 export const TAB_GROUPS = 'groups';
