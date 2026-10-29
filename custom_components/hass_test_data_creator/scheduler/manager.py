@@ -26,8 +26,8 @@ from ..core.keys import (
     KEY_TARGET,
     KEY_TRIGGER,
 )
+from ..core.protocols import ScenarioRunner
 from ..model.models import ScheduleDef
-from ..scenarios.manager import ScenarioManager
 from ..store.store import TdcStore
 from .planner import PlannedRun, SchedulePlanner
 from .runner import ActionRunner
@@ -47,7 +47,7 @@ class ScheduleManager:
         triggers: TriggerFactory,
         planner: SchedulePlanner,
         runner: ActionRunner,
-        scenarios: ScenarioManager,
+        scenarios: ScenarioRunner,
         audit: AuditLog,
         audit_factory: AuditEntryFactory,
     ) -> None:
