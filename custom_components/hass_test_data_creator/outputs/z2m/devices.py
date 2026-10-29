@@ -94,14 +94,13 @@ class Z2mDevices(BehaviourRuntime):
         await self._ensure_bridge()
 
     async def _ensure_bridge(self) -> None:
-        """Refuse a foreign base topic, then publish `bridge/state` and `bridge/info`."""
+        """Refuse a foreign base topic or retained topics that are not ours, then publish `bridge/state` and `bridge/info`."""
         if self._bridge_ready:
             return
         if self._base == FOREIGN_BASE_TOPIC and not self._confirmed:
             raise OutputError(ErrorCode.OUT_Z2M_DEFAULT_TOPIC)
         state_topic = f"{self._base}/bridge/state"
-        retained = await self._client.async_retained(state_topic)
-        if retained is not None and not self._client.is_ours(state_topic):
+        if await self._client.async_foreign_topic(self._base) is not None:
             raise OutputError(ErrorCode.OUT_FOREIGN_BRIDGE)
         await self._async_publish(state_topic, self._payloads.bridge_state(True), None)
         await self._async_publish(

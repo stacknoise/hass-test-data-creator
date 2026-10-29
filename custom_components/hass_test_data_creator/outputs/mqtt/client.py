@@ -13,7 +13,7 @@ from ...core.errors import ErrorCode, OutputError
 from ...store.store import TdcStore
 
 MESSAGE_CALLBACK = Callable[[str, str], None]
-RETAINED_WAIT_SECONDS = 1.0
+FOREIGN_PROBE_SECONDS = 3.0
 
 
 class MqttClient:
@@ -35,24 +35,30 @@ class MqttClient:
         """Wait until the MQTT integration is connected; False if it is not set up."""
         return await async_wait_for_mqtt_client(self._hass)
 
-    def is_ours(self, topic: str) -> bool:
-        """Whether this integration has published `topic` as a retained topic."""
-        return topic in self._store.topics()
+    async def async_foreign_topic(self, base: str) -> str | None:
+        """Return a retained topic under `base` that this integration did not publish, if one shows up.
 
-    async def async_retained(self, topic: str) -> str | None:
-        """Return the retained payload on `topic`, or None if there is none after a short wait."""
+        The probe listens to `<base>/#` for `FOREIGN_PROBE_SECONDS`; a broker that delivers its
+        retained messages later than that is not noticed.
+        """
         self.require()
+        ours = set(self._store.topics())
         found: asyncio.Future[str] = self._hass.loop.create_future()
 
         @hass_callback
         def received(message: mqtt.ReceiveMessage) -> None:
-            """Take the first retained message."""
-            if message.retain and not found.done() and message.payload:
-                found.set_result(str(message.payload))
+            """Take the first retained message of a topic that is not ours."""
+            if (
+                message.retain
+                and message.payload
+                and message.topic not in ours
+                and not found.done()
+            ):
+                found.set_result(message.topic)
 
-        unsubscribe = await mqtt.async_subscribe(self._hass, topic, received)
+        unsubscribe = await mqtt.async_subscribe(self._hass, f"{base}/#", received)
         try:
-            async with asyncio.timeout(RETAINED_WAIT_SECONDS):
+            async with asyncio.timeout(FOREIGN_PROBE_SECONDS):
                 return await found
         except TimeoutError:
             return None

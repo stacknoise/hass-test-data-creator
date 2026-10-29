@@ -110,6 +110,32 @@ async def test_late_holds_the_message_back_until_the_delay_has_passed(
     assert count(mqtt_mock, topic, "ON") == 1
 
 
+async def test_late_messages_are_capped_and_the_oldest_is_dropped(
+    hass: HomeAssistant,
+    mqtt_mock: MagicMock,
+    freezer: FrozenDateTimeFactory,
+    entry: MockConfigEntry,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "custom_components.hass_test_data_creator.outputs.mqtt.runtime.MAX_LATE_MESSAGES", 3
+    )
+    device_id = await make(hass, "plug_metering", "mqtt")
+    topic = f"tdc/{device_id}/state/state"
+    await fault(hass, "state", "late", delay_s=30, duration_s=600)
+    before = count(mqtt_mock, topic)
+
+    for _ in range(5):
+        await act(hass, "state", "toggle")
+        freezer.tick(1)
+    assert sum(len(timers) for timers in get_data(hass).mqtt_devices._late.values()) == 3
+
+    freezer.tick(60)
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+    assert count(mqtt_mock, topic) - before == 3
+
+
 async def test_the_fault_ends_and_messages_flow_again(
     hass: HomeAssistant,
     mqtt_mock: MagicMock,
@@ -154,7 +180,7 @@ async def test_zigbee2mqtt_devices_publish_their_state_twice_or_late(
     freezer: FrozenDateTimeFactory,
     entry: MockConfigEntry,
 ) -> None:
-    with patch.object(MqttClient, "async_retained", AsyncMock(return_value=None)):
+    with patch.object(MqttClient, "async_foreign_topic", AsyncMock(return_value=None)):
         await make(hass, "plug_metering", "z2m")
     topic = "tdc_z2m/Dev 01"
     await fault(hass, "state", "duplicate", copies=1, duration_s=600)
