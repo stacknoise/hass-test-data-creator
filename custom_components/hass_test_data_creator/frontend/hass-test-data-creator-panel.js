@@ -2841,7 +2841,7 @@ var Ur = 10, Wr = 10, B = "custom", Gr = 50, Kr = ["even", "random"], qr = {
 	}
 	renderSaveTemplate() {
 		let e = this.templateName.trim(), t = this.editingId || Un(e), n = !this.editingId && this.templates.some((e) => e.id === t && !e.bundled), r = this.templates.find((e) => e.id === this.editingId);
-		return v`<div class="row form">
+		return v`<div class="row form" style="align-items: flex-end">
         <label style="flex: 1 1 220px"
           >${this.tr("tplName")}
           <input

@@ -142,7 +142,7 @@ export class CreationWizard extends TdcElement {
     const id = this.editingId || keyOf(name);
     const exists = !this.editingId && this.templates.some((t) => t.id === id && !t.bundled);
     const editing = this.templates.find((t) => t.id === this.editingId);
-    return html`<div class="row form">
+    return html`<div class="row form" style="align-items: flex-end">
         <label style="flex: 1 1 220px"
           >${this.tr('tplName')}
           <input
