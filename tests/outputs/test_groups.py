@@ -88,6 +88,24 @@ async def test_the_group_state_follows_its_members(
     assert state["brightness"] == round((100 + 254) / 2)
 
 
+async def test_a_group_is_published_once_when_all_its_members_change(
+    hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
+) -> None:
+    await lamps(hass, 5)
+    await group(hass, "Lights", *(f"Lamp {number:02}" for number in range(1, 6)))
+    mqtt_mock.async_publish.reset_mock()
+
+    for number in range(1, 6):
+        async_fire_mqtt_message(hass, f"{BASE}/Lamp {number:02}/set", '{"brightness": 100}')
+    await hass.async_block_till_done()
+
+    group_messages = [
+        call for call in mqtt_mock.async_publish.call_args_list if call.args[0] == f"{BASE}/Lights"
+    ]
+    assert len(group_messages) == 1
+    assert json.loads(group_messages[0].args[1])["brightness"] == 100
+
+
 async def test_set_on_the_group_reaches_every_member(
     hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
 ) -> None:
