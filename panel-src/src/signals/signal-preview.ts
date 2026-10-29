@@ -15,6 +15,7 @@ const DAY_SECONDS = 86400;
 export class SignalPreview extends LitElement {
   @property({ attribute: false }) signal?: SignalDef;
   @property() unit = '';
+  @property({ type: Boolean }) compact = false;
 
   static override styles = css`
     :host {
@@ -28,6 +29,10 @@ export class SignalPreview extends LitElement {
       height: auto;
       background: var(--secondary-background-color);
       border-radius: 6px;
+    }
+    :host([compact]) svg {
+      max-width: 120px;
+      border-radius: 3px;
     }
     polyline {
       fill: none;
@@ -63,9 +68,11 @@ export class SignalPreview extends LitElement {
     const options = discrete ? optionsOf(specOf(this.signal)).join(' · ') : '';
     const min = this.signal.min ?? 0;
     const max = this.signal.max ?? DEFAULT_MAX;
-    return html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">
-        ${svg`<polyline points=${this.points(this.signal)}></polyline>`}
-      </svg>
+    const curve = html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">
+      ${svg`<polyline points=${this.points(this.signal)}></polyline>`}
+    </svg>`;
+    if (this.compact) return curve;
+    return html`${curve}
       <div>${discrete ? options : `${min} – ${max} ${this.unit}`}</div>`;
   }
 }
