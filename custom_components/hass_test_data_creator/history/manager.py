@@ -13,9 +13,9 @@ from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..const import HISTORY_CHUNK_ROWS, MAX_HISTORY_ROWS
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
-from ..core.identifiers import entity_id_of
 from ..core.keys import KEY_SENSOR
 from ..core.targets import device_references
+from ..model.identifiers import entity_id_of
 from ..model.models import DeviceDef, EntityDef
 from ..store.store import TdcStore
 from .factory import Series, SeriesFactory

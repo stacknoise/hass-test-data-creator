@@ -11,7 +11,7 @@ import voluptuous as vol
 from ..const import DOMAIN
 from ..core.command import tdc_command
 from ..core.keys import KEY_TARGET, KEY_TARGET_ID
-from ..core.runtime import get_data
+from ..data import get_data
 from ..removal.planner import TARGETS
 
 REMOVAL_FIELDS = {

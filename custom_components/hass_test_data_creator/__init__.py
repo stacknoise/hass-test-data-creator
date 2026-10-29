@@ -7,8 +7,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.loader import async_get_integration
 
 from .api import async_register_commands
+from .bootstrap import build_data
 from .const import DOMAIN, OUTPUT_MQTT, OUTPUT_Z2M, PLATFORMS
-from .core.runtime import build_data
 from .panel import async_register_panel, async_remove_panel
 from .removal.cleanup import async_cleanup_after_entry_removal
 from .services import async_register_services, async_remove_services

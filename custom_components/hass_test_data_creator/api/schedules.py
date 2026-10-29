@@ -11,7 +11,7 @@ import voluptuous as vol
 from ..const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from ..core.command import tdc_command
 from ..core.keys import KEY_ENABLED, KEY_SCHEDULE_ID
-from ..core.runtime import get_data
+from ..data import get_data
 from ..scheduler.schema import SCHEDULE_FIELDS, SCHEDULE_UPDATE_FIELDS
 
 MAX_PREVIEW_HOURS = 72

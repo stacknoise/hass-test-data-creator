@@ -10,7 +10,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from ..const import SIGNAL_DEVICES_ADDED
-from ..core.runtime import get_data
+from ..data import get_data
 from ..model.models import DeviceDef
 
 

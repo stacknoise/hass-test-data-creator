@@ -28,7 +28,7 @@ from custom_components.hass_test_data_creator.core.errors import (
     GenerationError,
     ScheduleError,
 )
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.signal_factory import SignalFactory
 from custom_components.hass_test_data_creator.history.factory import SeriesFactory
 from custom_components.hass_test_data_creator.history.manager import last_hours

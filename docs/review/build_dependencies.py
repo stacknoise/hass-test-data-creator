@@ -70,7 +70,7 @@ COMMON = {
 }
 
 LAYERS = [
-    ("Entry points and composition root", "(root) modules, core.runtime"),
+    ("Entry points and composition root", "(root) modules: bootstrap, data, services"),
     ("WebSocket API", "api"),
     (
         "Topic modules",
@@ -84,8 +84,10 @@ LAYERS = [
 def layer_of(module: str) -> int:
     """Return the layer index of a module (see LAYERS)."""
     top = module.split(".")[0]
-    if module in ("core.runtime",) or top in (
+    if top in (
         "(root)",
+        "bootstrap",
+        "data",
         "__init__",
         "config_flow",
         "services",
@@ -578,10 +580,10 @@ def ws_handlers(modules: dict[str, Module]) -> dict[str, str]:
 # ----------------------------------------------------------------------------- implementation notes
 NOTES: dict[str, dict[str, str]] = {
     "core": {
-        "Responsibility": "Cross-topic plumbing: error codes and exceptions, the command wrapper for WebSocket commands, reply and error factories, id generation, and the runtime data (the composition root).",
-        "Key classes": "<code>ErrorCode</code> and the <code>TdcError</code> family (<code>core.errors</code>), <code>tdc_command</code> (<code>core.command</code>), <code>ErrorFactory</code>, <code>ResponseFactory</code>, <code>TdcData</code> and <code>build_data</code> (<code>core.runtime</code>).",
+        "Responsibility": "Cross-topic plumbing: error codes and exceptions, the command wrapper for WebSocket commands, reply and error factories, id generation, shared helpers and the protocols that let topics use each other without importing.",
+        "Key classes": "<code>ErrorCode</code> and the <code>TdcError</code> family (<code>core.errors</code>), <code>tdc_command</code> (<code>core.command</code>), <code>ErrorFactory</code>, <code>ResponseFactory</code>, <code>HasReplies</code> and the other narrow protocols (<code>core.protocols</code>). The runtime data lives in the root modules <code>data</code> (<code>TdcData</code>, <code>get_data</code>) and <code>bootstrap</code> (<code>build_data</code>).",
         "Data flow": "<code>async_setup_entry</code> calls <code>build_data</code>, which creates every factory and manager once and wires them with constructor arguments; the result is stored in <code>hass.data[DOMAIN]</code> and fetched by <code>get_data(hass)</code>. A command arrives at HA's websocket_api, passes the schema and <code>require_admin</code>, runs the handler inside <code>tdc_command</code> and is answered by <code>ResponseFactory</code>; any exception becomes a <code>TdcError</code> through <code>ErrorFactory</code> and is logged once with its code.",
-        "Notable decisions": "<code>core.runtime</code> imports every topic, so <code>core</code> is not a leaf package: it is the composition root and the only place that knows all concrete classes. The only <code>except Exception</code> is in <code>core.command</code>. Translation keys are the lower-case enum member names.",
+        "Notable decisions": "<code>core</code> is a leaf package: it imports no topic. The composition root is the root module <code>bootstrap</code>, the only place that knows all concrete classes; <code>data</code> holds the runtime data and the service locator <code>get_data(hass)</code>. The only <code>except Exception</code> is in <code>core.command</code>. Translation keys are the lower-case enum member names.",
     },
     "devices": {
         "Responsibility": "Creating generated devices from a creation job, changing their area or curve, and finding who uses a device.",
@@ -755,7 +757,7 @@ def render_svg(modules: dict[str, Module]) -> str:
             if name == "const"
             else topic_of(name)
             if layer
-            else ("core.runtime" if name == "core.runtime" else "(root)")
+            else "(root)"
         )
         if label not in topics_in_layer[layer]:
             topics_in_layer[layer].append(label)
@@ -776,7 +778,7 @@ def render_svg(modules: dict[str, Module]) -> str:
         box_w = min(box_w, 118)
         for i, label in enumerate(items):
             x = 12 + i * (box_w + 6)
-            href = "#" + anchor("topic", label if label not in ("core.runtime",) else "core")
+            href = "#" + anchor("topic", label)
             out.append(
                 f"<a href='{href}'><rect class='box' x='{x:.0f}' y='{y + 24}' width='{box_w:.0f}' height='30' rx='5'/>"
                 f"<text x='{x + box_w / 2:.0f}' y='{y + 43}' text-anchor='middle'>{esc(label)}</text></a>"
@@ -854,7 +856,7 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
         )
     w("</ul>" if upward else "<li>none</li></ul>")
     w(
-        "<p class='muted'>All of these point at <code>core.runtime</code>, which is the composition root (it imports every topic) and at the same time the service locator <code>get_data(hass)</code> used by the API, the command wrapper and the platform setup.</p>"
+        "<p class='muted'>All of these point at the root module <code>data</code>, the service locator <code>get_data(hass)</code> used by the API and the platform setup.</p>"
     )
 
     w("<h2 id='cycles'>Dependency cycles between modules</h2>")

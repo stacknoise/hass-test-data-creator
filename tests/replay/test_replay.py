@@ -12,7 +12,7 @@ from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.hass_test_data_creator.const import DOMAIN
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, SignalError
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.engine.signals import SignalSpec, value_at
 from custom_components.hass_test_data_creator.replay.library import FOLDER
 from custom_components.hass_test_data_creator.replay.parser import build_table, parse_rows

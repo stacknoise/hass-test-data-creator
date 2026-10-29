@@ -12,7 +12,7 @@ import voluptuous as vol
 
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, GenerationError
 from custom_components.hass_test_data_creator.core.limits import json_object
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.scenarios import manager as scenarios_module
 from custom_components.hass_test_data_creator.scheduler import manager as manager_module
 

@@ -11,7 +11,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 
 from custom_components.hass_test_data_creator.const import DOMAIN
 from custom_components.hass_test_data_creator.core.errors import ErrorCode, ScheduleError
-from custom_components.hass_test_data_creator.core.runtime import get_data
+from custom_components.hass_test_data_creator.data import get_data
 from custom_components.hass_test_data_creator.faults.factory import FaultFactory
 from custom_components.hass_test_data_creator.outputs.mqtt.client import MqttClient
 
