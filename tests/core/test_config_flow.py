@@ -5,6 +5,7 @@ from __future__ import annotations
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+import pytest
 
 from custom_components.hass_test_data_creator.const import (
     CONF_IS_TEST_ENVIRONMENT,
@@ -14,7 +15,9 @@ from custom_components.hass_test_data_creator.const import (
 )
 
 
-async def test_flow_requires_the_confirmation(hass: HomeAssistant, mock_panel: None) -> None:
+async def test_flow_requires_the_confirmation(
+    hass: HomeAssistant, mock_panel: None, caplog: pytest.LogCaptureFixture
+) -> None:
     result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     assert result["type"] is FlowResultType.FORM
 
@@ -24,6 +27,7 @@ async def test_flow_requires_the_confirmation(hass: HomeAssistant, mock_panel: N
     )
     assert refused["type"] is FlowResultType.FORM
     assert refused["errors"] == {"base": "not_test_environment"}
+    assert "TDC-CFG-001" in caplog.text
 
     created = await hass.config_entries.flow.async_configure(
         result["flow_id"],

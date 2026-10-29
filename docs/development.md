@@ -184,7 +184,7 @@ Every error is a `TdcError` with an `ErrorCode`.
 - Fixtures in `tests/conftest.py`: admin client, a loaded config entry, a fake clock and a fake MQTT client. Test commands through the WebSocket client so the wrapper, schema and admin check are exercised.
 - Signals are tested with fixed expected values per shape and seed (`tests/vectors/signals.json`, shared with Vitest).
 - Removal tests always check that foreign objects (a real device, an own area, a foreign retained topic) stay untouched.
-- Slow performance tests are marked `slow` and run nightly.
+- Slow performance tests (`tests/perf`) are marked `slow`; `pytest` skips them (`addopts`), the nightly job of `validate.yml` runs `pytest -m slow tests/perf` (1000 devices: tick, action on all devices, lists; a Z2M group of 200 members). Run it locally with `pytest -m slow tests/perf`.
 
 ## 10. Git, pull requests and CI
 
