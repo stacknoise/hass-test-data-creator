@@ -148,6 +148,9 @@
     "int_unexpected": {
       "message": "Ein unerwarteter Fehler ist aufgetreten. Details stehen im Home-Assistant-Protokoll"
     },
+    "int_store_entry": {
+      "message": "Ein gespeicherter Eintrag konnte nicht gelesen werden und wurde übersprungen. Details stehen im Home-Assistant-Protokoll"
+    },
     "sch_invalid_trigger": {
       "message": "Der Auslöser des Zeitplans ist ungültig"
     },

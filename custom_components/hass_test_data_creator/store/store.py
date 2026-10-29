@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
+import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -10,6 +12,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from ..const import SAVE_DELAY_SECONDS, STORE_KEY, STORE_VERSION
+from ..core.errors import ErrorCode
 from ..core.keys import (
     KEY_CREATED_AREAS,
     KEY_CREATED_STATISTICS,
@@ -24,6 +27,10 @@ from ..core.keys import (
 )
 from ..model.models import DeviceDef, GroupDef, RunRecord, ScenarioDef, ScheduleDef
 from .migrate import migrate
+
+_LOGGER = logging.getLogger(__name__)
+_CODE = ErrorCode.INT_STORE_ENTRY.value
+_UNREADABLE = (TypeError, KeyError, ValueError, AttributeError)
 
 
 def _empty() -> dict[str, Any]:
@@ -40,6 +47,22 @@ def _empty() -> dict[str, Any]:
         KEY_TIME_LAPSE: None,
         "counters": {},
     }
+
+
+def _readable(kind: str, entries: Any, read: Callable[[dict[str, Any]], object]) -> dict[str, Any]:
+    """Return the entries that `read` accepts; an unreadable one is logged with its code and skipped."""
+    if not isinstance(entries, dict):
+        _LOGGER.warning("%s skipped the stored %s: not a mapping", _CODE, kind)
+        return {}
+    kept: dict[str, Any] = {}
+    for item_id, item in entries.items():
+        try:
+            read(item)
+        except _UNREADABLE as err:
+            _LOGGER.warning("%s skipped stored %s %s: %s", _CODE, kind, item_id, repr(err))
+        else:
+            kept[item_id] = item
+    return kept
 
 
 class _Storage(Store[dict[str, Any]]):
@@ -66,9 +89,14 @@ class TdcStore:
         loaded = await self._store.async_load()
         if loaded:
             self._data = {**_empty(), **loaded}
+        data = self._data
+        data[KEY_RUNS] = _readable("run", data[KEY_RUNS], RunRecord.from_dict)
+        data[KEY_SCHEDULES] = _readable("schedule", data[KEY_SCHEDULES], ScheduleDef.from_dict)
+        data[KEY_SCENARIOS] = _readable("scenario", data[KEY_SCENARIOS], ScenarioDef.from_dict)
+        data[KEY_GROUPS] = _readable("group", data[KEY_GROUPS], GroupDef.from_dict)
+        readable = _readable("device", data[KEY_DEVICES], DeviceDef.from_dict)
         self._devices = {
-            device_id: DeviceDef.from_dict(item)
-            for device_id, item in self._data[KEY_DEVICES].items()
+            device_id: DeviceDef.from_dict(item) for device_id, item in readable.items()
         }
 
     def _snapshot(self) -> dict[str, Any]:

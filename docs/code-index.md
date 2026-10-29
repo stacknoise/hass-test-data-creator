@@ -116,6 +116,7 @@ Lists every module, class and function of the integration with signature, file a
 | `mqtt_unique_id` | `def mqtt_unique_id(device_id: str, key: str) -> str` | `custom_components/hass_test_data_creator/model/identifiers.py` | Return the unique id of the MQTT entity of `key` of a device. |
 | `entity_id_of` | `def entity_id_of(registry: er.EntityRegistry, device: DeviceDef, definition: EntityDef) -> str \| None` | `custom_components/hass_test_data_creator/model/identifiers.py` | Return the entity id of `definition` (native or MQTT unique id), or None if not registered. |
 | `hass_test_data_creator.model.models` | `module` | `custom_components/hass_test_data_creator/model/models.py` | Data classes of devices, entities and creation runs (concept 4.1). |
+| `_known` | `def _known(cls: type, data: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the items of `data` that are fields of `cls`; keys of another version are dropped. |
 | `EntityDef` | `class EntityDef` | `custom_components/hass_test_data_creator/model/models.py` | Definition of one entity of a device. |
 | `EntityDef.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/model/models.py` | Return the JSON-serialisable form. |
 | `EntityDef.from_dict` | `def from_dict(cls, data: dict[str, Any]) -> EntityDef` | `custom_components/hass_test_data_creator/model/models.py` | Return the entity definition stored in `data`. |
@@ -145,6 +146,7 @@ Lists every module, class and function of the integration with signature, file a
 | `migrate` | `def migrate(version: int, data: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/migrate.py` | Return `data` of `version` in the layout of the current version, one step at a time. |
 | `hass_test_data_creator.store.store` | `module` | `custom_components/hass_test_data_creator/store/store.py` | Persistent storage of devices, runs and markers (concept 4.3, 4.4). |
 | `_empty` | `def _empty() -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/store.py` | Return the content of a new store. |
+| `_readable` | `def _readable(kind: str, entries: Any, read: Callable[[dict[str, Any]], object]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/store.py` | Return the entries that `read` accepts; an unreadable one is logged with its code and skipped. |
 | `_Storage` | `class _Storage(Store[dict[str, Any]])` | `custom_components/hass_test_data_creator/store/store.py` | The storage file of the integration; older versions are migrated when they are loaded. |
 | `_Storage._async_migrate_func` | `async def _async_migrate_func(self, old_major_version: int, old_minor_version: int, old_data: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/store/store.py` | Return the data of an older version in the current layout. |
 | `TdcStore` | `class TdcStore` | `custom_components/hass_test_data_creator/store/store.py` | Holds the generated devices, the runs and the list of areas the integration created. |

@@ -129,6 +129,9 @@ class ErrorCode(StrEnum):
     INT_UNEXPECTED = "TDC-INT-001"
     """An unexpected error; the details are in the Home Assistant log."""
 
+    INT_STORE_ENTRY = "TDC-INT-002"
+    """A stored entry could not be read and was skipped; the Home Assistant log names it."""
+
 
 class TdcError(HomeAssistantError):
     """Base of every error of the integration; carries an ErrorCode."""
