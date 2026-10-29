@@ -8,7 +8,7 @@ import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
 import type { CreateRequest, EntityDef, Info, SignalDef, TemplateInfo } from '../common/types';
 import { editableSensors, withSignal } from '../signals/editor-helpers';
 import '../signals/curve-editor';
-import '../signals/signal-preview';
+import './sensor-list';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
 import { stateRate } from './helpers';
@@ -148,19 +148,21 @@ export class CreationWizard extends TdcElement {
     </p>`;
   }
 
-  /** Return the templates and the custom device as `{id, label}`, sorted by label. */
+  /** Return the templates and the custom device as `{id, label}`, sorted by label, with the custom device always last. */
   private templateOptions(): { id: string; label: string }[] {
     const lang = this.hass?.language;
-    const options = [
-      ...this.templates.map((t) => ({ id: t.id, label: templateLabel(lang, t.id, t.name) })),
+    const options = this.templates.map((t) => ({
+      id: t.id,
+      label: templateLabel(lang, t.id, t.name),
+    }));
+    return [
+      ...sortedByLabel(lang, options, (option) => option.label),
       { id: CUSTOM, label: this.tr('customTemplate') },
     ];
-    return sortedByLabel(lang, options, (option) => option.label);
   }
 
   /** Render the element. */
   override render(): TemplateResult {
-    const sensor = this.entities().find((e) => e.platform === PLATFORM_SENSOR && e.signal);
     return html`
       <div class="row form">
         <label style="flex: 1 1 220px"
@@ -168,9 +170,14 @@ export class CreationWizard extends TdcElement {
           <select @change=${(e: Event) => (this.template = (e.target as HTMLSelectElement).value)}>
             ${this.templateOptions().map(
               (option) =>
-                html`<option value=${option.id} ?selected=${option.id === this.template}>
-                  ${option.label}
-                </option>`,
+                html`${option.id === CUSTOM ? html`<hr />` : ''}
+                  <option
+                    value=${option.id}
+                    ?selected=${option.id === this.template}
+                    style=${option.id === CUSTOM ? 'font-weight: bold' : ''}
+                  >
+                    ${option.id === CUSTOM ? '✚ ' : ''}${option.label}
+                  </option>`,
             )}
           </select>
         </label>
@@ -248,13 +255,10 @@ export class CreationWizard extends TdcElement {
       }
       ${this.template === CUSTOM ? this.renderEditor() : ''}
       ${
-        sensor?.signal && this.template !== CUSTOM
+        this.template !== CUSTOM
           ? html`<p>
-              <small>${this.tr('preview')}</small>
-              <tdc-signal-preview
-                .signal=${sensor.signal}
-                unit=${sensor.unit ?? ''}
-              ></tdc-signal-preview>
+              <small>${this.tr('sensorList')}</small>
+              <tdc-sensor-list .entities=${this.entities()}></tdc-sensor-list>
             </p>`
           : ''
       }
