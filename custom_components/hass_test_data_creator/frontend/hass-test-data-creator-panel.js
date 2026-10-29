@@ -3879,22 +3879,20 @@ var si = 20, ci = {
 			this.targetId = e.detail[0] ?? "", this.plan = void 0;
 		}}
               ></tdc-target-select>`}
-        <div>
+        <div class="row">
           <button
             ?disabled=${this.target !== "all" && !this.targetId}
             @click=${() => void this.showPlan()}
           >
             ${this.tr("showPlan")}
           </button>
+          <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
+            ${this.tr("scanTopics")}
+          </button>
         </div>
       </div>
       ${this.plan ? v`<div class="plan">${this.renderPlan(this.plan)}</div>` : ""}
-      <div class="plan">
-        <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
-          ${this.tr("scanTopics")}
-        </button>
-        ${this.leftover ? this.renderLeftover(this.leftover) : ""}
-      </div>
+      ${this.leftover ? v`<div class="plan">${this.renderLeftover(this.leftover)}</div>` : ""}
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;
 	}

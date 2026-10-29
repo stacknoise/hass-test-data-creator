@@ -220,22 +220,20 @@ export class RemovalPanel extends TdcElement {
                 }}
               ></tdc-target-select>`
         }
-        <div>
+        <div class="row">
           <button
             ?disabled=${this.target !== KIND_ALL && !this.targetId}
             @click=${() => void this.showPlan()}
           >
             ${this.tr('showPlan')}
           </button>
+          <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
+            ${this.tr('scanTopics')}
+          </button>
         </div>
       </div>
       ${this.plan ? html`<div class="plan">${this.renderPlan(this.plan)}</div>` : ''}
-      <div class="plan">
-        <button ?disabled=${this.busy} @click=${() => void this.scanTopics()}>
-          ${this.tr('scanTopics')}
-        </button>
-        ${this.leftover ? this.renderLeftover(this.leftover) : ''}
-      </div>
+      ${this.leftover ? html`<div class="plan">${this.renderLeftover(this.leftover)}</div>` : ''}
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;
   }
