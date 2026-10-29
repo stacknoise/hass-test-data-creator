@@ -148,6 +148,9 @@
     "int_unexpected": {
       "message": "An unexpected error occurred. See the Home Assistant log"
     },
+    "int_store_entry": {
+      "message": "A stored entry could not be read and was skipped. See the Home Assistant log"
+    },
     "sch_invalid_trigger": {
       "message": "The trigger of the schedule is invalid"
     },

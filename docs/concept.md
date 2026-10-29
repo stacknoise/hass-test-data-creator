@@ -124,7 +124,8 @@ entities:
 ### 4.3 Storage
 
 - Home Assistant `Store`, key `hass_test_data_creator.data`, with `version`. Frequent writes use delayed saves, changes made by the user are written at once.
-- Every schema change raises the store version and has a migration with a test.
+- Every schema change raises the store version and has a migration with a test. The migrations are the steps in `store/migrate.py`; the store is at version 2.
+- Loading is tolerant: keys a version does not know are dropped, and an entry that cannot be read (a missing field, a wrong type) is skipped and logged with `TDC-INT-002`, so one bad entry does not stop the integration from loading.
 - **No secrets** are stored. The seed is not a secret.
 
 ### 4.4 Markers (basis of removal)

@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Any
 
 from ..core.keys import KEY_ENTITIES
+
+
+def _known(cls: type, data: dict[str, Any]) -> dict[str, Any]:
+    """Return the items of `data` that are fields of `cls`; keys of another version are dropped."""
+    names = {item.name for item in fields(cls)}
+    return {key: value for key, value in data.items() if key in names}
 
 
 @dataclass
@@ -31,7 +37,7 @@ class EntityDef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EntityDef:
         """Return the entity definition stored in `data`."""
-        return cls(**data)
+        return cls(**_known(cls, data))
 
 
 @dataclass
@@ -57,7 +63,7 @@ class DeviceDef:
     def from_dict(cls, data: dict[str, Any]) -> DeviceDef:
         """Return the device stored in `data`."""
         entities = [EntityDef.from_dict(item) for item in data.get(KEY_ENTITIES, [])]
-        return cls(**{**data, KEY_ENTITIES: entities})
+        return cls(**{**_known(cls, data), KEY_ENTITIES: entities})
 
 
 @dataclass
@@ -77,7 +83,7 @@ class RunRecord:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RunRecord:
         """Return the run stored in `data`."""
-        return cls(**data)
+        return cls(**_known(cls, data))
 
 
 @dataclass
@@ -103,7 +109,7 @@ class ScheduleDef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ScheduleDef:
         """Return the schedule stored in `data`."""
-        return cls(**data)
+        return cls(**_known(cls, data))
 
 
 @dataclass
@@ -122,7 +128,7 @@ class ScenarioDef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ScenarioDef:
         """Return the scenario stored in `data`."""
-        return cls(**data)
+        return cls(**_known(cls, data))
 
 
 @dataclass
@@ -142,4 +148,4 @@ class GroupDef:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> GroupDef:
         """Return the group stored in `data`."""
-        return cls(**data)
+        return cls(**_known(cls, data))
