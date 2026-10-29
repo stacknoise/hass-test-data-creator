@@ -61,6 +61,8 @@
           data.templates = data.templates.filter((t) => t.id !== m.template_id);
           return {};
         },
+        'devices/get': (m) => data.devices.find((d) => d.id === m.device),
+        'devices/names': () => ({ devices: data.devices }),
         'devices/list': () => ({ total: data.devices.length, devices: data.devices }),
         'schedules/list': () => data.schedules,
         'schedules/preview': () => data.runs,

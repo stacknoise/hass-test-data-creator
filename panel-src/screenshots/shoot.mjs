@@ -2,6 +2,7 @@
 //   npm run screenshots                   English images into ../docs/images (for the README)
 //   SHOT_LANG=de npm run screenshots      German images into ./out-de (for the homepage)
 //   SHOT_THEME=dark ...                   dark theme
+//   CHROMIUM_PATH=/path/to/chrome ...     use this browser instead of Edge
 // The built panel is served to the page by Playwright itself; no server is started.
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
@@ -84,17 +85,21 @@ async function windowShot(page, file) {
 }
 
 fs.mkdirSync(OUT, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.CI ? undefined : 'msedge' });
+const browser = await chromium.launch({
+  channel: process.env.CI ? undefined : 'msedge',
+  executablePath: process.env.CHROMIUM_PATH,
+  args: process.env.CHROMIUM_PATH ? ['--no-sandbox'] : [],
+});
 try {
   // the device list, and the details of one device with the curve editor
   let page = await open(browser, 700);
   await panelShot(page, 'devices');
   await page.close();
   page = await open(browser, 1400);
-  // the kitchen plug: used by a schedule and a scenario, the curve of its current open
+  // the kitchen plug: used by a schedule and a scenario, the curve of its voltage open
   await page.locator('tdc-device-list tr.device').nth(1).click();
   await page.locator('tdc-device-detail details summary').first().click();
-  await page.getByRole('button', { name: TEXT.curve }).nth(3).click();
+  await page.getByRole('button', { name: TEXT.curve }).nth(2).click();
   await page.waitForTimeout(500);
   const box = await page.locator('tdc-device-detail').boundingBox();
   await page.screenshot({
@@ -109,6 +114,18 @@ try {
   page = await open(browser, 820);
   await page.locator('tdc-device-list > p button.primary, tdc-device-list button.primary').first().click();
   await windowShot(page, 'create-devices');
+  await page.close();
+
+  // the create popup with a custom device that started from a template, and the manager of own templates
+  page = await open(browser, 1000);
+  await page.locator('tdc-device-list button.primary').first().click();
+  await page.locator('tdc-creation-wizard select').first().selectOption('custom');
+  await page.locator('tdc-entities-form select').first().selectOption({ index: 3 });
+  await windowShot(page, 'create-custom-device');
+  await page.close();
+  page = await open(browser, 620);
+  await page.locator('tdc-device-list button.primary').nth(1).click();
+  await windowShot(page, 'own-templates');
   await page.close();
 
   // the schedules with the next 24 hours open, and the popup of a new schedule
