@@ -963,6 +963,7 @@ var gt = {
 		planOrphans: "{count} devices found only in the registry",
 		planAreas: "Areas created by the integration that become empty: {names}",
 		planNothing: "Nothing to remove.",
+		keep: "Do not remove",
 		confirmRemove: "Remove now",
 		removed: "{count} devices removed",
 		scanTopics: "Search the broker for leftover topics",
@@ -1162,6 +1163,7 @@ var gt = {
 		planOrphans: "{count} Geräte, die nur in der Registry stehen",
 		planAreas: "Von der Integration angelegte Bereiche, die leer werden: {names}",
 		planNothing: "Es gibt nichts zu entfernen.",
+		keep: "Nicht entfernen",
 		confirmRemove: "Jetzt entfernen",
 		removed: "{count} Geräte entfernt",
 		scanTopics: "Im Broker nach übrig gebliebenen Topics suchen",
@@ -3851,9 +3853,12 @@ var oi = 20, si = {
           >${e.slice(0, oi).join(", ")}${e.length > oi ? " …" : ""}</small
         >
       </p>
-      <button class="primary" ?disabled=${this.busy} @click=${() => void this.deleteLeftover()}>
-        ${this.tr("deleteLeftover")}
-      </button>`;
+      <div class="row">
+        <button class="primary" ?disabled=${this.busy} @click=${() => void this.deleteLeftover()}>
+          ${this.tr("deleteLeftover")}
+        </button>
+        <button @click=${() => this.leftover = void 0}>${this.tr("keep")}</button>
+      </div>`;
 	}
 	renderPlan(e) {
 		return e.devices.length + e.orphans.length === 0 && e.runs.length === 0 ? v`<p>${this.tr("planNothing")}</p>` : v`<ul>
@@ -3878,13 +3883,16 @@ var oi = 20, si = {
                       ${jr(e.usage).map((e) => `${this.tr(`use_${e.kind}`)} ${e.name}`).join(", ")}
                     </li>`)}
               </ul>` : ""}
-      <button
-        class="primary"
-        ?disabled=${this.busy || e.in_use.length > 0}
-        @click=${() => void this.confirm()}
-      >
-        ${this.tr("confirmRemove")}
-      </button>`;
+      <div class="row">
+        <button
+          class="primary"
+          ?disabled=${this.busy || e.in_use.length > 0}
+          @click=${() => void this.confirm()}
+        >
+          ${this.tr("confirmRemove")}
+        </button>
+        <button @click=${() => this.plan = void 0}>${this.tr("keep")}</button>
+      </div>`;
 	}
 	render() {
 		return v`
