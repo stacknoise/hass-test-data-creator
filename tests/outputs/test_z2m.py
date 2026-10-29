@@ -179,7 +179,7 @@ async def test_a_fault_takes_the_device_offline_and_back(
     freezer: FrozenDateTimeFactory,
     entry: MockConfigEntry,
 ) -> None:
-    with patch.object(MqttClient, "async_retained", AsyncMock(return_value=None)):
+    with patch.object(MqttClient, "async_foreign_topic", AsyncMock(return_value=None)):
         await make(hass, "plug_metering")
     await hass.services.async_call(
         DOMAIN,
@@ -238,11 +238,14 @@ async def test_unloading_marks_the_bridge_and_devices_offline(
 async def test_a_foreign_bridge_on_the_base_topic_stops_the_output(
     hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
 ) -> None:
-    foreign = AsyncMock(return_value='{"state":"online"}')
-    with patch.object(MqttClient, "async_retained", foreign), pytest.raises(OutputError) as error:
+    foreign = AsyncMock(return_value=f"{BASE}/bridge/state")
+    with (
+        patch.object(MqttClient, "async_foreign_topic", foreign),
+        pytest.raises(OutputError) as error,
+    ):
         await make(hass, "plug_metering")
     assert error.value.code is ErrorCode.OUT_FOREIGN_BRIDGE
-    foreign.assert_awaited_with(f"{BASE}/bridge/state")
+    foreign.assert_awaited_with(BASE)
     assert get_data(hass).store.devices() == []
 
 
@@ -250,21 +253,25 @@ async def test_a_bridge_state_of_our_own_is_not_foreign(
     hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
 ) -> None:
     get_data(hass).store.add_topic(f"{BASE}/bridge/state", None)
-    with patch.object(MqttClient, "async_retained", AsyncMock(return_value='{"state":"offline"}')):
-        await make(hass, "plug_metering")
-    assert json_of(mqtt_mock, f"{BASE}/bridge/state") == {"state": "online"}
+    probing = hass.async_create_task(get_data(hass).mqtt.async_foreign_topic(BASE))
+    await asyncio.sleep(0.05)
+    async_fire_mqtt_message(hass, f"{BASE}/bridge/state", '{"state":"offline"}', retain=True)
+    assert await probing is None
 
 
-async def test_reading_a_retained_message_waits_for_it(
+async def test_the_probe_finds_any_retained_topic_that_is_not_ours(
     hass: HomeAssistant, mqtt_mock: MagicMock, entry: MockConfigEntry
 ) -> None:
     client = get_data(hass).mqtt
-    reading = hass.async_create_task(client.async_retained("some/topic"))
+    probing = hass.async_create_task(client.async_foreign_topic(BASE))
     await asyncio.sleep(0.05)
-    async_fire_mqtt_message(hass, "some/topic", "hello", retain=True)
-    assert await reading == "hello"
+    async_fire_mqtt_message(hass, f"{BASE}/Real Lamp", '{"state":"ON"}', retain=True)
+    assert await probing == f"{BASE}/Real Lamp"
 
-    assert await client.async_retained("empty/topic") is None
+    probing = hass.async_create_task(client.async_foreign_topic(BASE))
+    await asyncio.sleep(0.05)
+    async_fire_mqtt_message(hass, f"{BASE}/Live", "x")  # not retained
+    assert await probing is None
 
 
 async def test_the_default_zigbee2mqtt_topic_needs_a_confirmation(

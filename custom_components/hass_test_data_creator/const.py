@@ -95,6 +95,7 @@ DEFAULT_Z2M_BASE_TOPIC: Final = "tdc_z2m"
 DISCOVERY_PREFIX: Final = "homeassistant"
 MAX_BASE_TOPIC_LENGTH: Final = 64
 MAX_LIGHT_BRIGHTNESS: Final = 255
+MAX_LATE_MESSAGES: Final = 100
 OUTPUT_NATIVE: Final = "native"
 OUTPUT_MQTT: Final = "mqtt"
 OUTPUT_Z2M: Final = "z2m"

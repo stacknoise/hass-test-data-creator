@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
@@ -15,7 +16,7 @@ from homeassistant.helpers.event import async_call_later
 
 from ...audit.factory import AuditEntryFactory
 from ...audit.log import AuditLog
-from ...const import SIGNAL_TICK
+from ...const import MAX_LATE_MESSAGES, SIGNAL_TICK
 from ...engine.behaviour_factory import BehaviourFactory
 from ...engine.behaviours import Behaviour, Live
 from ...model.models import DeviceDef, EntityDef
@@ -59,7 +60,7 @@ class BehaviourRuntime(ABC):
         self._by_device: dict[str, dict[str, RuntimeEntry]] = {}
         self._unsubscribe: Callable[[], None] | None = None
         self._unsubscribe_tick: CALLBACK_TYPE | None = None
-        self._late: dict[str, set[CALLBACK_TYPE]] = {}
+        self._late: dict[str, deque[CALLBACK_TYPE]] = {}
 
     def require_connection(self) -> None:
         """Raise TDC-OUT-002 unless MQTT is usable."""
@@ -216,16 +217,19 @@ class BehaviourRuntime(ABC):
         if delay <= 0:
             await self._async_copies(topic, payload, device_id, copies, retain)
             return
-        timers = self._late.setdefault(device_id, set())
+        timers = self._late.setdefault(device_id, deque())
 
         @callback
         def fire(_now: datetime) -> None:
             """Send the held back message."""
-            timers.discard(cancel)
+            if cancel in timers:
+                timers.remove(cancel)
             self._schedule(self._async_copies(topic, payload, device_id, copies, retain))
 
         cancel = async_call_later(self._hass, delay, fire)
-        timers.add(cancel)
+        timers.append(cancel)
+        if len(timers) > MAX_LATE_MESSAGES:
+            timers.popleft()()
 
     async def _async_copies(
         self, topic: str, payload: str, device_id: str, copies: int, retain: bool
@@ -236,7 +240,7 @@ class BehaviourRuntime(ABC):
 
     def _cancel_late(self, device_id: str) -> None:
         """Drop the messages of a device that are still held back."""
-        for cancel in self._late.pop(device_id, set()):
+        for cancel in self._late.pop(device_id, deque()):
             cancel()
 
     async def _async_publish(

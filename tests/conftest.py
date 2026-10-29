@@ -25,6 +25,14 @@ def _enable_custom_integrations(enable_custom_integrations: None) -> None:
     """Let Home Assistant find the integration in custom_components."""
 
 
+@pytest.fixture(autouse=True)
+def _short_foreign_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Shorten the wait for foreign retained topics; the mocked broker never answers."""
+    monkeypatch.setattr(
+        "custom_components.hass_test_data_creator.outputs.mqtt.client.FOREIGN_PROBE_SECONDS", 0.3
+    )
+
+
 @pytest.fixture
 def mock_panel(hass: HomeAssistant) -> Iterator[None]:
     """Replace the panel registration; the frontend is not part of the tests."""
