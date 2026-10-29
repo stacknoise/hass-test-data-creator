@@ -1362,7 +1362,7 @@ var ct = o`
     button.primary {
       background: var(--primary-color);
       border-color: var(--primary-color);
-      color: var(--text-primary-color, #fff);
+      color: var(--text-primary-color);
     }
     button:disabled {
       opacity: 0.5;
@@ -1666,7 +1666,7 @@ var F = {
     border-radius: 8px;
     background: var(--card-background-color);
     color: var(--primary-text-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--dialog-box-shadow, var(--wa-shadow-l, var(--ha-card-box-shadow, none)));
   }
 `, Ot = class extends P {
 	constructor(...e) {
@@ -1772,7 +1772,10 @@ var At = class extends P {
         overflow-y: auto;
       }
       dialog::backdrop {
-        background: rgba(0, 0, 0, 0.5);
+        background: var(
+          --mdc-dialog-scrim-color,
+          color-mix(in srgb, var(--primary-text-color) 32%, transparent)
+        );
       }
       .head {
         display: flex;

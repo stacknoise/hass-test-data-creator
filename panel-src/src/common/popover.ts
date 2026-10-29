@@ -20,7 +20,7 @@ export const popoverStyles = css`
     border-radius: 8px;
     background: var(--card-background-color);
     color: var(--primary-text-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--dialog-box-shadow, var(--wa-shadow-l, var(--ha-card-box-shadow, none)));
   }
 `;
 
