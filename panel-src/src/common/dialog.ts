@@ -24,7 +24,10 @@ export class Dialog extends TdcElement {
         overflow-y: auto;
       }
       dialog::backdrop {
-        background: rgba(0, 0, 0, 0.5);
+        background: var(
+          --mdc-dialog-scrim-color,
+          color-mix(in srgb, var(--primary-text-color) 32%, transparent)
+        );
       }
       .head {
         display: flex;

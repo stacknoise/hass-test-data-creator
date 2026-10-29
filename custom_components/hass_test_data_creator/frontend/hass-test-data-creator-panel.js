@@ -1677,7 +1677,7 @@ var I = {
     border-radius: 8px;
     background: var(--card-background-color);
     color: var(--primary-text-color);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--dialog-box-shadow, var(--wa-shadow-l, var(--ha-card-box-shadow, none)));
   }
 `, Wt = class extends F {
 	constructor(...e) {
@@ -1783,7 +1783,10 @@ var Kt = class extends F {
         overflow-y: auto;
       }
       dialog::backdrop {
-        background: rgba(0, 0, 0, 0.5);
+        background: var(
+          --mdc-dialog-scrim-color,
+          color-mix(in srgb, var(--primary-text-color) 32%, transparent)
+        );
       }
       .head {
         display: flex;
