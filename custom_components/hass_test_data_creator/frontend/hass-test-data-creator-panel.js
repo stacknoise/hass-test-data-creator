@@ -976,7 +976,7 @@ var xt = {
 		detCurve: "Change curve",
 		detSaveCurve: "Save curve",
 		detLive: "Live view",
-		detLiveHint: "Reads the values every 2 seconds while this device is open",
+		detLiveHint: "Reads the values every second while this device is open",
 		detCancel: "Cancel",
 		useTitle: "Used in {count}",
 		useNone: "Not used anywhere",
@@ -1294,7 +1294,7 @@ var xt = {
 		detCurve: "Kurve ändern",
 		detSaveCurve: "Kurve speichern",
 		detLive: "Live-Ansicht",
-		detLiveHint: "Liest die Werte alle 2 Sekunden, solange das Gerät geöffnet ist",
+		detLiveHint: "Liest die Werte jede Sekunde, solange das Gerät geöffnet ist",
 		detCancel: "Abbrechen",
 		useTitle: "Verwendet in {count}",
 		useNone: "Wird nirgends verwendet",
@@ -3938,7 +3938,7 @@ function ji(e, t, n, r, i) {
     @tdc-select-change=${(e) => i(e.detail[0] ?? "")}
   ></tdc-multi-select>`;
 }
-var Mi = 2e3;
+var Mi = 1e3;
 function Ni(e) {
 	if (e == null || e.trim() === "") return;
 	let t = Number(e);
@@ -3964,6 +3964,7 @@ var Ii = 240, Li = 40, Ri = class extends Je {
 		this.styles = [qn, o`
       svg {
         max-width: 240px;
+        flex: 1 1 160px;
         border-radius: 4px;
       }
     `];
@@ -3978,7 +3979,7 @@ k([b({ attribute: !1 })], Ri.prototype, "samples", void 0), Ri = k([y("tdc-live-
 // src/devices/device-detail.ts
 var B = class extends A {
 	constructor(...e) {
-		super(...e), this.actions = {}, this.areas = [], this.shapes = [], this.picked = {}, this.inputs = {}, this.curves = {}, this.live = !1, this.samples = {}, this.busy = !1, this.error = "";
+		super(...e), this.actions = {}, this.areas = [], this.shapes = [], this.picked = {}, this.inputs = {}, this.curves = {}, this.live = !1, this.samples = {}, this.liveStates = {}, this.busy = !1, this.error = "";
 	}
 	static {
 		this.styles = [A.styles, o`
@@ -4003,6 +4004,14 @@ var B = class extends A {
       }
       .curve {
         padding: 4px 0 8px;
+      }
+      .state {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .state .value {
+        min-width: 9em;
       }
       .live {
         display: block;
@@ -4042,21 +4051,21 @@ var B = class extends A {
 		this.stopLive?.(), super.disconnectedCallback();
 	}
 	setLive(e) {
-		this.stopLive?.(), this.stopLive = void 0, this.live = e, this.samples = {}, e && (this.readLive(), this.stopLive = Dn(() => void this.readLive(), Mi));
+		this.stopLive?.(), this.stopLive = void 0, this.live = e, this.samples = {}, this.liveStates = {}, e && (this.readLive(), this.stopLive = Dn(() => void this.readLive(), Mi));
 	}
 	async readLive() {
 		try {
 			let e = await this.api.device(this.device.id);
 			if (!this.live) return;
-			let t = Date.now(), n = { ...this.samples };
-			for (let r of e.entities) {
-				let e = Ni(r.state);
-				e !== void 0 && (n[r.key] = Pi(n[r.key] ?? [], {
+			let t = Date.now(), n = { ...this.samples }, r = {};
+			for (let i of e.entities) {
+				let e = Ni(i.state);
+				e !== void 0 && (n[i.key] = Pi(n[i.key] ?? [], {
 					at: t,
 					value: e
-				}));
+				}), r[i.key] = i.state ?? "");
 			}
-			this.samples = n;
+			this.samples = n, this.liveStates = r;
 		} catch (e) {
 			this.setLive(!1), this.error = w(e);
 		}
@@ -4211,7 +4220,13 @@ var B = class extends A {
           >
         </td>
         <td>
-          ${At(t, e.state)}${e.unit ? ` ${e.unit}` : ""}${this.live && e.key in this.samples ? h`<tdc-live-curve .samples=${this.samples[e.key]}></tdc-live-curve>` : ""}${e.fault ? h`<br /><small class="warning">⚠ ${T(t, "fault", e.fault)}</small>` : ""}
+          <div class="state">
+            <span class="value"
+              >${At(t, this.liveStates[e.key] ?? e.state)}${e.unit ? ` ${e.unit}` : ""}</span
+            >
+            ${this.live && e.key in this.samples ? h`<tdc-live-curve .samples=${this.samples[e.key]}></tdc-live-curve>` : ""}
+          </div>
+          ${e.fault ? h`<br /><small class="warning">⚠ ${T(t, "fault", e.fault)}</small>` : ""}
         </td>
         <td class="row">
           ${n.length ? h`<tdc-menu-button
@@ -4265,7 +4280,7 @@ var B = class extends A {
     `;
 	}
 };
-k([b({ attribute: !1 })], B.prototype, "device", void 0), k([b({ attribute: !1 })], B.prototype, "actions", void 0), k([b({ attribute: !1 })], B.prototype, "areas", void 0), k([b({ attribute: !1 })], B.prototype, "shapes", void 0), k([x()], B.prototype, "areaDraft", void 0), k([x()], B.prototype, "picked", void 0), k([x()], B.prototype, "inputs", void 0), k([x()], B.prototype, "curves", void 0), k([x()], B.prototype, "live", void 0), k([x()], B.prototype, "samples", void 0), k([x()], B.prototype, "busy", void 0), k([x()], B.prototype, "error", void 0), B = k([y("tdc-device-detail")], B);
+k([b({ attribute: !1 })], B.prototype, "device", void 0), k([b({ attribute: !1 })], B.prototype, "actions", void 0), k([b({ attribute: !1 })], B.prototype, "areas", void 0), k([b({ attribute: !1 })], B.prototype, "shapes", void 0), k([x()], B.prototype, "areaDraft", void 0), k([x()], B.prototype, "picked", void 0), k([x()], B.prototype, "inputs", void 0), k([x()], B.prototype, "curves", void 0), k([x()], B.prototype, "live", void 0), k([x()], B.prototype, "samples", void 0), k([x()], B.prototype, "liveStates", void 0), k([x()], B.prototype, "busy", void 0), k([x()], B.prototype, "error", void 0), B = k([y("tdc-device-detail")], B);
 var zi = {
 	ids: /* @__PURE__ */ new Set(),
 	all: !1

@@ -486,7 +486,7 @@ The keys `/` (focus the search) and `Esc` (reset), and the empty view "No matche
 
 ### 16.7 Live view in the entity list (v1.1)
 
-The detail view of a device has the switch "Live view". It is off every time a device is opened and is never stored. While it is on, the panel reads `devices/get` for that device every 2 seconds through `startPolling` in `common/polling.ts` (not while the page is hidden), keeps the newest 120 numeric states of each entity and draws them as a curve (`devices/live-curve.ts`) under the state in the entity list. Closing the device or switching off stops the reads. Nothing changes in the backend. The static mini curve in the device list stays removed.
+The detail view of a device has the switch "Live view". It is off every time a device is opened and is never stored. While it is on, the panel reads `devices/get` for that device every second through `startPolling` in `common/polling.ts` (not while the page is hidden), keeps the newest 120 numeric states of each entity and draws them as a curve (`devices/live-curve.ts`) under the state in the entity list. Closing the device or switching off stops the reads. Nothing changes in the backend. The static mini curve in the device list stays removed.
 ### 16.8 Pause and resume (F8)
 
 A paused device stands still, like a device that has dropped off the network without being unavailable: its entities keep their last value and publish nothing new, until it is resumed. It is a bulk function (16.3) and also works on one device.

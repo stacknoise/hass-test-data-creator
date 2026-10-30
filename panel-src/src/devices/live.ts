@@ -1,7 +1,7 @@
 /** The number of samples that a live curve keeps. */
 export const LIVE_MAX_SAMPLES = 120;
 /** The time between two reads of a device while its live view is on. */
-export const LIVE_INTERVAL_MS = 2000;
+export const LIVE_INTERVAL_MS = 1000;
 
 /** One value read from an entity at a point in time. */
 export interface LiveSample {

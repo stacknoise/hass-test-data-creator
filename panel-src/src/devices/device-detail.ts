@@ -37,6 +37,7 @@ export class DeviceDetail extends TdcElement {
   @state() private curves: Record<string, SignalDef> = {};
   @state() private live = false;
   @state() private samples: Record<string, LiveSample[]> = {};
+  @state() private liveStates: Record<string, string> = {};
   @state() private busy = false;
   @state() private error = '';
 
@@ -64,6 +65,14 @@ export class DeviceDetail extends TdcElement {
       }
       .curve {
         padding: 4px 0 8px;
+      }
+      .state {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .state .value {
+        min-width: 9em;
       }
       .live {
         display: block;
@@ -114,6 +123,7 @@ export class DeviceDetail extends TdcElement {
     this.stopLive = undefined;
     this.live = on;
     this.samples = {};
+    this.liveStates = {};
     if (!on) return;
     void this.readLive();
     this.stopLive = startPolling(() => void this.readLive(), LIVE_INTERVAL_MS);
@@ -126,12 +136,15 @@ export class DeviceDetail extends TdcElement {
       if (!this.live) return;
       const at = Date.now();
       const next = { ...this.samples };
+      const states: Record<string, string> = {};
       for (const entity of full.entities) {
         const value = numericState(entity.state);
-        if (value !== undefined)
-          next[entity.key] = pushSample(next[entity.key] ?? [], { at, value });
+        if (value === undefined) continue;
+        next[entity.key] = pushSample(next[entity.key] ?? [], { at, value });
+        states[entity.key] = entity.state ?? '';
       }
       this.samples = next;
+      this.liveStates = states;
     } catch (err) {
       this.setLive(false);
       this.error = describeError(err);
@@ -327,11 +340,19 @@ export class DeviceDetail extends TdcElement {
           >
         </td>
         <td>
-          ${stateLabel(lang, entity.state)}${entity.unit ? ` ${entity.unit}` : ''}${
-            this.live && entity.key in this.samples
-              ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
-              : ''
-          }${
+          <div class="state">
+            <span class="value"
+              >${stateLabel(lang, this.liveStates[entity.key] ?? entity.state)}${
+                entity.unit ? ` ${entity.unit}` : ''
+              }</span
+            >
+            ${
+              this.live && entity.key in this.samples
+                ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
+                : ''
+            }
+          </div>
+          ${
             entity.fault
               ? html`<br /><small class="warning">⚠ ${labelOf(lang, 'fault', entity.fault)}</small>`
               : ''

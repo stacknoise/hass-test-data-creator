@@ -16,6 +16,7 @@ export class LiveCurve extends LitElement {
     css`
       svg {
         max-width: 240px;
+        flex: 1 1 160px;
         border-radius: 4px;
       }
     `,
