@@ -119,7 +119,40 @@ export interface DeviceUsage {
 /** One page of devices. */
 export interface DevicePage {
   total: number;
+  matched: number;
   devices: DeviceInfo[];
+  facets?: DeviceFacets;
+}
+
+/** One possible value of a filter group and the number of devices that have it. */
+export interface FacetEntry {
+  value: string;
+  count: number;
+  label?: string;
+}
+
+/** The possible values per filter group of the device list, as `devices/list` returns them. */
+export interface DeviceFacets {
+  templates: FacetEntry[];
+  areas: FacetEntry[];
+  outputs: FacetEntry[];
+  platforms: FacetEntry[];
+  runs: FacetEntry[];
+  state: FacetEntry[];
+}
+
+/** The filter and sort fields of `devices/list`; absent fields mean no restriction. */
+export interface DeviceFilterRequest {
+  query?: string;
+  templates?: string[];
+  areas?: string[];
+  outputs?: string[];
+  platforms?: string[];
+  runs?: string[];
+  custom?: boolean;
+  state?: string;
+  sort?: string;
+  descending?: boolean;
 }
 
 /** The inputs of a creation job. */

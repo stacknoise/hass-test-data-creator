@@ -166,7 +166,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         history=history,
         clock=clock,
         usage=usage,
-        device_view=DeviceView(hass, store, usage, live),
+        device_view=DeviceView(hass, store, usage, live, registry.bundled_ids),
         signal_editor=signal_editor,
         csv=csv,
         transfer=TransferExporter(store, registry, TransferFactory()),

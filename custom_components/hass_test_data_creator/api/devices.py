@@ -33,7 +33,8 @@ from ..core.keys import (
 )
 from ..core.limits import SHORT_TEXT, json_object
 from ..data import get_data
-from ..devices.schema import CREATE_FIELDS, job_from_request
+from ..devices.filters import DeviceFilter
+from ..devices.schema import CREATE_FIELDS, FILTER_FIELDS, job_from_request
 from ..templates.schema import SIGNAL_SCHEMA
 
 
@@ -44,13 +45,20 @@ from ..templates.schema import SIGNAL_SCHEMA
         vol.Optional("limit", default=DEFAULT_PAGE_SIZE): vol.All(
             int, vol.Range(min=1, max=MAX_PAGE_SIZE)
         ),
+        vol.Optional("facets", default=False): bool,
+        **FILTER_FIELDS,
     },
 )
 async def ws_devices_list(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
-    """Return one page of devices with the current state of their entities."""
-    return get_data(hass).device_view.page(msg[KEY_OFFSET], msg["limit"])
+    """Return one page of the filtered, sorted devices with the current state of their entities."""
+    return get_data(hass).device_view.page(
+        msg[KEY_OFFSET],
+        msg["limit"],
+        DeviceFilter.from_request(msg),
+        with_facets=msg["facets"],
+    )
 
 
 @tdc_command(f"{DOMAIN}/devices/get", {vol.Required(KEY_DEVICE): str})

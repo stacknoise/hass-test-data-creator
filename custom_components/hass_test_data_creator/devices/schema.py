@@ -12,11 +12,13 @@ from ..const import (
     MAX_AREAS_PER_JOB,
     MAX_ENTITIES_BYTES,
     MAX_ENTITIES_PER_DEVICE,
+    MAX_FILTER_VALUES,
     OUTPUT_NATIVE,
     OUTPUTS,
 )
 from ..core.keys import KEY_AREAS, KEY_COUNT, KEY_ENTITIES, KEY_LABEL, KEY_OUTPUT, KEY_TEMPLATE
 from ..core.limits import SHORT_TEXT, json_size
+from .filters import SORTS, STATES
 from .manager import CreationJob
 
 _entities_size = json_size(MAX_ENTITIES_BYTES)
@@ -35,6 +37,22 @@ CREATE_FIELDS: dict[Any, Any] = {
     vol.Optional(KEY_ENTITIES): vol.All(
         [dict], vol.Length(max=MAX_ENTITIES_PER_DEVICE), _entities_size
     ),
+}
+
+
+_filter_values = vol.All([SHORT_TEXT], vol.Length(max=MAX_FILTER_VALUES))
+
+FILTER_FIELDS: dict[Any, Any] = {
+    vol.Optional("query"): SHORT_TEXT,
+    vol.Optional("templates"): _filter_values,
+    vol.Optional(KEY_AREAS): _filter_values,
+    vol.Optional("outputs"): _filter_values,
+    vol.Optional("platforms"): _filter_values,
+    vol.Optional("runs"): _filter_values,
+    vol.Optional("custom"): bool,
+    vol.Optional("state"): vol.In(STATES),
+    vol.Optional("sort"): vol.In(SORTS),
+    vol.Optional("descending"): bool,
 }
 
 

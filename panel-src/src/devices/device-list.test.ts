@@ -33,7 +33,11 @@ function fakeHass(sent: Record<string, unknown>[], total = TOTAL): Hass {
         const offset = message.offset as number;
         const limit = message.limit as number;
         const count = Math.max(0, Math.min(limit, total - offset));
-        return { total, devices: Array.from({ length: count }, (_, i) => device(offset + i + 1)) };
+        return {
+          total,
+          matched: total,
+          devices: Array.from({ length: count }, (_, i) => device(offset + i + 1)),
+        };
       }
       return { actions: {}, shapes: [] };
     },
@@ -107,6 +111,30 @@ describe('DeviceList', () => {
     await element.refresh();
     await settle(element);
     expect(rowNames(element)).toHaveLength(10);
+  });
+
+  it('asks for the filter with the first page and resets to page one when it changes', async () => {
+    expect(sent.find((m) => m.type === 'hass_test_data_creator/devices/list')).toMatchObject({
+      facets: true,
+    });
+    clickButton(element, /Next/u);
+    await settle(element);
+    const bar = element.shadowRoot!.querySelector('tdc-filter-bar')!;
+    bar.dispatchEvent(
+      new CustomEvent('tdc-filter-change', {
+        detail: { query: 'plug', sort: 'name', descending: false },
+      }),
+    );
+    await settle(element);
+    const last = sent.filter((m) => m.type === 'hass_test_data_creator/devices/list').at(-1);
+    expect(last).toMatchObject({ offset: 0, query: 'plug', sort: 'name', facets: true });
+    expect(last).not.toHaveProperty('descending');
+  });
+
+  it('never asks for more than the largest page', () => {
+    for (const m of sent.filter((m) => m.type === 'hass_test_data_creator/devices/list')) {
+      expect(m.limit as number).toBeLessThanOrEqual(500);
+    }
   });
 
   it('loads the options once for all tabs', async () => {

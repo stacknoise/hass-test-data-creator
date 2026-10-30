@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceInfo } from '../common/types';
+import { emptyValues } from '../common/filter-state';
 import {
+  DEVICE_FIELDS,
   actionsFor,
+  deviceRequest,
+  facetItems,
   faultParams,
   knownAreas,
   lastPageOffset,
@@ -88,5 +92,42 @@ describe('lastPageOffset', () => {
     expect(lastPageOffset(50, 50)).toBe(0);
     expect(lastPageOffset(51, 50)).toBe(50);
     expect(lastPageOffset(120, 50)).toBe(100);
+  });
+});
+
+describe('device filter request', () => {
+  it('leaves out everything that restricts nothing', () => {
+    expect(deviceRequest(emptyValues(DEVICE_FIELDS))).toEqual({});
+  });
+
+  it('converts the state of the bar', () => {
+    const values = {
+      ...emptyValues(DEVICE_FIELDS),
+      query: '  plug ',
+      areas: ['', 'Hall'],
+      custom: true,
+      state: 'fault',
+      sort: 'name',
+      descending: true,
+    };
+    expect(deviceRequest(values)).toEqual({
+      query: 'plug',
+      areas: ['', 'Hall'],
+      custom: true,
+      state: 'fault',
+      sort: 'name',
+      descending: true,
+    });
+  });
+
+  it('offers the values with their counts and keeps chosen values that no longer exist', () => {
+    const items = facetItems([{ value: 'a', count: 3 }], ['a', 'gone'], (e) =>
+      e.value.toUpperCase(),
+    );
+    expect(items).toEqual([
+      { value: 'a', label: 'A (3)' },
+      { value: 'gone', label: 'GONE' },
+    ]);
+    expect(facetItems(undefined, undefined, (e) => e.value)).toEqual([]);
   });
 });

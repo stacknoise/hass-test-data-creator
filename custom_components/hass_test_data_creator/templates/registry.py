@@ -104,6 +104,10 @@ class TemplateRegistry:
             raise TemplateError(ErrorCode.TPL_NOT_FOUND)
         return template
 
+    def bundled_ids(self) -> frozenset[str]:
+        """Return the ids of the built-in templates."""
+        return frozenset(self._bundled_ids)
+
     def all(self) -> list[Template]:
         """Return all templates sorted by name."""
         return sorted(self._templates.values(), key=lambda item: item.name)
