@@ -24,6 +24,10 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-GEN-007 | There are too many schedules. Remove one first | There are already MAX_SCHEDULES schedules. |
 | TDC-GEN-008 | There are too many scenarios. Remove one first | There are already MAX_SCENARIOS scenarios. |
 | TDC-GEN-009 | There are too many groups. Remove one first | There are already MAX_GROUPS groups. |
+| TDC-GEN-010 | Entry {name} does not match the format of its category | An entry of an import file does not match the format of its category. |
+| TDC-GEN-011 | The name {name} appears twice in one category | An import file has two entries of the same name in one category. |
+| TDC-GEN-012 | Entry {name} names something that is neither in the file nor here | An entry of an import file names a device, template, scenario or run that is neither in the file nor here. |
+| TDC-GEN-013 | Entry {name} cannot be changed in place, or its name is not unique here | An existing item cannot be changed in place, or its name is not unique here. |
 | TDC-SIG-001 | The signal shape is unknown | The signal shape is not registered in the SignalFactory. |
 | TDC-SIG-002 | The minimum must not be greater than the maximum | The minimum of a signal is greater than its maximum. |
 | TDC-SIG-003 | The states of the signal are invalid | The states, weights or durations of an enum or state machine signal are invalid. |

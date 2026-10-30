@@ -36,6 +36,7 @@ from .scheduler.runner import ActionRunner
 from .store.store import TdcStore
 from .templates.registry import TemplateRegistry
 from .transfer.exporter import TransferExporter
+from .transfer.importer import TransferImporter
 
 
 @dataclass
@@ -67,6 +68,7 @@ class TdcData:
     device_view: DeviceView
     csv: CsvLibrary
     transfer: TransferExporter
+    importer: TransferImporter
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
     response_factory: ResponseFactory = field(default_factory=ResponseFactory)
     live: Live = field(default_factory=dict)

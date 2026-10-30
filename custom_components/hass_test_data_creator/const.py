@@ -16,6 +16,7 @@ FEATURES: Final = (
     "device_filter",
     "device_names",
     "export",
+    "import",
     "faults",
     "mqtt_discovery",
     "native_output",
