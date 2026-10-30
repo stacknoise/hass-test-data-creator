@@ -7,6 +7,7 @@ import { TdcElement, containerHost } from '../common/base';
 import type { SelectItem } from '../common/multi-select';
 import { TdcPollingElement } from '../common/polling';
 import type { DeviceName, GroupInfo } from '../common/types';
+import { GROUP_FIELDS, GROUP_FILTER_TAB, groupRule } from './helpers';
 import './group-form';
 import type { GroupForm, GroupRequest } from './group-form';
 import { LIST_SEPARATOR } from '../common/constants';
@@ -35,6 +36,12 @@ export class GroupPanel extends TdcPollingElement {
   @state() private devices: DeviceName[] = [];
 
   @query('tdc-group-form#new') private newForm?: GroupForm;
+
+  /** Take over the filter that the session kept. */
+  constructor() {
+    super();
+    this.restoreFilter(GROUP_FILTER_TAB, GROUP_FIELDS);
+  }
 
   /** Nothing to prepare: the forms offer the devices that the list reads. */
   protected optionsLoaded(): void {
@@ -126,6 +133,22 @@ export class GroupPanel extends TdcPollingElement {
       }`;
   }
 
+  /** Render the table of the groups that pass the filter. */
+  private renderTable(groups: GroupInfo[]): TemplateResult {
+    return html`<table class="cards">
+      <tr>
+        <th>${this.tr('colName')}</th>
+        <th>${this.tr('grpMembers')}</th>
+        <th>${this.tr('colActions')}</th>
+      </tr>
+      ${repeat(
+        groups,
+        (item) => item.id,
+        (item) => this.renderRow(item),
+      )}
+    </table>`;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     return html`
@@ -133,18 +156,12 @@ export class GroupPanel extends TdcPollingElement {
       ${
         this.groups.length === 0
           ? html`<p>${this.tr('grpNone')}</p>`
-          : html`<table class="cards">
-              <tr>
-                <th>${this.tr('colName')}</th>
-                <th>${this.tr('grpMembers')}</th>
-                <th>${this.tr('colActions')}</th>
-              </tr>
-              ${repeat(
-                this.groups,
-                (item) => item.id,
-                (item) => this.renderRow(item),
-              )}
-            </table>`
+          : this.renderFiltered(
+              this.groups,
+              GROUP_FIELDS,
+              groupRule((item) => this.memberNames(item)),
+              (shown) => this.renderTable(shown),
+            )
       }
       <p class="error">${this.error}</p>
     `;

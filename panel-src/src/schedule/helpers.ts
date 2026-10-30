@@ -6,6 +6,8 @@ import type {
   Trigger,
   TriggerType,
 } from '../common/types';
+import type { FilterField } from '../common/filter-state';
+import type { ListRule } from '../common/list-filter';
 import {
   KIND_ALL,
   KIND_DEVICE,
@@ -281,4 +283,50 @@ export function triggerFormOf(trigger: Trigger): TriggerForm {
 export function workOf(schedule: Pick<ScheduleInfo, 'target' | 'entity' | 'action'>): WorkForm {
   const { kind, ids } = describeTarget(schedule.target);
   return { kind, targetIds: ids, action: schedule.action, entity: schedule.entity };
+}
+
+/** The tab under which the filter of the schedule list is kept in the session. */
+export const SCHEDULE_FILTER_TAB = 'schedules';
+
+/** The fields of the schedule filter by key and kind; the panel adds labels and options. */
+export const SCHEDULE_FIELDS: FilterField[] = [
+  { key: 'triggers', kind: 'multi', label: '' },
+  { key: 'actions', kind: 'multi', label: '' },
+  { key: 'targets', kind: 'multi', label: '' },
+  { key: 'enabled', kind: 'choice', label: '' },
+];
+
+/** The "action" value of a schedule that starts a scenario instead of one action. */
+export const ACTION_SCENARIO = 'scenario';
+
+/** Return the action of a schedule as the filter knows it: its name, or "scenario". */
+export function scheduleAction(item: ScheduleInfo): string {
+  return item.scenario ? ACTION_SCENARIO : item.action;
+}
+
+/** Return how the schedule filter reads a schedule; the texts of target and action come from the panel. */
+export function scheduleRule(
+  targetText: (item: ScheduleInfo) => string,
+  actionText: (item: ScheduleInfo) => string,
+): ListRule<ScheduleInfo> {
+  return {
+    texts: (item) => [
+      item.name,
+      targetText(item),
+      actionText(item),
+      summarizeTrigger(item.trigger),
+    ],
+    values: (item, key) => {
+      switch (key) {
+        case 'triggers':
+          return [item.trigger.type];
+        case 'actions':
+          return [scheduleAction(item)];
+        case 'targets':
+          return [describeTarget(item.target).kind];
+        default:
+          return [item.enabled ? 'on' : 'off'];
+      }
+    },
+  };
 }

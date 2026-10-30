@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { actionNames, resolveWork } from '../schedule/helpers';
-import { buildSteps, defaultStep, parseParams, stepFormOf } from './helpers';
+import type { DeviceName, ScenarioInfo } from '../common/types';
+import {
+  buildSteps,
+  defaultStep,
+  parseParams,
+  scenarioRule,
+  stepDevices,
+  stepFormOf,
+  stepTemplates,
+} from './helpers';
 
 const ACTIONS = { switch: ['toggle', 'turn_on'], light: ['set_brightness'] };
 describe('scenario helpers', () => {
@@ -84,5 +93,48 @@ describe('editing a step', () => {
       params: {},
     };
     expect(stepFormOf(step).params).toBe('');
+  });
+});
+
+describe('scenario filter', () => {
+  const step = (
+    target: ScenarioInfo['steps'][number]['target'],
+  ): ScenarioInfo['steps'][number] => ({
+    after_s: 0,
+    target,
+    entity: '',
+    action: 'toggle',
+    params: {},
+  });
+  const scenario: ScenarioInfo = {
+    id: 's',
+    name: 'Evening',
+    created_at: 0,
+    steps: [
+      step({ device: 'Lamp' }),
+      step({ device: ['d2', 'd1'] }),
+      step({ template: 'plug' }),
+      step({ template: 'plug' }),
+      step({ all: true }),
+    ],
+  };
+  const devices = [
+    { id: 'd1', name: 'Lamp' },
+    { id: 'd2', name: 'Fan' },
+  ] as DeviceName[];
+
+  it('lists the devices of the steps once, with names turned into ids', () => {
+    expect(stepDevices(scenario, devices)).toEqual(['d1', 'd2']);
+  });
+
+  it('lists the templates of the steps once', () => {
+    expect(stepTemplates(scenario)).toEqual(['plug']);
+  });
+
+  it('gives the values per field key', () => {
+    const rule = scenarioRule(devices, (item) => [item.name]);
+    expect(rule.values(scenario, 'devices')).toEqual(['d1', 'd2']);
+    expect(rule.values(scenario, 'templates')).toEqual(['plug']);
+    expect(rule.texts(scenario)).toEqual(['Evening']);
   });
 });
