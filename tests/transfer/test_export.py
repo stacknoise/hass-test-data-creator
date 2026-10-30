@@ -29,7 +29,7 @@ async def test_devices_are_exported_with_their_overrides(
     await client.send_json_auto_id(
         {
             "type": "hass_test_data_creator/devices/signal",
-            "device": "Plug 01",
+            "device": get_data(hass).store.devices()[0].id,
             "entity": "power",
             "signal": {"shape": "constant", "min": 5, "max": 5},
         }
