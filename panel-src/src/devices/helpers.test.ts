@@ -3,6 +3,8 @@ import type { DeviceInfo } from '../common/types';
 import { emptyValues } from '../common/filter-state';
 import {
   DEVICE_FIELDS,
+  ariaSort,
+  nextSort,
   actionsFor,
   deviceRequest,
   facetItems,
@@ -129,5 +131,34 @@ describe('device filter request', () => {
       { value: 'gone', label: 'GONE' },
     ]);
     expect(facetItems(undefined, undefined, (e) => e.value)).toEqual([]);
+  });
+});
+
+describe('column sort', () => {
+  const start = emptyValues(DEVICE_FIELDS);
+
+  it('goes ascending, descending, off on repeated clicks', () => {
+    const first = nextSort(start, 'name');
+    expect([first.sort, first.descending]).toEqual(['name', false]);
+    const second = nextSort(first, 'name');
+    expect([second.sort, second.descending]).toEqual(['name', true]);
+    const third = nextSort(second, 'name');
+    expect([third.sort, third.descending]).toEqual(['', false]);
+  });
+
+  it('starts ascending on another column', () => {
+    const other = nextSort(nextSort(nextSort(start, 'name'), 'name'), 'template');
+    expect([other.sort, other.descending]).toEqual(['template', false]);
+  });
+
+  it('reports the order for aria-sort', () => {
+    const desc = nextSort(nextSort(start, 'name'), 'name');
+    expect(ariaSort(desc, 'name')).toBe('descending');
+    expect(ariaSort(desc, 'template')).toBe('none');
+    expect(ariaSort(start, 'name')).toBe('none');
+  });
+
+  it('keeps the other restrictions', () => {
+    expect(nextSort({ ...start, query: 'x' }, 'name').query).toBe('x');
   });
 });

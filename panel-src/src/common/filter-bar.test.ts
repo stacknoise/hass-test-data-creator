@@ -46,6 +46,16 @@ describe('FilterBar', () => {
     expect(bar.shadowRoot!.textContent).toContain('Find a schedule');
   });
 
+  it('puts the search before the named field', async () => {
+    bar.fields = [{ key: 'a', kind: 'switch', label: 'AAA' }, ...FIELDS];
+    bar.searchBefore = 'custom';
+    await bar.updateComplete;
+    const order = [...bar.shadowRoot!.querySelectorAll('.bar > *')].map((el) =>
+      el.classList.contains('search') ? 'search' : (el.textContent ?? '').trim(),
+    );
+    expect(order).toEqual(['AAA', 'search', 'Own']);
+  });
+
   it('reports typing once, after the debounce time', () => {
     type('p');
     type('pl');
