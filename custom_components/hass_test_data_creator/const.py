@@ -19,6 +19,7 @@ FEATURES: Final = (
     "export",
     "import",
     "faults",
+    "list_filters",
     "mqtt_discovery",
     "native_output",
     "removal",
