@@ -8,10 +8,11 @@ import './history/history-panel';
 import './removal/removal-panel';
 import './scenario/scenario-panel';
 import './schedule/schedule-panel';
+import './transfer/transfer-panel';
 import { KIND_ALL, TAB_DEVICES, TAB_GROUPS } from './common/constants';
 
 /** The tabs of the panel. */
-type Tab = 'devices' | 'schedules' | 'scenarios' | 'groups' | 'history' | 'remove';
+type Tab = 'devices' | 'schedules' | 'scenarios' | 'groups' | 'history' | 'remove' | 'transfer';
 
 /** The sidebar panel: header with the test environment badge and five tabs. */
 @customElement('hass-test-data-creator-panel')
@@ -125,6 +126,7 @@ export class TdcPanel extends TdcElement {
         ${this.mqtt ? this.renderTab(TAB_GROUPS, this.tr('tabGroups')) : ''}
         ${this.renderTab('history', this.tr('tabHistory'))}
         ${this.renderTab('remove', this.tr('tabRemove'))}
+        ${this.renderTab('transfer', this.tr('tabTransfer'))}
       </nav>
       ${
         this.tab === TAB_DEVICES
@@ -157,6 +159,11 @@ export class TdcPanel extends TdcElement {
               .target=${this.removeTarget}
               .targetId=${this.removeId}
             ></tdc-removal-panel>`
+          : ''
+      }
+      ${
+        this.tab === 'transfer'
+          ? html`<tdc-transfer-panel .hass=${this.hass} .mqtt=${this.mqtt}></tdc-transfer-panel>`
           : ''
       }
     `;

@@ -18,6 +18,8 @@ import type {
   ScheduleInfo,
   ScheduleRequest,
   TemplateInfo,
+  TransferCategory,
+  TransferPage,
 } from './types';
 
 import { MAX_PAGE_SIZE } from './constants';
@@ -232,6 +234,23 @@ export class TdcApi {
   /** Write hourly statistics for the past days; `device` (id or name) and `entity` (key) narrow it. */
   importHistory(days: number, device?: string | string[], entity?: string): Promise<HistoryResult> {
     return this.call('history/import', { days, device, entity });
+  }
+
+  /** Return `limit` entries of a category from `offset`; a `limit` of 0 only counts them. */
+  transferExport(category: TransferCategory, offset: number, limit: number): Promise<TransferPage> {
+    return this.call('transfer/export', { category, offset, limit });
+  }
+
+  /** Return all entries of a category, read page by page within the batch limit of the backend. */
+  async transferExportAll(category: TransferCategory): Promise<TransferPage[]> {
+    const pages = [await this.transferExport(category, 0, MAX_PAGE_SIZE)];
+    let read = pages[0].items.length;
+    while (read < pages[0].total && pages[pages.length - 1].items.length > 0) {
+      const next = await this.transferExport(category, read, MAX_PAGE_SIZE);
+      pages.push(next);
+      read += next.items.length;
+    }
+    return pages;
   }
 
   /** Send a command with its defined fields to the backend. */

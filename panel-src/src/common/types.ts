@@ -49,7 +49,12 @@ export interface Info {
   version: string;
   api_version: number;
   features: string[];
-  limits: { max_devices: number; max_batch: number; max_entities_per_device: number };
+  limits: {
+    max_devices: number;
+    max_batch: number;
+    max_entities_per_device: number;
+    max_transfer_bytes: number;
+  };
   outputs: string[];
   shapes: string[];
   platforms: string[];
@@ -237,3 +242,22 @@ export interface GroupInfo {
   members: string[];
   created_at: number;
 }
+
+/** The categories of a transfer file. */
+export type TransferCategory = 'devices' | 'templates' | 'schedules' | 'scenarios' | 'groups';
+
+/** One page of the entries of a category, as `transfer/export` returns it. */
+export interface TransferPage {
+  format_version: number;
+  integration_version: string;
+  category: TransferCategory;
+  total: number;
+  items: object[];
+}
+
+/** A transfer file: the version data and one list per exported category. */
+export type TransferFile = {
+  format_version: number;
+  integration_version: string;
+  exported_at: string;
+} & Partial<Record<TransferCategory, object[]>>;

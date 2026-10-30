@@ -214,6 +214,19 @@ const en = {
   deleteLeftover: 'Delete these topics',
   leftoverDeleted: '{count} topics deleted',
   error: 'Error',
+  tabTransfer: 'Transfer',
+  trfIntro:
+    'Export saves definitions to a file. Choose what goes in; the file holds no runtime values, no credentials and no markers.',
+  trfExportTitle: 'Export',
+  trfDevices: 'Devices',
+  trfTemplates: 'Own templates',
+  trfSchedules: 'Schedules',
+  trfScenarios: 'Scenarios',
+  trfGroups: 'Groups',
+  trfCount: '{count}',
+  trfExport: 'Export selection',
+  trfExported: 'File {name} saved: {count} entries',
+  trfNothing: 'Choose at least one category that has entries.',
 } as const;
 
 /** The key of a text. */
@@ -433,6 +446,19 @@ const de: Record<TextKey, string> = {
   deleteLeftover: 'Diese Topics löschen',
   leftoverDeleted: '{count} Topics gelöscht',
   error: 'Fehler',
+  tabTransfer: 'Transfer',
+  trfIntro:
+    'Der Export speichert Definitionen in einer Datei. Wähle, was hinein soll; die Datei enthält keine Laufzeitwerte, keine Zugangsdaten und keine Markierungen.',
+  trfExportTitle: 'Export',
+  trfDevices: 'Geräte',
+  trfTemplates: 'Eigene Vorlagen',
+  trfSchedules: 'Zeitpläne',
+  trfScenarios: 'Szenarien',
+  trfGroups: 'Gruppen',
+  trfCount: '{count}',
+  trfExport: 'Auswahl exportieren',
+  trfExported: 'Datei {name} gespeichert: {count} Einträge',
+  trfNothing: 'Wähle mindestens eine Kategorie, die Einträge hat.',
 };
 
 const texts: Record<Language, Record<TextKey, string>> = { en, de };
