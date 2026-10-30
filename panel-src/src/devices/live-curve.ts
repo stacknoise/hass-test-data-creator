@@ -15,14 +15,20 @@ export class LiveCurve extends LitElement {
     curveStyle,
     css`
       svg {
+        display: block;
+        height: 32px;
+        min-width: 80px;
         border-radius: 4px;
+      }
+      polyline {
+        vector-effect: non-scaling-stroke;
       }
     `,
   ];
 
   /** Render the element. */
   override render(): TemplateResult {
-    return html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" role="img">
+    return html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" preserveAspectRatio="none" role="img">
       <polyline points=${livePoints(this.samples, WIDTH, HEIGHT)}></polyline>
     </svg>`;
   }
