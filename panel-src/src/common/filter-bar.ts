@@ -15,6 +15,7 @@ import {
   type FilterValue,
   type FilterValues,
 } from './filter-state';
+import { isTypingTarget, shortcutOf } from './shortcuts';
 import './multi-select';
 import type { SelectItem } from './multi-select';
 
@@ -86,8 +87,36 @@ export class FilterBar extends TdcElement {
     if (changed.has('values') && this.timer === undefined) this.draft = this.values;
   }
 
-  /** Stop a pending report when the bar is removed. */
+  /** Listen for the shortcuts while the bar is on the page. */
+  override connectedCallback(): void {
+    super.connectedCallback();
+    document.addEventListener('keydown', this.onKey);
+  }
+
+  /** Run a shortcut: `/` focuses the search field, `Esc` resets the filter. */
+  private readonly onKey = (event: KeyboardEvent): void => {
+    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[type=search]');
+    const origin = event.composedPath()[0] ?? null;
+    const action = shortcutOf({
+      key: event.key,
+      modified: event.ctrlKey || event.metaKey || event.altKey,
+      typing: isTypingTarget(origin),
+      inSearch: origin === input,
+      dialogOpen: document.querySelector('tdc-dialog[open]') !== null,
+    });
+    if (action === 'search' && input) {
+      event.preventDefault();
+      input.focus();
+      input.select();
+    } else if (action === 'reset' && activeCount(this.fields, this.draft) > 0) {
+      this.replace(resetValues(this.fields, this.draft));
+      input?.blur();
+    }
+  };
+
+  /** Stop a pending report and the shortcuts when the bar is removed. */
   override disconnectedCallback(): void {
+    document.removeEventListener('keydown', this.onKey);
     window.clearTimeout(this.timer);
     this.timer = undefined;
     super.disconnectedCallback();
@@ -195,6 +224,7 @@ export class FilterBar extends TdcElement {
           ${this.tr('filterSearch')}
           <input
             type="search"
+            placeholder=${this.tr('filterSearchHint')}
             .value=${live(String(this.draft[KEY_QUERY] ?? ''))}
             @input=${(e: Event) => this.set(KEY_QUERY, (e.target as HTMLInputElement).value)}
           />

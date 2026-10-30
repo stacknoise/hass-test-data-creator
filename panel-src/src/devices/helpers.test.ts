@@ -4,11 +4,13 @@ import { emptyValues } from '../common/filter-state';
 import {
   DEVICE_FIELDS,
   actionsFor,
+  curveEntity,
   deviceRequest,
   facetItems,
   faultParams,
   knownAreas,
   lastPageOffset,
+  missingCurves,
   usageEntries,
   valueParams,
 } from './helpers';
@@ -129,5 +131,22 @@ describe('device filter request', () => {
       { value: 'gone', label: 'GONE' },
     ]);
     expect(facetItems(undefined, undefined, (e) => e.value)).toEqual([]);
+  });
+});
+
+describe('row curve', () => {
+  const sensor = { key: 't', name: 'T', platform: 'sensor', shape: 'sine' };
+  const device = (id: string, entities: object[]): DeviceInfo =>
+    ({ id, entities }) as unknown as DeviceInfo;
+
+  it('takes the first sensor that has a curve', () => {
+    const d = device('a', [{ key: 's', platform: 'switch' }, sensor]);
+    expect(curveEntity(d)?.key).toBe('t');
+    expect(curveEntity(device('b', [{ key: 's', platform: 'switch' }]))).toBeUndefined();
+  });
+
+  it('lists only the devices with a curve that is not loaded', () => {
+    const devices = [device('a', [sensor]), device('b', [sensor]), device('c', [])];
+    expect(missingCurves(devices, { a: { shape: 'sine' } as never })).toEqual(['b']);
   });
 });
