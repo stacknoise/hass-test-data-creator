@@ -15,6 +15,12 @@ from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.hass_test_data_creator.const import DOMAIN, MAX_BATCH
 from custom_components.hass_test_data_creator.data import get_data
+from custom_components.hass_test_data_creator.devices.filters import (
+    DeviceFilter,
+    FilterContext,
+    facets,
+    filter_and_sort,
+)
 
 from ..conftest import create_devices, fire_tick
 
@@ -78,3 +84,27 @@ async def test_a_z2m_group_of_200_devices_publishes_fast(
     async_fire_mqtt_message(hass, f"tdc_z2m/{devices[0].name}/set", '{"state": "ON"}')
     await hass.async_block_till_done()
     assert time.perf_counter() - started < 0.1
+
+
+async def test_filter_and_facets_over_2000_devices_stay_fast(
+    hass: HomeAssistant, entry: MockConfigEntry
+) -> None:
+    for _ in range(4):
+        await create_devices(hass, count=MAX_BATCH, name_pattern="Plug {nn}")
+    view = get_data(hass).device_view
+    flt = DeviceFilter(query="plug 1", sort="name", templates=("plug_metering",))
+
+    started = time.perf_counter()
+    result = view.page(0, 50, flt, with_facets=True)
+    assert time.perf_counter() - started < 0.2  # includes building 50 replies
+    assert result["matched"] > 0
+
+    data = get_data(hass)
+    context = FilterContext(
+        data.usage.index(), lambda device: False, data.template_registry.bundled_ids()
+    )
+    devices = data.store.devices()
+    started = time.perf_counter()
+    filter_and_sort(devices, flt, context)
+    facets(devices, flt, context)
+    assert time.perf_counter() - started < 0.05

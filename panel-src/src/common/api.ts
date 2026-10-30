@@ -1,5 +1,6 @@
 import type {
   CreateRequest,
+  DeviceFilterRequest,
   DeviceInfo,
   DeviceName,
   DevicePage,
@@ -90,9 +91,14 @@ export class TdcApi {
     return (await this.call<{ devices: DeviceName[] }>('devices/names')).devices;
   }
 
-  /** Return one page of devices. */
-  devices(offset: number, limit: number): Promise<DevicePage> {
-    return this.call('devices/list', { offset, limit });
+  /** Return one page of the devices that pass `filter`; `facets` also asks for the filter options. */
+  devices(
+    offset: number,
+    limit: number,
+    filter: DeviceFilterRequest = {},
+    facets = false,
+  ): Promise<DevicePage> {
+    return this.call('devices/list', { offset, limit, ...filter, ...(facets ? { facets } : {}) });
   }
 
   /** Return the first `count` devices (all if fewer exist), fetched in pages the server accepts. */
@@ -108,7 +114,7 @@ export class TdcApi {
       devices.push(...page.devices);
       if (page.devices.length === 0 || devices.length >= total) break;
     }
-    return { total, devices };
+    return { total, matched: total, devices };
   }
 
   /** Create the devices of a job. */

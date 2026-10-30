@@ -2,10 +2,18 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { describeError } from '../common/api';
-import { TdcElement, containerHost, toggled } from '../common/base';
+import { containerHost } from '../common/base';
+import { TdcPollingElement } from '../common/polling';
+import '../common/filter-bar';
+import {
+  readFilter,
+  writeFilter,
+  type FilterField,
+  type FilterValues,
+} from '../common/filter-state';
 import '../common/menu-button';
 import type { MenuItem } from '../common/menu-button';
-import type { DeviceInfo, EntityState, Info } from '../common/types';
+import type { DeviceFacets, DeviceInfo, EntityState, FacetEntry } from '../common/types';
 import {
   OUTPUT_LABELS,
   actionLabel,
@@ -19,14 +27,21 @@ import '../common/dialog';
 import '../wizard/creation-wizard';
 import '../wizard/template-manager';
 import './device-detail';
-import { knownAreas, lastPageOffset, usageEntries } from './helpers';
+import {
+  DEVICE_FIELDS,
+  DEVICE_FILTER_TAB,
+  deviceRequest,
+  facetItems,
+  knownAreas,
+  lastPageOffset,
+  usageEntries,
+} from './helpers';
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
 
 const VALUES_SHOWN = 4;
 const COLUMN_COUNT = 6;
 
 export const PAGE_SIZE = 50;
-const REFRESH_MS = 10_000;
 const ACTION_BY_PLATFORM: Record<string, string> = {
   switch: 'toggle',
   event: 'press',
@@ -39,9 +54,9 @@ const VALUE_PLATFORMS = [PLATFORM_SENSOR, 'switch', 'binary_sensor', 'light', 'c
 
 /** Lists the generated devices with live values and manual actions. */
 @customElement('tdc-device-list')
-export class DeviceList extends TdcElement {
+export class DeviceList extends TdcPollingElement {
   static override styles = [
-    TdcElement.styles,
+    TdcPollingElement.styles,
     containerHost,
     css`
       tr.device {
@@ -72,59 +87,135 @@ export class DeviceList extends TdcElement {
 
   @state() private devices: DeviceInfo[] = [];
   @state() private total = 0;
+  @state() private matched = 0;
   @state() private offset = 0;
   @state() private loaded = false;
-  @state() private error = '';
-  @state() private creating = false;
   @state() private templating = false;
-  @state() private info?: Info;
-  @state() private expanded = new Set<string>();
+  @state() private facets?: DeviceFacets;
+  @state() private filter: FilterValues = readFilter(DEVICE_FILTER_TAB, DEVICE_FIELDS);
 
-  private timer?: number;
+  private facetsStale = true;
 
-  /** Load the data when the element is added to the page. */
-  override connectedCallback(): void {
-    super.connectedCallback();
-    void this.loadInfo();
-    void this.refresh();
-    this.timer = window.setInterval(() => void this.refresh(), REFRESH_MS);
-  }
-
-  /** Stop the refresh timer when the element is removed. */
-  override disconnectedCallback(): void {
-    window.clearInterval(this.timer);
-    super.disconnectedCallback();
-  }
-
-  /** Load the actions that the detail view offers. */
-  private async loadInfo(): Promise<void> {
-    try {
-      this.info = await this.api.info();
-    } catch (err) {
-      this.error = describeError(err);
-    }
-  }
-
-  /** Open or close the details of a device. */
-  private toggle(id: string): void {
-    this.expanded = toggled(this.expanded, id);
-  }
+  /** Nothing to prepare: the list needs the actions only for the detail view. */
+  protected override optionsLoaded(): void {}
 
   /** Reload the page that is shown; after devices were removed, step back to the last page. */
-  async refresh(): Promise<void> {
+  override async refresh(): Promise<void> {
+    const request = deviceRequest(this.filter);
+    const withFacets = this.facetsStale;
+    this.facetsStale = false;
     try {
-      let page = await this.api.devices(this.offset, PAGE_SIZE);
+      let page = await this.api.devices(this.offset, PAGE_SIZE, request, withFacets);
       if (page.devices.length === 0 && this.offset > 0) {
-        this.offset = lastPageOffset(page.total, PAGE_SIZE);
-        page = await this.api.devices(this.offset, PAGE_SIZE);
+        this.offset = lastPageOffset(page.matched, PAGE_SIZE);
+        page = await this.api.devices(this.offset, PAGE_SIZE, request, withFacets);
       }
       this.devices = page.devices;
       this.total = page.total;
+      this.matched = page.matched;
+      if (page.facets) this.facets = page.facets;
       this.error = '';
     } catch (err) {
+      this.facetsStale ||= withFacets;
       this.error = describeError(err);
     }
     this.loaded = true;
+  }
+
+  /** Reload and ask for the filter options too, as after a change of the devices. */
+  private reload(): void {
+    this.facetsStale = true;
+    void this.refresh();
+  }
+
+  /** Apply a new filter from the bar: remember it, go to the first page and reload. */
+  private setFilter(values: FilterValues): void {
+    this.filter = values;
+    writeFilter(DEVICE_FILTER_TAB, values);
+    this.offset = 0;
+    this.reload();
+  }
+
+  /** Return the label of a template as the list shows it. */
+  private facetTemplate(entry: FacetEntry): string {
+    if (entry.value === 'custom') return this.tr('customTemplate');
+    return templateLabel(this.hass?.language, entry.value, entry.value);
+  }
+
+  /** Return the controls of the filter bar with the options that the last facets offer. */
+  private filterFields(): FilterField[] {
+    const lang = this.hass?.language;
+    const facets = this.facets;
+    const options = (
+      group: keyof DeviceFacets,
+      key: string,
+      label: (entry: FacetEntry) => string,
+    ) => facetItems(facets?.[group], this.filter[key], label);
+    const stateLabels: Record<string, string> = {
+      fault: this.tr('filterFault'),
+      used: this.tr('filterUsed'),
+      unused: this.tr('filterUnused'),
+    };
+    return [
+      {
+        key: 'templates',
+        kind: 'multi',
+        label: this.tr('colTemplate'),
+        options: options('templates', 'templates', (e) => this.facetTemplate(e)),
+      },
+      {
+        key: 'areas',
+        kind: 'multi',
+        label: this.tr('colArea'),
+        options: options('areas', 'areas', (e) =>
+          e.value === '' ? this.tr('areasNone') : e.value,
+        ),
+      },
+      {
+        key: 'outputs',
+        kind: 'multi',
+        label: this.tr('colOutput'),
+        options: options('outputs', 'outputs', (e) =>
+          this.tr(OUTPUT_LABELS[e.value] ?? 'outputNative'),
+        ),
+      },
+      {
+        key: 'platforms',
+        kind: 'multi',
+        label: this.tr('detEntity'),
+        options: options('platforms', 'platforms', (e) => labelOf(lang, 'platform', e.value)),
+      },
+      {
+        key: 'runs',
+        kind: 'multi',
+        label: this.tr('schTarget_run'),
+        options: options('runs', 'runs', (e) => e.label || e.value),
+      },
+      {
+        key: 'state',
+        kind: 'choice',
+        label: this.tr('detState'),
+        options: options('state', 'state', (e) => stateLabels[e.value] ?? e.value),
+      },
+      { key: 'custom', kind: 'switch', label: this.tr('filterCustom') },
+    ];
+  }
+
+  /** Render the filter bar. */
+  private renderFilter(): TemplateResult {
+    return html`<tdc-filter-bar
+      .hass=${this.hass}
+      .fields=${this.filterFields()}
+      .values=${this.filter}
+      .sorts=${[
+        { value: 'name', label: this.tr('sortName') },
+        { value: 'created', label: this.tr('sortCreated') },
+        { value: 'template', label: this.tr('sortTemplate') },
+      ]}
+      .matched=${this.matched}
+      .total=${this.total}
+      @tdc-filter-change=${(e: CustomEvent<FilterValues>) => this.setFilter(e.detail)}
+    ></tdc-filter-bar>`;
   }
 
   /** Show another page of the list. */
@@ -232,7 +323,7 @@ export class DeviceList extends TdcElement {
                 .actions=${this.info?.actions ?? {}}
                 .shapes=${this.info?.shapes ?? []}
                 .areas=${knownAreas(this.hass.areas, this.devices)}
-                @tdc-changed=${() => void this.refresh()}
+                @tdc-changed=${() => this.reload()}
               ></tdc-device-detail>`,
             )
           : ''
@@ -262,7 +353,7 @@ export class DeviceList extends TdcElement {
                 .hass=${this.hass}
                 @tdc-created=${() => {
                   this.creating = false;
-                  void this.refresh();
+                  this.reload();
                 }}
               ></tdc-creation-wizard>`
             : nothing
@@ -288,49 +379,52 @@ export class DeviceList extends TdcElement {
     if (!this.loaded) return html`${this.tr('loading')}`;
     return html`
       ${this.renderNew()} ${this.error ? html`<p class="error">${this.error}</p>` : ''}
+      ${this.total === 0 ? '' : this.renderFilter()}
       ${
-        this.devices.length === 0
+        this.total === 0
           ? html`<p>${this.tr('noDevices')}</p>`
-          : html`<table class="cards">
-                <thead>
-                  <tr>
-                    <th>${this.tr('colName')}</th>
-                    <th>${this.tr('colTemplate')}</th>
-                    <th>${this.tr('colArea')}</th>
-                    <th>${this.tr('colOutput')}</th>
-                    <th>${this.tr('colValues')}</th>
-                    <th>${this.tr('colActions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${repeat(
-                    this.devices,
-                    (d) => d.id,
-                    (d) => this.renderRow(d),
-                  )}
-                </tbody>
-              </table>
-              <p class="row">
-                <button
-                  ?disabled=${this.offset === 0}
-                  @click=${() => this.goTo(Math.max(0, this.offset - PAGE_SIZE))}
-                >
-                  ${this.tr('pagePrevious')}
-                </button>
-                <small>
-                  ${this.tr('devicesRange', {
-                    from: this.offset + 1,
-                    to: this.offset + this.devices.length,
-                    total: this.total,
-                  })}
-                </small>
-                <button
-                  ?disabled=${this.offset + this.devices.length >= this.total}
-                  @click=${() => this.goTo(this.offset + PAGE_SIZE)}
-                >
-                  ${this.tr('pageNext')}
-                </button>
-              </p>`
+          : this.matched === 0
+            ? html`<p>${this.tr('noMatches')}</p>`
+            : html`<table class="cards">
+                  <thead>
+                    <tr>
+                      <th>${this.tr('colName')}</th>
+                      <th>${this.tr('colTemplate')}</th>
+                      <th>${this.tr('colArea')}</th>
+                      <th>${this.tr('colOutput')}</th>
+                      <th>${this.tr('colValues')}</th>
+                      <th>${this.tr('colActions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${repeat(
+                      this.devices,
+                      (d) => d.id,
+                      (d) => this.renderRow(d),
+                    )}
+                  </tbody>
+                </table>
+                <p class="row">
+                  <button
+                    ?disabled=${this.offset === 0}
+                    @click=${() => this.goTo(Math.max(0, this.offset - PAGE_SIZE))}
+                  >
+                    ${this.tr('pagePrevious')}
+                  </button>
+                  <small>
+                    ${this.tr('devicesRange', {
+                      from: this.offset + 1,
+                      to: this.offset + this.devices.length,
+                      total: this.matched,
+                    })}
+                  </small>
+                  <button
+                    ?disabled=${this.offset + this.devices.length >= this.matched}
+                    @click=${() => this.goTo(this.offset + PAGE_SIZE)}
+                  >
+                    ${this.tr('pageNext')}
+                  </button>
+                </p>`
       }
     `;
   }

@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from .error_factory import ErrorFactory
 from .response_factory import ResponseFactory
+
+if TYPE_CHECKING:
+    from ..model.models import DeviceDef
 
 
 class ScenarioRunner(Protocol):
@@ -23,6 +26,13 @@ class GroupPublisher(Protocol):
 
     async def async_drop(self, group_ids: list[str], device_ids: set[str]) -> None:
         """Delete groups and remove `device_ids` from the remaining groups."""
+
+
+class UsageLookup(Protocol):
+    """What the device filter needs of the usage index: whether anything names a device."""
+
+    def is_used(self, device: DeviceDef) -> bool:
+        """Whether a schedule, scenario or group names the device."""
 
 
 @runtime_checkable

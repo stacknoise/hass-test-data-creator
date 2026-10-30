@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from homeassistant.core import HomeAssistant
@@ -13,6 +14,7 @@ from ..core.keys import (
     KEY_DEVICES,
     KEY_ENTITIES,
     KEY_ID,
+    KEY_LABEL,
     KEY_MODEL,
     KEY_NAME,
     KEY_OUTPUT,
@@ -29,6 +31,7 @@ from ..engine.behaviours import Live
 from ..model.identifiers import entity_id_of
 from ..model.models import DeviceDef, EntityDef
 from ..store.store import TdcStore
+from .filters import DeviceFilter, FilterContext, facets, filter_and_sort
 from .usage import DeviceUsage, UsageIndex
 
 
@@ -36,25 +39,60 @@ class DeviceView:
     """Builds the replies of the device commands from the store, the registry and the states."""
 
     def __init__(
-        self, hass: HomeAssistant, store: TdcStore, usage: DeviceUsage, live: Live
+        self,
+        hass: HomeAssistant,
+        store: TdcStore,
+        usage: DeviceUsage,
+        live: Live,
+        bundled_ids: Callable[[], frozenset[str]],
     ) -> None:
         """Keep the collaborators."""
         self._hass = hass
         self._store = store
         self._usage = usage
         self._live = live
+        self._bundled_ids = bundled_ids
 
-    def page(self, offset: int, limit: int) -> dict[str, Any]:
-        """Return `limit` devices from `offset` with the state of their entities and their users."""
+    def page(
+        self, offset: int, limit: int, flt: DeviceFilter | None = None, *, with_facets: bool = False
+    ) -> dict[str, Any]:
+        """Return `limit` of the devices that pass `flt` from `offset`, with states and users.
+
+        `total` counts all devices, `matched` those that pass the filter; `facets` is added on request.
+        """
+        flt = flt or DeviceFilter()
         devices = self._store.devices()
         index = self._usage.index()
-        return {
+        context = FilterContext(index, self._has_fault, self._bundled_ids())
+        found = filter_and_sort(devices, flt, context)
+        reply: dict[str, Any] = {
             "total": len(devices),
+            "matched": len(found),
             KEY_DEVICES: [
                 self._device(device, index, with_signal=False)
-                for device in devices[offset : offset + limit]
+                for device in found[offset : offset + limit]
             ],
         }
+        if with_facets:
+            reply["facets"] = self._facets(devices, flt, context)
+        return reply
+
+    def _has_fault(self, device: DeviceDef) -> bool:
+        """Whether an entity of `device` has an active fault."""
+        return any(
+            getattr(self._live.get((device.id, item.key)), "fault_kind", None)
+            for item in device.entities
+        )
+
+    def _facets(
+        self, devices: list[DeviceDef], flt: DeviceFilter, context: FilterContext
+    ) -> dict[str, list[dict[str, Any]]]:
+        """Return the facets, with the label of each run next to its id."""
+        reply = facets(devices, flt, context)
+        labels = {run.id: run.label for run in self._store.runs()}
+        for item in reply["runs"]:
+            item[KEY_LABEL] = labels.get(item["value"], "")
+        return reply
 
     def one(self, device_id: str) -> dict[str, Any]:
         """Return one device in full, including the signal of each entity."""
