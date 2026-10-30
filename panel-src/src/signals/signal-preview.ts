@@ -1,5 +1,6 @@
 import { LitElement, css, html, svg, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { curveStyle } from '../common/curve-style';
 import type { SignalDef } from '../common/types';
 import { DEFAULT_MAX, optionsOf, specOf, valueAt } from './signals';
 import { previewSeconds, spanLabel } from './editor-helpers';
@@ -21,35 +22,30 @@ export class SignalPreview extends LitElement {
   @property() unit = '';
   @property({ type: Boolean }) compact = false;
 
-  static override styles = css`
-    :host {
-      display: block;
-      color: var(--secondary-text-color);
-      font-size: 0.8em;
-    }
-    svg {
-      width: 100%;
-      height: auto;
-      background: var(--secondary-background-color);
-      border-radius: 6px;
-    }
-    :host(:not([compact])) {
-      margin-top: 12px;
-    }
-    :host([compact]) svg {
-      max-width: 120px;
-      border-radius: 3px;
-    }
-    text {
-      fill: var(--secondary-text-color);
-      font-size: 9px;
-    }
-    polyline {
-      fill: none;
-      stroke: var(--primary-color);
-      stroke-width: 1.5;
-    }
-  `;
+  static override styles = [
+    curveStyle,
+    css`
+      :host {
+        display: block;
+        color: var(--secondary-text-color);
+        font-size: 0.8em;
+      }
+      svg {
+        border-radius: 6px;
+      }
+      :host(:not([compact])) {
+        margin-top: 12px;
+      }
+      :host([compact]) svg {
+        max-width: 120px;
+        border-radius: 3px;
+      }
+      text {
+        fill: var(--secondary-text-color);
+        font-size: 9px;
+      }
+    `,
+  ];
 
   /** Return the width of the drawing: the full one fills a wide dialog, the compact one a list row. */
   private get width(): number {
