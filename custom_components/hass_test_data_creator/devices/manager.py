@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 from dataclasses import dataclass, field, replace
 import time
 from typing import Any
@@ -99,11 +100,32 @@ class DevicesManager:
 
     async def async_create(self, job: CreationJob) -> RunRecord:
         """Create the devices of `job` in chunks and return the run that holds them."""
-        template = self._template_for(job)
+        return await self._async_run(job, self._template_for(job), template_key=job.template)
+
+    async def async_duplicate(self, device_id: str, job: CreationJob) -> RunRecord:
+        """Create `job.count` copies of a device: same template, model, output, area and signals."""
+        source = self._store.device(device_id)
+        if source is None:
+            raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+        template = Template(
+            source.template, source.name, source.model, copy.deepcopy(source.entities), False
+        )
+        job = replace(
+            job,
+            template=source.template,
+            output=source.output,
+            areas=job.areas or ([source.area] if source.area else []),
+        )
+        return await self._async_run(job, template, template_key=f"copy:{source.id}")
+
+    async def _async_run(
+        self, job: CreationJob, template: Template, template_key: str
+    ) -> RunRecord:
+        """Create the devices of `job` from `template`; numbers and seeds count per `template_key`."""
         self._check_limits(job, template)
         adapter = self._outputs.create(job.output)
         now = time.time()
-        first = self._store.next_index(template.id, job.count)
+        first = self._store.next_index(template_key, job.count)
         names = distribute(
             job.areas, job.count, job.area_mode, device_seed(job.seed, KEY_AREAS, first)
         )
@@ -113,7 +135,7 @@ class DevicesManager:
             name_pattern=job.name_pattern,
             first_index=first,
             areas=names,
-            seed_text=job.seed,
+            seed_text=job.seed if template_key == template.id else f"{job.seed}:{template_key}",
             run_id=run.id,
             output=job.output,
             now=now,

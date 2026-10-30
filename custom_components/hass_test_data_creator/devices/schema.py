@@ -15,7 +15,15 @@ from ..const import (
     OUTPUT_NATIVE,
     OUTPUTS,
 )
-from ..core.keys import KEY_AREAS, KEY_COUNT, KEY_ENTITIES, KEY_LABEL, KEY_OUTPUT, KEY_TEMPLATE
+from ..core.keys import (
+    KEY_AREAS,
+    KEY_COUNT,
+    KEY_DEVICE,
+    KEY_ENTITIES,
+    KEY_LABEL,
+    KEY_OUTPUT,
+    KEY_TEMPLATE,
+)
 from ..core.limits import SHORT_TEXT, json_size
 from .manager import CreationJob
 
@@ -50,4 +58,30 @@ def job_from_request(data: dict[str, Any], default_seed: str) -> CreationJob:
         label=data[KEY_LABEL],
         output=data[KEY_OUTPUT],
         entities=data.get(KEY_ENTITIES),
+    )
+
+
+DUPLICATE_FIELDS: dict[Any, Any] = {
+    vol.Required(KEY_DEVICE): SHORT_TEXT,
+    vol.Optional(KEY_COUNT, default=1): vol.All(int, vol.Range(min=1)),
+    vol.Optional("name_pattern", default="{template} {n}"): vol.All(str, vol.Length(max=64)),
+    vol.Optional(KEY_AREAS, default=list): vol.All(
+        [vol.All(str, vol.Length(min=1, max=64))], vol.Length(max=MAX_AREAS_PER_JOB)
+    ),
+    vol.Optional("area_mode", default=MODE_EVEN): vol.In(MODES),
+    vol.Optional(CONF_SEED): vol.All(str, vol.Length(min=1, max=64)),
+    vol.Optional(KEY_LABEL, default=""): vol.All(str, vol.Length(max=64)),
+}
+
+
+def duplicate_job_from_request(data: dict[str, Any], default_seed: str) -> CreationJob:
+    """Return the job for copies of a device; template, output and entities come from the device."""
+    return CreationJob(
+        template="",
+        count=data[KEY_COUNT],
+        name_pattern=data["name_pattern"],
+        seed=data.get(CONF_SEED, default_seed),
+        areas=data[KEY_AREAS],
+        area_mode=data["area_mode"],
+        label=data[KEY_LABEL],
     )

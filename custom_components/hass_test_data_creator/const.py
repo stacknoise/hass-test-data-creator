@@ -14,6 +14,7 @@ FEATURES: Final = (
     "areas",
     "csv_replay",
     "device_names",
+    "duplicate",
     "faults",
     "mqtt_discovery",
     "native_output",
