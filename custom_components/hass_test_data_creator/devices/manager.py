@@ -44,6 +44,8 @@ class CreationJob:
     label: str = ""
     output: str = OUTPUT_NATIVE
     entities: list[dict[str, Any]] | None = None
+    overrides: dict[str, dict[str, Any]] = field(default_factory=dict)
+    device_seed: int | None = None
 
 
 class DevicesManager:
@@ -104,7 +106,9 @@ class DevicesManager:
         """Return the template of `job`: a stored one, or one built from its custom entities."""
         if job.template == CUSTOM_TEMPLATE_ID:
             return self._template_factory.custom(job.entities or [])
-        return self._templates.get(job.template)
+        return self._template_factory.with_overrides(
+            self._templates.get(job.template), job.overrides
+        )
 
     def _check_limits(self, job: CreationJob, template: Template) -> None:
         """Raise if the job exceeds a limit of concept 12."""
@@ -189,6 +193,9 @@ class DevicesManager:
             output=job.output,
             now=run.created_at,
         )
+        if job.device_seed is not None:
+            for device in devices:
+                device.seed = job.device_seed
         for start in range(0, len(devices), CHUNK_SIZE):
             chunk = devices[start : start + CHUNK_SIZE]
             for device in chunk:

@@ -94,6 +94,48 @@ async def test_sync_updates_area_and_curve_and_reports_conflicts(
     assert next(e for e in first.entities if e.key == "power").signal == CONSTANT
 
 
+async def test_add_restores_the_seed_and_all_changed_fields(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    items = [
+        device(
+            "Lamp",
+            seed=4711,
+            overrides={"power": {"name": "Draw", "unit": "kW", "signal": CONSTANT}},
+        ),
+        device("Broken", overrides={"nothing": {"name": "x"}}),
+    ]
+
+    result = (await send(client, "run", category="devices", mode="add", items=items))["result"]
+
+    assert (result["create"], [p["code"] for p in result["problems"]]) == (1, ["TDC-TPL-002"])
+    lamp = next(item for item in get_data(hass).store.devices() if item.name == "Lamp")
+    power = next(e for e in lamp.entities if e.key == "power")
+    assert lamp.seed == 4711
+    assert (power.name, power.unit, power.signal) == ("Draw", "kW", CONSTANT)
+
+
+async def test_sync_reports_a_changed_seed_or_field_as_conflict(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    await create_devices(hass, count=1)
+    client = await hass_ws_client(hass)
+    seed = get_data(hass).store.devices()[0].seed
+    items = [device("Plug 01", seed=seed + 1)]
+
+    result = (await send(client, "run", category="devices", mode="sync", items=items))["result"]
+    assert (result["update"], result["conflict"]) == (0, 1)
+
+    items = [device("Plug 01", seed=seed, overrides={"power": {"name": "Other"}})]
+    result = (await send(client, "run", category="devices", mode="sync", items=items))["result"]
+    assert (result["update"], result["conflict"]) == (0, 1)
+
+    items = [device("Plug 01", seed=seed)]
+    result = (await send(client, "run", category="devices", mode="sync", items=items))["result"]
+    assert (result["update"], result["conflict"], result["skip"]) == (0, 0, 1)
+
+
 async def test_an_unknown_reference_is_reported_and_the_entry_skipped(
     hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
 ) -> None:
