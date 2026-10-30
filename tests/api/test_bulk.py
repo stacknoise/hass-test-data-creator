@@ -107,6 +107,44 @@ async def test_an_action_runs_on_every_selected_device(hass: HomeAssistant, clie
     assert state_of(hass, "Plug 02", "state").state == "off"  # type: ignore[union-attr]
 
 
+async def test_pause_and_resume_change_the_devices_that_differ(
+    hass: HomeAssistant, client: Any
+) -> None:
+    reply = await call(client, "devices/bulk_pause", filter={"query": "plug"}, paused=True)
+    assert reply["result"] == {"devices": 3, "paused": True}
+    assert [d.paused for d in get_data(hass).store.devices()] == [True] * 3 + [False] * 2
+    assert all(
+        get_data(hass).live[(d.id, e.key)].paused
+        for d in get_data(hass).store.devices()
+        if d.paused
+        for e in d.entities
+    )
+
+    again = await call(client, "devices/bulk_pause", filter={"query": "plug"}, paused=True)
+    assert again["result"]["devices"] == 0
+    listed = await call(client, "devices/list", state="paused")
+    assert listed["result"]["matched"] == 3
+    assert all(item["paused"] for item in listed["result"]["devices"])
+
+    reply = await call(client, "devices/bulk_pause", filter={}, paused=False, expected=5)
+    assert reply["result"]["devices"] == 3
+    assert not any(d.paused for d in get_data(hass).store.devices())
+
+
+async def test_a_paused_device_ignores_schedules_but_not_bulk_actions(
+    hass: HomeAssistant, client: Any
+) -> None:
+    ids = [_id(hass, "Plug 01")]
+    await call(client, "devices/bulk_pause", ids=ids, paused=True)
+    data = get_data(hass)
+    await data.action_runner.async_run_on(data.store.devices(), "", "turn_on", {}, "test")
+    assert state_of(hass, "Plug 01", "state").state == "off"  # type: ignore[union-attr]
+    assert state_of(hass, "Plug 02", "state").state == "on"  # type: ignore[union-attr]
+    reply = await call(client, "devices/bulk_action", ids=ids, action="turn_on")
+    assert reply["result"]["failed"] == 0
+    assert state_of(hass, "Plug 01", "state").state == "on"  # type: ignore[union-attr]
+
+
 async def test_a_device_that_cannot_do_the_action_counts_as_failed(
     hass: HomeAssistant, client: Any
 ) -> None:

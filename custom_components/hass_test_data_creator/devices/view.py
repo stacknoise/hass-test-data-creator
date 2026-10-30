@@ -147,6 +147,7 @@ class DeviceView:
             KEY_OUTPUT: device.output,
             KEY_RUN_ID: device.run_id,
             "created_at": device.created_at,
+            "paused": device.paused,
             KEY_ENTITIES: [
                 self._entity(registry, device, definition, with_signal=with_signal)
                 for definition in device.entities

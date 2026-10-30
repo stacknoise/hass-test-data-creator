@@ -9,6 +9,7 @@ from .bulk import (
     ws_devices_bulk_action,
     ws_devices_bulk_area,
     ws_devices_bulk_group,
+    ws_devices_bulk_pause,
     ws_devices_bulk_remove,
 )
 from .devices import (
@@ -64,6 +65,7 @@ COMMANDS = (
     ws_devices_bulk_area,
     ws_devices_bulk_group,
     ws_devices_bulk_action,
+    ws_devices_bulk_pause,
     ws_removal_plan,
     ws_removal_run,
     ws_removal_orphan_topics,

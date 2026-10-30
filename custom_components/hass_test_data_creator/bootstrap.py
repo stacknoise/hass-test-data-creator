@@ -24,6 +24,7 @@ from .const import (
 from .core.keys import KEY_DEVICES, KEY_GROUPS, KEY_SCENARIOS, KEY_SCHEDULES
 from .data import TdcData
 from .devices.manager import DevicesManager
+from .devices.pause import DevicePauser
 from .devices.signal_editor import SignalEditor
 from .devices.usage import DeviceUsage
 from .devices.view import DeviceView
@@ -129,6 +130,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     runner = RemovalRunner(
         hass, store, outputs, areas, Forgetters(schedules, scenarios, history), audit, audit_factory
     )
+    pauser = DevicePauser(store, live, audit, audit_factory)
     signal_editor = SignalEditor(store, live, behaviours, template_factory, audit, audit_factory)
     handlers: dict[str, CategoryHandler] = {
         KEY_TEMPLATES: TemplatesHandler(hass, registry, template_factory),
@@ -175,6 +177,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         usage=usage,
         device_view=DeviceView(hass, store, usage, live, registry.bundled_ids),
         signal_editor=signal_editor,
+        pauser=pauser,
         csv=csv,
         transfer=TransferExporter(store, registry, TransferFactory()),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),

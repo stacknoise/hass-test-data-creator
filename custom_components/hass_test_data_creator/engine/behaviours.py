@@ -57,6 +57,7 @@ class Behaviour:
         self.platform = definition.platform
         self.on_change: Callable[[], None] = _ignore
         self._scheduler = scheduler
+        self.paused = False
         self._fault: Fault | None = None
         self._cancel_fault: Cancel | None = None
 
@@ -96,6 +97,17 @@ class Behaviour:
         """Follow the clock; True if the state changed. Most entities do not move by themselves."""
         return False
 
+    def set_paused(self, paused: bool) -> None:
+        """Stop following the tick, or follow it again and show the current value at once."""
+        if paused == self.paused:
+            return
+        self.paused = paused
+        if not paused:
+            self._resumed()
+
+    def _resumed(self) -> None:
+        """Catch up after a pause; most entities do not move by themselves."""
+
     def close(self) -> None:
         """Cancel the timers and stop reporting; the behaviour is no longer used."""
         self._clear_fault_timer()
@@ -133,7 +145,9 @@ class SensorBehaviour(Behaviour):
         self.native_value: float | str = signal.value(self._last)
 
     def tick(self, now: float) -> bool:
-        """Compute a new value if the interval has passed and the sensor is not frozen."""
+        """Compute a new value if the interval has passed and the sensor is not frozen or paused."""
+        if self.paused:
+            return False
         if now - self._last < self.signal.spec.interval_s * INTERVAL_TOLERANCE:
             return False
         if self._fault and self._fault.frozen:
@@ -141,6 +155,12 @@ class SensorBehaviour(Behaviour):
         self._last = now
         self.native_value = self._value(now)
         return True
+
+    def _resumed(self) -> None:
+        """Show the value of the curve at once, unless the sensor is frozen."""
+        self._last = self._scheduler.now()
+        self._fault_changed()
+        self.on_change()
 
     def _value(self, now: float) -> float | str:
         """Return the value of the signal at `now` with the transformation of an active fault."""
@@ -318,12 +338,19 @@ class ClimateBehaviour(Behaviour):
         """Return the measured temperature at `now`, rounded to what a thermostat reports."""
         return round(float(self.signal.value(now)), TEMPERATURE_DIGITS)
 
+    def _resumed(self) -> None:
+        """Measure the current temperature at once."""
+        self.temperature = self._measure(self._scheduler.now())
+        self.on_change()
+
     def measured(self) -> float | str:
         """The measured temperature now."""
         return self.signal.value(self._scheduler.now())
 
     def tick(self, now: float) -> bool:
         """Measure again; True only if the rounded temperature differs from the last one."""
+        if self.paused:
+            return False
         measured = self._measure(now)
         if measured == self.temperature:
             return False

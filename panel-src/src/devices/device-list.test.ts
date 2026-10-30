@@ -17,6 +17,7 @@ function device(n: number): DeviceInfo {
     run_id: 'run',
     created_at: 0,
     area: null,
+    paused: n === 2,
     entities: [],
     used_by: { schedules: [], scenarios: [], groups: [] },
   };
@@ -166,5 +167,22 @@ describe('DeviceList', () => {
       .dispatchEvent(new CustomEvent('tdc-filter-change', { detail: { query: 'plug' } }));
     await settle(element);
     expect(bar().count).toBe(0);
+  });
+
+  it('marks a paused device and pauses the chosen rows from the bulk bar', async () => {
+    const root = element.shadowRoot!;
+    expect([...root.querySelectorAll('small.paused')]).toHaveLength(1);
+
+    (root.querySelector('th.check input') as HTMLInputElement).click();
+    await settle(element);
+    const bar = root.querySelector('tdc-bulk-bar') as HTMLElement;
+    const pause = [...bar.shadowRoot!.querySelectorAll('button')].find((b) =>
+      /^Pause$/u.test((b.textContent ?? '').trim()),
+    );
+    pause!.click();
+    await settle(element);
+    const request = sent.find((m) => m.type === 'hass_test_data_creator/devices/bulk_pause');
+    expect(request).toMatchObject({ paused: true, expected: PAGE_SIZE });
+    expect((request as { ids: string[] }).ids).toHaveLength(PAGE_SIZE);
   });
 });

@@ -27,6 +27,7 @@ from ..devices.schema import BULK_TARGET_FIELDS, bulk_target
 from ..model.models import DeviceDef
 
 KEY_PLAN_ONLY = "plan_only"
+KEY_PAUSED = "paused"
 
 
 def _selected(hass: HomeAssistant, msg: dict[str, Any]) -> list[DeviceDef]:
@@ -91,6 +92,17 @@ async def ws_devices_bulk_group(
         [device.id for device in _selected(hass, msg)], msg.get(KEY_GROUP_ID), msg.get(KEY_NAME)
     )
     return group.to_dict()
+
+
+@tdc_command(f"{DOMAIN}/devices/bulk_pause", {**BULK_TARGET_FIELDS, vol.Required(KEY_PAUSED): bool})
+async def ws_devices_bulk_pause(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Pause or resume the selected devices and return how many changed."""
+    changed = await get_data(hass).pauser.async_set(
+        [device.id for device in _selected(hass, msg)], msg[KEY_PAUSED]
+    )
+    return {KEY_DEVICES: changed, KEY_PAUSED: msg[KEY_PAUSED]}
 
 
 @tdc_command(
