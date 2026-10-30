@@ -207,12 +207,14 @@ class DevicesHandler(CategoryHandler):
         manager: DevicesManager,
         signals: SignalEditor,
         factory: TemplateFactory,
+        registry: TemplateRegistry,
         mqtt: MqttClient,
         removal: tuple[RemovalPlanner, RemovalRunner],
         usage: DeviceUsage,
     ) -> None:
-        """Keep the store, the managers, the template factory, the MQTT client and the removal."""
+        """Keep the store, the managers, the template factory and registry, MQTT and the removal."""
         self._store = store
+        self._registry = registry
         self._manager = manager
         self._signals = signals
         self._factory = factory
@@ -229,6 +231,9 @@ class DevicesHandler(CategoryHandler):
             self._factory.custom(data[KEY_ENTITIES])
         else:
             refs.template(data[KEY_TEMPLATE])
+            known = next((t for t in self._registry.all() if t.id == data[KEY_TEMPLATE]), None)
+            if known is not None:
+                self._factory.with_overrides(known, data[KEY_OVERRIDES])
         data["signals"] = {
             key: checked(SIGNAL_SCHEMA, override[KEY_SIGNAL], data[KEY_NAME])
             for key, override in data[KEY_OVERRIDES].items()
@@ -244,14 +249,26 @@ class DevicesHandler(CategoryHandler):
         return found
 
     def conflict(self, existing: Any, data: dict[str, Any]) -> bool:
-        """The output and the template, or the list of entities, cannot change in place."""
+        """The output, template, entities, seed and entity fields other than curves cannot change in place."""
         if existing.output != data[KEY_OUTPUT]:
+            return True
+        if data.get("seed", existing.seed) != existing.seed or self._fields_differ(existing, data):
             return True
         if KEY_ENTITIES in data:
             return [item.key for item in existing.entities] != [
                 item.get("key") for item in data[KEY_ENTITIES]
             ]
         return existing.template != data[KEY_TEMPLATE]
+
+    def _fields_differ(self, existing: Any, data: dict[str, Any]) -> bool:
+        """Whether an override changes a field of an entity other than its curve."""
+        fields = {item.key: item.to_dict() for item in existing.entities}
+        return any(
+            fields.get(key, {}).get(field) != value
+            for key, override in data[KEY_OVERRIDES].items()
+            for field, value in override.items()
+            if field != KEY_SIGNAL
+        )
 
     def unchanged(self, existing: Any, data: dict[str, Any]) -> bool:
         """Whether the area and the curves already are the ones of the entry."""
@@ -291,31 +308,17 @@ class DevicesHandler(CategoryHandler):
             count=1,
             name_pattern=data[KEY_NAME],
             seed=f"import {data[KEY_NAME]}",
+            overrides={} if entities else data[KEY_OVERRIDES],
+            device_seed=data.get("seed"),
             areas=[data[KEY_AREA]] if data.get(KEY_AREA) else [],
             output=data[KEY_OUTPUT],
             entities=entities,
         )
 
     async def async_create_many(self, items: list[dict[str, Any]], label: str) -> list[Failure]:
-        """Create all devices into one run, then give them the curves of the entries."""
-        run = await self._manager.async_create_many([self._job(data) for data in items], label)
-        ids = {
-            device.name: device.id
-            for device in (self._store.device(item) for item in run.device_ids)
-            if device is not None
-        }
-        failures: list[Failure] = []
-        for data in items:
-            try:
-                await self._set_curves(ids[data[KEY_NAME]], data)
-            except TdcError as error:
-                failures.append((data[KEY_NAME], error))
-        return failures
-
-    async def _set_curves(self, device_id: str, data: dict[str, Any]) -> None:
-        """Give the device the curves of an entry."""
-        for key, signal in data["signals"].items():
-            await self._signals.async_set(device_id, key, signal)
+        """Create all devices into one run; their seeds and changed fields come with the jobs."""
+        await self._manager.async_create_many([self._job(data) for data in items], label)
+        return []
 
     async def async_update(self, existing: Any, data: dict[str, Any]) -> None:
         """Change the area and the curves."""

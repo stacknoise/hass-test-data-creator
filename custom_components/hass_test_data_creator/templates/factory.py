@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
@@ -101,6 +101,24 @@ class TemplateFactory:
     def with_signal(self, definition: EntityDef, signal: dict[str, Any]) -> EntityDef:
         """Return a copy of `definition` that has `signal` as its curve."""
         return EntityDef(**{**definition.to_dict(), KEY_SIGNAL: signal})
+
+    def with_overrides(self, template: Template, overrides: dict[str, dict[str, Any]]) -> Template:
+        """Return a copy of `template` whose entities carry the changed fields of `overrides` by key.
+
+        Every changed entity is validated again; an unknown key or a changed key raises TDC-TPL-002.
+        """
+        if not overrides:
+            return template
+        keys = {entity.key for entity in template.entities}
+        if not set(overrides) <= keys:
+            raise TemplateError(ErrorCode.TPL_INVALID, file="overrides: unknown entity")
+        entities = [
+            self.entity({**entity.to_dict(), **overrides[entity.key], "key": entity.key})
+            if entity.key in overrides
+            else entity
+            for entity in template.entities
+        ]
+        return replace(template, entities=entities)
 
     def template(self, data: dict[str, Any], *, bundled: bool = True) -> Template:
         """Return the validated template for `data`."""

@@ -133,7 +133,14 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     handlers: dict[str, CategoryHandler] = {
         KEY_TEMPLATES: TemplatesHandler(hass, registry, template_factory),
         KEY_DEVICES: DevicesHandler(
-            store, manager, signal_editor, template_factory, mqtt, (planner, runner), usage
+            store,
+            manager,
+            signal_editor,
+            template_factory,
+            registry,
+            mqtt,
+            (planner, runner),
+            usage,
         ),
         KEY_SCENARIOS: ScenariosHandler(store, scenarios),
         KEY_SCHEDULES: SchedulesHandler(store, schedules, entry.data.get(CONF_SEED, DEFAULT_SEED)),
