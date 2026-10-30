@@ -1761,6 +1761,14 @@ var Pt = o`
     select {
       min-height: 36px;
     }
+    input[type='checkbox'] {
+      width: 18px;
+      min-height: 0;
+      height: 18px;
+      padding: 0;
+      margin: 0;
+      flex: none;
+    }
     label {
       display: flex;
       flex-direction: column;
