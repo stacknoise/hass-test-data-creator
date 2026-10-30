@@ -33,7 +33,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
-Added for 1.1 (not released yet): the device list can be searched, filtered (template, area, output, entity kind, device set, own templates, faults, used or not) and sorted, with `/` to jump to the search, `Esc` to reset the filter, a small curve of the first sensor in every row and a reset link when nothing matches; the filter runs in the backend, so the counter and the paging are right for any number of devices.
+Added for 1.1 (not released yet): the device list can be searched, filtered (template, area, output, entity kind, device set, own templates, faults, used or not) and sorted by clicking the column headers (ascending, descending, off), with `/` to jump to the search, `Esc` to reset the filter, and a reset link when nothing matches; the filter runs in the backend, so the counter and the paging are right for any number of devices.
 
 Added for 1.1 (not released yet): the lists of schedules, scenarios and groups have the same filter bar (search, and for schedules trigger type, action, target kind and on or off, for scenarios the devices and templates in their steps); the filter is kept while the browser tab is open. History and Removal list nothing that can be filtered.
 

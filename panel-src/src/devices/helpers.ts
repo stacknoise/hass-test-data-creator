@@ -1,14 +1,7 @@
 import type { FilterField, FilterValue, FilterValues } from '../common/filter-state';
 import type { SelectItem } from '../common/multi-select';
-import type {
-  DeviceFilterRequest,
-  DeviceInfo,
-  DeviceUsage,
-  EntityState,
-  FacetEntry,
-  SignalDef,
-} from '../common/types';
-import { PLATFORM_SENSOR, TAB_GROUPS } from '../common/constants';
+import type { DeviceFilterRequest, DeviceInfo, DeviceUsage, FacetEntry } from '../common/types';
+import { TAB_GROUPS } from '../common/constants';
 
 /** An action that needs one number, with the name of its parameter and the allowed range. */
 export interface ValueAction {
@@ -99,14 +92,37 @@ export function lastPageOffset(total: number, size: number): number {
 
 /** The fields of the device filter by key and kind; the labels and options come with the facets. */
 export const DEVICE_FIELDS: FilterField[] = [
+  { key: 'state', kind: 'choice', label: '' },
   { key: 'templates', kind: 'multi', label: '' },
   { key: 'areas', kind: 'multi', label: '' },
   { key: 'outputs', kind: 'multi', label: '' },
   { key: 'platforms', kind: 'multi', label: '' },
   { key: 'runs', kind: 'multi', label: '' },
-  { key: 'state', kind: 'choice', label: '' },
   { key: 'custom', kind: 'switch', label: '' },
 ];
+
+/** The field before which the search sits in the bar: the state comes first, the search takes its place. */
+export const SEARCH_BEFORE = 'custom';
+
+/** The columns of the device list that the backend can sort by, as the header shows them. */
+export type SortColumn = 'name' | 'template';
+
+/** Return the sort after a click on a column header: ascending, then descending, then none. */
+export function nextSort(values: FilterValues, column: SortColumn): FilterValues {
+  const same = values.sort === column;
+  if (!same) return { ...values, sort: column, descending: false };
+  if (values.descending !== true) return { ...values, sort: column, descending: true };
+  return { ...values, sort: '', descending: false };
+}
+
+/** Return the `aria-sort` value of a column header for the sort in `values`. */
+export function ariaSort(
+  values: FilterValues,
+  column: SortColumn,
+): 'ascending' | 'descending' | 'none' {
+  if (values.sort !== column) return 'none';
+  return values.descending === true ? 'descending' : 'ascending';
+}
 
 /** The tab under which the filter of the device list is kept in the session. */
 export const DEVICE_FILTER_TAB = 'devices';
@@ -152,14 +168,4 @@ export function facetItems(
     .filter((value) => !items.some((item) => item.value === value))
     .map((value) => ({ value, label: label({ value, count: 0 }) }));
   return [...items, ...missing];
-}
-
-/** Return the first sensor of a device that has a curve; the row draws this one. */
-export function curveEntity(device: DeviceInfo): EntityState | undefined {
-  return device.entities.find((e) => e.platform === PLATFORM_SENSOR && e.shape);
-}
-
-/** Return the ids of the devices whose row curve is not loaded yet. */
-export function missingCurves(devices: DeviceInfo[], loaded: Record<string, SignalDef>): string[] {
-  return devices.filter((d) => curveEntity(d) && !(d.id in loaded)).map((d) => d.id);
 }

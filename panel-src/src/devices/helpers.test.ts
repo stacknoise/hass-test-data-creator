@@ -3,14 +3,14 @@ import type { DeviceInfo } from '../common/types';
 import { emptyValues } from '../common/filter-state';
 import {
   DEVICE_FIELDS,
+  ariaSort,
+  nextSort,
   actionsFor,
-  curveEntity,
   deviceRequest,
   facetItems,
   faultParams,
   knownAreas,
   lastPageOffset,
-  missingCurves,
   usageEntries,
   valueParams,
 } from './helpers';
@@ -134,19 +134,31 @@ describe('device filter request', () => {
   });
 });
 
-describe('row curve', () => {
-  const sensor = { key: 't', name: 'T', platform: 'sensor', shape: 'sine' };
-  const device = (id: string, entities: object[]): DeviceInfo =>
-    ({ id, entities }) as unknown as DeviceInfo;
+describe('column sort', () => {
+  const start = emptyValues(DEVICE_FIELDS);
 
-  it('takes the first sensor that has a curve', () => {
-    const d = device('a', [{ key: 's', platform: 'switch' }, sensor]);
-    expect(curveEntity(d)?.key).toBe('t');
-    expect(curveEntity(device('b', [{ key: 's', platform: 'switch' }]))).toBeUndefined();
+  it('goes ascending, descending, off on repeated clicks', () => {
+    const first = nextSort(start, 'name');
+    expect([first.sort, first.descending]).toEqual(['name', false]);
+    const second = nextSort(first, 'name');
+    expect([second.sort, second.descending]).toEqual(['name', true]);
+    const third = nextSort(second, 'name');
+    expect([third.sort, third.descending]).toEqual(['', false]);
   });
 
-  it('lists only the devices with a curve that is not loaded', () => {
-    const devices = [device('a', [sensor]), device('b', [sensor]), device('c', [])];
-    expect(missingCurves(devices, { a: { shape: 'sine' } as never })).toEqual(['b']);
+  it('starts ascending on another column', () => {
+    const other = nextSort(nextSort(nextSort(start, 'name'), 'name'), 'template');
+    expect([other.sort, other.descending]).toEqual(['template', false]);
+  });
+
+  it('reports the order for aria-sort', () => {
+    const desc = nextSort(nextSort(start, 'name'), 'name');
+    expect(ariaSort(desc, 'name')).toBe('descending');
+    expect(ariaSort(desc, 'template')).toBe('none');
+    expect(ariaSort(start, 'name')).toBe('none');
+  });
+
+  it('keeps the other restrictions', () => {
+    expect(nextSort({ ...start, query: 'x' }, 'name').query).toBe('x');
   });
 });

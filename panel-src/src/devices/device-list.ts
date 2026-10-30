@@ -13,9 +13,8 @@ import {
   type FilterValues,
 } from '../common/filter-state';
 import '../common/menu-button';
-import '../signals/signal-preview';
 import type { MenuItem } from '../common/menu-button';
-import type { DeviceFacets, DeviceInfo, EntityState, FacetEntry, SignalDef } from '../common/types';
+import type { DeviceFacets, DeviceInfo, EntityState, FacetEntry } from '../common/types';
 import {
   OUTPUT_LABELS,
   actionLabel,
@@ -44,12 +43,14 @@ import './duplicate-dialog';
 import {
   DEVICE_FIELDS,
   DEVICE_FILTER_TAB,
-  curveEntity,
+  SEARCH_BEFORE,
+  ariaSort,
+  nextSort,
+  type SortColumn,
   deviceRequest,
   facetItems,
   knownAreas,
   lastPageOffset,
-  missingCurves,
   usageEntries,
 } from './helpers';
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
@@ -100,8 +101,12 @@ export class DeviceList extends TdcPollingElement {
           width: auto;
         }
       }
-      tdc-signal-preview {
-        margin-top: 4px;
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+      }
+      th.sortable:hover {
+        color: var(--primary-text-color);
       }
       tr.device:hover {
         background: var(--secondary-background-color);
@@ -117,7 +122,6 @@ export class DeviceList extends TdcPollingElement {
   @state() private templating = false;
   @state() private duplicating?: DeviceInfo;
   @state() private facets?: DeviceFacets;
-  @state() private curves: Record<string, SignalDef> = {};
   @state() private filter: FilterValues = readFilter(DEVICE_FILTER_TAB, DEVICE_FIELDS);
 
   @state() private selection: Selection = NO_SELECTION;
@@ -143,7 +147,6 @@ export class DeviceList extends TdcPollingElement {
       this.matched = page.matched;
       if (page.facets) this.facets = page.facets;
       this.error = '';
-      void this.loadCurves(page.devices);
     } catch (err) {
       this.facetsStale ||= withFacets;
       this.error = describeError(err);
@@ -151,24 +154,9 @@ export class DeviceList extends TdcPollingElement {
     this.loaded = true;
   }
 
-  /** Load the row curves that are missing, one device at a time; a failure leaves the row without. */
-  private async loadCurves(devices: DeviceInfo[]): Promise<void> {
-    for (const id of missingCurves(devices, this.curves)) {
-      try {
-        const full = await this.api.device(id);
-        const key = curveEntity(full)?.key;
-        const signal = full.entities.find((e) => e.key === key)?.signal;
-        if (signal) this.curves = { ...this.curves, [id]: signal };
-      } catch {
-        return;
-      }
-    }
-  }
-
   /** Reload and ask for the filter options too, as after a change of the devices. */
   private reload(): void {
     this.facetsStale = true;
-    this.curves = {};
     void this.refresh();
   }
 
@@ -203,6 +191,12 @@ export class DeviceList extends TdcPollingElement {
     };
     return [
       {
+        key: 'state',
+        kind: 'choice',
+        label: this.tr('detState'),
+        options: options('state', 'state', (e) => stateLabels[e.value] ?? e.value),
+      },
+      {
         key: 'templates',
         kind: 'multi',
         label: this.tr('colTemplate'),
@@ -236,12 +230,6 @@ export class DeviceList extends TdcPollingElement {
         label: this.tr('schTarget_run'),
         options: options('runs', 'runs', (e) => e.label || e.value),
       },
-      {
-        key: 'state',
-        kind: 'choice',
-        label: this.tr('detState'),
-        options: options('state', 'state', (e) => stateLabels[e.value] ?? e.value),
-      },
       { key: 'custom', kind: 'switch', label: this.tr('filterCustom') },
     ];
   }
@@ -252,15 +240,24 @@ export class DeviceList extends TdcPollingElement {
       .hass=${this.hass}
       .fields=${this.filterFields()}
       .values=${this.filter}
-      .sorts=${[
-        { value: 'name', label: this.tr('sortName') },
-        { value: 'created', label: this.tr('sortCreated') },
-        { value: 'template', label: this.tr('sortTemplate') },
-      ]}
+      searchBefore=${SEARCH_BEFORE}
       .matched=${this.matched}
       .total=${this.total}
       @tdc-filter-change=${(e: CustomEvent<FilterValues>) => this.setFilter(e.detail)}
     ></tdc-filter-bar>`;
+  }
+
+  /** Render a column header that sorts the list: one click ascending, a second descending, a third off. */
+  private sortHeader(column: SortColumn, label: string): TemplateResult {
+    const order = ariaSort(this.filter, column);
+    const arrow = { ascending: '▲', descending: '▼', none: '' }[order];
+    return html`<th
+      class="sortable"
+      aria-sort=${order}
+      @click=${() => this.setFilter(nextSort(this.filter, column))}
+    >
+      ${label} <span class="arrow">${arrow}</span>
+    </th>`;
   }
 
   /** Show another page of the list. */
@@ -409,14 +406,6 @@ export class DeviceList extends TdcPollingElement {
         </td>
         <td class="values" data-label=${this.tr('colValues')}>
           <small>${this.values(device)}</small>
-          ${
-            this.curves[device.id]
-              ? html`<tdc-signal-preview
-                  compact
-                  .signal=${this.curves[device.id]}
-                ></tdc-signal-preview>`
-              : nothing
-          }
         </td>
         <td class="row nowrap" data-label=${this.tr('colActions')}>
           <tdc-menu-button
@@ -544,8 +533,8 @@ export class DeviceList extends TdcPollingElement {
                             (this.selection = togglePage(this.selection, this.pageIds()))}
                         />
                       </th>
-                      <th>${this.tr('colName')}</th>
-                      <th>${this.tr('colTemplate')}</th>
+                      ${this.sortHeader('name', this.tr('colName'))}
+                      ${this.sortHeader('template', this.tr('colTemplate'))}
                       <th>${this.tr('colArea')}</th>
                       <th>${this.tr('colOutput')}</th>
                       <th>${this.tr('colValues')}</th>
