@@ -10,15 +10,18 @@ from .audit.factory import AuditEntryFactory
 from .audit.log import AuditLog
 from .const import (
     CONF_MQTT_BASE_TOPIC,
+    CONF_SEED,
     CONF_TICK_SECONDS,
     CONF_TIME_LAPSE,
     CONF_Z2M_BASE_TOPIC,
     CONF_Z2M_CONFIRM_DEFAULT,
     DEFAULT_MQTT_BASE_TOPIC,
+    DEFAULT_SEED,
     DEFAULT_TICK_SECONDS,
     DEFAULT_TIME_LAPSE,
     DEFAULT_Z2M_BASE_TOPIC,
 )
+from .core.keys import KEY_DEVICES, KEY_GROUPS, KEY_SCENARIOS, KEY_SCHEDULES
 from .data import TdcData
 from .devices.manager import DevicesManager
 from .devices.signal_editor import SignalEditor
@@ -61,6 +64,16 @@ from .templates.factory import TemplateFactory
 from .templates.registry import TemplateRegistry
 from .transfer.exporter import TransferExporter
 from .transfer.factory import TransferFactory
+from .transfer.handlers import (
+    CategoryHandler,
+    DevicesHandler,
+    GroupsHandler,
+    ScenariosHandler,
+    SchedulesHandler,
+    TemplatesHandler,
+)
+from .transfer.importer import TransferImporter
+from .transfer.schema import KEY_TEMPLATES
 
 
 def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
@@ -109,6 +122,23 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     history = HistoryManager(
         hass, store, StatisticsClient(hass), SeriesFactory(signals), audit, audit_factory
     )
+    manager = DevicesManager(
+        store, registry, template_factory, DeviceFactory(), outputs, areas, audit, audit_factory
+    )
+    planner = RemovalPlanner(hass, entry, store, usage)
+    runner = RemovalRunner(
+        hass, store, outputs, areas, Forgetters(schedules, scenarios, history), audit, audit_factory
+    )
+    signal_editor = SignalEditor(store, live, behaviours, template_factory, audit, audit_factory)
+    handlers: dict[str, CategoryHandler] = {
+        KEY_TEMPLATES: TemplatesHandler(hass, registry, template_factory),
+        KEY_DEVICES: DevicesHandler(
+            store, manager, signal_editor, template_factory, mqtt, (planner, runner), usage
+        ),
+        KEY_SCENARIOS: ScenariosHandler(store, scenarios),
+        KEY_SCHEDULES: SchedulesHandler(store, schedules, entry.data.get(CONF_SEED, DEFAULT_SEED)),
+        KEY_GROUPS: GroupsHandler(store, groups, mqtt),
+    }
     return TdcData(
         entry=entry,
         store=store,
@@ -118,29 +148,12 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
             clock.now,
             lambda took, every: audit.record(audit_factory.tick_slow(took, every)),
         ),
-        manager=DevicesManager(
-            store,
-            registry,
-            template_factory,
-            DeviceFactory(),
-            outputs,
-            areas,
-            audit,
-            audit_factory,
-        ),
+        manager=manager,
         action_runner=action_runner,
         schedules=schedules,
         scenarios=scenarios,
-        removal_planner=RemovalPlanner(hass, entry, store, usage),
-        removal_runner=RemovalRunner(
-            hass,
-            store,
-            outputs,
-            areas,
-            Forgetters(schedules, scenarios, history),
-            audit,
-            audit_factory,
-        ),
+        removal_planner=planner,
+        removal_runner=runner,
         template_registry=registry,
         entity_factory=EntityFactory(behaviours, live),
         outputs=outputs,
@@ -154,8 +167,9 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         clock=clock,
         usage=usage,
         device_view=DeviceView(hass, store, usage, live, registry.bundled_ids),
-        signal_editor=SignalEditor(store, live, behaviours, template_factory, audit, audit_factory),
+        signal_editor=signal_editor,
         csv=csv,
         transfer=TransferExporter(store, registry, TransferFactory()),
+        importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,
     )

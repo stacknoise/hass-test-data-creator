@@ -14,7 +14,19 @@ import type {
   ScheduleInfo,
   ScheduleRequest,
 } from '../common/types';
-import { describeTarget, formatWhen, summarizeTrigger, type TargetKind } from './helpers';
+import {
+  ACTION_SCENARIO,
+  SCHEDULE_FIELDS,
+  SCHEDULE_FILTER_TAB,
+  describeTarget,
+  formatWhen,
+  scheduleAction,
+  scheduleRule,
+  summarizeTrigger,
+  type TargetKind,
+} from './helpers';
+import { optionsOf } from '../common/list-filter';
+import type { FilterField } from '../common/filter-state';
 import '../common/dialog';
 import './schedule-form';
 import type { ScheduleForm } from './schedule-form';
@@ -57,6 +69,12 @@ export class SchedulePanel extends TdcPollingElement {
   @state() private previewOpen = false;
 
   @query('tdc-schedule-form#new') private newForm?: ScheduleForm;
+
+  /** Take over the filter that the session kept. */
+  constructor() {
+    super();
+    this.restoreFilter(SCHEDULE_FILTER_TAB, SCHEDULE_FIELDS);
+  }
 
   /** Nothing to prepare: the forms start themselves when the actions are known. */
   protected optionsLoaded(): void {
@@ -121,6 +139,69 @@ export class SchedulePanel extends TdcPollingElement {
     return `${label}: ${name}`;
   }
 
+  /** Return the text of what a schedule runs: one action, or the scenario it starts. */
+  private actionText(item: ScheduleInfo): string {
+    return item.scenario
+      ? this.tr('schScenario', { id: this.scenarioName(item.scenario) })
+      : workLabel(this.hass?.language, item.entity, item.action);
+  }
+
+  /** Return the text of the target of a schedule. */
+  private targetOf(item: ScheduleInfo): string {
+    const { kind, ids } = describeTarget(item.target);
+    return item.scenario ? '' : this.targetText(kind, ids);
+  }
+
+  /** Return the controls of the filter with the values that the schedules have. */
+  private filterFields(): FilterField[] {
+    const lang = this.hass?.language;
+    return [
+      {
+        key: 'triggers',
+        kind: 'multi',
+        label: this.tr('schTrigger'),
+        options: optionsOf(
+          this.schedules,
+          (item) => [item.trigger.type],
+          (type) => this.tr(`schTrigger_${type}` as TextKey),
+          lang,
+        ),
+      },
+      {
+        key: 'actions',
+        kind: 'multi',
+        label: this.tr('schAction'),
+        options: optionsOf(
+          this.schedules,
+          (item) => [scheduleAction(item)],
+          (action) =>
+            action === ACTION_SCENARIO ? this.tr('filterScenario') : workLabel(lang, '', action),
+          lang,
+        ),
+      },
+      {
+        key: 'targets',
+        kind: 'multi',
+        label: this.tr('schTarget'),
+        options: optionsOf(
+          this.schedules,
+          (item) => [describeTarget(item.target).kind],
+          (kind) => this.tr(`schTarget_${kind}` as TextKey),
+          lang,
+        ),
+      },
+      {
+        key: 'enabled',
+        kind: 'choice',
+        label: this.tr('schEnabled'),
+        options: [
+          { value: 'on', label: this.tr('filterOn') },
+          { value: 'off', label: this.tr('filterOff') },
+        ],
+      },
+    ];
+  }
+
   /** Render the button that opens the popup with the form for a new object. */
   private renderNew(): TemplateResult {
     return this.newPopup(
@@ -141,20 +222,13 @@ export class SchedulePanel extends TdcPollingElement {
   /** Render the table row of one schedule and, if open, its form. */
   private renderRow(item: ScheduleInfo): TemplateResult {
     const { kind, ids } = describeTarget(item.target);
-    const lang = this.hass?.language;
     const open = this.expanded.has(item.id);
     return html`<tr class="schedule card" @click=${() => this.toggle(item.id)}>
         ${this.nameCell(item.id, item.name)}
         <td data-label=${this.tr('schTarget')}>
           ${item.scenario ? '–' : this.targetText(kind, ids)}
         </td>
-        <td data-label=${this.tr('schAction')}>
-          ${
-            item.scenario
-              ? this.tr('schScenario', { id: this.scenarioName(item.scenario) })
-              : workLabel(lang, item.entity, item.action)
-          }
-        </td>
+        <td data-label=${this.tr('schAction')}>${this.actionText(item)}</td>
         <td data-label=${this.tr('schTrigger')}>
           ${this.tr(`schTrigger_${item.trigger.type}` as TextKey)}<br /><small
             >${summarizeTrigger(item.trigger)}</small
@@ -195,9 +269,8 @@ export class SchedulePanel extends TdcPollingElement {
       }`;
   }
 
-  /** Render the list of the schedules. */
-  private renderList(): TemplateResult {
-    if (this.schedules.length === 0) return html`<p>${this.tr('schNone')}</p>`;
+  /** Render the table of the schedules that pass the filter. */
+  private renderTable(schedules: ScheduleInfo[]): TemplateResult {
     return html`<table class="cards">
       <tr>
         <th>${this.tr('schName')}</th>
@@ -208,11 +281,25 @@ export class SchedulePanel extends TdcPollingElement {
         <th>${this.tr('colActions')}</th>
       </tr>
       ${repeat(
-        this.schedules,
+        schedules,
         (item) => item.id,
         (item) => this.renderRow(item),
       )}
     </table>`;
+  }
+
+  /** Render the list of the schedules. */
+  private renderList(): TemplateResult {
+    if (this.schedules.length === 0) return html`<p>${this.tr('schNone')}</p>`;
+    return this.renderFiltered(
+      this.schedules,
+      this.filterFields(),
+      scheduleRule(
+        (item) => this.targetOf(item),
+        (item) => this.actionText(item),
+      ),
+      (shown) => this.renderTable(shown),
+    );
   }
 
   /** Return the number of planned runs as text. */

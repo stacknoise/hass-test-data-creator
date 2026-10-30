@@ -10,6 +10,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from pytest_homeassistant_custom_component.typing import WebSocketGenerator
 
 from custom_components.hass_test_data_creator.const import API_VERSION
+from custom_components.hass_test_data_creator.data import get_data
 
 from ..conftest import create_devices
 
@@ -187,3 +188,51 @@ async def test_names_are_light_and_get_reports_a_missing_device(
     missing = await call(client, "devices/get", device="nope")
     assert not missing["success"]
     assert missing["error"]["code"] == "TDC-SCH-002"
+
+
+async def test_duplicate_copies_a_device_with_its_signals(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    await call(
+        client,
+        "devices/create",
+        template="climate_sensor",
+        count=1,
+        name_pattern="Source",
+        areas=["Bath"],
+    )
+    await hass.async_block_till_done()
+    source = (await call(client, "devices/list"))["result"]["devices"][0]
+    curve = {"shape": "constant", "value": 42}
+    await call(client, "devices/signal", device=source["id"], entity="temperature", signal=curve)
+
+    copies = await call(client, "devices/duplicate", device=source["id"], count=3)
+    assert copies["success"]
+    assert copies["result"]["devices"] == 3
+    await hass.async_block_till_done()
+
+    devices = (await call(client, "devices/list"))["result"]["devices"]
+    assert sorted(d["name"] for d in devices) == ["Source", "Source 1", "Source 2", "Source 3"]
+    assert {d["area"] for d in devices} == {"Bath"}
+    assert len({d["id"] for d in devices}) == 4
+    again = await call(
+        client, "devices/duplicate", device=source["id"], count=1, name_pattern="Twin {n}"
+    )
+    assert again["success"]
+    seeds = {d.seed for d in get_data(hass).store.devices()}
+    assert len(seeds) == 5
+
+
+async def test_duplicate_errors(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    await call(client, "devices/create", template="plug_metering", count=1)
+    only = (await call(client, "devices/list"))["result"]["devices"][0]["id"]
+    missing = await call(client, "devices/duplicate", device="nope", count=1)
+    assert missing["error"]["code"] == "TDC-SCH-002"
+    too_many = await call(client, "devices/duplicate", device=only, count=501)
+    assert too_many["error"]["code"] == "TDC-GEN-002"
+    bad = await call(client, "devices/duplicate", device=only, count=1, name_pattern="{x}")
+    assert bad["error"]["code"] == "TDC-GEN-003"

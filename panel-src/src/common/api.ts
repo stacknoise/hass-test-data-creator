@@ -13,6 +13,8 @@ import type {
   RemovalPlan,
   RemovalResult,
   GroupInfo,
+  ImportBatch,
+  ImportPlan,
   HistoryResult,
   RemovalTarget,
   SignalDef,
@@ -122,6 +124,15 @@ export class TdcApi {
   /** Create the devices of a job. */
   create(request: CreateRequest): Promise<{ run_id: string; devices: number }> {
     return this.call('devices/create', { ...request });
+  }
+
+  /** Create `count` copies of a device; `name_pattern` may use `{template}` for the source name and `{n}`. */
+  duplicate(
+    device: string,
+    count: number,
+    name_pattern: string,
+  ): Promise<{ run_id: string; devices: number }> {
+    return this.call('devices/duplicate', { device, count, name_pattern });
   }
 
   /** Run an action on one entity of a device. */
@@ -279,6 +290,16 @@ export class TdcApi {
   /** Return `limit` entries of a category from `offset`; a `limit` of 0 only counts them. */
   transferExport(category: TransferCategory, offset: number, limit: number): Promise<TransferPage> {
     return this.call('transfer/export', { category, offset, limit });
+  }
+
+  /** Return what importing a batch would do; nothing is changed. */
+  transferPlan(batch: ImportBatch): Promise<ImportPlan> {
+    return this.call('transfer/plan', { ...batch });
+  }
+
+  /** Import a batch, or with the phase `purge` remove the items of its category first. */
+  transferRun(batch: ImportBatch): Promise<ImportPlan> {
+    return this.call('transfer/run', { ...batch });
   }
 
   /** Return all entries of a category, read page by page within the batch limit of the backend. */

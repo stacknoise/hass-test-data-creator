@@ -13,6 +13,7 @@ from .bulk import (
 )
 from .devices import (
     ws_devices_create,
+    ws_devices_duplicate,
     ws_devices_fire,
     ws_devices_get,
     ws_devices_list,
@@ -44,7 +45,7 @@ from .schedules import (
     ws_schedules_remove,
     ws_schedules_update,
 )
-from .transfer import ws_transfer_export
+from .transfer import ws_transfer_export, ws_transfer_plan, ws_transfer_run
 
 COMMANDS = (
     ws_info,
@@ -55,6 +56,7 @@ COMMANDS = (
     ws_devices_list,
     ws_devices_names,
     ws_devices_create,
+    ws_devices_duplicate,
     ws_devices_fire,
     ws_devices_update,
     ws_devices_signal,
@@ -83,6 +85,8 @@ COMMANDS = (
     ws_groups_remove,
     ws_history_import,
     ws_transfer_export,
+    ws_transfer_plan,
+    ws_transfer_run,
 )
 
 

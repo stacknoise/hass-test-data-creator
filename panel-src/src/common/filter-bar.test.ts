@@ -40,6 +40,12 @@ describe('FilterBar', () => {
     expect(bar.shadowRoot!.textContent).toContain('12 of 80');
   });
 
+  it('labels the search field with the text of the owner', async () => {
+    bar.searchLabel = 'Find a schedule';
+    await bar.updateComplete;
+    expect(bar.shadowRoot!.textContent).toContain('Find a schedule');
+  });
+
   it('reports typing once, after the debounce time', () => {
     type('p');
     type('pl');

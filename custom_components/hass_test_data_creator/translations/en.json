@@ -67,6 +67,18 @@
     "gen_group_limit": {
       "message": "There are too many groups. Remove one first"
     },
+    "gen_transfer_invalid": {
+      "message": "Entry {name} does not match the format of its category"
+    },
+    "gen_transfer_duplicate": {
+      "message": "The name {name} appears twice in one category"
+    },
+    "gen_transfer_reference": {
+      "message": "Entry {name} names something that is neither in the file nor here"
+    },
+    "gen_transfer_conflict": {
+      "message": "Entry {name} cannot be changed in place, or its name is not unique here"
+    },
     "tpl_not_found": {
       "message": "The template does not exist"
     },

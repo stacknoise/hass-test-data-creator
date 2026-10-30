@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { DeviceInfo, Trigger } from '../common/types';
+import { emptyValues } from '../common/filter-state';
+import { filterItems } from '../common/list-filter';
+import type { DeviceInfo, ScheduleInfo, Trigger } from '../common/types';
 import {
   buildTarget,
   availableActions,
@@ -8,6 +10,8 @@ import {
   describeTarget,
   entityChoices,
   platformSetsOfTarget,
+  SCHEDULE_FIELDS,
+  scheduleRule,
   formatWhen,
   parseTimes,
   summarizeTrigger,
@@ -188,5 +192,62 @@ describe('what fits a target', () => {
     );
     expect(entityChoices('run', ['r1'], devices, templates, actions, 'toggle')).toEqual([]);
     expect(entityChoices('all', [], devices, templates, actions, 'toggle')).toEqual([]);
+  });
+});
+
+describe('schedule filter', () => {
+  const base = {
+    id: 's',
+    entity: '',
+    seed: '',
+    created_at: 0,
+    params: {},
+    scenario: null,
+  };
+  const plain: ScheduleInfo = {
+    ...base,
+    name: 'Porch',
+    target: { template: 'plug' },
+    action: 'toggle',
+    trigger: { type: 'times', times: ['08:00'] },
+    enabled: true,
+  };
+  const fromScenario: ScheduleInfo = {
+    ...plain,
+    name: 'Night run',
+    target: {},
+    action: '',
+    scenario: 'x',
+    trigger: { type: 'poisson', per_day: 4 },
+    enabled: false,
+  };
+  const rule = scheduleRule(
+    (item) => (item.scenario ? '' : 'Template: plug'),
+    (item) => item.action,
+  );
+
+  it('reads trigger, action, target kind and state of a schedule', () => {
+    expect(['triggers', 'actions', 'targets', 'enabled'].map((k) => rule.values(plain, k))).toEqual(
+      [['times'], ['toggle'], ['template'], ['on']],
+    );
+    expect(['actions', 'targets', 'enabled'].map((k) => rule.values(fromScenario, k))).toEqual([
+      ['scenario'],
+      ['all'],
+      ['off'],
+    ]);
+  });
+
+  it('searches name, target, action and trigger', () => {
+    expect(rule.texts(plain)).toEqual(['Porch', 'Template: plug', 'toggle', '08:00']);
+  });
+
+  it('filters a list by trigger type and by state', () => {
+    const items = [plain, fromScenario];
+    const empty = emptyValues(SCHEDULE_FIELDS);
+    const by = (changes: Record<string, string | string[]>): string[] =>
+      filterItems(items, SCHEDULE_FIELDS, { ...empty, ...changes }, rule).map((i) => i.name);
+    expect(by({ triggers: ['poisson'] })).toEqual(['Night run']);
+    expect(by({ enabled: 'on' })).toEqual(['Porch']);
+    expect(by({ actions: ['scenario', 'toggle'] })).toEqual(['Porch', 'Night run']);
   });
 });

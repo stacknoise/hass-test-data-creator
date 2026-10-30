@@ -34,7 +34,13 @@ from ..core.keys import (
 from ..core.limits import SHORT_TEXT, json_object
 from ..data import get_data
 from ..devices.filters import DeviceFilter
-from ..devices.schema import CREATE_FIELDS, FILTER_FIELDS, job_from_request
+from ..devices.schema import (
+    CREATE_FIELDS,
+    DUPLICATE_FIELDS,
+    FILTER_FIELDS,
+    duplicate_job_from_request,
+    job_from_request,
+)
 from ..templates.schema import SIGNAL_SCHEMA
 
 
@@ -86,6 +92,17 @@ async def ws_devices_create(
     seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
     await data.csv.async_refresh()
     run = await data.manager.async_create(job_from_request(msg, seed))
+    return {KEY_RUN_ID: run.id, KEY_LABEL: run.label, KEY_DEVICES: len(run.device_ids)}
+
+
+@tdc_command(f"{DOMAIN}/devices/duplicate", DUPLICATE_FIELDS)
+async def ws_devices_duplicate(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Create copies of a device as a new run and return the run."""
+    data = get_data(hass)
+    seed = data.entry.data.get(CONF_SEED, DEFAULT_SEED)
+    run = await data.manager.async_duplicate(msg[KEY_DEVICE], duplicate_job_from_request(msg, seed))
     return {KEY_RUN_ID: run.id, KEY_LABEL: run.label, KEY_DEVICES: len(run.device_ids)}
 
 
