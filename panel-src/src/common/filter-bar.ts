@@ -32,6 +32,8 @@ export class FilterBar extends TdcElement {
   @property({ attribute: false }) values: FilterValues = {};
   @property({ attribute: false }) sorts: SelectItem[] = [];
   @property() searchLabel = '';
+  /** The key of the field that the search is put before; empty puts it first. */
+  @property() searchBefore = '';
   @property({ type: Number }) matched = 0;
   @property({ type: Number }) total = 0;
 
@@ -215,22 +217,36 @@ export class FilterBar extends TdcElement {
     </span>`;
   }
 
+  /** Return true if the search leads the bar: no field to put it before is named or found. */
+  private searchFirst(): boolean {
+    return !this.fields.some((field) => field.key === this.searchBefore);
+  }
+
+  /** Render the search field. */
+  private renderSearch(): TemplateResult {
+    return html`<label class="search">
+      ${this.searchLabel || this.tr('filterSearch')}
+      <input
+        type="search"
+        placeholder=${this.tr('filterSearchHint')}
+        .value=${live(String(this.draft[KEY_QUERY] ?? ''))}
+        @input=${(e: Event) => this.set(KEY_QUERY, (e.target as HTMLInputElement).value)}
+      />
+    </label>`;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     const chips = chipsOf(this.fields, this.draft);
     const active = activeCount(this.fields, this.draft) > 0;
     return html`
       <div class="row bar">
-        <label class="search">
-          ${this.searchLabel || this.tr('filterSearch')}
-          <input
-            type="search"
-            placeholder=${this.tr('filterSearchHint')}
-            .value=${live(String(this.draft[KEY_QUERY] ?? ''))}
-            @input=${(e: Event) => this.set(KEY_QUERY, (e.target as HTMLInputElement).value)}
-          />
-        </label>
-        ${this.fields.map((field) => this.renderField(field))} ${this.renderSort()}
+        ${this.searchFirst() ? this.renderSearch() : nothing}
+        ${this.fields.map(
+          (field) =>
+            html`${field.key === this.searchBefore ? this.renderSearch() : nothing}${this.renderField(field)}`,
+        )}
+        ${this.renderSort()}
       </div>
       <div class="row chips">
         ${chips.map((chip) => this.renderChip(chip))}

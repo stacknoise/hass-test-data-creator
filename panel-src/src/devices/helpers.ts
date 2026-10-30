@@ -92,14 +92,37 @@ export function lastPageOffset(total: number, size: number): number {
 
 /** The fields of the device filter by key and kind; the labels and options come with the facets. */
 export const DEVICE_FIELDS: FilterField[] = [
+  { key: 'state', kind: 'choice', label: '' },
   { key: 'templates', kind: 'multi', label: '' },
   { key: 'areas', kind: 'multi', label: '' },
   { key: 'outputs', kind: 'multi', label: '' },
   { key: 'platforms', kind: 'multi', label: '' },
   { key: 'runs', kind: 'multi', label: '' },
-  { key: 'state', kind: 'choice', label: '' },
   { key: 'custom', kind: 'switch', label: '' },
 ];
+
+/** The field before which the search sits in the bar: the state comes first, the search takes its place. */
+export const SEARCH_BEFORE = 'custom';
+
+/** The columns of the device list that the backend can sort by, as the header shows them. */
+export type SortColumn = 'name' | 'template';
+
+/** Return the sort after a click on a column header: ascending, then descending, then none. */
+export function nextSort(values: FilterValues, column: SortColumn): FilterValues {
+  const same = values.sort === column;
+  if (!same) return { ...values, sort: column, descending: false };
+  if (values.descending !== true) return { ...values, sort: column, descending: true };
+  return { ...values, sort: '', descending: false };
+}
+
+/** Return the `aria-sort` value of a column header for the sort in `values`. */
+export function ariaSort(
+  values: FilterValues,
+  column: SortColumn,
+): 'ascending' | 'descending' | 'none' {
+  if (values.sort !== column) return 'none';
+  return values.descending === true ? 'descending' : 'ascending';
+}
 
 /** The tab under which the filter of the device list is kept in the session. */
 export const DEVICE_FILTER_TAB = 'devices';

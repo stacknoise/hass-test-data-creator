@@ -32,6 +32,10 @@ import './duplicate-dialog';
 import {
   DEVICE_FIELDS,
   DEVICE_FILTER_TAB,
+  SEARCH_BEFORE,
+  ariaSort,
+  nextSort,
+  type SortColumn,
   deviceRequest,
   facetItems,
   knownAreas,
@@ -81,6 +85,13 @@ export class DeviceList extends TdcPollingElement {
         td.values {
           width: auto;
         }
+      }
+      th.sortable {
+        cursor: pointer;
+        user-select: none;
+      }
+      th.sortable:hover {
+        color: var(--primary-text-color);
       }
       tr.device:hover {
         background: var(--secondary-background-color);
@@ -162,6 +173,12 @@ export class DeviceList extends TdcPollingElement {
     };
     return [
       {
+        key: 'state',
+        kind: 'choice',
+        label: this.tr('detState'),
+        options: options('state', 'state', (e) => stateLabels[e.value] ?? e.value),
+      },
+      {
         key: 'templates',
         kind: 'multi',
         label: this.tr('colTemplate'),
@@ -195,12 +212,6 @@ export class DeviceList extends TdcPollingElement {
         label: this.tr('schTarget_run'),
         options: options('runs', 'runs', (e) => e.label || e.value),
       },
-      {
-        key: 'state',
-        kind: 'choice',
-        label: this.tr('detState'),
-        options: options('state', 'state', (e) => stateLabels[e.value] ?? e.value),
-      },
       { key: 'custom', kind: 'switch', label: this.tr('filterCustom') },
     ];
   }
@@ -211,15 +222,24 @@ export class DeviceList extends TdcPollingElement {
       .hass=${this.hass}
       .fields=${this.filterFields()}
       .values=${this.filter}
-      .sorts=${[
-        { value: 'name', label: this.tr('sortName') },
-        { value: 'created', label: this.tr('sortCreated') },
-        { value: 'template', label: this.tr('sortTemplate') },
-      ]}
+      searchBefore=${SEARCH_BEFORE}
       .matched=${this.matched}
       .total=${this.total}
       @tdc-filter-change=${(e: CustomEvent<FilterValues>) => this.setFilter(e.detail)}
     ></tdc-filter-bar>`;
+  }
+
+  /** Render a column header that sorts the list: one click ascending, a second descending, a third off. */
+  private sortHeader(column: SortColumn, label: string): TemplateResult {
+    const order = ariaSort(this.filter, column);
+    const arrow = { ascending: '▲', descending: '▼', none: '' }[order];
+    return html`<th
+      class="sortable"
+      aria-sort=${order}
+      @click=${() => this.setFilter(nextSort(this.filter, column))}
+    >
+      ${label} <span class="arrow">${arrow}</span>
+    </th>`;
   }
 
   /** Show another page of the list. */
@@ -426,8 +446,8 @@ export class DeviceList extends TdcPollingElement {
             : html`<table class="cards">
                   <thead>
                     <tr>
-                      <th>${this.tr('colName')}</th>
-                      <th>${this.tr('colTemplate')}</th>
+                      ${this.sortHeader('name', this.tr('colName'))}
+                      ${this.sortHeader('template', this.tr('colTemplate'))}
                       <th>${this.tr('colArea')}</th>
                       <th>${this.tr('colOutput')}</th>
                       <th>${this.tr('colValues')}</th>
