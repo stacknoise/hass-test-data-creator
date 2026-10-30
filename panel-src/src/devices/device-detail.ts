@@ -37,6 +37,7 @@ export class DeviceDetail extends TdcElement {
   @state() private curves: Record<string, SignalDef> = {};
   @state() private live = false;
   @state() private samples: Record<string, LiveSample[]> = {};
+  @state() private liveStates: Record<string, string> = {};
   @state() private busy = false;
   @state() private error = '';
 
@@ -64,6 +65,10 @@ export class DeviceDetail extends TdcElement {
       }
       .curve {
         padding: 4px 0 8px;
+      }
+      .live-col {
+        width: 60%;
+        padding-left: 16px;
       }
       .live {
         display: block;
@@ -93,6 +98,9 @@ export class DeviceDetail extends TdcElement {
         td {
           border-bottom: 0;
         }
+        .live-col {
+          display: none;
+        }
         td:last-child {
           flex: 1 1 100%;
         }
@@ -114,6 +122,7 @@ export class DeviceDetail extends TdcElement {
     this.stopLive = undefined;
     this.live = on;
     this.samples = {};
+    this.liveStates = {};
     if (!on) return;
     void this.readLive();
     this.stopLive = startPolling(() => void this.readLive(), LIVE_INTERVAL_MS);
@@ -126,12 +135,15 @@ export class DeviceDetail extends TdcElement {
       if (!this.live) return;
       const at = Date.now();
       const next = { ...this.samples };
+      const states: Record<string, string> = {};
       for (const entity of full.entities) {
         const value = numericState(entity.state);
-        if (value !== undefined)
-          next[entity.key] = pushSample(next[entity.key] ?? [], { at, value });
+        if (value === undefined) continue;
+        next[entity.key] = pushSample(next[entity.key] ?? [], { at, value });
+        states[entity.key] = entity.state ?? '';
       }
       this.samples = next;
+      this.liveStates = states;
     } catch (err) {
       this.setLive(false);
       this.error = describeError(err);
@@ -290,7 +302,7 @@ export class DeviceDetail extends TdcElement {
   /** Render the curve editor of one sensor with its save and cancel buttons. */
   private renderCurve(entity: EntityState): TemplateResult {
     return html`<tr>
-      <td colspan="3" class="curve">
+      <td colspan="4" class="curve">
         <tdc-curve-editor
           .hass=${this.hass}
           .signal=${this.curves[entity.key]}
@@ -327,13 +339,21 @@ export class DeviceDetail extends TdcElement {
           >
         </td>
         <td>
-          ${stateLabel(lang, entity.state)}${entity.unit ? ` ${entity.unit}` : ''}${
-            this.live && entity.key in this.samples
-              ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
-              : ''
-          }${
+          <span
+            >${stateLabel(lang, this.liveStates[entity.key] ?? entity.state)}${
+              entity.unit ? ` ${entity.unit}` : ''
+            }</span
+          >
+          ${
             entity.fault
               ? html`<br /><small class="warning">⚠ ${labelOf(lang, 'fault', entity.fault)}</small>`
+              : ''
+          }
+        </td>
+        <td class="live-col">
+          ${
+            this.live && entity.key in this.samples
+              ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
               : ''
           }
         </td>
@@ -396,6 +416,7 @@ export class DeviceDetail extends TdcElement {
         <tr>
           <th>${this.tr('detEntity')}</th>
           <th>${this.tr('detState')}</th>
+          <th class="live-col">${this.tr('detLiveColumn')}</th>
           <th>${this.tr('colActions')}</th>
         </tr>
         ${this.device.entities.map((entity) => this.renderEntity(entity))}
