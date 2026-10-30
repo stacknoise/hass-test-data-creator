@@ -29,6 +29,17 @@ import '../common/dialog';
 import '../wizard/creation-wizard';
 import '../wizard/template-manager';
 import './device-detail';
+import './bulk-bar';
+import {
+  NO_SELECTION,
+  bulkTarget,
+  canSelectAll,
+  pageState,
+  selectionCount,
+  toggleOne,
+  togglePage,
+  type Selection,
+} from './bulk-helpers';
 import {
   DEVICE_FIELDS,
   DEVICE_FILTER_TAB,
@@ -43,7 +54,7 @@ import {
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
 
 const VALUES_SHOWN = 4;
-const COLUMN_COUNT = 6;
+const COLUMN_COUNT = 7;
 
 export const PAGE_SIZE = 50;
 const ACTION_BY_PLATFORM: Record<string, string> = {
@@ -68,6 +79,10 @@ export class DeviceList extends TdcPollingElement {
       }
       td.nowrap {
         white-space: nowrap;
+      }
+      td.check,
+      th.check {
+        width: 1%;
       }
       td.nowrap.row {
         flex-wrap: nowrap;
@@ -101,6 +116,8 @@ export class DeviceList extends TdcPollingElement {
   @state() private facets?: DeviceFacets;
   @state() private curves: Record<string, SignalDef> = {};
   @state() private filter: FilterValues = readFilter(DEVICE_FILTER_TAB, DEVICE_FIELDS);
+
+  @state() private selection: Selection = NO_SELECTION;
 
   private facetsStale = true;
 
@@ -155,6 +172,7 @@ export class DeviceList extends TdcPollingElement {
   /** Apply a new filter from the bar: remember it, go to the first page and reload. */
   private setFilter(values: FilterValues): void {
     this.filter = values;
+    this.selection = NO_SELECTION;
     writeFilter(DEVICE_FILTER_TAB, values);
     this.offset = 0;
     this.reload();
@@ -314,10 +332,67 @@ export class DeviceList extends TdcPollingElement {
     return templateLabel(this.hass?.language, device.template, device.model);
   }
 
+  /** Return the ids of the devices on this page. */
+  private pageIds(): string[] {
+    return this.devices.map((d) => d.id);
+  }
+
+  /** Return how much of this page is selected. */
+  private pageState(): 'none' | 'some' | 'all' {
+    return pageState(this.selection, this.pageIds());
+  }
+
+  /** Render the offer to select all matches, the bulk bar and the result of the last bulk action. */
+  private renderBulk(): TemplateResult {
+    const count = selectionCount(this.selection, this.matched);
+    return html`
+      ${
+        this.selection.all
+          ? html`<p class="row">
+              <small>${this.tr('bulkAllSelected', { count: this.matched })}</small>
+              <button @click=${() => (this.selection = NO_SELECTION)}>
+                ${this.tr('bulkClear')}
+              </button>
+            </p>`
+          : canSelectAll(this.selection, this.pageIds(), this.matched)
+            ? html`<p class="row">
+                <button @click=${() => (this.selection = { ids: this.selection.ids, all: true })}>
+                  ${this.tr('bulkSelectAll', { count: this.matched })}
+                </button>
+              </p>`
+            : nothing
+      }
+      <tdc-bulk-bar
+        .hass=${this.hass}
+        .count=${count}
+        .target=${bulkTarget(this.selection, deviceRequest(this.filter))}
+        .areas=${knownAreas(this.hass.areas, this.devices)}
+        .actions=${this.info?.actions ?? {}}
+        .mqtt=${this.info?.mqtt ?? false}
+        @tdc-bulk-clear=${() => (this.selection = NO_SELECTION)}
+        @tdc-bulk-done=${(e: CustomEvent<string>) => {
+          this.selection = NO_SELECTION;
+          this.reload();
+          this.message = e.detail;
+        }}
+      ></tdc-bulk-bar>
+      ${this.message ? html`<p>${this.message}</p>` : nothing}
+    `;
+  }
+
   /** Render the table row of one device. */
   private renderRow(device: DeviceInfo): TemplateResult {
     const open = this.expanded.has(device.id);
     return html`<tr class="device card" @click=${() => this.toggle(device.id)}>
+        <td class="check" @click=${(event: Event) => event.stopPropagation()}>
+          <input
+            type="checkbox"
+            aria-label=${this.tr('bulkSelectRow', { name: device.name })}
+            .checked=${this.selection.all || this.selection.ids.has(device.id)}
+            ?disabled=${this.selection.all}
+            @change=${() => (this.selection = toggleOne(this.selection, device.id))}
+          />
+        </td>
         <td class="name nowrap">${open ? '▾' : '▸'} ${device.name}</td>
         <td class="nowrap" data-label=${this.tr('colTemplate')}>${this.templateName(device)}</td>
         <td class="nowrap" data-label=${this.tr('colArea')}>${device.area ?? '–'}</td>
@@ -427,9 +502,21 @@ export class DeviceList extends TdcPollingElement {
                   >${this.tr('noMatchesReset')}</a
                 >
               </p>`
-            : html`<table class="cards">
+            : html`${this.renderBulk()}
+                <table class="cards">
                   <thead>
                     <tr>
+                      <th class="check">
+                        <input
+                          type="checkbox"
+                          aria-label=${this.tr('bulkSelectPage')}
+                          .checked=${this.pageState() === 'all'}
+                          .indeterminate=${this.pageState() === 'some'}
+                          ?disabled=${this.selection.all}
+                          @change=${() =>
+                            (this.selection = togglePage(this.selection, this.pageIds()))}
+                        />
+                      </th>
                       <th>${this.tr('colName')}</th>
                       <th>${this.tr('colTemplate')}</th>
                       <th>${this.tr('colArea')}</th>

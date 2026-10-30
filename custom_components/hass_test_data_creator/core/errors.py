@@ -135,6 +135,9 @@ class ErrorCode(StrEnum):
     WS_INVALID_REQUEST = "TDC-WS-001"
     """The request does not match the schema of the command."""
 
+    WS_SELECTION_CHANGED = "TDC-WS-002"
+    """The devices a bulk action selects are not the number the user confirmed."""
+
     INT_UNEXPECTED = "TDC-INT-001"
     """An unexpected error; the details are in the Home Assistant log."""
 

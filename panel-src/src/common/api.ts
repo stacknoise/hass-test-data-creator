@@ -1,4 +1,6 @@
 import type {
+  BulkRemovalPlan,
+  BulkTarget,
   CreateRequest,
   DeviceFilterRequest,
   DeviceInfo,
@@ -140,6 +142,38 @@ export class TdcApi {
   /** Give a sensor of a device another curve. */
   setSignal(device: string, entity: string, signal: SignalDef): Promise<{ entity: string }> {
     return this.call('devices/signal', { device, entity, signal });
+  }
+
+  /** Return what removing the devices of `target` would delete. */
+  bulkRemovePlan(target: BulkTarget): Promise<BulkRemovalPlan> {
+    return this.call('devices/bulk_remove', { ...target, plan_only: true });
+  }
+
+  /** Remove the devices of `target`. */
+  bulkRemove(target: BulkTarget): Promise<RemovalResult> {
+    return this.call('devices/bulk_remove', { ...target });
+  }
+
+  /** Put the devices of `target` into an area, or into none if `area` is null. */
+  bulkArea(target: BulkTarget, area: string | null): Promise<{ devices: number }> {
+    return this.call('devices/bulk_area', { ...target, area });
+  }
+
+  /** Put the devices of `target` into the group `groupId`, or into a new group called `name`. */
+  bulkGroup(
+    target: BulkTarget,
+    group: { group_id: string } | { name: string },
+  ): Promise<GroupInfo> {
+    return this.call('devices/bulk_group', { ...target, ...group });
+  }
+
+  /** Run an action on the devices of `target`; return how many ran and how many failed. */
+  bulkAction(
+    target: BulkTarget,
+    action: string,
+    params: Record<string, unknown>,
+  ): Promise<{ devices: number; failed: number }> {
+    return this.call('devices/bulk_action', { ...target, action, params });
   }
 
   /** Return what a removal of the target would delete. */

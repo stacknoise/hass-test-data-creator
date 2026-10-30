@@ -154,6 +154,9 @@
     "ws_invalid_request": {
       "message": "The request is invalid"
     },
+    "ws_selection_changed": {
+      "message": "The selection has changed since you confirmed it. Check it and try again"
+    },
     "int_unexpected": {
       "message": "An unexpected error occurred. See the Home Assistant log"
     },

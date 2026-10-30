@@ -58,6 +58,12 @@ class AuditEntryFactory:
             {KEY_TARGET: target, KEY_DEVICES: devices, KEY_AREAS: areas},
         )
 
+    def bulk_done(self, kind: str, devices: int, failed: int) -> AuditEntry:
+        """Return the entry for one bulk action (`area`, `group` or an action name) on many devices."""
+        return AuditEntry(
+            logging.INFO, "bulk action done", {"kind": kind, KEY_DEVICES: devices, "failed": failed}
+        )
+
     def orphan_topics_cleared(self, count: int) -> AuditEntry:
         """Return the entry for deleted retained topics of generated devices that nobody recorded."""
         return AuditEntry(logging.INFO, "orphan topics cleared", {"topics": count})

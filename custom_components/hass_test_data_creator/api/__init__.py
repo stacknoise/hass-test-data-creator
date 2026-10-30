@@ -5,6 +5,12 @@ from __future__ import annotations
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant
 
+from .bulk import (
+    ws_devices_bulk_action,
+    ws_devices_bulk_area,
+    ws_devices_bulk_group,
+    ws_devices_bulk_remove,
+)
 from .devices import (
     ws_devices_create,
     ws_devices_fire,
@@ -52,6 +58,10 @@ COMMANDS = (
     ws_devices_fire,
     ws_devices_update,
     ws_devices_signal,
+    ws_devices_bulk_remove,
+    ws_devices_bulk_area,
+    ws_devices_bulk_group,
+    ws_devices_bulk_action,
     ws_removal_plan,
     ws_removal_run,
     ws_removal_orphan_topics,

@@ -47,5 +47,6 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-REM-001 | The removal was interrupted. Run it again to finish it | A step of a removal failed; the removal can be run again. |
 | TDC-REM-002 | A device that is still used cannot be removed. Take it out of the schedules, scenarios and groups first: {usage} | A device that a schedule, scenario or group names cannot be removed until it is not used. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |
+| TDC-WS-002 | The selection has changed since you confirmed it. Check it and try again | The devices a bulk action selects are not the number the user confirmed. |
 | TDC-INT-001 | An unexpected error occurred. See the Home Assistant log | An unexpected error; the details are in the Home Assistant log. |
 | TDC-INT-002 | A stored entry could not be read and was skipped. See the Home Assistant log | A stored entry could not be read and was skipped; the Home Assistant log names it. |

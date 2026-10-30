@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from homeassistant.util import dt as dt_util
 
+from ..audit.factory import AuditEntryFactory
+from ..audit.log import AuditLog
 from ..const import MAX_GROUPS, OUTPUT_Z2M
 from ..core.errors import ErrorCode, GenerationError, OutputError
 from ..core.ids import new_id
@@ -19,11 +21,20 @@ GROUP_COUNTER = "__group__"
 class GroupManager:
     """Adds, changes and removes groups and keeps the Zigbee2MQTT bridge up to date."""
 
-    def __init__(self, store: TdcStore, client: MqttClient, z2m: Z2mDevices) -> None:
-        """Keep the store, the MQTT client and the Zigbee2MQTT runtime."""
+    def __init__(
+        self,
+        store: TdcStore,
+        client: MqttClient,
+        z2m: Z2mDevices,
+        audit: AuditLog,
+        audit_factory: AuditEntryFactory,
+    ) -> None:
+        """Keep the store, the MQTT client, the Zigbee2MQTT runtime and the audit log."""
         self._store = store
         self._client = client
         self._z2m = z2m
+        self._audit = audit
+        self._audit_factory = audit_factory
 
     def all_groups(self) -> list[GroupDef]:
         """Return all groups."""
@@ -77,6 +88,21 @@ class GroupManager:
         await self._store.async_save()
         await self._client.async_clear(old_topics)
         await self._z2m.async_groups_changed(self._store.groups())
+        return group
+
+    async def async_bulk(
+        self, device_ids: list[str], group_id: str | None, name: str | None
+    ) -> GroupDef:
+        """Put Zigbee2MQTT devices into the group `group_id`, or into a new group called `name`.
+
+        A group that exists keeps its members. One audit entry covers the batch.
+        """
+        if group_id is not None:
+            group = self.get(group_id)
+            group = await self.async_update(group.id, group.name, [*group.members, *device_ids])
+        else:
+            group = await self.async_add(name or "", device_ids)
+        self._audit.record(self._audit_factory.bulk_done("group", len(device_ids), 0))
         return group
 
     async def async_remove(self, group_id: str) -> None:

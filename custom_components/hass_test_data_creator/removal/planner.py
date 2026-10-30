@@ -31,6 +31,7 @@ from ..store.store import TdcStore
 TARGET_ALL = "all"
 TARGET_DEVICE = "device"
 TARGET_RUN = "run"
+TARGET_DEVICES = "devices"
 TARGETS = (TARGET_ALL, TARGET_DEVICE, TARGET_RUN)
 
 
@@ -108,6 +109,16 @@ class RemovalPlanner:
             if device is None:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             plan.devices = [device]
+        return self._complete(plan, target)
+
+    def plan_devices(self, devices: list[DeviceDef]) -> RemovalPlan:
+        """Return the plan to remove the chosen `devices` only (a bulk removal)."""
+        plan = RemovalPlan(TARGET_DEVICES)
+        plan.devices = devices
+        return self._complete(plan, TARGET_DEVICES)
+
+    def _complete(self, plan: RemovalPlan, target: str) -> RemovalPlan:
+        """Add to a plan with its devices the users, schedules, groups, topics, statistics and areas."""
         plan.in_use = self._in_use(plan)
         plan.schedules = self._schedule_ids(plan)
         plan.groups = self._group_ids(plan)

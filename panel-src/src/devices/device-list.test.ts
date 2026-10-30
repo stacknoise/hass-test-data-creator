@@ -145,4 +145,26 @@ describe('DeviceList', () => {
     other.remove();
     expect(sent.filter((m) => m.type === 'hass_test_data_creator/info')).toHaveLength(1);
   });
+  it('shows the bulk bar for the chosen rows and offers all matches for a full page', async () => {
+    const root = element.shadowRoot!;
+    const bar = () => root.querySelector('tdc-bulk-bar') as HTMLElement & { count: number };
+    expect(bar().count).toBe(0);
+
+    const header = root.querySelector('th.check input') as HTMLInputElement;
+    header.click();
+    await settle(element);
+    expect(bar().count).toBe(PAGE_SIZE);
+    expect(root.textContent).toContain(`Select all ${TOTAL} matches`);
+
+    clickButton(element, /Select all/u);
+    await settle(element);
+    expect(bar().count).toBe(TOTAL);
+    expect(root.textContent).toContain(`All ${TOTAL} matches are selected`);
+
+    root
+      .querySelector('tdc-filter-bar')!
+      .dispatchEvent(new CustomEvent('tdc-filter-change', { detail: { query: 'plug' } }));
+    await settle(element);
+    expect(bar().count).toBe(0);
+  });
 });

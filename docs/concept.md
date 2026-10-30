@@ -446,6 +446,7 @@ Schedules (at most 200), scenarios (100) and groups (100) arrive whole, so they 
 The device list gets a selection column (one row, this page, "all N matches"). New commands: `devices/bulk_remove`, `devices/bulk_area`, `devices/bulk_group` and `devices/bulk_action`. The target is either a list of ids (at most `MAX_BATCH`) or a `DeviceFilter`.
 
 - Removal goes through `RemovalPlanner` and `RemovalRunner` and so keeps the marker rule (4.4, 10). The dialog states the number; above 100 devices it also needs a checkbox (O10).
+- Commands take `ids` or `filter` (the `FILTER_FIELDS` of F1 without sort) and an optional `expected` count: the panel sends the number the user confirmed and the server refuses a different selection with `TDC-WS-002`. `devices/bulk_remove` with `plan_only` returns the removal plan and `count` for the dialog; a device that a schedule, scenario or group names blocks the removal (`TDC-REM-002`) as for a single device. `devices/bulk_group` adds the devices to the group `group_id` or creates the group `name` (Zigbee2MQTT devices only). `devices/bulk_action` runs an action on the entity `entity` (empty: all that fit); a device that cannot do it is counted as failed.
 - Each bulk action writes one audit entry through `AuditEntryFactory`, not one per device. Large sets run in chunks and yield to the event loop like a creation job.
 
 ### 16.4 Duplicate (F4)

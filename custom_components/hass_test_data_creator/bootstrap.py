@@ -87,7 +87,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         Z2mSettings(z2m_base, entry.options.get(CONF_Z2M_CONFIRM_DEFAULT, False)),
         store,
     )
-    groups = GroupManager(store, mqtt, z2m_devices)
+    groups = GroupManager(store, mqtt, z2m_devices, audit, audit_factory)
     outputs = OutputAdapterFactory(hass, entry, mqtt, mqtt_devices, z2m_devices, groups)
     areas = AreaAssigner(hass, store)
     seconds = entry.data.get(CONF_TICK_SECONDS, DEFAULT_TICK_SECONDS)
