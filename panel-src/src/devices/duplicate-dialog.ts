@@ -7,6 +7,9 @@ import type { DeviceInfo } from '../common/types';
 const DEFAULT_PATTERN = '{template} {n}';
 const MAX_COPIES = 500;
 
+/** Return the text of the input that fired `event`. */
+const typed = (event: Event): string => (event.target as HTMLInputElement).value;
+
 /** Asks for the number of copies and the name pattern of a device to duplicate; fires `tdc-created`. */
 @customElement('tdc-duplicate-dialog')
 export class DuplicateDialog extends TdcElement {
@@ -43,7 +46,7 @@ export class DuplicateDialog extends TdcElement {
             min="1"
             max=${MAX_COPIES}
             .value=${String(this.count)}
-            @input=${(e: Event) => (this.count = Number((e.target as HTMLInputElement).value))}
+            @input=${(e: Event) => (this.count = Number(typed(e)))}
           />
         </label>
         <label
@@ -52,7 +55,7 @@ export class DuplicateDialog extends TdcElement {
             type="text"
             maxlength="64"
             .value=${this.pattern}
-            @input=${(e: Event) => (this.pattern = (e.target as HTMLInputElement).value)}
+            @input=${(e: Event) => (this.pattern = typed(e))}
           />
         </label>
       </div>
