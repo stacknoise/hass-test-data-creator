@@ -774,6 +774,12 @@ var vt = class {
 			limit: n
 		});
 	}
+	transferPlan(e) {
+		return this.call("transfer/plan", { ...e });
+	}
+	transferRun(e) {
+		return this.call("transfer/run", { ...e });
+	}
 	async transferExportAll(e) {
 		let t = [await this.transferExport(e, 0, 500)], n = t[0].items.length;
 		for (; n < t[0].total && t[t.length - 1].items.length > 0;) {
@@ -1019,7 +1025,32 @@ var yt = {
 		trfCount: "{count}",
 		trfExport: "Export selection",
 		trfExported: "File {name} saved: {count} entries",
-		trfNothing: "Choose at least one category that has entries."
+		trfNothing: "Choose at least one category that has entries.",
+		trfImportTitle: "Import",
+		trfImportIntro: "Choose a file you exported before, then what to import and how. A plan shows what would happen before anything changes.",
+		trfChooseFile: "Choose file",
+		trfBadFile: "This is not a file made by the export of this integration",
+		trfTooBig: "The file is larger than {max} bytes",
+		trfNewer: "The file is from a newer version of the integration",
+		trfDuplicate: "The file has the name {name} twice in {category}",
+		trfFileLoaded: "File {name}",
+		trfMode: "If it exists",
+		trfModeAdd: "Add: keep what exists, create the rest",
+		trfModeSync: "Sync: update what exists, create the rest",
+		trfModeReplace: "Replace: remove all generated items of the category first",
+		trfCheck: "Show plan",
+		trfPlanTitle: "Plan",
+		trfColCategory: "Category",
+		trfColCreate: "Create",
+		trfColUpdate: "Update",
+		trfColSkip: "Skip",
+		trfColConflict: "Conflict",
+		trfColDelete: "Delete",
+		trfProblems: "Problems",
+		trfProblemMore: "… and {count} more",
+		trfRun: "Import",
+		trfRunConfirm: "Import and change {updates} items, remove {deletes} items",
+		trfDone: "Import done: {created} created, {updated} updated, {deleted} removed, {problems} problems"
 	},
 	de: {
 		title: "Testdaten Generator",
@@ -1241,7 +1272,32 @@ var yt = {
 		trfCount: "{count}",
 		trfExport: "Auswahl exportieren",
 		trfExported: "Datei {name} gespeichert: {count} Einträge",
-		trfNothing: "Wähle mindestens eine Kategorie, die Einträge hat."
+		trfNothing: "Wähle mindestens eine Kategorie, die Einträge hat.",
+		trfImportTitle: "Import",
+		trfImportIntro: "Wähle eine Datei, die Du vorher exportiert hast, dann was und wie importiert werden soll. Ein Plan zeigt vorab, was passieren würde.",
+		trfChooseFile: "Datei wählen",
+		trfBadFile: "Das ist keine Datei aus dem Export dieser Integration",
+		trfTooBig: "Die Datei ist größer als {max} Bytes",
+		trfNewer: "Die Datei stammt aus einer neueren Version der Integration",
+		trfDuplicate: "Die Datei hat den Namen {name} doppelt in {category}",
+		trfFileLoaded: "Datei {name}",
+		trfMode: "Wenn es schon existiert",
+		trfModeAdd: "Hinzufügen: Vorhandenes bleibt, der Rest wird angelegt",
+		trfModeSync: "Sync: Vorhandenes wird aktualisiert, der Rest wird angelegt",
+		trfModeReplace: "Ersetzen: erst alle erzeugten Einträge der Kategorie entfernen",
+		trfCheck: "Plan anzeigen",
+		trfPlanTitle: "Plan",
+		trfColCategory: "Kategorie",
+		trfColCreate: "Anlegen",
+		trfColUpdate: "Aktualisieren",
+		trfColSkip: "Überspringen",
+		trfColConflict: "Konflikt",
+		trfColDelete: "Löschen",
+		trfProblems: "Probleme",
+		trfProblemMore: "… und {count} weitere",
+		trfRun: "Importieren",
+		trfRunConfirm: "Importieren, {updates} Einträge ändern, {deletes} Einträge entfernen",
+		trfDone: "Import fertig: {created} angelegt, {updated} aktualisiert, {deleted} entfernt, {problems} Probleme"
 	}
 };
 function bt(e) {
@@ -5073,10 +5129,101 @@ function ra(e, t) {
 	}
 	return n;
 }
+var ia = [
+	"templates",
+	"devices",
+	"scenarios",
+	"schedules",
+	"groups"
+], aa = [...ia].reverse(), oa = 1048576;
+function sa(e) {
+	return e === "templates" ? "id" : "name";
+}
+function ca(e, t) {
+	return e[t] ?? [];
+}
+function la(e) {
+	return ia.filter((t) => Array.isArray(e[t]));
+}
+function ua(e) {
+	for (let t of la(e)) {
+		let n = /* @__PURE__ */ new Set();
+		for (let r of ca(e, t)) {
+			let e = String(r[sa(t)] ?? "");
+			if (n.has(e)) return {
+				category: t,
+				name: e
+			};
+			n.add(e);
+		}
+	}
+}
+function da(e, t) {
+	if (e.length > t) return {
+		error: "trfTooBig",
+		values: { max: t }
+	};
+	let n;
+	try {
+		n = JSON.parse(e);
+	} catch {
+		return { error: "trfBadFile" };
+	}
+	if (typeof n != "object" || !n) return { error: "trfBadFile" };
+	let r = n;
+	if (typeof r.format_version != "number") return { error: "trfBadFile" };
+	if (r.format_version > 1) return { error: "trfNewer" };
+	if (la(r).length === 0) return { error: "trfBadFile" };
+	let i = ua(r);
+	return i ? {
+		error: "trfDuplicate",
+		values: { ...i }
+	} : { file: r };
+}
+function fa(e, t) {
+	let n = (n) => t.includes(n) ? ca(e, n).map((e) => String(e[sa(n)])) : [];
+	return {
+		devices: n("devices"),
+		templates: n("templates"),
+		scenarios: n("scenarios")
+	};
+}
+function pa(e, t, n) {
+	let r = [], i = [], a = 0;
+	for (let o of e) {
+		let e = JSON.stringify(o).length;
+		i.length > 0 && (i.length >= t || a + e > n) && (r.push(i), i = [], a = 0), i.push(o), a += e;
+	}
+	return i.length > 0 && r.push(i), r;
+}
+function ma(e) {
+	let t = {
+		...e[0],
+		create: 0,
+		update: 0,
+		skip: 0,
+		conflict: 0,
+		delete: 0,
+		problems: []
+	};
+	for (let n of e) t.create += n.create, t.update += n.update, t.skip += n.skip, t.conflict += n.conflict, t.delete += n.delete, t.problems.push(...n.problems);
+	return t;
+}
+function ha(e) {
+	return e.some((e) => e.update > 0 || e.delete > 0);
+}
 // src/transfer/transfer-panel.ts
-var Q = class extends M {
+var ga = [
+	"add",
+	"sync",
+	"replace"
+], _a = {
+	add: "trfModeAdd",
+	sync: "trfModeSync",
+	replace: "trfModeReplace"
+}, va = 20, ya = 33554432, Q = class extends M {
 	constructor(...e) {
-		super(...e), this.mqtt = !1, this.counts = {}, this.chosen = /* @__PURE__ */ new Set(), this.busy = !1, this.message = "", this.error = "";
+		super(...e), this.mqtt = !1, this.counts = {}, this.chosen = /* @__PURE__ */ new Set(), this.busy = !1, this.message = "", this.error = "", this.fileName = "", this.take = /* @__PURE__ */ new Set(), this.modes = {};
 	}
 	static {
 		this.styles = [M.styles, o`
@@ -5125,6 +5272,174 @@ var Q = class extends M {
 		}
 		this.busy = !1;
 	}
+	importing() {
+		let e = ta(this.mqtt);
+		return ia.filter((t) => this.take.has(t) && e.includes(t) && this.file && la(this.file).includes(t));
+	}
+	batch(e, t, n) {
+		let r = this.importing();
+		return {
+			category: e,
+			mode: this.modes[e] ?? "add",
+			items: t,
+			known: fa(this.file, r),
+			replacing: r.filter((e) => this.modes[e] === "replace"),
+			first: n,
+			file_name: this.fileName
+		};
+	}
+	async chooseFile(e) {
+		let t = e.target.files?.[0];
+		if (this.plans = void 0, this.message = "", this.error = "", !t) return;
+		let n = await this.api.info().catch(() => void 0), r = da(await t.text(), n?.limits.max_transfer_bytes ?? ya);
+		"error" in r ? (this.file = void 0, this.error = this.tr(r.error, r.values)) : (this.file = r.file, this.fileName = t.name, this.take = new Set(la(r.file)), this.modes = {});
+	}
+	async showPlan() {
+		this.busy = !0, this.message = "", this.error = "";
+		try {
+			let e = [];
+			for (let t of this.importing()) {
+				let n = pa(ca(this.file, t), 500, oa), r = [];
+				for (let [e, i] of (n.length ? n : [[]]).entries()) r.push(await this.api.transferPlan(this.batch(t, i, e === 0)));
+				e.push(ma(r));
+			}
+			this.plans = e;
+		} catch (e) {
+			this.plans = void 0, this.error = E(e);
+		}
+		this.busy = !1;
+	}
+	async runImport() {
+		this.busy = !0, this.error = "";
+		try {
+			let e = this.importing(), t = [];
+			for (let n of aa.filter((t) => e.includes(t))) this.modes[n] === "replace" && t.push(await this.api.transferRun({
+				...this.batch(n, [], !0),
+				phase: "purge"
+			}));
+			for (let n of e) {
+				let e = pa(ca(this.file, n), 500, oa);
+				for (let [r, i] of e.entries()) t.push(await this.api.transferRun(this.batch(n, i, r === 0)));
+			}
+			let n = ma(t.length ? t : [this.emptyPlan()]);
+			this.message = this.tr("trfDone", {
+				created: n.create,
+				updated: n.update,
+				deleted: n.delete,
+				problems: n.problems.length
+			}), this.plans = void 0, await this.loadCounts();
+		} catch (e) {
+			this.error = E(e);
+		}
+		this.busy = !1;
+	}
+	emptyPlan() {
+		return {
+			category: "devices",
+			mode: "add",
+			create: 0,
+			update: 0,
+			skip: 0,
+			conflict: 0,
+			delete: 0,
+			problems: []
+		};
+	}
+	renderFileCategory(e) {
+		return _`<tr>
+      <td>
+        <label class="choice">
+          <input
+            type="checkbox"
+            .checked=${this.take.has(e)}
+            @change=${() => {
+			this.take = Mt(this.take, e), this.plans = void 0;
+		}}
+          />
+          ${this.tr(ea[e])}
+          (${ca(this.file, e).length})
+        </label>
+      </td>
+      <td>
+        <select
+          ?disabled=${!this.take.has(e)}
+          @change=${(t) => {
+			this.modes = {
+				...this.modes,
+				[e]: t.target.value
+			}, this.plans = void 0;
+		}}
+        >
+          ${ga.map((t) => _`<option value=${t} ?selected=${(this.modes[e] ?? "add") === t}>
+                ${this.tr(_a[t])}
+              </option>`)}
+        </select>
+      </td>
+    </tr>`;
+	}
+	renderPlan(e) {
+		let t = e.flatMap((e) => e.problems);
+		return _`<h3>${this.tr("trfPlanTitle")}</h3>
+      <table>
+        <tr>
+          <th>${this.tr("trfColCategory")}</th>
+          <th>${this.tr("trfColCreate")}</th>
+          <th>${this.tr("trfColUpdate")}</th>
+          <th>${this.tr("trfColSkip")}</th>
+          <th>${this.tr("trfColConflict")}</th>
+          <th>${this.tr("trfColDelete")}</th>
+        </tr>
+        ${e.map((e) => _`<tr>
+              <td>${this.tr(ea[e.category])}</td>
+              <td>${e.create}</td>
+              <td>${e.update}</td>
+              <td>${e.skip}</td>
+              <td>${e.conflict}</td>
+              <td>${e.delete}</td>
+            </tr>`)}
+      </table>
+      ${t.length ? _`<h3>${this.tr("trfProblems")}</h3>
+              <ul>
+                ${t.slice(0, va).map((e) => _`<li>${e.name} · ${e.code} · ${e.reason}</li>`)}
+              </ul>
+              ${t.length > va ? _`<small
+                      >${this.tr("trfProblemMore", { count: t.length - va })}</small
+                    >` : ""}` : ""}
+      <p>
+        <button class="primary" ?disabled=${this.busy} @click=${() => void this.runImport()}>
+          ${ha(e) ? this.tr("trfRunConfirm", {
+			updates: e.reduce((e, t) => e + t.update, 0),
+			deletes: e.reduce((e, t) => e + t.delete, 0)
+		}) : this.tr("trfRun")}
+        </button>
+      </p>`;
+	}
+	renderImport() {
+		return _`<section>
+      <h3>${this.tr("trfImportTitle")}</h3>
+      <p>${this.tr("trfImportIntro")}</p>
+      <p>
+        <input
+          type="file"
+          accept="application/json,.json"
+          @change=${(e) => void this.chooseFile(e)}
+        />
+      </p>
+      ${this.file ? _`<p><small>${this.tr("trfFileLoaded", { name: this.fileName })}</small></p>
+              <table>
+                ${la(this.file).filter((e) => ta(this.mqtt).includes(e)).map((e) => this.renderFileCategory(e))}
+              </table>
+              <p>
+                <button
+                  ?disabled=${this.busy || this.importing().length === 0}
+                  @click=${() => void this.showPlan()}
+                >
+                  ${this.tr("trfCheck")}
+                </button>
+              </p>` : ""}
+      ${this.plans ? this.renderPlan(this.plans) : ""}
+    </section>`;
+	}
 	renderChoice(e) {
 		let t = this.counts[e] ?? 0;
 		return _`<label class="choice">
@@ -5156,12 +5471,13 @@ var Q = class extends M {
           </button>
           ${e.length === 0 ? _`<small>${this.tr("trfNothing")}</small>` : ""}
         </p>
-        <p>${this.message}<span class="error">${this.error}</span></p>
       </section>
+      ${this.renderImport()}
+      <p>${this.message}<span class="error">${this.error}</span></p>
     `;
 	}
 };
-j([C({ type: Boolean })], Q.prototype, "mqtt", void 0), j([w()], Q.prototype, "counts", void 0), j([w()], Q.prototype, "chosen", void 0), j([w()], Q.prototype, "busy", void 0), j([w()], Q.prototype, "message", void 0), j([w()], Q.prototype, "error", void 0), Q = j([S("tdc-transfer-panel")], Q);
+j([C({ type: Boolean })], Q.prototype, "mqtt", void 0), j([w()], Q.prototype, "counts", void 0), j([w()], Q.prototype, "chosen", void 0), j([w()], Q.prototype, "busy", void 0), j([w()], Q.prototype, "message", void 0), j([w()], Q.prototype, "error", void 0), j([w()], Q.prototype, "file", void 0), j([w()], Q.prototype, "fileName", void 0), j([w()], Q.prototype, "take", void 0), j([w()], Q.prototype, "modes", void 0), j([w()], Q.prototype, "plans", void 0), Q = j([S("tdc-transfer-panel")], Q);
 // src/panel.ts
 var $ = class extends M {
 	constructor(...e) {

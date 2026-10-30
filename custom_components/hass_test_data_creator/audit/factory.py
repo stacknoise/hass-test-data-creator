@@ -58,6 +58,16 @@ class AuditEntryFactory:
             {KEY_TARGET: target, KEY_DEVICES: devices, KEY_AREAS: areas},
         )
 
+    def transfer_done(
+        self, category: str, mode: str, counts: dict[str, int], file: str
+    ) -> AuditEntry:
+        """Return the entry for an import of one category, or for the removal before a replace."""
+        return AuditEntry(
+            logging.INFO,
+            "transfer done",
+            {"category": category, "mode": mode, "file": file, **counts},
+        )
+
     def orphan_topics_cleared(self, count: int) -> AuditEntry:
         """Return the entry for deleted retained topics of generated devices that nobody recorded."""
         return AuditEntry(logging.INFO, "orphan topics cleared", {"topics": count})

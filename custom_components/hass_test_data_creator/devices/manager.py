@@ -101,13 +101,42 @@ class DevicesManager:
         """Create the devices of `job` in chunks and return the run that holds them."""
         template = self._template_for(job)
         self._check_limits(job, template)
+        run = RunRecord(new_id(), job.label or template.name, time.time(), job.seed)
+        try:
+            await self._fill(run, job, template)
+        finally:
+            await self._persist(run)
+        self._audit.record(
+            self._audit_factory.devices_created(run.id, template.id, len(run.device_ids))
+        )
+        return run
+
+    async def async_create_many(self, jobs: list[CreationJob], label: str) -> RunRecord:
+        """Create the devices of several jobs into one run named `label`; one audit entry."""
+        run = RunRecord(new_id(), label, time.time(), label)
+        try:
+            for job in jobs:
+                template = self._template_for(job)
+                self._check_limits(job, template)
+                await self._fill(run, job, template)
+        finally:
+            await self._persist(run)
+        self._audit.record(self._audit_factory.devices_created(run.id, "", len(run.device_ids)))
+        return run
+
+    async def _persist(self, run: RunRecord) -> None:
+        """Store the run if it holds devices, and save the store."""
+        if run.device_ids:
+            self._store.add_run(run)
+        await self._store.async_save()
+
+    async def _fill(self, run: RunRecord, job: CreationJob, template: Template) -> None:
+        """Create the devices of `job` in chunks and add them to `run`."""
         adapter = self._outputs.create(job.output)
-        now = time.time()
         first = self._store.next_index(template.id, job.count)
         names = distribute(
             job.areas, job.count, job.area_mode, device_seed(job.seed, KEY_AREAS, first)
         )
-        run = RunRecord(new_id(), job.label or template.name, now, job.seed)
         devices = self._device_factory.create(
             template,
             name_pattern=job.name_pattern,
@@ -116,23 +145,14 @@ class DevicesManager:
             seed_text=job.seed,
             run_id=run.id,
             output=job.output,
-            now=now,
+            now=run.created_at,
         )
-        try:
-            for start in range(0, len(devices), CHUNK_SIZE):
-                chunk = devices[start : start + CHUNK_SIZE]
-                for device in chunk:
-                    area_id = self._areas.ensure(device.area) if device.area else None
-                    await adapter.create(device, area_id)
-                    self._store.add_device(device)
-                    run.device_ids.append(device.id)
-                await adapter.announce(chunk)
-                await asyncio.sleep(0)
-        finally:
-            if run.device_ids:
-                self._store.add_run(run)
-            await self._store.async_save()
-        self._audit.record(
-            self._audit_factory.devices_created(run.id, template.id, len(run.device_ids))
-        )
-        return run
+        for start in range(0, len(devices), CHUNK_SIZE):
+            chunk = devices[start : start + CHUNK_SIZE]
+            for device in chunk:
+                area_id = self._areas.ensure(device.area) if device.area else None
+                await adapter.create(device, area_id)
+                self._store.add_device(device)
+                run.device_ids.append(device.id)
+            await adapter.announce(chunk)
+            await asyncio.sleep(0)

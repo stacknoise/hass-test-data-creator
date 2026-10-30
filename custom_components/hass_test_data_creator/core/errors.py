@@ -66,6 +66,18 @@ class ErrorCode(StrEnum):
     GEN_GROUP_LIMIT = "TDC-GEN-009"
     """There are already MAX_GROUPS groups."""
 
+    GEN_TRANSFER_INVALID = "TDC-GEN-010"
+    """An entry of an import file does not match the format of its category."""
+
+    GEN_TRANSFER_DUPLICATE = "TDC-GEN-011"
+    """An import file has two entries of the same name in one category."""
+
+    GEN_TRANSFER_REFERENCE = "TDC-GEN-012"
+    """An entry of an import file names a device, template, scenario or run that is neither in the file nor here."""
+
+    GEN_TRANSFER_CONFLICT = "TDC-GEN-013"
+    """An existing item cannot be changed in place, or its name is not unique here."""
+
     SIG_UNKNOWN_SHAPE = "TDC-SIG-001"
     """The signal shape is not registered in the SignalFactory."""
 

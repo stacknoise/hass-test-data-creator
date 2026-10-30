@@ -108,6 +108,15 @@ class RemovalPlanner:
             if device is None:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             plan.devices = [device]
+        return self._complete(plan)
+
+    def plan_devices(self, devices: list[DeviceDef]) -> RemovalPlan:
+        """Return the plan to remove exactly `devices`, for example all of them for an import."""
+        return self._complete(RemovalPlan(TARGET_DEVICE, devices=list(devices)))
+
+    def _complete(self, plan: RemovalPlan) -> RemovalPlan:
+        """Add to `plan` what goes with its devices: users, topics, statistics and empty areas."""
+        target = plan.target
         plan.in_use = self._in_use(plan)
         plan.schedules = self._schedule_ids(plan)
         plan.groups = self._group_ids(plan)

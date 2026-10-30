@@ -15,6 +15,7 @@ FEATURES: Final = (
     "csv_replay",
     "device_names",
     "export",
+    "import",
     "faults",
     "mqtt_discovery",
     "native_output",

@@ -112,7 +112,7 @@ class TemplateRegistry:
         """Return the path of the file of the own template `template_id`."""
         return Path(hass.config.path(USER_DIR_NAME)) / f"{template_id}.yaml"
 
-    def _check_changeable(self, template_id: str) -> None:
+    def check_changeable(self, template_id: str) -> None:
         """Raise TPL_BUNDLED if `template_id` is a built-in template or the custom device."""
         if template_id in self._bundled_ids or template_id == CUSTOM_TEMPLATE_ID:
             raise TemplateError(ErrorCode.TPL_BUNDLED)
@@ -120,7 +120,7 @@ class TemplateRegistry:
     async def async_save(self, hass: HomeAssistant, data: dict[str, Any]) -> Template:
         """Validate `data`, write it as an own template (new or replaced) and return it."""
         template = self._factory.template(data, bundled=False)
-        self._check_changeable(template.id)
+        self.check_changeable(template.id)
         if template.id not in self._templates and self._user_count() >= MAX_USER_TEMPLATES:
             raise TemplateError(ErrorCode.TPL_LIMIT)
         path = self._user_file(hass, template.id)
@@ -134,7 +134,7 @@ class TemplateRegistry:
 
     async def async_delete(self, hass: HomeAssistant, template_id: str) -> None:
         """Delete the own template `template_id` and its file."""
-        self._check_changeable(template_id)
+        self.check_changeable(template_id)
         self.get(template_id)
         try:
             await hass.async_add_executor_job(_remove_file, self._user_file(hass, template_id))
