@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 from dataclasses import dataclass, field, replace
 import time
 from typing import Any
@@ -99,11 +100,32 @@ class DevicesManager:
 
     async def async_create(self, job: CreationJob) -> RunRecord:
         """Create the devices of `job` in chunks and return the run that holds them."""
-        template = self._template_for(job)
+        return await self._async_run(job, self._template_for(job), template_key=job.template)
+
+    async def async_duplicate(self, device_id: str, job: CreationJob) -> RunRecord:
+        """Create `job.count` copies of a device: same template, model, output, area and signals."""
+        source = self._store.device(device_id)
+        if source is None:
+            raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+        template = Template(
+            source.template, source.name, source.model, copy.deepcopy(source.entities), False
+        )
+        job = replace(
+            job,
+            template=source.template,
+            output=source.output,
+            areas=job.areas or ([source.area] if source.area else []),
+        )
+        return await self._async_run(job, template, template_key=f"copy:{source.id}")
+
+    async def _async_run(
+        self, job: CreationJob, template: Template, template_key: str
+    ) -> RunRecord:
+        """Create the devices of `job` from `template`; numbers and seeds count per `template_key`."""
         self._check_limits(job, template)
         run = RunRecord(new_id(), job.label or template.name, time.time(), job.seed)
         try:
-            await self._fill(run, job, template)
+            await self._fill(run, job, template, template_key)
         finally:
             await self._persist(run)
         self._audit.record(
@@ -130,10 +152,13 @@ class DevicesManager:
             self._store.add_run(run)
         await self._store.async_save()
 
-    async def _fill(self, run: RunRecord, job: CreationJob, template: Template) -> None:
-        """Create the devices of `job` in chunks and add them to `run`."""
+    async def _fill(
+        self, run: RunRecord, job: CreationJob, template: Template, template_key: str = ""
+    ) -> None:
+        """Create the devices of `job` in chunks and add them to `run`; numbers count per key."""
         adapter = self._outputs.create(job.output)
-        first = self._store.next_index(template.id, job.count)
+        key = template_key or template.id
+        first = self._store.next_index(key, job.count)
         names = distribute(
             job.areas, job.count, job.area_mode, device_seed(job.seed, KEY_AREAS, first)
         )
@@ -142,7 +167,7 @@ class DevicesManager:
             name_pattern=job.name_pattern,
             first_index=first,
             areas=names,
-            seed_text=job.seed,
+            seed_text=job.seed if key == template.id else f"{job.seed}:{key}",
             run_id=run.id,
             output=job.output,
             now=run.created_at,

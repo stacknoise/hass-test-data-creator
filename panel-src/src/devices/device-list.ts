@@ -29,6 +29,7 @@ import '../common/dialog';
 import '../wizard/creation-wizard';
 import '../wizard/template-manager';
 import './device-detail';
+import './duplicate-dialog';
 import {
   DEVICE_FIELDS,
   DEVICE_FILTER_TAB,
@@ -54,6 +55,7 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
 };
 const FIRE_PREFIX = 'fire:';
 const REMOVE = 'remove';
+const DUPLICATE = 'duplicate';
 const VALUE_PLATFORMS = [PLATFORM_SENSOR, 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
@@ -98,6 +100,7 @@ export class DeviceList extends TdcPollingElement {
   @state() private offset = 0;
   @state() private loaded = false;
   @state() private templating = false;
+  @state() private duplicating?: DeviceInfo;
   @state() private facets?: DeviceFacets;
   @state() private curves: Record<string, SignalDef> = {};
   @state() private filter: FilterValues = readFilter(DEVICE_FILTER_TAB, DEVICE_FIELDS);
@@ -271,6 +274,7 @@ export class DeviceList extends TdcPollingElement {
       lang,
       [
         ...items,
+        { value: DUPLICATE, label: this.tr('duplicate') },
         {
           value: REMOVE,
           label: this.tr('remove'),
@@ -284,6 +288,10 @@ export class DeviceList extends TdcPollingElement {
 
   /** Run the chosen entry of the actions menu. */
   private pick(device: DeviceInfo, value: string): void {
+    if (value === DUPLICATE) {
+      this.duplicating = device;
+      return;
+    }
     if (value === REMOVE) {
       this.dispatchEvent(
         new CustomEvent('tdc-remove', { detail: { target: KIND_DEVICE, id: device.id } }),
@@ -388,6 +396,25 @@ export class DeviceList extends TdcPollingElement {
                   this.reload();
                 }}
               ></tdc-creation-wizard>`
+            : nothing
+        }
+      </tdc-dialog>
+      <tdc-dialog
+        .hass=${this.hass}
+        heading=${this.tr('duplicate')}
+        ?open=${this.duplicating !== undefined}
+        @tdc-close=${() => (this.duplicating = undefined)}
+      >
+        ${
+          this.duplicating
+            ? html`<tdc-duplicate-dialog
+                .hass=${this.hass}
+                .device=${this.duplicating}
+                @tdc-created=${() => {
+                  this.duplicating = undefined;
+                  void this.refresh();
+                }}
+              ></tdc-duplicate-dialog>`
             : nothing
         }
       </tdc-dialog>

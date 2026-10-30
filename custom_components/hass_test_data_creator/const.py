@@ -15,6 +15,7 @@ FEATURES: Final = (
     "csv_replay",
     "device_filter",
     "device_names",
+    "duplicate",
     "export",
     "import",
     "faults",

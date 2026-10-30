@@ -124,6 +124,15 @@ export class TdcApi {
     return this.call('devices/create', { ...request });
   }
 
+  /** Create `count` copies of a device; `name_pattern` may use `{template}` for the source name and `{n}`. */
+  duplicate(
+    device: string,
+    count: number,
+    name_pattern: string,
+  ): Promise<{ run_id: string; devices: number }> {
+    return this.call('devices/duplicate', { device, count, name_pattern });
+  }
+
   /** Run an action on one entity of a device. */
   fire(
     device: string,
