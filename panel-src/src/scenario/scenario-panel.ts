@@ -6,11 +6,21 @@ import { describeError } from '../common/api';
 import { workLabel } from '../common/labels';
 import { TdcElement, containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
-import type { ScenarioInfo } from '../common/types';
+import type { DeviceName, ScenarioInfo } from '../common/types';
+import { optionsOf } from '../common/list-filter';
+import { targetName } from '../common/targets';
+import type { FilterField } from '../common/filter-state';
 import { describeTarget } from '../schedule/helpers';
+import {
+  SCENARIO_FIELDS,
+  SCENARIO_FILTER_TAB,
+  scenarioRule,
+  stepDevices,
+  stepTemplates,
+} from './helpers';
 import './scenario-form';
 import type { ScenarioForm, ScenarioRequest } from './scenario-form';
-import { KIND_ALL } from '../common/constants';
+import { KIND_ALL, KIND_DEVICE, KIND_TEMPLATE } from '../common/constants';
 
 const COLUMN_COUNT = 3;
 
@@ -31,8 +41,15 @@ export class ScenarioPanel extends TdcPollingElement {
   ];
 
   @state() private scenarios: ScenarioInfo[] = [];
+  @state() private devices: DeviceName[] = [];
 
   @query('tdc-scenario-form#new') private newForm?: ScenarioForm;
+
+  /** Take over the filter that the session kept. */
+  constructor() {
+    super();
+    this.restoreFilter(SCENARIO_FILTER_TAB, SCENARIO_FIELDS);
+  }
 
   /** Nothing to prepare: the forms start themselves when the actions are known. */
   protected optionsLoaded(): void {
@@ -42,7 +59,10 @@ export class ScenarioPanel extends TdcPollingElement {
   /** Reload the scenarios. */
   protected async refresh(): Promise<void> {
     try {
-      this.scenarios = await this.api.scenarios();
+      [this.scenarios, this.devices] = await Promise.all([
+        this.api.scenarios(),
+        this.api.deviceNames(),
+      ]);
     } catch (err) {
       this.error = describeError(err);
     }
@@ -71,6 +91,51 @@ export class ScenarioPanel extends TdcPollingElement {
       const { steps } = await this.api.runScenario(item.id);
       return this.tr('scnStarted', { count: steps });
     });
+  }
+
+  /** Return the name of a device or template that a step aims at. */
+  private targetLabel(kind: typeof KIND_DEVICE | typeof KIND_TEMPLATE, id: string): string {
+    return targetName(kind, id, this.devices, this.templates, this.hass?.language, (count) =>
+      this.tr('planDevices', { count }),
+    );
+  }
+
+  /** Return the controls of the filter with the devices and templates that the scenarios name. */
+  private filterFields(): FilterField[] {
+    const lang = this.hass?.language;
+    return [
+      {
+        key: 'devices',
+        kind: 'multi',
+        label: this.tr('filterDevices'),
+        options: optionsOf(
+          this.scenarios,
+          (item) => stepDevices(item, this.devices),
+          (id) => this.targetLabel(KIND_DEVICE, id),
+          lang,
+        ),
+      },
+      {
+        key: 'templates',
+        kind: 'multi',
+        label: this.tr('filterTemplates'),
+        options: optionsOf(
+          this.scenarios,
+          stepTemplates,
+          (id) => this.targetLabel(KIND_TEMPLATE, id),
+          lang,
+        ),
+      },
+    ];
+  }
+
+  /** Return what the query is searched in: the name and the devices and templates of the steps. */
+  private searchTexts(item: ScenarioInfo): string[] {
+    return [
+      item.name,
+      ...stepDevices(item, this.devices).map((id) => this.targetLabel(KIND_DEVICE, id)),
+      ...stepTemplates(item).map((id) => this.targetLabel(KIND_TEMPLATE, id)),
+    ];
   }
 
   /** Render the button that opens the popup with the form for a new object. */
@@ -138,6 +203,22 @@ export class ScenarioPanel extends TdcPollingElement {
       }`;
   }
 
+  /** Render the table of the scenarios that pass the filter. */
+  private renderTable(scenarios: ScenarioInfo[]): TemplateResult {
+    return html`<table class="cards">
+      <tr>
+        <th>${this.tr('schName')}</th>
+        <th>${this.tr('scnSteps')}</th>
+        <th>${this.tr('colActions')}</th>
+      </tr>
+      ${repeat(
+        scenarios,
+        (item) => item.id,
+        (item) => this.renderRow(item),
+      )}
+    </table>`;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     return html`
@@ -145,18 +226,12 @@ export class ScenarioPanel extends TdcPollingElement {
       ${
         this.scenarios.length === 0
           ? html`<p>${this.tr('scnNone')}</p>`
-          : html`<table class="cards">
-              <tr>
-                <th>${this.tr('schName')}</th>
-                <th>${this.tr('scnSteps')}</th>
-                <th>${this.tr('colActions')}</th>
-              </tr>
-              ${repeat(
-                this.scenarios,
-                (item) => item.id,
-                (item) => this.renderRow(item),
-              )}
-            </table>`
+          : this.renderFiltered(
+              this.scenarios,
+              this.filterFields(),
+              scenarioRule(this.devices, (item) => this.searchTexts(item)),
+              (shown) => this.renderTable(shown),
+            )
       }
       <p>${this.message}<span class="error">${this.error}</span></p>
     `;

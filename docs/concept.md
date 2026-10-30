@@ -439,7 +439,7 @@ Panel: the component `common/filter-bar.ts` (search field, multi-selects, switch
 
 ### 16.2 Other tab lists (F2)
 
-Schedules (at most 200), scenarios (100) and groups (100) arrive whole, so they are filtered in the panel with the same `filter-bar` and one shared pure function in `common/list-filter.ts`. Schedules: text, trigger type, action, on or off, kind of target. Scenarios: text, contains a device or template. Groups: text. History and Removal: text, run and template, after checking what these tabs list. A list that passes its limit later gets the server filter of 16.1.
+Schedules (at most 200), scenarios (100) and groups (100) arrive whole, so they are filtered in the panel with the same `filter-bar` and one shared pure function in `common/list-filter.ts`. Schedules: text, trigger type, action, on or off, kind of target. Scenarios: text, contains a device or template. Groups: text. History and Removal: checked, and they list nothing to filter (History is a form, Removal shows one plan), so they get no bar. Groups have the text search only, because their members are the only other content. The shared state, bar and empty view live in `TdcPollingElement.renderFiltered`; each tab only gives its fields and a `ListRule`. A list that passes its limit later gets the server filter of 16.1.
 
 ### 16.3 Bulk actions (F3)
 

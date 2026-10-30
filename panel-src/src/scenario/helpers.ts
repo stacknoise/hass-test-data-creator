@@ -1,5 +1,15 @@
-import type { ScenarioStep } from '../common/types';
-import { defaultWork, resolveWork, workOf, type WorkForm } from '../schedule/helpers';
+import type { FilterField } from '../common/filter-state';
+import type { ListRule } from '../common/list-filter';
+import { resolveTargetId } from '../common/targets';
+import type { DeviceName, ScenarioInfo, ScenarioStep } from '../common/types';
+import { KIND_DEVICE, KIND_TEMPLATE } from '../common/constants';
+import {
+  defaultWork,
+  describeTarget,
+  resolveWork,
+  workOf,
+  type WorkForm,
+} from '../schedule/helpers';
 
 /** The inputs of one step in the scenario form. */
 export interface StepForm {
@@ -47,5 +57,44 @@ export function stepFormOf(step: ScenarioStep): StepForm {
     afterS: step.after_s,
     work: workOf(step),
     params: Object.keys(step.params).length ? JSON.stringify(step.params) : '',
+  };
+}
+
+/** The tab under which the filter of the scenario list is kept in the session. */
+export const SCENARIO_FILTER_TAB = 'scenarios';
+
+/** The fields of the scenario filter by key and kind; the panel adds labels and options. */
+export const SCENARIO_FIELDS: FilterField[] = [
+  { key: 'devices', kind: 'multi', label: '' },
+  { key: 'templates', kind: 'multi', label: '' },
+];
+
+/** Return the ids that the steps of a scenario name as `kind`, each once. */
+function stepTargets(item: ScenarioInfo, kind: string, resolve: (id: string) => string): string[] {
+  const ids = item.steps.flatMap((step) => {
+    const target = describeTarget(step.target);
+    return target.kind === kind ? target.ids.map(resolve) : [];
+  });
+  return [...new Set(ids)];
+}
+
+/** Return the ids of the devices that the steps of a scenario name, each once. */
+export function stepDevices(item: ScenarioInfo, devices: DeviceName[]): string[] {
+  return stepTargets(item, KIND_DEVICE, (id) => resolveTargetId(KIND_DEVICE, id, devices));
+}
+
+/** Return the ids of the templates that the steps of a scenario name, each once. */
+export function stepTemplates(item: ScenarioInfo): string[] {
+  return stepTargets(item, KIND_TEMPLATE, (id) => id);
+}
+
+/** Return how the scenario filter reads a scenario; `texts` gives what the query is searched in. */
+export function scenarioRule(
+  devices: DeviceName[],
+  texts: (item: ScenarioInfo) => string[],
+): ListRule<ScenarioInfo> {
+  return {
+    texts,
+    values: (item, key) => (key === 'devices' ? stepDevices(item, devices) : stepTemplates(item)),
   };
 }

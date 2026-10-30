@@ -3,6 +3,10 @@ import { state } from 'lit/decorators.js';
 import { describeError } from './api';
 import { TdcElement, toggled } from './base';
 import './dialog';
+import './filter-bar';
+import { emptyValues, readFilter, resetValues, writeFilter } from './filter-state';
+import type { FilterField, FilterValues } from './filter-state';
+import { filterItems, type ListRule } from './list-filter';
 import type { Info, TemplateInfo } from './types';
 
 const REFRESH_MS = 10_000;
@@ -16,7 +20,9 @@ export abstract class TdcPollingElement extends TdcElement {
   @state() protected busy = false;
   @state() protected expanded = new Set<string>();
   @state() protected creating = false;
+  @state() protected listFilter: FilterValues = {};
 
+  private listFilterTab = '';
   private timer?: number;
 
   /** Reload the objects that the tab lists. */
@@ -47,6 +53,47 @@ export abstract class TdcPollingElement extends TdcElement {
     } catch (err) {
       this.error = describeError(err);
     }
+  }
+
+  /** Take over the filter that the session kept for `tab`; `fields` only name the keys. */
+  protected restoreFilter(tab: string, fields: FilterField[]): void {
+    this.listFilterTab = tab;
+    this.listFilter = readFilter(tab, fields);
+  }
+
+  /** Apply a new filter from the bar and keep it for the session. */
+  private setListFilter(values: FilterValues): void {
+    this.listFilter = values;
+    writeFilter(this.listFilterTab, values);
+  }
+
+  /** Render the filter bar over a list and, below it, the list of the items that pass the filter. */
+  protected renderFiltered<T>(
+    items: T[],
+    fields: FilterField[],
+    rule: ListRule<T>,
+    list: (shown: T[]) => TemplateResult,
+  ): TemplateResult {
+    const shown = filterItems(items, fields, this.listFilter, rule);
+    return html`<tdc-filter-bar
+        .hass=${this.hass}
+        .fields=${fields}
+        .values=${this.listFilter}
+        .matched=${shown.length}
+        .total=${items.length}
+        searchLabel=${this.tr('filterSearchList')}
+        @tdc-filter-change=${(e: CustomEvent<FilterValues>) => this.setListFilter(e.detail)}
+      ></tdc-filter-bar>
+      ${
+        shown.length === 0
+          ? html`<p>
+              ${this.tr('noListMatches')}
+              <button @click=${() => this.setListFilter(resetValues(fields, emptyValues(fields)))}>
+                ${this.tr('filterReset')}
+              </button>
+            </p>`
+          : list(shown)
+      }`;
   }
 
   /** Open or close the form of an object. */

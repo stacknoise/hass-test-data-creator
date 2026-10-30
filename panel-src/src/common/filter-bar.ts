@@ -31,6 +31,7 @@ export class FilterBar extends TdcElement {
   @property({ attribute: false }) fields: FilterField[] = [];
   @property({ attribute: false }) values: FilterValues = {};
   @property({ attribute: false }) sorts: SelectItem[] = [];
+  @property() searchLabel = '';
   @property({ type: Number }) matched = 0;
   @property({ type: Number }) total = 0;
 
@@ -221,7 +222,7 @@ export class FilterBar extends TdcElement {
     return html`
       <div class="row bar">
         <label class="search">
-          ${this.tr('filterSearch')}
+          ${this.searchLabel || this.tr('filterSearch')}
           <input
             type="search"
             placeholder=${this.tr('filterSearchHint')}
