@@ -7,13 +7,15 @@ import { TdcPollingElement } from '../common/polling';
 import '../common/filter-bar';
 import {
   readFilter,
+  resetValues,
   writeFilter,
   type FilterField,
   type FilterValues,
 } from '../common/filter-state';
 import '../common/menu-button';
+import '../signals/signal-preview';
 import type { MenuItem } from '../common/menu-button';
-import type { DeviceFacets, DeviceInfo, EntityState, FacetEntry } from '../common/types';
+import type { DeviceFacets, DeviceInfo, EntityState, FacetEntry, SignalDef } from '../common/types';
 import {
   OUTPUT_LABELS,
   actionLabel,
@@ -31,10 +33,12 @@ import './duplicate-dialog';
 import {
   DEVICE_FIELDS,
   DEVICE_FILTER_TAB,
+  curveEntity,
   deviceRequest,
   facetItems,
   knownAreas,
   lastPageOffset,
+  missingCurves,
   usageEntries,
 } from './helpers';
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
@@ -81,6 +85,9 @@ export class DeviceList extends TdcPollingElement {
           width: auto;
         }
       }
+      tdc-signal-preview {
+        margin-top: 4px;
+      }
       tr.device:hover {
         background: var(--secondary-background-color);
       }
@@ -95,6 +102,7 @@ export class DeviceList extends TdcPollingElement {
   @state() private templating = false;
   @state() private duplicating?: DeviceInfo;
   @state() private facets?: DeviceFacets;
+  @state() private curves: Record<string, SignalDef> = {};
   @state() private filter: FilterValues = readFilter(DEVICE_FILTER_TAB, DEVICE_FIELDS);
 
   private facetsStale = true;
@@ -118,6 +126,7 @@ export class DeviceList extends TdcPollingElement {
       this.matched = page.matched;
       if (page.facets) this.facets = page.facets;
       this.error = '';
+      void this.loadCurves(page.devices);
     } catch (err) {
       this.facetsStale ||= withFacets;
       this.error = describeError(err);
@@ -125,9 +134,24 @@ export class DeviceList extends TdcPollingElement {
     this.loaded = true;
   }
 
+  /** Load the row curves that are missing, one device at a time; a failure leaves the row without. */
+  private async loadCurves(devices: DeviceInfo[]): Promise<void> {
+    for (const id of missingCurves(devices, this.curves)) {
+      try {
+        const full = await this.api.device(id);
+        const key = curveEntity(full)?.key;
+        const signal = full.entities.find((e) => e.key === key)?.signal;
+        if (signal) this.curves = { ...this.curves, [id]: signal };
+      } catch {
+        return;
+      }
+    }
+  }
+
   /** Reload and ask for the filter options too, as after a change of the devices. */
   private reload(): void {
     this.facetsStale = true;
+    this.curves = {};
     void this.refresh();
   }
 
@@ -310,6 +334,14 @@ export class DeviceList extends TdcPollingElement {
         </td>
         <td class="values" data-label=${this.tr('colValues')}>
           <small>${this.values(device)}</small>
+          ${
+            this.curves[device.id]
+              ? html`<tdc-signal-preview
+                  compact
+                  .signal=${this.curves[device.id]}
+                ></tdc-signal-preview>`
+              : nothing
+          }
         </td>
         <td class="row nowrap" data-label=${this.tr('colActions')}>
           <tdc-menu-button
@@ -411,7 +443,17 @@ export class DeviceList extends TdcPollingElement {
         this.total === 0
           ? html`<p>${this.tr('noDevices')}</p>`
           : this.matched === 0
-            ? html`<p>${this.tr('noMatches')}</p>`
+            ? html`<p>
+                ${this.tr('noMatches')}
+                <a
+                  href="#"
+                  @click=${(e: Event) => {
+                    e.preventDefault();
+                    this.setFilter(resetValues(this.filterFields(), this.filter));
+                  }}
+                  >${this.tr('noMatchesReset')}</a
+                >
+              </p>`
             : html`<table class="cards">
                   <thead>
                     <tr>

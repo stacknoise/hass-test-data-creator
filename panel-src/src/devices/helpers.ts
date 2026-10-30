@@ -1,7 +1,14 @@
 import type { FilterField, FilterValue, FilterValues } from '../common/filter-state';
 import type { SelectItem } from '../common/multi-select';
-import type { DeviceFilterRequest, DeviceInfo, DeviceUsage, FacetEntry } from '../common/types';
-import { TAB_GROUPS } from '../common/constants';
+import type {
+  DeviceFilterRequest,
+  DeviceInfo,
+  DeviceUsage,
+  EntityState,
+  FacetEntry,
+  SignalDef,
+} from '../common/types';
+import { PLATFORM_SENSOR, TAB_GROUPS } from '../common/constants';
 
 /** An action that needs one number, with the name of its parameter and the allowed range. */
 export interface ValueAction {
@@ -145,4 +152,14 @@ export function facetItems(
     .filter((value) => !items.some((item) => item.value === value))
     .map((value) => ({ value, label: label({ value, count: 0 }) }));
   return [...items, ...missing];
+}
+
+/** Return the first sensor of a device that has a curve; the row draws this one. */
+export function curveEntity(device: DeviceInfo): EntityState | undefined {
+  return device.entities.find((e) => e.platform === PLATFORM_SENSOR && e.shape);
+}
+
+/** Return the ids of the devices whose row curve is not loaded yet. */
+export function missingCurves(devices: DeviceInfo[], loaded: Record<string, SignalDef>): string[] {
+  return devices.filter((d) => curveEntity(d) && !(d.id in loaded)).map((d) => d.id);
 }
