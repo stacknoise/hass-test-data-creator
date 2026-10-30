@@ -480,7 +480,7 @@ New commands: `transfer/plan`, `transfer/run`, `transfer/export`. `transfer/plan
 
 ### 16.6 Small items (F7)
 
-A small curve in the row from the existing preview component, the keys `/` (focus the search) and `Esc` (reset), and the empty view "No matches" with a reset link. Panel only.
+The keys `/` (focus the search) and `Esc` (reset), and the empty view "No matches" with a reset link. Panel only.
 
 ### 16.7 Rules for every package
 
