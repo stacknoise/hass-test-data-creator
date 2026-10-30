@@ -11,6 +11,8 @@ import type {
   RemovalPlan,
   RemovalResult,
   GroupInfo,
+  ImportBatch,
+  ImportPlan,
   HistoryResult,
   RemovalTarget,
   SignalDef,
@@ -254,6 +256,16 @@ export class TdcApi {
   /** Return `limit` entries of a category from `offset`; a `limit` of 0 only counts them. */
   transferExport(category: TransferCategory, offset: number, limit: number): Promise<TransferPage> {
     return this.call('transfer/export', { category, offset, limit });
+  }
+
+  /** Return what importing a batch would do; nothing is changed. */
+  transferPlan(batch: ImportBatch): Promise<ImportPlan> {
+    return this.call('transfer/plan', { ...batch });
+  }
+
+  /** Import a batch, or with the phase `purge` remove the items of its category first. */
+  transferRun(batch: ImportBatch): Promise<ImportPlan> {
+    return this.call('transfer/run', { ...batch });
   }
 
   /** Return all entries of a category, read page by page within the batch limit of the backend. */

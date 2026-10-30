@@ -67,6 +67,18 @@
     "gen_group_limit": {
       "message": "Es gibt zu viele Gruppen. Entferne zuerst eine"
     },
+    "gen_transfer_invalid": {
+      "message": "Der Eintrag {name} passt nicht zum Format seiner Kategorie"
+    },
+    "gen_transfer_duplicate": {
+      "message": "Der Name {name} kommt in einer Kategorie doppelt vor"
+    },
+    "gen_transfer_reference": {
+      "message": "Der Eintrag {name} nennt etwas, das weder in der Datei noch hier vorhanden ist"
+    },
+    "gen_transfer_conflict": {
+      "message": "Der Eintrag {name} lässt sich nicht an Ort und Stelle ändern, oder sein Name ist hier nicht eindeutig"
+    },
     "tpl_not_found": {
       "message": "Die Vorlage gibt es nicht"
     },

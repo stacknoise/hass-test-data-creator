@@ -294,3 +294,34 @@ export type TransferFile = {
   integration_version: string;
   exported_at: string;
 } & Partial<Record<TransferCategory, object[]>>;
+
+/** How an import treats an item that already exists. */
+export type ImportMode = 'add' | 'sync' | 'replace';
+
+/** One batch of entries of one category for `transfer/plan` and `transfer/run`. */
+export interface ImportBatch {
+  category: TransferCategory;
+  mode: ImportMode;
+  items: object[];
+  /** Names the file has, so that a reference to an entry that is not created yet is accepted. */
+  known: Partial<Record<'devices' | 'templates' | 'scenarios', string[]>>;
+  /** The categories that are replaced in the same import. */
+  replacing: TransferCategory[];
+  /** Whether this is the first batch of the category; a replace counts the removal once. */
+  first: boolean;
+  file_name: string;
+  /** `purge` removes the items of the category and ignores `items`. */
+  phase?: 'import' | 'purge';
+}
+
+/** What an import of a category would do, or did. */
+export interface ImportPlan {
+  category: TransferCategory;
+  mode: ImportMode;
+  create: number;
+  update: number;
+  skip: number;
+  conflict: number;
+  delete: number;
+  problems: { name: string; code: string; reason: string }[];
+}
