@@ -3965,12 +3965,18 @@ var Ii = 240, Li = 40, Ri = class extends Je {
 	static {
 		this.styles = [qn, o`
       svg {
+        display: block;
+        height: 32px;
+        min-width: 80px;
         border-radius: 4px;
+      }
+      polyline {
+        vector-effect: non-scaling-stroke;
       }
     `];
 	}
 	render() {
-		return h`<svg viewBox="0 0 ${Ii} ${Li}" role="img">
+		return h`<svg viewBox="0 0 ${Ii} ${Li}" preserveAspectRatio="none" role="img">
       <polyline points=${Fi(this.samples, Ii, Li)}></polyline>
     </svg>`;
 	}
@@ -4006,8 +4012,12 @@ var B = class extends A {
         padding: 4px 0 8px;
       }
       .live-col {
-        width: 60%;
+        width: 100%;
         padding-left: 16px;
+      }
+      td.row {
+        flex-wrap: nowrap;
+        white-space: nowrap;
       }
       .live {
         display: block;
@@ -4039,6 +4049,9 @@ var B = class extends A {
         }
         .live-col {
           display: none;
+        }
+        td.row {
+          flex-wrap: wrap;
         }
         td:last-child {
           flex: 1 1 100%;

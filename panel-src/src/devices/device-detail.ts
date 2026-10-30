@@ -67,8 +67,12 @@ export class DeviceDetail extends TdcElement {
         padding: 4px 0 8px;
       }
       .live-col {
-        width: 60%;
+        width: 100%;
         padding-left: 16px;
+      }
+      td.row {
+        flex-wrap: nowrap;
+        white-space: nowrap;
       }
       .live {
         display: block;
@@ -100,6 +104,9 @@ export class DeviceDetail extends TdcElement {
         }
         .live-col {
           display: none;
+        }
+        td.row {
+          flex-wrap: wrap;
         }
         td:last-child {
           flex: 1 1 100%;
