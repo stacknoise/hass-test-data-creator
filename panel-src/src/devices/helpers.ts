@@ -1,4 +1,6 @@
-import type { DeviceInfo, DeviceUsage } from '../common/types';
+import type { FilterField, FilterValue, FilterValues } from '../common/filter-state';
+import type { SelectItem } from '../common/multi-select';
+import type { DeviceFilterRequest, DeviceInfo, DeviceUsage, FacetEntry } from '../common/types';
 import { TAB_GROUPS } from '../common/constants';
 
 /** An action that needs one number, with the name of its parameter and the allowed range. */
@@ -86,4 +88,61 @@ export function usageEntries(used: DeviceUsage | undefined): UsageEntry[] {
 /** Return the offset of the last page of `total` items in pages of `size`. */
 export function lastPageOffset(total: number, size: number): number {
   return total <= 0 ? 0 : Math.floor((total - 1) / size) * size;
+}
+
+/** The fields of the device filter by key and kind; the labels and options come with the facets. */
+export const DEVICE_FIELDS: FilterField[] = [
+  { key: 'templates', kind: 'multi', label: '' },
+  { key: 'areas', kind: 'multi', label: '' },
+  { key: 'outputs', kind: 'multi', label: '' },
+  { key: 'platforms', kind: 'multi', label: '' },
+  { key: 'runs', kind: 'multi', label: '' },
+  { key: 'state', kind: 'choice', label: '' },
+  { key: 'custom', kind: 'switch', label: '' },
+];
+
+/** The tab under which the filter of the device list is kept in the session. */
+export const DEVICE_FILTER_TAB = 'devices';
+
+/** Return the request fields for the filter state of the bar; empty restrictions are left out. */
+export function deviceRequest(values: FilterValues): DeviceFilterRequest {
+  const list = (key: string): string[] | undefined => {
+    const value = values[key];
+    return Array.isArray(value) && value.length ? value : undefined;
+  };
+  const text = (key: string): string | undefined => {
+    const value = values[key];
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  };
+  const request: DeviceFilterRequest = {
+    query: text('query'),
+    templates: list('templates'),
+    areas: list('areas'),
+    outputs: list('outputs'),
+    platforms: list('platforms'),
+    runs: list('runs'),
+    custom: values.custom === true ? true : undefined,
+    state: text('state'),
+    sort: text('sort'),
+    descending: values.descending === true ? true : undefined,
+  };
+  return Object.fromEntries(
+    Object.entries(request).filter(([, value]) => value !== undefined),
+  ) as DeviceFilterRequest;
+}
+
+/** Return the options of a filter group: the values with their counts, plus the chosen ones. */
+export function facetItems(
+  entries: FacetEntry[] | undefined,
+  chosen: FilterValue | undefined,
+  label: (entry: FacetEntry) => string,
+): SelectItem[] {
+  const items = (entries ?? []).map((entry) => ({
+    value: entry.value,
+    label: `${label(entry)} (${entry.count})`,
+  }));
+  const missing = (Array.isArray(chosen) ? chosen : chosen ? [String(chosen)] : [])
+    .filter((value) => !items.some((item) => item.value === value))
+    .map((value) => ({ value, label: label({ value, count: 0 }) }));
+  return [...items, ...missing];
 }
