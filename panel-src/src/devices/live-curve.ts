@@ -1,5 +1,6 @@
 import { LitElement, css, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
+import { curveStyle } from '../common/curve-style';
 import { livePoints, type LiveSample } from './live';
 
 const WIDTH = 240;
@@ -10,20 +11,15 @@ const HEIGHT = 40;
 export class LiveCurve extends LitElement {
   @property({ attribute: false }) samples: LiveSample[] = [];
 
-  static override styles = css`
-    svg {
-      width: 100%;
-      max-width: 240px;
-      height: auto;
-      background: var(--secondary-background-color);
-      border-radius: 4px;
-    }
-    polyline {
-      fill: none;
-      stroke: var(--primary-color);
-      stroke-width: 1.5;
-    }
-  `;
+  static override styles = [
+    curveStyle,
+    css`
+      svg {
+        max-width: 240px;
+        border-radius: 4px;
+      }
+    `,
+  ];
 
   /** Render the element. */
   override render(): TemplateResult {
