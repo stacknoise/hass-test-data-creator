@@ -976,6 +976,7 @@ var xt = {
 		detCurve: "Change curve",
 		detSaveCurve: "Save curve",
 		detLive: "Live view",
+		detLiveColumn: "Live",
 		detLiveHint: "Reads the values every second while this device is open",
 		detCancel: "Cancel",
 		useTitle: "Used in {count}",
@@ -1294,6 +1295,7 @@ var xt = {
 		detCurve: "Kurve ändern",
 		detSaveCurve: "Kurve speichern",
 		detLive: "Live-Ansicht",
+		detLiveColumn: "Live",
 		detLiveHint: "Liest die Werte jede Sekunde, solange das Gerät geöffnet ist",
 		detCancel: "Abbrechen",
 		useTitle: "Verwendet in {count}",
@@ -3963,8 +3965,6 @@ var Ii = 240, Li = 40, Ri = class extends Je {
 	static {
 		this.styles = [qn, o`
       svg {
-        max-width: 240px;
-        flex: 1 1 160px;
         border-radius: 4px;
       }
     `];
@@ -4005,13 +4005,9 @@ var B = class extends A {
       .curve {
         padding: 4px 0 8px;
       }
-      .state {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .state .value {
-        min-width: 9em;
+      .live-col {
+        width: 60%;
+        padding-left: 16px;
       }
       .live {
         display: block;
@@ -4040,6 +4036,9 @@ var B = class extends A {
         }
         td {
           border-bottom: 0;
+        }
+        .live-col {
+          display: none;
         }
         td:last-child {
           flex: 1 1 100%;
@@ -4185,7 +4184,7 @@ var B = class extends A {
 	}
 	renderCurve(e) {
 		return h`<tr>
-      <td colspan="3" class="curve">
+      <td colspan="4" class="curve">
         <tdc-curve-editor
           .hass=${this.hass}
           .signal=${this.curves[e.key]}
@@ -4220,13 +4219,13 @@ var B = class extends A {
           >
         </td>
         <td>
-          <div class="state">
-            <span class="value"
-              >${At(t, this.liveStates[e.key] ?? e.state)}${e.unit ? ` ${e.unit}` : ""}</span
-            >
-            ${this.live && e.key in this.samples ? h`<tdc-live-curve .samples=${this.samples[e.key]}></tdc-live-curve>` : ""}
-          </div>
+          <span
+            >${At(t, this.liveStates[e.key] ?? e.state)}${e.unit ? ` ${e.unit}` : ""}</span
+          >
           ${e.fault ? h`<br /><small class="warning">⚠ ${T(t, "fault", e.fault)}</small>` : ""}
+        </td>
+        <td class="live-col">
+          ${this.live && e.key in this.samples ? h`<tdc-live-curve .samples=${this.samples[e.key]}></tdc-live-curve>` : ""}
         </td>
         <td class="row">
           ${n.length ? h`<tdc-menu-button
@@ -4271,6 +4270,7 @@ var B = class extends A {
         <tr>
           <th>${this.tr("detEntity")}</th>
           <th>${this.tr("detState")}</th>
+          <th class="live-col">${this.tr("detLiveColumn")}</th>
           <th>${this.tr("colActions")}</th>
         </tr>
         ${this.device.entities.map((e) => this.renderEntity(e))}

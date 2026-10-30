@@ -66,13 +66,9 @@ export class DeviceDetail extends TdcElement {
       .curve {
         padding: 4px 0 8px;
       }
-      .state {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .state .value {
-        min-width: 9em;
+      .live-col {
+        width: 60%;
+        padding-left: 16px;
       }
       .live {
         display: block;
@@ -101,6 +97,9 @@ export class DeviceDetail extends TdcElement {
         }
         td {
           border-bottom: 0;
+        }
+        .live-col {
+          display: none;
         }
         td:last-child {
           flex: 1 1 100%;
@@ -303,7 +302,7 @@ export class DeviceDetail extends TdcElement {
   /** Render the curve editor of one sensor with its save and cancel buttons. */
   private renderCurve(entity: EntityState): TemplateResult {
     return html`<tr>
-      <td colspan="3" class="curve">
+      <td colspan="4" class="curve">
         <tdc-curve-editor
           .hass=${this.hass}
           .signal=${this.curves[entity.key]}
@@ -340,21 +339,21 @@ export class DeviceDetail extends TdcElement {
           >
         </td>
         <td>
-          <div class="state">
-            <span class="value"
-              >${stateLabel(lang, this.liveStates[entity.key] ?? entity.state)}${
-                entity.unit ? ` ${entity.unit}` : ''
-              }</span
-            >
-            ${
-              this.live && entity.key in this.samples
-                ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
-                : ''
-            }
-          </div>
+          <span
+            >${stateLabel(lang, this.liveStates[entity.key] ?? entity.state)}${
+              entity.unit ? ` ${entity.unit}` : ''
+            }</span
+          >
           ${
             entity.fault
               ? html`<br /><small class="warning">⚠ ${labelOf(lang, 'fault', entity.fault)}</small>`
+              : ''
+          }
+        </td>
+        <td class="live-col">
+          ${
+            this.live && entity.key in this.samples
+              ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
               : ''
           }
         </td>
@@ -417,6 +416,7 @@ export class DeviceDetail extends TdcElement {
         <tr>
           <th>${this.tr('detEntity')}</th>
           <th>${this.tr('detState')}</th>
+          <th class="live-col">${this.tr('detLiveColumn')}</th>
           <th>${this.tr('colActions')}</th>
         </tr>
         ${this.device.entities.map((entity) => this.renderEntity(entity))}

@@ -15,8 +15,6 @@ export class LiveCurve extends LitElement {
     curveStyle,
     css`
       svg {
-        max-width: 240px;
-        flex: 1 1 160px;
         border-radius: 4px;
       }
     `,
