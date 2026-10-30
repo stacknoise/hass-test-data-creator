@@ -39,6 +39,7 @@ from .schedules import (
     ws_schedules_remove,
     ws_schedules_update,
 )
+from .transfer import ws_transfer_export
 
 COMMANDS = (
     ws_info,
@@ -73,6 +74,7 @@ COMMANDS = (
     ws_groups_update,
     ws_groups_remove,
     ws_history_import,
+    ws_transfer_export,
 )
 
 
