@@ -62,4 +62,37 @@ describe('FilterBar', () => {
     reset!.click();
     expect(changes.at(-1)).toEqual(emptyValues(FIELDS));
   });
+
+  /** Press a key on the page, outside every field. */
+  function press(key: string): KeyboardEvent {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    document.body.dispatchEvent(event);
+    return event;
+  }
+
+  it('focuses the search field with the slash key', () => {
+    const input = bar.shadowRoot!.querySelector('input[type=search]') as HTMLInputElement;
+    const focus = vi.spyOn(input, 'focus');
+    expect(press('/').defaultPrevented).toBe(true);
+    expect(focus).toHaveBeenCalled();
+  });
+
+  it('resets an active filter with Escape and ignores it otherwise', async () => {
+    press('Escape');
+    expect(changes).toHaveLength(0);
+    const box = bar.shadowRoot!.querySelector('input[type=checkbox]') as HTMLInputElement;
+    box.checked = true;
+    box.dispatchEvent(new Event('change'));
+    await bar.updateComplete;
+    press('Escape');
+    expect(changes.at(-1)).toEqual(emptyValues(FIELDS));
+  });
+
+  it('leaves the keys alone while a dialog is open', () => {
+    const dialog = document.createElement('tdc-dialog');
+    dialog.setAttribute('open', '');
+    document.body.append(dialog);
+    expect(press('/').defaultPrevented).toBe(false);
+    dialog.remove();
+  });
 });
