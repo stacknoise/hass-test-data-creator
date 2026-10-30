@@ -58,6 +58,12 @@ class AuditEntryFactory:
             {KEY_TARGET: target, KEY_DEVICES: devices, KEY_AREAS: areas},
         )
 
+    def bulk_done(self, kind: str, devices: int, failed: int) -> AuditEntry:
+        """Return the entry for one bulk action (`area`, `group` or an action name) on many devices."""
+        return AuditEntry(
+            logging.INFO, "bulk action done", {"kind": kind, KEY_DEVICES: devices, "failed": failed}
+        )
+
     def transfer_done(
         self, category: str, mode: str, counts: dict[str, int], file: str
     ) -> AuditEntry:

@@ -166,6 +166,9 @@
     "ws_invalid_request": {
       "message": "Die Anfrage ist ungültig"
     },
+    "ws_selection_changed": {
+      "message": "Die Auswahl hat sich seit der Bestätigung geändert. Prüfe sie und versuche es erneut"
+    },
     "int_unexpected": {
       "message": "Ein unerwarteter Fehler ist aufgetreten. Details stehen im Home-Assistant-Protokoll"
     },

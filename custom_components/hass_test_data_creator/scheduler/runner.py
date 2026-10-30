@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
+from ..const import CHUNK_SIZE
 from ..core.errors import ErrorCode, ScheduleError, TdcError
 from ..core.keys import KEY_DEVICE, KEY_RUN, KEY_TEMPLATE
 from ..core.targets import device_references
@@ -66,6 +68,28 @@ class ActionRunner:
                     self._audit_factory.schedule_failed(label, device.name, error.code.value)
                 )
 
+    async def async_run_bulk(
+        self, devices: list[DeviceDef], key: str, action: str, params: dict[str, Any]
+    ) -> int:
+        """Run `action` on entity `key` (all that fit if empty) of every device; return the failures.
+
+        A device that fails is logged with its code and skipped. Devices go in chunks, and one audit
+        entry covers the batch.
+        """
+        failed = 0
+        for start in range(0, len(devices), CHUNK_SIZE):
+            for device in devices[start : start + CHUNK_SIZE]:
+                try:
+                    await self._fire(device.id, key, action, params)
+                except TdcError as error:
+                    failed += 1
+                    self._audit.record(
+                        self._audit_factory.schedule_failed("bulk", device.name, error.code.value)
+                    )
+            await asyncio.sleep(0)
+        self._audit.record(self._audit_factory.bulk_done(action, len(devices), failed))
+        return failed
+
     def find_device_id(self, reference: str) -> str:
         """Return the id of the device whose id or name is `reference`."""
         device_id = self._store.device_id_of(reference)
@@ -92,12 +116,20 @@ class ActionRunner:
         params: dict[str, Any] | None,
     ) -> None:
         """Run `action` on the entities of the device `device_id`; `reference` is audited."""
-        for entity in self._keys(device_id, key, action):
+        for entity in await self._fire(device_id, key, action, params):
+            self._audit.record(self._audit_factory.action_fired(reference, entity, action))
+
+    async def _fire(
+        self, device_id: str, key: str, action: str, params: dict[str, Any] | None
+    ) -> list[str]:
+        """Run `action` on the entities of the device `device_id` and return their keys."""
+        keys = self._keys(device_id, key, action)
+        for entity in keys:
             behaviour = self._live.get((device_id, entity))
             if behaviour is None:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
             await self._actions.create(behaviour.platform, action)(behaviour, params or {})
-            self._audit.record(self._audit_factory.action_fired(reference, entity, action))
+        return keys
 
     def _keys(self, device_id: str, key: str, action: str) -> list[str]:
         """Return the keys of the entities that an action runs on: the one named, or all that fit."""

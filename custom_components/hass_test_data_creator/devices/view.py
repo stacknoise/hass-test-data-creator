@@ -77,6 +77,15 @@ class DeviceView:
             reply["facets"] = self._facets(devices, flt, context)
         return reply
 
+    def select(self, ids: list[str] | None, flt: DeviceFilter | None) -> list[DeviceDef]:
+        """Return the devices with these ids (unknown ones skipped), or all that pass `flt`."""
+        if ids is not None:
+            wanted = set(ids)
+            return [device for device in self._store.devices() if device.id in wanted]
+        index = self._usage.index()
+        context = FilterContext(index, self._has_fault, self._bundled_ids())
+        return filter_and_sort(self._store.devices(), flt or DeviceFilter(), context)
+
     def _has_fault(self, device: DeviceDef) -> bool:
         """Whether an entity of `device` has an active fault."""
         return any(

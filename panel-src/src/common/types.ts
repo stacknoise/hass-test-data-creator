@@ -197,6 +197,16 @@ export interface RemovalResult {
   areas: string[];
 }
 
+/** The devices a bulk action aims at: chosen ids or the filter; `expected` is the confirmed count. */
+export type BulkTarget = ({ ids: string[] } | { filter: DeviceFilterRequest }) & {
+  expected?: number;
+};
+
+/** What a bulk removal would delete: the removal plan and the number of devices. */
+export interface BulkRemovalPlan extends RemovalPlan {
+  count: number;
+}
+
 /** The kinds of removal target. */
 export type RemovalTarget = 'all' | 'run' | 'device';
 

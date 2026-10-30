@@ -83,6 +83,23 @@ class DevicesManager:
         self._audit.record(self._audit_factory.device_moved(device.name, device.area))
         return device
 
+    async def async_set_area_many(self, device_ids: list[str], area: str | None) -> int:
+        """Put the devices into the area `area` (created if new), or into none; return how many moved.
+
+        The devices go in chunks and the store is saved once; one audit entry covers the batch.
+        """
+        stored = [item for item in map(self._store.device, device_ids) if item is not None]
+        for start in range(0, len(stored), CHUNK_SIZE):
+            for device in stored[start : start + CHUNK_SIZE]:
+                moved = replace(device, area=area or None)
+                self._store.add_device(moved)
+                self._areas.move(moved, moved.area)
+            await asyncio.sleep(0)
+        self._areas.delete_empty_created()
+        await self._store.async_save()
+        self._audit.record(self._audit_factory.bulk_done("area", len(stored), 0))
+        return len(stored)
+
     def _template_for(self, job: CreationJob) -> Template:
         """Return the template of `job`: a stored one, or one built from its custom entities."""
         if job.template == CUSTOM_TEMPLATE_ID:

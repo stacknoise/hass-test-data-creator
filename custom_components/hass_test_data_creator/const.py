@@ -13,6 +13,7 @@ API_VERSION: Final = 2
 FEATURES: Final = (
     "areas",
     "csv_replay",
+    "bulk_actions",
     "device_filter",
     "device_names",
     "duplicate",

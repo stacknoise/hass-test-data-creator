@@ -6,7 +6,7 @@ import type { DeviceInfo, EntityState, SignalDef } from '../common/types';
 import type { TextKey } from '../common/i18n';
 import { actionLabel, entityName, labelOf, sortedByLabel, stateLabel } from '../common/labels';
 import '../common/menu-button';
-import '../common/multi-select';
+import { areaPicker } from './area-picker';
 import type { MenuItem } from '../common/menu-button';
 import '../signals/curve-editor';
 import { isDiscrete } from '../signals/editor-helpers';
@@ -154,15 +154,7 @@ export class DeviceDetail extends TdcElement {
     return html`<div class="row area-row">
       <label style="flex: 0 1 320px"
         >${this.tr('detArea')}
-        <tdc-multi-select
-          .hass=${this.hass}
-          .items=${this.areas.map((name) => ({ value: name, label: name }))}
-          .selected=${draft ? [draft] : []}
-          single
-          allowAdd
-          empty=${this.tr('detAreaNone')}
-          @tdc-select-change=${(e: CustomEvent<string[]>) => (this.areaDraft = e.detail[0] ?? '')}
-        ></tdc-multi-select>
+        ${areaPicker(this.hass, this.areas, draft, { field: this.tr('detArea'), none: this.tr('detAreaNone') }, (area) => (this.areaDraft = area))}
       </label>
       <button
         class="primary"
