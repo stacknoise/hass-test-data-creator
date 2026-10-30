@@ -196,3 +196,20 @@ def test_events_go_to_the_listener() -> None:
     behaviour.press("hold")
     assert fired == ["hold"]
     assert behaviour.event_types == ["single", "hold"]
+
+
+def test_a_paused_sensor_stands_still_and_shows_its_curve_again_on_resume() -> None:
+    scheduler = FakeScheduler()
+    item = sensor(scheduler)
+    changes: list[int] = []
+    item.on_change = lambda: changes.append(1)
+    item.set_paused(True)
+    scheduler.advance(100)
+    assert item.tick(100) is False
+    assert item.native_value == 0
+
+    item.set_paused(False)
+    assert item.native_value == 100
+    assert changes == [1]
+    item.set_paused(False)
+    assert changes == [1]

@@ -67,5 +67,10 @@ class BehaviourFactory:
         """Return the behaviour for `definition` of `device`."""
         if definition.platform in _WITH_SIGNAL:
             signal = self.signal_for(device, definition)
-            return _WITH_SIGNAL[definition.platform](device.id, definition, self._scheduler, signal)
-        return _SIMPLE[definition.platform](device.id, definition, self._scheduler)
+            behaviour: Behaviour = _WITH_SIGNAL[definition.platform](
+                device.id, definition, self._scheduler, signal
+            )
+        else:
+            behaviour = _SIMPLE[definition.platform](device.id, definition, self._scheduler)
+        behaviour.paused = device.paused
+        return behaviour

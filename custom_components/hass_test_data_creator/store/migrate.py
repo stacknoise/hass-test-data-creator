@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..core.keys import KEY_TIME_LAPSE
+from ..core.keys import KEY_DEVICES, KEY_TIME_LAPSE
 
 
 def _to_version_2(data: dict[str, Any]) -> dict[str, Any]:
@@ -12,7 +12,16 @@ def _to_version_2(data: dict[str, Any]) -> dict[str, Any]:
     return {**data, KEY_TIME_LAPSE: None}
 
 
-_STEPS = {1: _to_version_2}
+def _to_version_3(data: dict[str, Any]) -> dict[str, Any]:
+    """Version 3 lets a device be paused; every stored device runs."""
+    devices = {
+        key: {**device, "paused": False} if isinstance(device, dict) else device
+        for key, device in data.get(KEY_DEVICES, {}).items()
+    }
+    return {**data, KEY_DEVICES: devices}
+
+
+_STEPS = {1: _to_version_2, 2: _to_version_3}
 
 
 def migrate(version: int, data: dict[str, Any]) -> dict[str, Any]:

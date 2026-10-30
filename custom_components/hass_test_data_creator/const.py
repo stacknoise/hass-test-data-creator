@@ -23,6 +23,7 @@ FEATURES: Final = (
     "list_filters",
     "mqtt_discovery",
     "native_output",
+    "pause",
     "removal",
     "scenarios",
     "schedules",
@@ -35,7 +36,7 @@ FEATURES: Final = (
 
 # Storage (concept 4.3).
 STORE_KEY: Final = f"{DOMAIN}.data"
-STORE_VERSION: Final = 2
+STORE_VERSION: Final = 3
 SAVE_DELAY_SECONDS: Final = 5
 
 # Config entry data.

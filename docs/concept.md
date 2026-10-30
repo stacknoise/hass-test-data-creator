@@ -126,7 +126,7 @@ entities:
 ### 4.3 Storage
 
 - Home Assistant `Store`, key `hass_test_data_creator.data`, with `version`. Frequent writes use delayed saves, changes made by the user are written at once.
-- Every schema change raises the store version and has a migration with a test. The migrations are the steps in `store/migrate.py`; the store is at version 2.
+- Every schema change raises the store version and has a migration with a test. The migrations are the steps in `store/migrate.py`; the store is at version 3.
 - Loading is tolerant: keys a version does not know are dropped, and an entry that cannot be read (a missing field, a wrong type) is skipped and logged with `TDC-INT-002`, so one bad entry does not stop the integration from loading.
 - **No secrets** are stored. The seed is not a secret.
 
@@ -422,6 +422,7 @@ Decided with the maintainer on 2026-10-30 (see 15, O7 to O10). Each work package
 | F5 | Export tab: choose what to export |
 | F6 | Import in the same tab: plan, then add, sync or replace |
 | F7 | Small panel items: curve in the row, keyboard shortcuts, empty view |
+| F8 | Pause and resume devices, one or many |
 
 ### 16.1 Device filter (F1)
 
@@ -486,8 +487,16 @@ The keys `/` (focus the search) and `Esc` (reset), and the empty view "No matche
 ### 16.7 Live view in the entity list (v1.1)
 
 The detail view of a device has the switch "Live view". It is off every time a device is opened and is never stored. While it is on, the panel reads `devices/get` for that device every 2 seconds through `startPolling` in `common/polling.ts` (not while the page is hidden), keeps the newest 120 numeric states of each entity and draws them as a curve (`devices/live-curve.ts`) under the state in the entity list. Closing the device or switching off stops the reads. Nothing changes in the backend. The static mini curve in the device list stays removed.
+### 16.8 Pause and resume (F8)
 
-### 16.8 Rules for every package
+A paused device stands still, like a device that has dropped off the network without being unavailable: its entities keep their last value and publish nothing new, until it is resumed. It is a bulk function (16.3) and also works on one device.
+
+- Sensors and thermostats ignore the tick while paused, so their value and the MQTT messages stay as they are; faults, pulses and manual commands still run (a paused device can still be switched by hand or by a bulk action). Schedules and scenarios skip a paused device silently, because a pause is meant to keep the device quiet. On resume a sensor shows the value of its curve at once.
+- State: `DeviceDef.paused` (default `false`), stored, so a pause survives a restart. This raises the store to version 3; the migration sets `paused` to `false` on every device and has a test. Duplicates start running, and export and import do not carry the flag.
+- Command `devices/bulk_pause` takes the target of 16.3 (`ids` or `filter`, optional `expected`) and `paused` (bool); it replies with `devices` (how many changed) and `paused`. A single device is a target of one id. One audit entry per call. The new feature name is `pause`; `API_VERSION` stays 2.
+- The device reply carries `paused`. The filter state `paused` shows only paused devices. Panel: the actions menu of a device offers "Pause" or "Resume", the bulk bar has both buttons (no dialog, the effect is reversible), and a paused row shows a badge.
+
+### 16.9 Rules for every package
 
 - Search `docs/code-index.md` first and reuse what exists; code needed twice becomes a function at once (CPD, 13.6).
 - Every command runs in `tdc_command`, raises only `TdcError`, and is admin only; the admin test over all commands covers new ones.

@@ -12,6 +12,7 @@ from .core.error_factory import ErrorFactory
 from .core.errors import ConfigError
 from .core.response_factory import ResponseFactory
 from .devices.manager import DevicesManager
+from .devices.pause import DevicePauser
 from .devices.signal_editor import SignalEditor
 from .devices.usage import DeviceUsage
 from .devices.view import DeviceView
@@ -64,6 +65,7 @@ class TdcData:
     history: HistoryManager
     clock: Clock
     signal_editor: SignalEditor
+    pauser: DevicePauser
     usage: DeviceUsage
     device_view: DeviceView
     csv: CsvLibrary

@@ -105,6 +105,7 @@ export interface DeviceName {
 /** A generated device as listed by the backend. */
 export interface DeviceInfo extends DeviceName {
   area: string | null;
+  paused: boolean;
   entities: EntityState[];
   used_by: DeviceUsage;
 }

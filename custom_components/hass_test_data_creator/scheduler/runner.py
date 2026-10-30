@@ -59,8 +59,11 @@ class ActionRunner:
         params: dict[str, Any],
         label: str,
     ) -> None:
-        """Run `action` on entity `key` (all that fit if empty) of every device; a failure is logged."""
-        for device in devices:
+        """Run `action` on entity `key` (all that fit if empty) of every device that is not paused.
+
+        A failure is logged.
+        """
+        for device in (item for item in devices if not item.paused):
             try:
                 await self._run_device(device.id, device.id, key, action, params)
             except TdcError as error:

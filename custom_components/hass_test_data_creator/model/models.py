@@ -54,6 +54,7 @@ class DeviceDef:
     created_at: float
     area: str | None = None
     entities: list[EntityDef] = field(default_factory=list)
+    paused: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         """Return the JSON-serialisable form."""

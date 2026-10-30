@@ -14,7 +14,8 @@ STATE_ANY = "any"
 STATE_FAULT = "fault"
 STATE_USED = "used"
 STATE_UNUSED = "unused"
-STATES = (STATE_ANY, STATE_FAULT, STATE_USED, STATE_UNUSED)
+STATE_PAUSED = "paused"
+STATES = (STATE_ANY, STATE_FAULT, STATE_USED, STATE_UNUSED, STATE_PAUSED)
 SORT_NAME = "name"
 SORT_CREATED = "created"
 SORT_TEMPLATE = "template"
@@ -104,9 +105,11 @@ def _checks(
 
 
 def _state_matches(device: DeviceDef, state: str, context: FilterContext) -> bool:
-    """Whether `device` has the fault or usage state asked for."""
+    """Whether `device` has the fault, usage or pause state asked for."""
     if state == STATE_FAULT:
         return context.has_fault(device)
+    if state == STATE_PAUSED:
+        return device.paused
     if state == STATE_USED:
         return context.usage.is_used(device)
     if state == STATE_UNUSED:

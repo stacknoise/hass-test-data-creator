@@ -170,6 +170,11 @@ export class TdcApi {
     return this.call('devices/bulk_area', { ...target, area });
   }
 
+  /** Pause (or resume, if `paused` is false) the devices of `target`; resolves with how many changed. */
+  bulkPause(target: BulkTarget, paused: boolean): Promise<{ devices: number; paused: boolean }> {
+    return this.call('devices/bulk_pause', { ...target, paused });
+  }
+
   /** Put the devices of `target` into the group `groupId`, or into a new group called `name`. */
   bulkGroup(
     target: BulkTarget,

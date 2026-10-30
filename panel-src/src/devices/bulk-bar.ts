@@ -110,6 +110,14 @@ export class BulkBar extends TdcElement {
     }
   }
 
+  /** Pause or resume the selected devices at once; no dialog, because the effect is reversible. */
+  private async pause(paused: boolean): Promise<void> {
+    await this.apply(async () => {
+      const result = await this.api.bulkPause(this.confirmedTarget(), paused);
+      return this.tr(paused ? 'bulkPaused' : 'bulkResumed', { count: result.devices });
+    });
+  }
+
   /** Render the buttons of the dialogs. */
   private buttons(label: string, enabled: boolean, run: () => Promise<string>): TemplateResult {
     return html`<div class="buttons">
@@ -296,6 +304,12 @@ export class BulkBar extends TdcElement {
             : nothing
         }
         <button @click=${() => void this.open(MODE_ACTION)}>${this.tr('bulkAction')}</button>
+        <button @click=${() => void this.pause(true)} ?disabled=${this.busy}>
+          ${this.tr('pause')}
+        </button>
+        <button @click=${() => void this.pause(false)} ?disabled=${this.busy}>
+          ${this.tr('resume')}
+        </button>
         <button @click=${() => void this.open(MODE_REMOVE)}>${this.tr('bulkRemove')}</button>
         <button @click=${() => this.dispatchEvent(new CustomEvent('tdc-bulk-clear'))}>
           ${this.tr('bulkClear')}

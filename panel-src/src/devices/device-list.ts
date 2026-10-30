@@ -68,6 +68,7 @@ const ACTION_BY_PLATFORM: Record<string, string> = {
 const FIRE_PREFIX = 'fire:';
 const REMOVE = 'remove';
 const DUPLICATE = 'duplicate';
+const PAUSE = 'pause';
 const VALUE_PLATFORMS = [PLATFORM_SENSOR, 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
@@ -82,6 +83,13 @@ export class DeviceList extends TdcPollingElement {
       }
       td.nowrap {
         white-space: nowrap;
+      }
+      small.paused {
+        margin-left: 6px;
+        padding: 1px 6px;
+        border-radius: 8px;
+        color: var(--text-primary-color);
+        background: var(--warning-color);
       }
       td.check,
       th.check {
@@ -188,6 +196,7 @@ export class DeviceList extends TdcPollingElement {
       fault: this.tr('filterFault'),
       used: this.tr('filterUsed'),
       unused: this.tr('filterUnused'),
+      paused: this.tr('filterPaused'),
     };
     return [
       {
@@ -276,6 +285,16 @@ export class DeviceList extends TdcPollingElement {
     }
   }
 
+  /** Pause the device, or resume it if it is paused, and reload the list. */
+  private async togglePause(device: DeviceInfo): Promise<void> {
+    try {
+      await this.api.bulkPause({ ids: [device.id] }, !device.paused);
+      await this.refresh();
+    } catch (err) {
+      this.error = describeError(err);
+    }
+  }
+
   /** Return the entries of the actions menu: the main action of every entity, and remove. */
   private menuItems(device: DeviceInfo): MenuItem[] {
     const lang = this.hass?.language;
@@ -290,6 +309,7 @@ export class DeviceList extends TdcPollingElement {
       [
         ...items,
         { value: DUPLICATE, label: this.tr('duplicate') },
+        { value: PAUSE, label: this.tr(device.paused ? 'resume' : 'pause') },
         {
           value: REMOVE,
           label: this.tr('remove'),
@@ -305,6 +325,10 @@ export class DeviceList extends TdcPollingElement {
   private pick(device: DeviceInfo, value: string): void {
     if (value === DUPLICATE) {
       this.duplicating = device;
+      return;
+    }
+    if (value === PAUSE) {
+      void this.togglePause(device);
       return;
     }
     if (value === REMOVE) {
@@ -398,7 +422,10 @@ export class DeviceList extends TdcPollingElement {
             @change=${() => (this.selection = toggleOne(this.selection, device.id))}
           />
         </td>
-        <td class="name nowrap">${open ? '▾' : '▸'} ${device.name}</td>
+        <td class="name nowrap">
+          ${open ? '▾' : '▸'} ${device.name}
+          ${device.paused ? html`<small class="paused">${this.tr('pausedBadge')}</small>` : nothing}
+        </td>
         <td class="nowrap" data-label=${this.tr('colTemplate')}>${this.templateName(device)}</td>
         <td class="nowrap" data-label=${this.tr('colArea')}>${device.area ?? '–'}</td>
         <td class="nowrap" data-label=${this.tr('colOutput')}>

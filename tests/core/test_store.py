@@ -64,6 +64,11 @@ def test_data_of_version_one_gets_the_time_lapse_key() -> None:
     assert migrate(STORE_VERSION, {KEY_DEVICES: {}}) == {KEY_DEVICES: {}}
 
 
+def test_data_of_version_two_gets_the_paused_flag_on_every_device() -> None:
+    migrated = migrate(2, {KEY_DEVICES: {"a": {"id": "a"}}})
+    assert migrated == {KEY_DEVICES: {"a": {"id": "a", "paused": False}}}
+
+
 async def test_a_stored_version_one_file_is_loaded_and_migrated(
     hass: HomeAssistant, hass_storage: dict[str, Any]
 ) -> None:
