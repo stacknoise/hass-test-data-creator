@@ -920,6 +920,8 @@ Lists every module, class and function of the integration with signature, file a
 | `ws_schedules_remove` | `async def ws_schedules_remove(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/schedules.py` | Delete a schedule. |
 | `ws_schedules_enable` | `async def ws_schedules_enable(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/schedules.py` | Switch a schedule on or off and return it. |
 | `ws_schedules_preview` | `async def ws_schedules_preview(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, str]]` | `custom_components/hass_test_data_creator/api/schedules.py` | Return the planned runs of the next hours. |
+| `hass_test_data_creator.api.transfer` | `module` | `custom_components/hass_test_data_creator/api/transfer.py` | Commands about export and import (concept 8.2, 16.5). |
+| `ws_transfer_export` | `async def ws_transfer_export(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/transfer.py` | Return a page of the entries of one category, with the version data of the file. |
 
 ## faults
 
@@ -1036,3 +1038,28 @@ Lists every module, class and function of the integration with signature, file a
 | `ScenarioManager._run_later.fire` | `async def fire(_now: datetime) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Run the step and forget its timer. |
 | `ScenarioManager._run_step` | `async def _run_step(self, name: str, step: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Run the action of one step on all devices of its target. |
 | `hass_test_data_creator.scenarios.schema` | `module` | `custom_components/hass_test_data_creator/scenarios/schema.py` | Request fields of a scenario, shared by the services and the WebSocket commands. |
+
+## transfer
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.transfer.__init__` | `module` | `custom_components/hass_test_data_creator/transfer/__init__.py` | Export and import of devices, own templates, schedules, scenarios and groups (concept 16.5). |
+| `hass_test_data_creator.transfer.exporter` | `module` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Reads one category of the store as entries of a transfer file (concept 16.5). |
+| `TransferExporter` | `class TransferExporter` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Builds the entries of a category, a page at a time. |
+| `TransferExporter.__init__` | `def __init__(self, store: TdcStore, templates: TemplateRegistry, factory: TransferFactory) -> None` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Keep the store, the templates and the factory of the entries. |
+| `TransferExporter.page` | `def page(self, category: str, offset: int, limit: int) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Return `limit` entries of `category` from `offset` and the total; `limit` 0 only counts. |
+| `TransferExporter.names` | `def names(self) -> ReferenceNames` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Return the names that stand for ids in the entries. |
+| `TransferExporter._template` | `def _template(self, template_id: str) -> Template \| None` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Return the template with `template_id`, or None if there is none. |
+| `TransferExporter._entries` | `def _entries(self, category: str) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/transfer/exporter.py` | Return all entries of `category` in the order of the store. |
+| `hass_test_data_creator.transfer.factory` | `module` | `custom_components/hass_test_data_creator/transfer/factory.py` | Factory for the entries of a transfer file (concept 13.2, 16.5). |
+| `ReferenceNames` | `class ReferenceNames` | `custom_components/hass_test_data_creator/transfer/factory.py` | The names that stand for ids in a file: devices by name, runs by label, scenarios by name. |
+| `ReferenceNames.device` | `def device(self, reference: str) -> str` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the name of the device with id `reference`; a name or unknown text stays. |
+| `TransferFactory` | `class TransferFactory` | `custom_components/hass_test_data_creator/transfer/factory.py` | Creates the file entry of a device, template, schedule, scenario or group. |
+| `TransferFactory.template` | `def template(self, template: Template) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the entry of an own template: the content of its template file. |
+| `TransferFactory.device` | `def device(self, device: DeviceDef, template: Template \| None) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the entry of a device: its template and what differs, or all entities. |
+| `TransferFactory._overrides` | `def _overrides(self, entities: list[dict[str, Any]], template: Template \| None) -> dict[str, dict[str, Any]] \| None` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the differing fields per entity key; None if the entities do not match the template. |
+| `TransferFactory.target` | `def target(self, target: dict[str, Any], names: ReferenceNames) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return a target with devices and runs by name. |
+| `TransferFactory.schedule` | `def schedule(self, schedule: ScheduleDef, names: ReferenceNames) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the entry of a schedule; its target and scenario are written by name. |
+| `TransferFactory.scenario` | `def scenario(self, scenario: ScenarioDef, names: ReferenceNames) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the entry of a scenario; the target of each step is written by name. |
+| `TransferFactory.group` | `def group(self, group: GroupDef, names: ReferenceNames) -> dict[str, Any]` | `custom_components/hass_test_data_creator/transfer/factory.py` | Return the entry of a group; its members are written by name. |
+| `hass_test_data_creator.transfer.schema` | `module` | `custom_components/hass_test_data_creator/transfer/schema.py` | Categories of a transfer file and the request fields of the transfer commands. |

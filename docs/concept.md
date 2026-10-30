@@ -460,7 +460,7 @@ A new last tab "Transfer" in the panel. The user picks the categories, in any co
 
 **References.** Schedules, scenarios and groups name devices, templates and runs. In the file they are stored by name, because ids differ between instances. On import a reference that is neither in the file nor in the instance is reported and the item is skipped; nothing is created half-way.
 
-**Matching key.** The name of a device, template, schedule, scenario or group. A file with two entries of the same name in one category is rejected. (The code check that names are unique per category is part of the F6 start; where they are not, F6 adds the check with a new `TDC-GEN-` code.)
+**Matching key.** The name of a device, schedule, scenario or group, and the id of an own template (its id is a name the user chose, so it is the same in every instance, and the device entries name it). A file with two entries of the same name in one category is rejected. (The code check that names are unique per category is part of the F6 start; where they are not, F6 adds the check with a new `TDC-GEN-` code.)
 
 **Import modes, chosen per category** (O8):
 
@@ -476,7 +476,7 @@ Sync updates what can change in place: area, signals and entity overrides of a d
 
 **Size.** A file is limited by `MAX_TRANSFER_BYTES` and the category limits. The panel sends it category by category in messages of at most `MAX_BATCH` items, so no message gets close to the WebSocket limit of Home Assistant. If a category is split, the plan is summed in the panel.
 
-New commands: `transfer/plan`, `transfer/run`, `transfer/export`. Errors get codes in the areas `GEN` and `WS` with texts in `en.json` and `de.json`. The store does not change, so no store version bump; the file format has its own `format_version` and a test that reads the previous one.
+New commands: `transfer/plan`, `transfer/run`, `transfer/export`. `transfer/export` takes `category`, `offset` and `limit` (0 only counts, at most `MAX_BATCH`) and replies with `format_version`, `integration_version`, `total` and `items`; the panel joins the pages into the file. A device entry also carries its `seed`, and `overrides` (per entity key the fields that differ from the template) or, for a custom device or a template that no longer fits, the full `entities`. Errors get codes in the areas `GEN` and `WS` with texts in `en.json` and `de.json`. The store does not change, so no store version bump; the file format has its own `format_version` and a test that reads the previous one.
 
 ### 16.6 Small items (F7)
 

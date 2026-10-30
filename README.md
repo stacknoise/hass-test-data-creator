@@ -34,7 +34,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 
 Added for 1.1 (not released yet): the device list can be searched, filtered (template, area, output, entity kind, device set, own templates, faults, used or not) and sorted; the filter runs in the backend, so the counter and the paging are right for any number of devices.
 
-Planned for 1.1 (not released yet): the same filters on the other lists, bulk actions, duplicating devices, and a Transfer tab to export and import devices, templates, schedules, scenarios and groups selectively (add, sync or replace). See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 16.
+Planned for 1.1 (not released yet): filters on the other lists, bulk actions, duplicating devices, and a Transfer tab to export and import devices, templates, schedules, scenarios and groups selectively (add, sync or replace). The export half is done: the last tab "Transfer" saves the chosen categories (devices, own templates, schedules, scenarios, groups with MQTT) as one JSON file of definitions, with references written by name and without runtime values, credentials or markers; the WebSocket command `transfer/export` reads one category page by page. The import half is still planned. See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 16.
 
 ## Screenshots
 

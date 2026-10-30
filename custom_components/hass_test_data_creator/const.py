@@ -15,6 +15,7 @@ FEATURES: Final = (
     "csv_replay",
     "device_filter",
     "device_names",
+    "export",
     "faults",
     "mqtt_discovery",
     "native_output",
@@ -70,6 +71,7 @@ MAX_SCENARIOS: Final = 100
 MAX_GROUPS: Final = 100
 MAX_PAGE_SIZE: Final = 500
 MAX_FILTER_VALUES: Final = 50
+MAX_TRANSFER_BYTES: Final = 32 * 1024 * 1024
 MAX_SIGNAL_PERIOD_SECONDS: Final = 366 * 86400
 MAX_RATE_PER_HOUR: Final = 3600
 MAX_USER_TEMPLATES: Final = 200

@@ -59,6 +59,8 @@ from .store.store import TdcStore
 from .templates.device_factory import DeviceFactory
 from .templates.factory import TemplateFactory
 from .templates.registry import TemplateRegistry
+from .transfer.exporter import TransferExporter
+from .transfer.factory import TransferFactory
 
 
 def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
@@ -154,5 +156,6 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         device_view=DeviceView(hass, store, usage, live, registry.bundled_ids),
         signal_editor=SignalEditor(store, live, behaviours, template_factory, audit, audit_factory),
         csv=csv,
+        transfer=TransferExporter(store, registry, TransferFactory()),
         live=live,
     )
