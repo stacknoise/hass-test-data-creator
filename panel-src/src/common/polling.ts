@@ -11,6 +11,14 @@ import type { Info, TemplateInfo } from './types';
 
 const REFRESH_MS = 10_000;
 
+/** Call `refresh` every `ms` milliseconds, but not while the page is hidden; return the stop function. */
+export function startPolling(refresh: () => void, ms = REFRESH_MS): () => void {
+  const timer = window.setInterval(() => {
+    if (!document.hidden) refresh();
+  }, ms);
+  return () => window.clearInterval(timer);
+}
+
 /** Base of the tabs that list objects of the backend: loads the options, polls and runs calls. */
 export abstract class TdcPollingElement extends TdcElement {
   @state() protected info?: Info;
@@ -23,7 +31,7 @@ export abstract class TdcPollingElement extends TdcElement {
   @state() protected listFilter: FilterValues = {};
 
   private listFilterTab = '';
-  private timer?: number;
+  private stopPolling?: () => void;
 
   /** Reload the objects that the tab lists. */
   protected abstract refresh(): Promise<void>;
@@ -36,12 +44,12 @@ export abstract class TdcPollingElement extends TdcElement {
     super.connectedCallback();
     void this.loadOptions();
     void this.refresh();
-    this.timer = window.setInterval(() => void this.refresh(), REFRESH_MS);
+    this.stopPolling = startPolling(() => void this.refresh());
   }
 
   /** Stop the refresh timer when the element is removed. */
   override disconnectedCallback(): void {
-    window.clearInterval(this.timer);
+    this.stopPolling?.();
     super.disconnectedCallback();
   }
 

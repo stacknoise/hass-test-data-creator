@@ -483,7 +483,11 @@ New commands: `transfer/plan`, `transfer/run`, `transfer/export`. `transfer/plan
 
 The keys `/` (focus the search) and `Esc` (reset), and the empty view "No matches" with a reset link. Panel only.
 
-### 16.7 Rules for every package
+### 16.7 Live view in the entity list (v1.1)
+
+The detail view of a device has the switch "Live view". It is off every time a device is opened and is never stored. While it is on, the panel reads `devices/get` for that device every 2 seconds through `startPolling` in `common/polling.ts` (not while the page is hidden), keeps the newest 120 numeric states of each entity and draws them as a curve (`devices/live-curve.ts`) under the state in the entity list. Closing the device or switching off stops the reads. Nothing changes in the backend. The static mini curve in the device list stays removed.
+
+### 16.8 Rules for every package
 
 - Search `docs/code-index.md` first and reuse what exists; code needed twice becomes a function at once (CPD, 13.6).
 - Every command runs in `tdc_command`, raises only `TdcError`, and is admin only; the admin test over all commands covers new ones.

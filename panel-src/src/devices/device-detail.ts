@@ -9,6 +9,9 @@ import '../common/menu-button';
 import { areaPicker } from './area-picker';
 import type { MenuItem } from '../common/menu-button';
 import '../signals/curve-editor';
+import './live-curve';
+import { startPolling } from '../common/polling';
+import { LIVE_INTERVAL_MS, numericState, pushSample, type LiveSample } from './live';
 import { isDiscrete } from '../signals/editor-helpers';
 import {
   DEFAULT_FAULT_SECONDS,
@@ -32,6 +35,8 @@ export class DeviceDetail extends TdcElement {
   @state() private picked: Record<string, string> = {};
   @state() private inputs: Record<string, string> = {};
   @state() private curves: Record<string, SignalDef> = {};
+  @state() private live = false;
+  @state() private samples: Record<string, LiveSample[]> = {};
   @state() private busy = false;
   @state() private error = '';
 
@@ -59,6 +64,10 @@ export class DeviceDetail extends TdcElement {
       }
       .curve {
         padding: 4px 0 8px;
+      }
+      .live {
+        display: block;
+        margin: 8px 0;
       }
       .usage {
         margin: 24px 0 8px 32px;
@@ -90,6 +99,44 @@ export class DeviceDetail extends TdcElement {
       }
     `,
   ];
+
+  private stopLive?: () => void;
+
+  /** Stop reading values when the element is removed. */
+  override disconnectedCallback(): void {
+    this.stopLive?.();
+    super.disconnectedCallback();
+  }
+
+  /** Switch the live view on or off; it starts empty every time and is never kept. */
+  private setLive(on: boolean): void {
+    this.stopLive?.();
+    this.stopLive = undefined;
+    this.live = on;
+    this.samples = {};
+    if (!on) return;
+    void this.readLive();
+    this.stopLive = startPolling(() => void this.readLive(), LIVE_INTERVAL_MS);
+  }
+
+  /** Read the device once and add the numeric states to the live curves. */
+  private async readLive(): Promise<void> {
+    try {
+      const full = await this.api.device(this.device.id);
+      if (!this.live) return;
+      const at = Date.now();
+      const next = { ...this.samples };
+      for (const entity of full.entities) {
+        const value = numericState(entity.state);
+        if (value !== undefined)
+          next[entity.key] = pushSample(next[entity.key] ?? [], { at, value });
+      }
+      this.samples = next;
+    } catch (err) {
+      this.setLive(false);
+      this.error = describeError(err);
+    }
+  }
 
   /** Run a call, tell the list to reload, and show an error as text. */
   private async run(call: () => Promise<unknown>): Promise<void> {
@@ -154,7 +201,13 @@ export class DeviceDetail extends TdcElement {
     return html`<div class="row area-row">
       <label style="flex: 0 1 320px"
         >${this.tr('detArea')}
-        ${areaPicker(this.hass, this.areas, draft, { field: this.tr('detArea'), none: this.tr('detAreaNone') }, (area) => (this.areaDraft = area))}
+        ${areaPicker(
+          this.hass,
+          this.areas,
+          draft,
+          { field: this.tr('detArea'), none: this.tr('detAreaNone') },
+          (area) => (this.areaDraft = area),
+        )}
       </label>
       <button
         class="primary"
@@ -275,6 +328,10 @@ export class DeviceDetail extends TdcElement {
         </td>
         <td>
           ${stateLabel(lang, entity.state)}${entity.unit ? ` ${entity.unit}` : ''}${
+            this.live && entity.key in this.samples
+              ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
+              : ''
+          }${
             entity.fault
               ? html`<br /><small class="warning">⚠ ${labelOf(lang, 'fault', entity.fault)}</small>`
               : ''
@@ -327,6 +384,14 @@ export class DeviceDetail extends TdcElement {
   override render(): TemplateResult {
     return html`
       ${this.renderArea()}
+      <label class="live">
+        <input
+          type="checkbox"
+          .checked=${this.live}
+          @change=${(e: Event) => this.setLive((e.target as HTMLInputElement).checked)}
+        />
+        ${this.tr('detLive')} <small>${this.tr('detLiveHint')}</small>
+      </label>
       <table>
         <tr>
           <th>${this.tr('detEntity')}</th>
