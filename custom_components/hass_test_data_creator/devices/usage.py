@@ -58,6 +58,10 @@ class UsageIndex:
             KEY_GROUPS: self._users(self._groups, device.id),
         }
 
+    def is_used(self, device: DeviceDef) -> bool:
+        """Whether a schedule, scenario or group names `device`."""
+        return any(self.of(device)[kind] for kind in KINDS)
+
     @staticmethod
     def _users(
         table: dict[str, list[tuple[int, dict[str, str]]]], *references: str
