@@ -216,7 +216,9 @@ async def test_duplicate_copies_a_device_with_its_signals(
     assert sorted(d["name"] for d in devices) == ["Source", "Source 1", "Source 2", "Source 3"]
     assert {d["area"] for d in devices} == {"Bath"}
     assert len({d["id"] for d in devices}) == 4
-    again = await call(client, "devices/duplicate", device=source["id"], name_pattern="Twin {n}")
+    again = await call(
+        client, "devices/duplicate", device=source["id"], count=1, name_pattern="Twin {n}"
+    )
     assert again["success"]
     seeds = {d.seed for d in get_data(hass).store.devices()}
     assert len(seeds) == 5
@@ -232,5 +234,5 @@ async def test_duplicate_errors(
     assert missing["error"]["code"] == "TDC-SCH-002"
     too_many = await call(client, "devices/duplicate", device=only, count=501)
     assert too_many["error"]["code"] == "TDC-GEN-002"
-    bad = await call(client, "devices/duplicate", device=only, name_pattern="{x}")
+    bad = await call(client, "devices/duplicate", device=only, count=1, name_pattern="{x}")
     assert bad["error"]["code"] == "TDC-GEN-003"
