@@ -37,6 +37,8 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | v0.2 | Scheduler (fixed, interval, random window, Poisson), scenarios, faults (without `late` and `duplicate`, which need the MQTT output), the shapes `household_load`, `pv_day`, `steps` and `discharge`, the curve editor, light/cover/thermostat templates, and the schedule and scenario tabs. The shapes `enum` and `state_machine` and the faults `late` and `duplicate` moved to v0.3 (text states, the MQTT output) |
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check; the shapes `enum` and `state_machine` (washer template); the faults `late` and `duplicate`; scheduling a scenario in the panel; the Groups tab. Native Home Assistant groups are not part of it |
 | v0.4 | Statistics backfill (done, 5.3a), time lapse (done, 5.1), CSV replay (done); YAML import/export and sharing of templates dropped for now |
+| v1.0 | Own templates, entity editor, API version 2 (released) |
+| v1.1 | Planned: device filter and sort, filters on all lists, bulk actions, duplicate, export and import tab (chapter 16) |
 
 ## 2. Architecture
 
@@ -265,7 +267,7 @@ Rules: payloads are built only by `Z2mPayloadFactory`; the bridge info and the m
 
 ### 8.2 WebSocket commands (panel)
 
-Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, get, names, create, update, fire, signal; `list` returns the state and the shape of each entity, `get` the full device with its signals, `names` only id, name, template, model, output, run and creation time for pickers), `templates/*` (list, save, delete; `save` and `delete` take `template_id`, `id` is the message id of Home Assistant), `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `removal/orphan_topics` (scan the broker for retained topics of generated devices that the store did not record), `removal/orphan_topics_clear` (delete those of the given topics that a new scan reports), `info` (version, features, `api_version`).
+Prefix `hass_test_data_creator/`. Every command runs inside the command wrapper in `core/command.py`, which validates the request, converts exceptions with `ErrorFactory` and replies with `ResponseFactory`. Commands need an admin user. Commands: `devices/*` (list, get, names, create, update, fire, signal; `list` returns the state and the shape of each entity, `get` the full device with its signals, `names` only id, name, template, model, output, run and creation time for pickers), `templates/*` (list, save, delete; `save` and `delete` take `template_id`, `id` is the message id of Home Assistant), `schedules/*` (list, add, update, remove, enable, preview), `scenarios/*` (list, add, update, remove, run), `groups/*` (list, add, update, remove), `history/import`, `removal/plan`, `removal/run`, `removal/orphan_topics` (scan the broker for retained topics of generated devices that the store did not record), `removal/orphan_topics_clear` (delete those of the given topics that a new scan reports), `transfer/*` (plan, run, export; planned for v1.1, 16.5), `info` (version, features, `api_version`).
 
 A breaking change of a command raises `API_VERSION` and the major version. A new optional feature is added to `FEATURES` in `info`; the panel checks it.
 
@@ -402,3 +404,90 @@ No open points are left. A new one is added here as a table with a number, the q
 | O4 | The Z2M emulation uses only its own models from the templates; no import from `zigbee-herdsman-converters`. |
 | O5 | The statistics backfill (v0.4) writes only long-term statistics with `async_import_statistics`, only for sensors with a `state_class`. The state history is not backfilled. |
 | O6 | The panel uses plain Lit components of its own, without a separate component library. |
+| O7 | The device search does not look at entity ids (16.1). |
+| O8 | Import and export are selectable per category; import offers add, sync and replace per category, with a plan first (16.5). This replaces "YAML import and export dropped" in 1.4. |
+| O9 | The filter state is kept in `sessionStorage` per tab (16.1). |
+| O10 | Removing many devices needs a dialog that names the number, and above 100 devices a checkbox (16.3). |
+
+## 16. Filters, bulk actions and transfer (v1.1, planned)
+
+Decided with the maintainer on 2026-10-30 (see 15, O7 to O10). Each work package below is its own pull request, in this order. Nothing here changes an existing command in a breaking way, so `API_VERSION` stays 2; each package adds its entry to `FEATURES` in `info`.
+
+| Package | Content |
+| --- | --- |
+| F1 | Filter and sort for the device list (server side) |
+| F2 | The same filter bar on the other tab lists |
+| F3 | Bulk actions on the device list |
+| F4 | Duplicate a device, or make N copies |
+| F5 | Export tab: choose what to export |
+| F6 | Import in the same tab: plan, then add, sync or replace |
+| F7 | Small panel items: curve in the row, keyboard shortcuts, empty view |
+
+### 16.1 Device filter (F1)
+
+The device list is read page by page (`offset`, `limit` of at most 500), so the filter runs in the backend before the page is cut; a filter in the panel would only see the loaded page and leave `total` wrong.
+
+- Request: `devices/list` takes the optional fields `query`, `templates[]`, `areas[]` (`""` means no area), `outputs[]`, `platforms[]`, `runs[]`, `custom` (only devices of own templates), `state` (`any`, `fault`, `used`, `unused`), `sort` (`name`, `created`, `template`) and `descending`. Without them the reply is the same as before.
+- `query` is a case-insensitive substring of the name, id, template, model, area and entity names. Entity ids are not searched (O7). Several values in one group mean OR, different groups mean AND.
+- `state=fault`: at least one entity has an active fault (`Live`). `used` and `unused`: the device is, or is not, named by a schedule, scenario or group (`UsageIndex`).
+- Reply: `total` (all devices), `matched` (after the filter), `devices` (the page) and, when `facets: true` is sent, `facets` with the possible values and their counts per group. The 10-second refresh does not ask for facets.
+- Limits are constants in `const.py`: `query` at most `MAX_SHORT_TEXT`, at most 50 values per list, each at most `MAX_SHORT_TEXT`.
+- Code: `devices/filters.py` holds the `DeviceFilter` dataclass, the pure functions `matches` and `facets`, and the natural-order sort (`casefold`, "Sensor 2" before "Sensor 10", ties by id). `DeviceView.page` applies it; `api/devices.py` only parses. The filter schema `FILTER_FIELDS` lives in `devices/schema.py` and is reused by F3. The filter takes its usage data through a protocol from `core/`, so `devices` imports neither `scheduler` nor `groups`.
+- Cost: filter and facets over 2000 devices stay below 50 ms (a `slow` test in `tests/perf/`). This needs the in-memory store of the review work package AP-09; the first commit of F1 checks that `store.devices()` makes no copies and caches it if it still does.
+
+Panel: the component `common/filter-bar.ts` (search field, multi-selects, switches, chips of the active filters, "reset", counter "12 of 80") emits `tdc-filter-change`, debounced by 300 ms. A filter change sets `offset` to 0; the refresh asks for the loaded range with the same filter and never with `limit` above 500. The state of the filter is kept per tab in `sessionStorage` under `tdc.filter.<tab>` (O9), always inside `try/catch`. The pure conversion between filter state and request lives in `devices/helpers.ts` and is tested with Vitest; the component is tested with happy-dom. Texts go through `i18n`, colours come from Home Assistant CSS variables only. The device list uses the shared polling code of `common/polling.ts`.
+
+### 16.2 Other tab lists (F2)
+
+Schedules (at most 200), scenarios (100) and groups (100) arrive whole, so they are filtered in the panel with the same `filter-bar` and one shared pure function in `common/list-filter.ts`. Schedules: text, trigger type, action, on or off, kind of target. Scenarios: text, contains a device or template. Groups: text. History and Removal: text, run and template, after checking what these tabs list. A list that passes its limit later gets the server filter of 16.1.
+
+### 16.3 Bulk actions (F3)
+
+The device list gets a selection column (one row, this page, "all N matches"). New commands: `devices/bulk_remove`, `devices/bulk_area`, `devices/bulk_group` and `devices/bulk_action`. The target is either a list of ids (at most `MAX_BATCH`) or a `DeviceFilter`.
+
+- Removal goes through `RemovalPlanner` and `RemovalRunner` and so keeps the marker rule (4.4, 10). The dialog states the number; above 100 devices it also needs a checkbox (O10).
+- Each bulk action writes one audit entry through `AuditEntryFactory`, not one per device. Large sets run in chunks and yield to the event loop like a creation job.
+
+### 16.4 Duplicate (F4)
+
+"Duplicate…" starts a normal creation job (`DeviceFactory`) from the template, model, area and signal overrides of the chosen device, with new ids and seeds and the name pattern `<name> {n}`. `MAX_DEVICES` and `MAX_BATCH` apply. There is no second creation path.
+
+### 16.5 Export and import (F5, F6)
+
+A new last tab "Transfer" in the panel. The user picks the categories, in any combination: devices, own templates, schedules, scenarios, groups (only with MQTT). The same choice is offered on import, so a file can be imported selectively.
+
+**File.** JSON with `format_version`, the integration version and one section per exported category. The panel creates and reads the file in the browser (download and upload); the backend keeps no file. The file holds definitions only: no runtime values, no broker credentials, no tokens, no markers (they are set again on import). A device is stored as template, model, area, output and overrides, and as a full entity list only for custom devices.
+
+**References.** Schedules, scenarios and groups name devices, templates and runs. In the file they are stored by name, because ids differ between instances. On import a reference that is neither in the file nor in the instance is reported and the item is skipped; nothing is created half-way.
+
+**Matching key.** The name of a device, template, schedule, scenario or group. A file with two entries of the same name in one category is rejected. (The code check that names are unique per category is part of the F6 start; where they are not, F6 adds the check with a new `TDC-GEN-` code.)
+
+**Import modes, chosen per category** (O8):
+
+| Mode | Existing item with the same key | Item missing |
+| --- | --- | --- |
+| Add | stays as it is, the file item is skipped | created |
+| Sync | updated from the file | created; nothing is deleted |
+| Replace | all generated items of the category are removed first (with the removal plan), then the file is created | created |
+
+Sync updates what can change in place: area, signals and entity overrides of a device, the fields of a schedule, scenario, group or own template. The template and the output of an existing device cannot change in place; such an item is reported as a conflict and skipped. Replace removes only objects that carry the marker, never foreign ones, and is the only mode that deletes.
+
+**Plan before running**, like the removal (10.2): `transfer/plan` validates the file with the same schemas as the individual commands and replies with counts per category (create, update, skip, conflict, delete) and the list of problems. `transfer/run` repeats the checks and executes. Replace and sync need the confirmation dialog of 16.3 with the numbers. Created items form one run with the label `import <file name>` and can be removed by that run. Items go in through the managers (not into the store), so limits (`MAX_DEVICES`, `MAX_SCHEDULES`, …), audit and markers apply as usual. One audit entry per import.
+
+**Size.** A file is limited by `MAX_TRANSFER_BYTES` and the category limits. The panel sends it category by category in messages of at most `MAX_BATCH` items, so no message gets close to the WebSocket limit of Home Assistant. If a category is split, the plan is summed in the panel.
+
+New commands: `transfer/plan`, `transfer/run`, `transfer/export`. Errors get codes in the areas `GEN` and `WS` with texts in `en.json` and `de.json`. The store does not change, so no store version bump; the file format has its own `format_version` and a test that reads the previous one.
+
+### 16.6 Small items (F7)
+
+A small curve in the row from the existing preview component, the keys `/` (focus the search) and `Esc` (reset), and the empty view "No matches" with a reset link. Panel only.
+
+### 16.7 Rules for every package
+
+- Search `docs/code-index.md` first and reuse what exists; code needed twice becomes a function at once (CPD, 13.6).
+- Every command runs in `tdc_command`, raises only `TdcError`, and is admin only; the admin test over all commands covers new ones.
+- One-line docstrings and TSDoc on every symbol; `python scripts/code_index.py` and both generated docs in the same commit.
+- Tests: tables for the filter logic, limits, empty filter equals old behaviour, the 2000-device test, negative tests for over-long and invalid input, Vitest for helpers and components.
+- Rebuild the panel and commit `frontend/`; update the README in the same pull request; planned parts stay marked as planned until released.
+- Regenerate `dependencies.html` and `dependency-graph.html` when modules or imports change (F1, F3, F5, F6); no new cross-topic imports.
+- Each package: its own branch and pull request, squash merge on green CI, then update the test container.

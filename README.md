@@ -32,7 +32,7 @@ Home Assistant custom integration that creates and manages **test devices, test 
 - Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 
-Not planned for now: YAML import and export, sharing of templates. See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 1.4.
+Planned for 1.1 (not released yet): filter and sort for the device list and filters on the other lists, bulk actions, duplicating devices, and a Transfer tab to export and import devices, templates, schedules, scenarios and groups selectively (add, sync or replace). See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 16.
 
 ## Screenshots
 
