@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { actionLabel, sortedByLabel } from '../common/labels';
 import '../common/dialog';
-import '../common/multi-select';
+import { areaPicker } from './area-picker';
 import { TdcElement } from '../common/base';
 import type { BulkRemovalPlan, BulkTarget, GroupInfo } from '../common/types';
 import { actionChoices, actionInput, bulkParams, needsConfirmBox } from './bulk-helpers';
@@ -128,15 +128,7 @@ export class BulkBar extends TdcElement {
   private renderArea(): TemplateResult {
     return html`<label
         >${this.tr('detArea')}
-        <tdc-multi-select
-          .hass=${this.hass}
-          .items=${this.areas.map((name) => ({ value: name, label: name }))}
-          .selected=${this.area ? [this.area] : []}
-          single
-          allowAdd
-          empty=${this.tr('detAreaNone')}
-          @tdc-select-change=${(e: CustomEvent<string[]>) => (this.area = e.detail[0] ?? '')}
-        ></tdc-multi-select>
+        ${areaPicker(this.hass, this.areas, this.area, { field: this.tr('detArea'), none: this.tr('detAreaNone') }, (area) => (this.area = area))}
       </label>
       <small>${this.tr('detAreaHint')}</small>
       ${this.buttons(this.tr('bulkAreaApply'), true, async () => {
