@@ -74,7 +74,10 @@ def test_last_hours_are_the_full_hours_before_the_current_one() -> None:
 def test_a_counter_grows_through_the_history() -> None:
     factory = SeriesFactory(SignalFactory())
     definition = _sensor({"shape": "counter", "rate_per_hour": 2.0, "decimals": 3}, "total")
-    series = factory.create(_device(), definition, "sensor.d1_s", last_hours(2))
+    # A fixed summer date: the signal time follows the local wall clock, so a window that crosses
+    # a change of the clock would lose or gain an hour of the counter.
+    hours = last_hours(2, datetime(2026, 7, 15, 12, 30, tzinfo=UTC))
+    series = factory.create(_device(), definition, "sensor.d1_s", hours)
     assert series.metadata["has_sum"] is True
     assert series.metadata["unit_class"] == "energy"
     assert [row["sum"] for row in series.rows][:3] == pytest.approx([2.0, 4.0, 6.0])
