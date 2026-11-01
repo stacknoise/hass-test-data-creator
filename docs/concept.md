@@ -527,6 +527,7 @@ Decided with the maintainer on 2026-11-01 (see 15, O11 to O15). Both features sh
 | Q3 | Binding to the behaviours, `SourceFollower`, offline rule, store version 4 with migration, area `SRC` |
 | Q4 | Wizard step "Source", mapping table, preview |
 | Q5 | Source visible in lists, details and filters (17.4), change source, bulk action, "source removed" question |
+| Q5b | Locked copies and seed per sensor (17.4a): refusals, `devices/set_seed`, seed field per sensor in the details |
 | Q6 | Export and import with the source (by name) |
 | Q7 | Live view with the source line |
 
@@ -580,6 +581,21 @@ The source a device depends on must be visible everywhere the device is shown (m
 - **Other lists:** the Removal tab names the source of each listed device and states that the source itself is never touched; the Transfer tab shows the source per device.
 - **Reply fields:** `devices/list` and `devices/get` carry `source` (`{ id, name, state }` or null) per device, so all views read it from one place. The shared pure helper for the badge lives in `devices/helpers.ts`.
 
+### 17.4a Copies: locked, one seed per sensor, controlled as usual
+
+A copy is locked like a device of a standard template (maintainer request 2026-11-01). Its definition cannot be edited: not the entity list (no entity editor), not the curve of a sensor (`devices/set_signal` and the curve editor are refused for it), not the mapping or the deviation parameters of a copy on its own (they are set for the whole job in the wizard, or again through `devices/set_source`). The only thing a user may change is the **seed**:
+
+- The seed can be set **per sensor**, not only per device. `source.seeds` holds `{entity key: seed}`; a sensor without an entry uses `entity_seed(device seed, key)` as before. The seed drives the whole deviation of that sensor (offset, scale, noise, lag, dropout, 17.5), so changing it gives that sensor another, reproducible deviation from the same source value. The device seed stays the default for all its sensors.
+- Command `devices/set_seed` (new, kind `sensor` or `device`) takes the device, optional entity `key` and `seed`; it works on copies only and is refused for other devices (a normal device keeps its seed, which is part of its identity). A bulk form takes the target of 16.3 and a seed for all, or `"random"` to draw a new one per device from a master seed. A change is applied at once (the next value is computed with the new seed), written to the store and logged in the audit log.
+- Refused changes raise a `TDC-SRC-` error with a text in `en.json` and `de.json`.
+
+Otherwise a copy behaves like a normal generated device. Actions (`fire_event`, switching, faults such as freeze, offset or unavailable), schedules and scenarios take a copy as a target like any device, appear in the target pickers (with the source badge of 17.4) and in bulk actions and groups. The value an action or fault changes is applied on top of the deviation, so a fault "freeze" holds the deviated value and "unavailable" works as for any entity. Two rules keep this consistent with the source:
+
+- A state entity (switch, light) that is mapped to a source entity follows the source; an action sets the state until the next change of the source, which wins.
+- A copy that is offline because its source is offline (17.3) cannot be switched: an action on it counts as failed, like for a device that cannot do the action (16.3), and a schedule or scenario step on it is reported as skipped. Faults cannot be started on it either; when the source returns, the usual behaviour continues.
+
+Pause and resume (16.8), duplicate (16.4) and removal work as for any device; a duplicate of a copy has the same source and mapping and a new seed.
+
 ### 17.5 Source device: mapping, deviation and storage
 
 **Mapping.** Each entity of the copy is bound to one source entity: automatically by platform, device class and unit when the match is unique, otherwise chosen in the dialog; an entity without a mapping keeps its curve. Units are converted with the unit conversion of Home Assistant where it exists; otherwise the entity stays unbound and the dialog names the reason. Non-numeric states (switch, binary sensor, enum) are copied one to one and get no deviation.
@@ -597,7 +613,7 @@ The source a device depends on must be visible everywhere the device is shown (m
 
 The source is followed by events: one `SourceFollower` keeps one subscription per source entity (`async_track_state_change_event`) however many copies follow it. A new source value reaches the copies at their next interval tick, so the state rate stays plannable (12); only a status change (offline, back) is immediate.
 
-**Store (version 4).** `DeviceDef.source` is `None` or `{ device_id, mapping: {key: entity_id}, deviation: {…}, removed: bool }`. `STORE_VERSION` goes from 3 to 4 and `store/migrate.py` sets `source` to `None` on existing devices, with a test. No source values and no secrets are stored, only references. Removal never touches the source (4.4). Export (16.5) writes the source by the name of the device; import resolves it by name and, if it is missing, creates the device without a source and reports it (nothing half-way); `format_version` is raised with a test that reads the previous one.
+**Store (version 4).** `DeviceDef.source` is `None` or `{ device_id, mapping: {key: entity_id}, deviation: {…}, seeds: {key: seed}, removed: bool }`. `STORE_VERSION` goes from 3 to 4 and `store/migrate.py` sets `source` to `None` on existing devices, with a test. No source values and no secrets are stored, only references. Removal never touches the source (4.4). Export (16.5) writes the source by the name of the device; import resolves it by name and, if it is missing, creates the device without a source and reports it (nothing half-way); `format_version` is raised with a test that reads the previous one.
 
 ### 17.6 Source device: commands and panel
 
@@ -608,6 +624,7 @@ The source is followed by events: one `SourceFollower` keeps one subscription pe
 | `sources/preview` | The deviations of N seeds against the current source value, nothing is created |
 | `devices/create` | gets the optional field `source` |
 | `devices/set_source` | Set or clear the source of devices; target as in 16.3 (`ids` or `filter`, `expected`) |
+| `devices/set_seed` | Set the seed of one sensor or of a whole copy (17.4a); copies only |
 | `devices/confirm_source_removed` | The answer to the question of 17.3: remove the copies (through the removal plan) or keep them offline |
 
 The creation wizard gets an optional step "Source": device search, the mapping as a table (target, source entity, current value, unit) and the deviation controls, with a preview of five simulated devices. The live view of 16.7 draws two lines for a bound entity, the source (dashed) and the device. Texts through `i18n`, colours from Home Assistant variables; the README names the feature in the same pull request.
