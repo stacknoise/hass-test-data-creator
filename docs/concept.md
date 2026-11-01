@@ -354,7 +354,7 @@ Objects whose kind depends on a type or on runtime data are created only by a fa
 Every raised error is a `TdcError` (derived from `HomeAssistantError`, with `translation_domain` and `translation_key`) with an `ErrorCode`.
 
 - All codes live only in `core/errors.py`. Format `TDC-<AREA>-<NNN>`. A code is never reused or renumbered.
-- Areas: `CFG` configuration and config flow, `TPL` templates, `GEN` device generation, `SIG` signals, `SCH` schedules and faults, `OUT` outputs (native and MQTT), `REM` removal, `WS` request format, `INT` unexpected.
+- Areas: `CFG` configuration and config flow, `TPL` templates, `GEN` device generation, `SIG` signals, `SCH` schedules and faults, `OUT` outputs (native and MQTT), `REM` removal, `WS` request format, `SRC` source devices (17), `INT` unexpected.
 - The user text is in `translations/en.json` and `de.json`, section `exceptions`: short, plain language, no technical terms, no trailing period. `docs/error-codes.md` is generated.
 - Every command runs in the command wrapper, which logs the error once with its code and replies. No bare `except`, no `except Exception` outside the wrapper, never catch `asyncio.CancelledError`.
 - Configuration errors also create a Repairs issue.
@@ -408,6 +408,11 @@ No open points are left. A new one is added here as a table with a number, the q
 | O8 | Import and export are selectable per category; import offers add, sync and replace per category, with a plan first (16.5). This replaces "YAML import and export dropped" in 1.4. |
 | O9 | The filter state is kept in `sessionStorage` per tab (16.1). |
 | O10 | Removing many devices needs a dialog that names the number, and above 100 devices a checkbox (16.3). |
+| O11 | The live log shows generated entities only and runs only while its tab is open; its buffer is in memory, is emptied when the tab closes, and is never stored. The user can download the current content as a file (17.2). |
+| O12 | A source device is a real device of the instance, read only. Many copies follow one source; a device has exactly one source. The copies are logically always connected to the source (17.3). |
+| O13 | A source that is offline makes all its copies offline at once. A removed source leaves the copies offline until the user confirms their removal; nothing is deleted automatically (17.3). |
+| O14 | Source errors get their own area `SRC` (13.3, 17.7). |
+| O15 | The live log and the source device both ship in 1.2.0 (17.8). |
 
 ## 16. Filters, bulk actions and transfer (v1.1, planned)
 
@@ -505,3 +510,139 @@ A paused device stands still, like a device that has dropped off the network wit
 - Rebuild the panel and commit `frontend/`; update the README in the same pull request; planned parts stay marked as planned until released.
 - Regenerate `dependencies.html` and `dependency-graph.html` when modules or imports change (F1, F3, F5, F6); no new cross-topic imports.
 - Each package: its own branch and pull request, squash merge on green CI, then update the test container.
+
+## 17. Live log and source device (v1.2, planned)
+
+Decided with the maintainer on 2026-11-01 (see 15, O11 to O15). Both features ship in 1.2.0, each work package is its own pull request. Nothing here changes an existing command in a breaking way, so `API_VERSION` stays 2; each package adds its entry to `FEATURES` in `info`. The source device changes the store (version 4, 17.5); the live log does not.
+
+| Package | Content |
+| --- | --- |
+| L1 | Ring buffer, recorder, hook in the behaviours, `log/get`, `log/set`, `log/clear` |
+| L2 | "Log" tab: list, capture while the tab is open, pause, follow, save to a file (`log/export`) |
+| L3 | Filters of the log, chips, jump from a device; source filter (17.4) |
+| L4 | `min_delta`, time window and format choice of the file |
+| L5 | The live curve reads from the log instead of its own reads |
+| Q1 | Pure deviation functions and the mapping logic with tests |
+| Q2 | Registry access, `sources/list`, `sources/inspect`, `sources/preview` |
+| Q3 | Binding to the behaviours, `SourceFollower`, offline rule, store version 4 with migration, area `SRC` |
+| Q4 | Wizard step "Source", mapping table, preview |
+| Q5 | Source visible in lists, details and filters (17.4), change source, bulk action, "source removed" question |
+| Q5b | Locked copies and seed per sensor (17.4a): refusals, `devices/set_seed`, seed field per sensor in the details |
+| Q6 | Export and import with the source (by name) |
+| Q7 | Live view with the source line |
+
+### 17.1 Live log: entry and capture
+
+One row per state change of a **generated** entity (O11): time, device, entity, old value, new value, unit and `cause`. The causes are a fixed list: `signal`, `action` (schedule, scenario, manual), `fault`, `source`, `restore`, `other`. An event entity shows its event type as the value, `unavailable` is a normal value and is highlighted. A change of attributes only, or the same value again, is not logged.
+
+The entries are made at `Behaviour.on_change`, the one place that all outputs (native, MQTT, Z2M) share, so no output branches. The behaviours know only the protocol `LogRecorder` in `core/protocols.py`; `BehaviourFactory` hands the recorder in. An entry is built only by `LogEntryFactory` (13.2). The audit log (13.4) stays separate: it records actions of the user, the live log records values; an action that causes a change appears there as `cause=action`.
+
+**Capture only while the tab is open (O11).** There is no switch. The tab calls `log/get` every second; each call counts as a sign of life. Without a call for `LOG_IDLE_S` (10 s) the recorder stops by itself, and the panel sends `log/set` with `capture: false` when the tab closes. Stopping empties the buffer. With the recorder off, the cost on the hot path is one `if`.
+
+**Buffer.** `LogBuffer` in `log/buffer.py` is a `deque(maxlen=MAX_LOG_ENTRIES)` (default 5000, option 500 to 50 000) in memory; each entry has a rising `seq`. Nothing goes to the store or to disk. When the buffer overflows, the oldest entries drop and the reply reports `dropped`. `MAX_LOG_RATE` (200 entries per second) protects against floods: above it entries are discarded and counted, and one warning is raised like `TDC-GEN-005`. An optional capture filter in front of the buffer uses the filter logic of 16.1.
+
+### 17.2 Live log: commands and panel
+
+| Command | Purpose |
+| --- | --- |
+| `log/get` | Read entries: `since` (seq), `limit` (at most `MAX_PAGE_SIZE`), filter, `newest_first`; reply `entries`, `last_seq`, `dropped`, `size` |
+| `log/set` | Stop capture (tab closed), capture filter, buffer size |
+| `log/clear` | Empty the buffer |
+| `log/export` | The current (filtered) entries page by page for the download; the panel builds the file in the browser, the backend writes none |
+
+Filter fields (all optional; OR inside a group, AND between groups, as in 16.1): `query`, `devices[]`, `entities[]`, `templates[]`, `areas[]`, `platforms[]`, `device_classes[]`, `outputs[]`, `causes[]`, `runs[]`, `sources[]` (17.4), `only_numeric`, `min_delta`, `from`, `to`. Values are shown only, never interpreted. No tokens or credentials can get in, because entries hold states and names only. `api/log.py` parses and calls `LogView`.
+
+Panel: a new tab "Log" after "History" (`log/` folder, `tdc-log-panel`). Header: counter "N of M", "Pause" (freeze the view, capture goes on), "Clear" and **"Save to file"** (CSV or JSON, with the active filters; the file is made in the browser). The filter bar is `common/filter-bar.ts`, its state is kept under `tdc.filter.log` (O9). Refresh uses `startPolling` of `common/polling.ts` with `since=last_seq`. The list has a fixed row height and renders only the visible rows (pure helpers in `log/helpers.ts`, Vitest); it follows new rows only when the user is at the bottom, otherwise it shows "N new entries". Columns: time (with milliseconds), device, entity, old → new (delta for numbers), cause label, and the **source** of the device (17.4). The device detail links to the log with the device filter set.
+
+### 17.3 Source device: model
+
+A source is a **real device of the device registry** that does not belong to this integration (O12). It is only read (`hass.states` and the registries), never written; a generated device cannot be a source (checked with the marker of 4.4, so no loops). Many generated devices (the copies) follow one source; a device has exactly one source.
+
+**The copies are logically always connected to the source (O12, O13).** The source is not a signal shape: signals stay pure functions of time and seed (5.1), and the statistics backfill and the curve preview rely on that. The source is a layer above the curve:
+
+```
+value = deviation(device seed, time bucket, source value)   while the source is bound
+```
+
+The deviation is a pure function over `hash01` of `(seed, bucket, source value)`; the same input gives the same result. A device bound to a source has no curve of its own for the mapped entities; entities without a mapping keep the curve of the template.
+
+- **Source offline.** If the source entity is `unavailable` or `unknown`, all its copies are offline at once (`available` false, `cause=source` in the log), not at the next interval tick. When the source returns, the copies return at once with a first value in the same step. There is no fall back to the curve and no holding of the last value.
+- **Source removed.** If the device or the mapped entity is removed from the registry, the backend sets `removed` on the copies, which stay offline. It never deletes by itself. The panel then asks "Source <name> was removed. Remove N copies?" with the number and the list, as a banner and when the device tab opens. On "Yes" the normal removal runs through `RemovalPlanner` and `RemovalRunner` (only objects with a marker, one audit entry). On "No" the copies stay offline and the question does not come back until a new source is set or the copies are removed by hand.
+- **Restart.** The sources are bound again from the store. A source that is only not loaded yet counts as offline; one that is gone counts as removed.
+
+### 17.4 Source device: always visible
+
+The source a device depends on must be visible everywhere the device is shown (maintainer request 2026-11-01).
+
+- **Device list:** a column "Source" with the name of the source device and a state badge (`ok`, `offline`, `removed`); devices without a source show a dash. The source name is a link that sets the source filter.
+- **Filter (F1):** `devices/list` takes the optional fields `sources[]` (names or ids of source devices, `""` means no source) and `source_state` (`any`, `with`, `without`, `offline`, `removed`). The facets (16.1) count the sources, so the filter shows "Boiler (12)". The `query` also matches the source name. Bulk actions (16.3) and "all N matches" work with these fields, so one can select, pause or remove all copies of one source.
+- **Device detail and dialogs:** the header shows "Source: <name>" with the badge; the entity list shows the mapped source entity next to each entity; the target pickers of schedules, scenarios and groups show the source as a badge.
+- **Log:** the source is a column and a filter (`sources[]`) in the live log; `cause=source` marks changes that come from it.
+- **Other lists:** the Removal tab names the source of each listed device and states that the source itself is never touched; the Transfer tab shows the source per device.
+- **Reply fields:** `devices/list` and `devices/get` carry `source` (`{ id, name, state }` or null) per device, so all views read it from one place. The shared pure helper for the badge lives in `devices/helpers.ts`.
+
+### 17.4a Copies: locked, one seed per sensor, controlled as usual
+
+A copy is locked like a device of a standard template (maintainer request 2026-11-01). Its definition cannot be edited: not the entity list (no entity editor), not the curve of a sensor (`devices/set_signal` and the curve editor are refused for it), not the mapping or the deviation parameters of a copy on its own (they are set for the whole job in the wizard, or again through `devices/set_source`). The only thing a user may change is the **seed**:
+
+- The seed can be set **per sensor**, not only per device. `source.seeds` holds `{entity key: seed}`; a sensor without an entry uses `entity_seed(device seed, key)` as before. The seed drives the whole deviation of that sensor (offset, scale, noise, lag, dropout, 17.5), so changing it gives that sensor another, reproducible deviation from the same source value. The device seed stays the default for all its sensors.
+- Command `devices/set_seed` (new, kind `sensor` or `device`) takes the device, optional entity `key` and `seed`; it works on copies only and is refused for other devices (a normal device keeps its seed, which is part of its identity). A bulk form takes the target of 16.3 and a seed for all, or `"random"` to draw a new one per device from a master seed. A change is applied at once (the next value is computed with the new seed), written to the store and logged in the audit log.
+- Refused changes raise a `TDC-SRC-` error with a text in `en.json` and `de.json`.
+
+Otherwise a copy behaves like a normal generated device. Actions (`fire_event`, switching, faults such as freeze, offset or unavailable), schedules and scenarios take a copy as a target like any device, appear in the target pickers (with the source badge of 17.4) and in bulk actions and groups. The value an action or fault changes is applied on top of the deviation, so a fault "freeze" holds the deviated value and "unavailable" works as for any entity. Two rules keep this consistent with the source:
+
+- A state entity (switch, light) that is mapped to a source entity follows the source; an action sets the state until the next change of the source, which wins.
+- A copy that is offline because its source is offline (17.3) cannot be switched: an action on it counts as failed, like for a device that cannot do the action (16.3), and a schedule or scenario step on it is reported as skipped. Faults cannot be started on it either; when the source returns, the usual behaviour continues.
+
+Pause and resume (16.8), duplicate (16.4) and removal work as for any device; a duplicate of a copy has the same source and mapping and a new seed.
+
+### 17.5 Source device: mapping, deviation and storage
+
+**Mapping.** Each entity of the copy is bound to one source entity: automatically by platform, device class and unit when the match is unique, otherwise chosen in the dialog; an entity without a mapping keeps its curve. Units are converted with the unit conversion of Home Assistant where it exists; otherwise the entity stays unbound and the dialog names the reason. Non-numeric states (switch, binary sensor, enum) are copied one to one and get no deviation.
+
+**Deviation (all optional, drawn from the device seed with a fixed salt per parameter via `core/hashing.py`, no global random generator):**
+
+| Parameter | Effect |
+| --- | --- |
+| `offset` | fixed shift per device (for example ± 0.5 °C) |
+| `scale` | factor per device (for example ± 2 %) |
+| `noise` | time dependent noise, a fraction of the range |
+| `lag_s` | delay behind the source, per device between 0 and `lag_s` |
+| `dropout` | rate at which a device holds its last value |
+| `decimals`, `clamp` | rounding and limits (for example humidity at most 100) |
+
+The source is followed by events: one `SourceFollower` keeps one subscription per source entity (`async_track_state_change_event`) however many copies follow it. A new source value reaches the copies at their next interval tick, so the state rate stays plannable (12); only a status change (offline, back) is immediate.
+
+**Store (version 4).** `DeviceDef.source` is `None` or `{ device_id, mapping: {key: entity_id}, deviation: {…}, seeds: {key: seed}, removed: bool }`. `STORE_VERSION` goes from 3 to 4 and `store/migrate.py` sets `source` to `None` on existing devices, with a test. No source values and no secrets are stored, only references. Removal never touches the source (4.4). Export (16.5) writes the source by the name of the device; import resolves it by name and, if it is missing, creates the device without a source and reports it (nothing half-way); `format_version` is raised with a test that reads the previous one.
+
+### 17.6 Source device: commands and panel
+
+| Command | Purpose |
+| --- | --- |
+| `sources/list` | Search the real devices (`query`, `limit`), only devices of other integrations |
+| `sources/inspect` | The entities and current values of a device, with a mapping proposal for a template |
+| `sources/preview` | The deviations of N seeds against the current source value, nothing is created |
+| `devices/create` | gets the optional field `source` |
+| `devices/set_source` | Set or clear the source of devices; target as in 16.3 (`ids` or `filter`, `expected`) |
+| `devices/set_seed` | Set the seed of one sensor or of a whole copy (17.4a); copies only |
+| `devices/confirm_source_removed` | The answer to the question of 17.3: remove the copies (through the removal plan) or keep them offline |
+
+The creation wizard gets an optional step "Source": device search, the mapping as a table (target, source entity, current value, unit) and the deviation controls, with a preview of five simulated devices. The live view of 16.7 draws two lines for a bound entity, the source (dashed) and the device. Texts through `i18n`, colours from Home Assistant variables; the README names the feature in the same pull request.
+
+### 17.7 Rules for the code
+
+- New package `sources/`: `registry.py` (the only access to the registries), `mapper.py`, `follower.py`, `deviation.py` (pure functions), `schema.py`. New package `log/`: `buffer.py`, `recorder.py`, `view.py`, `schema.py`, `LogEntryFactory`.
+- `SourceBindingFactory` builds the binding; the behaviours get it through `BehaviourFactory` as an optional `ValueProvider` protocol, so there is no `if source` in the entity classes. Without it nothing changes.
+- Errors get the new area `SRC` in `core/errors.py` (`TDC-SRC-001` and on) for: source not found, source is a generated device, unit cannot be converted, mapping incomplete. Texts in `en.json` and `de.json`. The area is already named in 13.3 and in `CLAUDE.md`; the enum members are added with package Q3. Limits live in `const.py` (`MAX_LOG_ENTRIES`, `MAX_LOG_RATE`, `LOG_IDLE_S`).
+- Setting and clearing a source, and removing copies, are audit entries (`AuditEntryFactory`, names through `format_value`).
+- Rules of 16.9 apply: search `docs/code-index.md` first (`DeviceFilter`, `filter-bar`, `startPolling`, `hash01`, `AuditEntryFactory`, the transfer factory), one-line docstrings, generated docs and the panel build in the same commit, README in the same pull request.
+
+### 17.8 Release 1.2.0
+
+Both features ship together (O15). Order: this chapter as a docs pull request, L1 to L3, Q1 to Q3, Q4 to Q6, then the rest; the release pull request raises the version in `manifest.json`, `pyproject.toml` and `panel-src/package.json` and updates the README status. `API_VERSION` stays 2, `STORE_VERSION` becomes 4.
+
+### 17.9 Ideas (not decided)
+
+Log: time markers and a window from two markers; highlight rules (threshold, `unavailable`); a recording as a CSV curve in the replay library; a grouped view with the entities that change most; a column "deviation from the source"; a toast when a filtered entry appears; schedule starts, scenario steps and fault start and end as rows of their own.
+
+Source: a frozen snapshot that runs without the real source; recording the source for N hours and replaying it with the time lapse; an immediate mode without the interval tick; a time offset ("the value from N minutes ago"); outliers and dropouts from the seed through the existing faults; saving the mapping as an own template; a check card "source against copies" with mean, minimum, maximum and spread; the long-term statistics of the real entity as the base of the backfill (5.3a).
