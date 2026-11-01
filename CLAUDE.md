@@ -43,7 +43,7 @@ tests/  dev/  .github/workflows/
 
 **Errors (13.3)**
 - Every raised exception is a `TdcError` subclass with an `ErrorCode`, derived from `HomeAssistantError`. Never raise plain `Exception`, `ValueError` or `RuntimeError` for a handled case.
-- All codes live only in `core/errors.py`, format `TDC-<AREA>-<NNN>` (areas CFG, TPL, GEN, SIG, SCH, OUT, REM, WS, INT). A new error gets the next free number of its area; codes are never reused or renumbered. Add the user text to `translations/en.json` **and** `de.json` (short, plain, no trailing period).
+- All codes live only in `core/errors.py`, format `TDC-<AREA>-<NNN>` (areas CFG, TPL, GEN, SIG, SCH, OUT, REM, WS, SRC, INT). A new error gets the next free number of its area; codes are never reused or renumbered. Add the user text to `translations/en.json` **and** `de.json` (short, plain, no trailing period).
 - Every command runs in the wrapper in `core/command.py`. No bare `except`, no `except Exception` outside it, never catch `asyncio.CancelledError`. Log every error once with its code.
 
 **Logging (13.4)**
