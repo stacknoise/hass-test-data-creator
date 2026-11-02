@@ -38,7 +38,8 @@ A Home Assistant custom integration (domain `hass_test_data_creator`, display na
 | v0.3 | MQTT discovery output, Z2M emulation with groups, cleanup of retained messages, conflict check; the shapes `enum` and `state_machine` (washer template); the faults `late` and `duplicate`; scheduling a scenario in the panel; the Groups tab. Native Home Assistant groups are not part of it |
 | v0.4 | Statistics backfill (done, 5.3a), time lapse (done, 5.1), CSV replay (done); YAML import/export and sharing of templates dropped for now |
 | v1.0 | Own templates, entity editor, API version 2 (released) |
-| v1.1 | Planned: device filter and sort, filters on all lists, bulk actions, duplicate, export and import tab (chapter 16) |
+| v1.1 | Device filter and sort, filters on all lists, bulk actions, pause, duplicate, export and import tab, live view in the entity list (chapter 16, released) |
+| v1.2 | Live Log tab and source device (chapter 17, released as 1.2.0) |
 
 ## 2. Architecture
 
@@ -414,7 +415,7 @@ No open points are left. A new one is added here as a table with a number, the q
 | O14 | Source errors get their own area `SRC` (13.3, 17.7). |
 | O15 | The live log and the source device both ship in 1.2.0 (17.8). |
 
-## 16. Filters, bulk actions and transfer (v1.1, planned)
+## 16. Filters, bulk actions and transfer (v1.1)
 
 Decided with the maintainer on 2026-10-30 (see 15, O7 to O10). Each work package below is its own pull request, in this order. Nothing here changes an existing command in a breaking way, so `API_VERSION` stays 2; each package adds its entry to `FEATURES` in `info`.
 

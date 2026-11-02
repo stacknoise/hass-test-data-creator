@@ -57,7 +57,7 @@ Besides these, CI runs `hassfest`, the HACS validation (`hacs/action`), PMD CPD 
 custom_components/hass_test_data_creator/
   __init__.py  config_flow.py  const.py  manifest.json  services.yaml
   translations/   en.json, de.json
-  core/ model/ store/ templates/ engine/ scheduler/ scenarios/ faults/ outputs/ platforms/ devices/ groups/ history/ replay/ areas/ removal/ audit/ log/ api/
+  core/ model/ store/ templates/ engine/ scheduler/ scenarios/ faults/ outputs/ platforms/ devices/ groups/ history/ replay/ areas/ removal/ audit/ log/ sources/ transfer/ api/
   frontend/       BUILT panel, never edited by hand
 panel-src/        TypeScript, Lit, Vite, Vitest
 scripts/code_index.py
