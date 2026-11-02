@@ -54,6 +54,10 @@ class SourceBinding:
         self.observe()
         follower.attach(self)
 
+    def raw(self) -> float | str | None:
+        """Return the newest value of the source in the unit of the entity, without deviation."""
+        return self._history[-1][1] if self._history else None
+
     def reseed(self, seed: int) -> None:
         """Deviate with another seed from now on; the value is drawn again."""
         self._seed = seed

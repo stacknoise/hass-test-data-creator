@@ -1,7 +1,7 @@
 import { LitElement, css, html, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { curveStyle } from '../common/curve-style';
-import { livePoints, type LiveSample } from './live';
+import { livePoints, valueRange, type LiveSample } from './live';
 
 const WIDTH = 240;
 const HEIGHT = 40;
@@ -10,6 +10,7 @@ const HEIGHT = 40;
 @customElement('tdc-live-curve')
 export class LiveCurve extends LitElement {
   @property({ attribute: false }) samples: LiveSample[] = [];
+  @property({ attribute: false }) source: LiveSample[] = [];
 
   static override styles = [
     curveStyle,
@@ -23,13 +24,22 @@ export class LiveCurve extends LitElement {
       polyline {
         vector-effect: non-scaling-stroke;
       }
+      polyline.source {
+        stroke-dasharray: 4 3;
+        opacity: 0.7;
+      }
     `,
   ];
 
   /** Render the element. */
   override render(): TemplateResult {
+    const range = valueRange(this.samples, this.source);
     return html`<svg viewBox="0 0 ${WIDTH} ${HEIGHT}" preserveAspectRatio="none" role="img">
-      <polyline points=${livePoints(this.samples, WIDTH, HEIGHT)}></polyline>
+      <polyline
+        class="source"
+        points=${livePoints(this.source, WIDTH, HEIGHT, 4, range)}
+      ></polyline>
+      <polyline points=${livePoints(this.samples, WIDTH, HEIGHT, 4, range)}></polyline>
     </svg>`;
   }
 }

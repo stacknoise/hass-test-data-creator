@@ -25,19 +25,31 @@ export function pushSample(
   return [...samples, sample].slice(-max);
 }
 
+/** The lowest value and the height of the value axis that one or more series share. */
+export interface ValueRange {
+  low: number;
+  span: number;
+}
+
+/** Return the range that holds all values of the series, so that they can share one axis. */
+export function valueRange(...series: LiveSample[][]): ValueRange {
+  const values = series.flatMap((samples) => samples.map((s) => s.value));
+  const low = Math.min(...values);
+  return { low, span: Math.max(...values) - low || 1 };
+}
+
 /** Return the SVG point list of the samples, scaled into a box; empty below two samples. */
 export function livePoints(
   samples: LiveSample[],
   width: number,
   height: number,
   padding = 4,
+  range?: ValueRange,
 ): string {
   if (samples.length < 2) return '';
   const first = samples[0].at;
   const time = samples[samples.length - 1].at - first || 1;
-  const values = samples.map((s) => s.value);
-  const low = Math.min(...values);
-  const span = Math.max(...values) - low || 1;
+  const { low, span } = range ?? valueRange(samples);
   return samples
     .map((s) => {
       const x = ((s.at - first) / time) * width;

@@ -202,6 +202,9 @@ class DeviceView:
             KEY_SHAPE: (definition.signal or {}).get(KEY_SHAPE),
             "fault": getattr(self._live.get((device.id, definition.key)), "fault_kind", None),
         }
+        binding = getattr(self._live.get((device.id, definition.key)), "source", None)
+        if binding is not None:
+            reply["source_value"] = binding.raw() if binding.online() else None
         if with_signal:
             reply[KEY_SIGNAL] = definition.signal
         return reply

@@ -207,3 +207,24 @@ async def test_the_log_names_the_source_and_filters_by_it(
     assert other == []
     by_text = log.get(0, 100, LogFilter.from_request({"query": "boiler"}), False)["entries"]
     assert len(by_text) == len(mine)
+
+
+async def test_the_full_device_shows_the_raw_value_of_the_source_until_it_goes_offline(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    device_id = real_device(hass, entry)
+    set_source(hass, "sensor.hum", "40", "%")
+    client = await hass_ws_client(hass)
+    await create_copies(hass, client, device_id)
+    await hass.async_block_till_done()
+    listing = (await call(client, "devices/list", offset=0, limit=10))["result"]
+    copy = next(d for d in listing["devices"] if d["name"] == "Copy 01")
+
+    async def raw() -> dict[str, Any]:
+        full = (await call(client, "devices/get", device=copy["id"]))["result"]
+        return {e["key"]: e.get("source_value") for e in full["entities"]}
+
+    assert (await raw())["humidity"] == 40.0
+    set_source(hass, "sensor.hum", "unavailable", "%")
+    await hass.async_block_till_done()
+    assert (await raw())["humidity"] is None

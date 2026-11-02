@@ -38,6 +38,7 @@ export class DeviceDetail extends TdcElement {
   @state() private curves: Record<string, SignalDef> = {};
   @state() private live = false;
   @state() private samples: Record<string, LiveSample[]> = {};
+  @state() private sourceSamples: Record<string, LiveSample[]> = {};
   @state() private liveStates: Record<string, string> = {};
   @state() private full?: DeviceInfo;
   @state() private seeds: Record<string, string> = {};
@@ -181,6 +182,7 @@ export class DeviceDetail extends TdcElement {
     this.stopLive = undefined;
     this.live = on;
     this.samples = {};
+    this.sourceSamples = {};
     this.liveStates = {};
     if (!on) return;
     void this.readLive();
@@ -194,14 +196,20 @@ export class DeviceDetail extends TdcElement {
       if (!this.live) return;
       const at = Date.now();
       const next = { ...this.samples };
+      const nextSource = { ...this.sourceSamples };
       const states: Record<string, string> = {};
       for (const entity of full.entities) {
         const value = numericState(entity.state);
         if (value === undefined) continue;
         next[entity.key] = pushSample(next[entity.key] ?? [], { at, value });
         states[entity.key] = entity.state ?? '';
+        const raw = numericState(entity.source_value == null ? null : String(entity.source_value));
+        if (raw !== undefined) {
+          nextSource[entity.key] = pushSample(nextSource[entity.key] ?? [], { at, value: raw });
+        }
       }
       this.samples = next;
+      this.sourceSamples = nextSource;
       this.liveStates = states;
     } catch (err) {
       this.setLive(false);
@@ -413,7 +421,10 @@ export class DeviceDetail extends TdcElement {
         <td class="live-col">
           ${
             this.live && entity.key in this.samples
-              ? html`<tdc-live-curve .samples=${this.samples[entity.key]}></tdc-live-curve>`
+              ? html`<tdc-live-curve
+                  .samples=${this.samples[entity.key]}
+                  .source=${this.sourceSamples[entity.key] ?? []}
+                ></tdc-live-curve>`
               : ''
           }
         </td>

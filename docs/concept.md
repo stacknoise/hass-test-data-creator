@@ -628,7 +628,7 @@ The source is followed by events: one `SourceFollower` keeps one subscription pe
 | `sources/removed` | The removed sources that still have copies nobody decided about, with the names of the copies (the banner) |
 | `devices/confirm_source_removed` | The answer to the question of 17.3 (`source`, `remove`): remove the copies (through the removal plan) or keep them offline (`dismissed`) |
 
-The creation wizard gets an optional step "Source": device search, the mapping as a table (target, source entity, current value, unit) and the deviation controls, with a preview of five simulated devices. The live view of 16.7 draws two lines for a bound entity, the source (dashed) and the device. Texts through `i18n`, colours from Home Assistant variables; the README names the feature in the same pull request.
+The creation wizard gets an optional step "Source": device search, the mapping as a table (target, source entity, current value, unit) and the deviation controls, with a preview of five simulated devices. The live view of 16.7 draws two lines for a bound entity, the source (dashed) and the device, on one shared value range. `devices/get` adds `source_value` (the unconverted value the source last gave, or null while it is offline) to each bound entity. Texts through `i18n`, colours from Home Assistant variables; the README names the feature in the same pull request.
 
 ### 17.7 Rules for the code
 
