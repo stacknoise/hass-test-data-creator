@@ -42,6 +42,11 @@ export class SourceStep extends TdcElement {
       table {
         margin-bottom: 16px;
       }
+      ul.found {
+        max-height: 260px;
+        overflow-y: auto;
+        margin: 0 0 12px;
+      }
     `,
   ];
 
@@ -170,7 +175,7 @@ export class SourceStep extends TdcElement {
       ${
         this.found.length === 0
           ? html`<p><small>${this.tr('sourceNoMatch')}</small></p>`
-          : html`<ul>
+          : html`<ul class="found">
               ${this.found.map(
                 (device) =>
                   html`<li>

@@ -4111,6 +4111,11 @@ var Vi = 300, Hi = "custom", Ui = [
       table {
         margin-bottom: 16px;
       }
+      ul.found {
+        max-height: 260px;
+        overflow-y: auto;
+        margin: 0 0 12px;
+      }
     `];
 	}
 	disconnectedCallback() {
@@ -4175,7 +4180,7 @@ var Vi = 300, Hi = "custom", Ui = [
 		return h`<div class="fields">
         ${this.textField(this.tr("sourceSearch"), this.query, (e) => this.typing(e))}
       </div>
-      ${this.found.length === 0 ? h`<p><small>${this.tr("sourceNoMatch")}</small></p>` : h`<ul>
+      ${this.found.length === 0 ? h`<p><small>${this.tr("sourceNoMatch")}</small></p>` : h`<ul class="found">
               ${this.found.map((e) => h`<li>
                     <button
                       ?disabled=${e.usable === 0}
