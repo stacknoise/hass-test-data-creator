@@ -47,31 +47,37 @@ The panel in the sidebar of Home Assistant (admin only). The images are rendered
 
 **Devices**: every generated device with its values; open one to change its area and the curve of a sensor, and to see where it is used. "Create devices" has an entity editor for custom devices, and "Manage own templates" lists, edits and deletes your own templates.
 
-![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=2)
+![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=3)
 
-![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=2)
+![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=3)
 
-![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=2)
+![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=3)
 
-![A custom device that starts from a template, with the entity editor](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-custom-device.png?v=2)
+![A custom device that starts from a template, with the entity editor](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-custom-device.png?v=3)
 
-![The popup that manages the own templates](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/own-templates.png?v=2)
+![The popup that manages the own templates](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/own-templates.png?v=3)
 
 **Schedules and scenarios**: schedules with the planned runs of the next 24 hours, and scenarios as timed steps.
 
-![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=2)
+![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=3)
 
-![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=2)
+![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=3)
 
-![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=2)
+![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=3)
+
+**Live Log and source device (1.2)**: every state change of the generated entities, live, and a popup that follows a real device with a deviation per copy.
+
+![The live log](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/live-log.png?v=3)
+
+![The popup that follows a real device](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/follow-device.png?v=3)
 
 **MQTT groups, history and removal**
 
-![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=2)
+![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=3)
 
-![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=2)
+![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=3)
 
-![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=2)
+![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=3)
 
 ## Status
 

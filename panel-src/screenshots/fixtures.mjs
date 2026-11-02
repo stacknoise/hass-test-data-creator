@@ -174,6 +174,8 @@ const WORDS = {
     schedules: ['Evening light', 'Coffee plug in the morning', 'Sensor dropouts', 'Leaving home', 'Plugs off at night'],
     scenarios: ['Leaving home', 'Good evening'],
     groups: ['Outdoor plugs'],
+    source: 'Boiler room sensor',
+    copies: ['Boiler room copy 01', 'Boiler room copy 02'],
     labels: { run: 'Demo devices' },
   },
   de: {
@@ -196,6 +198,8 @@ const WORDS = {
     schedules: ['Abendlicht', 'Kaffeesteckdose am Morgen', 'Sensorausfälle', 'Haus verlassen', 'Steckdosen aus in der Nacht'],
     scenarios: ['Haus verlassen', 'Guten Abend'],
     groups: ['Außensteckdosen'],
+    source: 'Heizraumsensor',
+    copies: ['Heizraum Kopie 01', 'Heizraum Kopie 02'],
     labels: { run: 'Demogeräte' },
   },
 };
@@ -326,6 +330,31 @@ export function fixtures(lang) {
     entities,
     used_by: { schedules: [], scenarios: [], groups: [] },
   }));
+  // two copies of a real device: they follow its temperature and humidity
+  const SOURCE_ID = 'real01';
+  const sourceMapping = { temperature: 'sensor.boiler_temperature', humidity: 'sensor.boiler_humidity' };
+  [
+    ['21.9', '47.6', { humidity: 3 }],
+    ['21.2', '49.1', { humidity: 8 }],
+  ].forEach(([t, h, seeds], n) => {
+    devices.push({
+      id: id(devices.length),
+      name: w.copies[n],
+      template: 'custom',
+      model: 'Custom',
+      area: w.areas[5],
+      output: 'native',
+      run_id: 'run4',
+      created_at: 1793200010 + n,
+      paused: false,
+      source: { id: SOURCE_ID, name: w.source, state: 'ok', dismissed: false, mapping: sourceMapping, seeds },
+      entities: [
+        ent(`s${n}`, entityOf('climate_sensor', 'temperature'), t, { source_value: n ? 21.1 : 21.8 }),
+        ent(`s${n}`, entityOf('climate_sensor', 'humidity'), h, { source_value: n ? 49.4 : 47.2 }),
+      ],
+      used_by: { schedules: [], scenarios: [], groups: [] },
+    });
+  });
   const byName = (index) => devices[index];
 
   const schedules = [
@@ -449,6 +478,82 @@ export function fixtures(lang) {
     device_count: devices.length,
   };
 
+  const sourceDevices = [
+    { id: SOURCE_ID, name: w.source, manufacturer: 'Acme', model: 'TH-200', entities: 4, usable: 2 },
+    { id: 'real02', name: lang === 'de' ? 'Wohnzimmer Thermostat' : 'Living room thermostat', manufacturer: 'Acme', model: 'TS-10', entities: 3, usable: 2 },
+    { id: 'real03', name: lang === 'de' ? 'Router' : 'Router', manufacturer: 'Netgear', model: 'R7000', entities: 0, usable: 0 },
+  ];
+  const T = lang === 'de' ? ['Temperatur', 'Luftfeuchtigkeit', 'Batterie'] : ['Temperature', 'Humidity', 'Battery'];
+  const sourceInfos = [
+    { entity_id: 'sensor.boiler_temperature', name: T[0], platform: 'sensor', device_class: 'temperature', unit: '°C', state: '21.8' },
+    { entity_id: 'sensor.boiler_humidity', name: T[1], platform: 'sensor', device_class: 'humidity', unit: '%', state: '47.2' },
+    { entity_id: 'sensor.boiler_battery', name: T[2], platform: 'sensor', device_class: 'battery', unit: '%', state: '87' },
+  ];
+  const sourceDerived = {
+    name: w.source,
+    entities: [
+      def('temperature', 'sensor', T[0], {
+        device_class: 'temperature',
+        unit: '°C',
+        signal: { shape: 'sine', min: 18, max: 26, period_s: 86400, decimals: 1 },
+      }),
+      def('humidity', 'sensor', T[1], {
+        device_class: 'humidity',
+        unit: '%',
+        signal: { shape: 'sine', min: 40, max: 60, period_s: 86400, decimals: 0 },
+      }),
+    ],
+    mapping: sourceMapping,
+  };
+
+  // the live log: a short minute of changes of the copies and a few other devices
+  const t0 = Date.parse(NOW) / 1000;
+  const logRow = (back, deviceIndex, key, old, now, cause, extra = {}) => {
+    const device = devices[deviceIndex];
+    const base = device.entities.find((e) => e.key === key);
+    const numeric = !Number.isNaN(Number(old)) && !Number.isNaN(Number(now));
+    return {
+      device_id: device.id,
+      device: device.name,
+      key,
+      name: base.name,
+      template: device.template,
+      area: device.area,
+      run_id: device.run_id,
+      output: device.output,
+      platform: base.platform,
+      device_class: base.device_class ?? '',
+      unit: base.unit ?? '',
+      old,
+      new: now,
+      delta: numeric ? Math.round((Number(now) - Number(old)) * 1000) / 1000 : null,
+      cause,
+      source_id: device.source ? device.source.id : '',
+      source: device.source ? device.source.name : '',
+      at: t0 - back,
+      ...extra,
+    };
+  };
+  const copy1 = devices.length - 2;
+  const copy2 = devices.length - 1;
+  const logEntries = [
+    logRow(52, copy1, 'temperature', '21.7', '21.8', 'source'),
+    logRow(51, copy2, 'temperature', '21.0', '21.1', 'source'),
+    logRow(47, 1, 'power', '1175.2', '1180.5', 'signal'),
+    logRow(44, 0, 'power', '82.9', '84.3', 'signal'),
+    logRow(41, 3, 'light', 'off', 'on', 'action'),
+    logRow(37, copy1, 'humidity', '47.0', '47.2', 'source'),
+    logRow(36, copy2, 'humidity', '49.1', '49.4', 'source'),
+    logRow(31, 4, 'temperature', '21.3', '21.4', 'signal'),
+    logRow(26, 1, 'power', '1180.5', '1163.9', 'signal'),
+    logRow(22, 5, 'humidity', 'unavailable', '44.1', 'fault'),
+    logRow(17, copy1, 'temperature', '21.8', '21.9', 'source'),
+    logRow(16, copy2, 'temperature', '21.1', '21.2', 'source'),
+    logRow(11, 0, 'power', '84.3', '86.0', 'signal'),
+    logRow(6, 1, 'power', '1163.9', '1171.4', 'signal'),
+    logRow(2, 6, 'motion', 'off', 'on', 'action'),
+  ].map((entry, n) => ({ seq: n + 1, ...entry }));
+
   const removalPlan = {
     target: 'all',
     devices: devices.map((d) => ({ id: d.id, name: d.name })),
@@ -476,5 +581,9 @@ export function fixtures(lang) {
     runs,
     removalPlan,
     historyResult: { series: 41, rows: 1968, skipped: 0 },
+    sourceDevices,
+    sourceInfos,
+    sourceDerived,
+    logEntries,
   };
 }

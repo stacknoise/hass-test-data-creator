@@ -40,7 +40,7 @@ const NEW_SCHEDULE_NAME = LANG === 'de' ? 'Ausfall in der Küche' : 'Kitchen dro
 const KITCHEN_PLUG = LANG === 'de' ? 'Steckdose Küche' : 'Kitchen plug';
 
 /** The tabs in the order of the navigation. */
-const TAB = { devices: 1, schedules: 2, scenarios: 3, groups: 4, history: 5, remove: 6 };
+const TAB = { devices: 1, schedules: 2, scenarios: 3, groups: 4, history: 5, log: 6, remove: 7 };
 
 /** Open the harness page with the panel and wait until it shows its data. */
 async function open(browser, height) {
@@ -124,7 +124,7 @@ try {
   await windowShot(page, 'create-custom-device');
   await page.close();
   page = await open(browser, 620);
-  await page.locator('tdc-device-list button.primary').nth(1).click();
+  await page.locator('tdc-device-list button.primary').nth(2).click();
   await windowShot(page, 'own-templates');
   await page.close();
 
@@ -164,6 +164,21 @@ try {
   page = await open(browser, 560);
   await tab(page, 'history');
   await panelShot(page, 'history');
+  await page.close();
+
+  // the live log with the changes of the copies
+  page = await open(browser, 760);
+  await tab(page, 'log');
+  await page.locator('tdc-log-panel .list').first().waitFor();
+  await panelShot(page, 'live-log');
+  await page.close();
+
+  // the popup that follows a real device: the source chosen, its entities and the deviation
+  page = await open(browser, 1100);
+  await page.locator('tdc-device-list button.primary').nth(1).click();
+  await page.locator('tdc-source-step ul button').first().click();
+  await page.locator('tdc-source-step input[type=number]').first().waitFor();
+  await windowShot(page, 'follow-device');
   await page.close();
 
   // the removal with what it would delete
