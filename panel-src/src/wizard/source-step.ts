@@ -1,4 +1,4 @@
-import { html, nothing, type TemplateResult } from 'lit';
+import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
@@ -36,6 +36,15 @@ const FIELDS: { key: keyof DeviationForm; label: TextKey; step: string }[] = [
 /** The optional step of the creation wizard: follow a real device and deviate by the seed. */
 @customElement('tdc-source-step')
 export class SourceStep extends TdcElement {
+  static override styles = [
+    TdcElement.styles,
+    css`
+      table {
+        margin-bottom: 16px;
+      }
+    `,
+  ];
+
   @property() seed = '';
 
   @state() private query = '';
@@ -165,8 +174,19 @@ export class SourceStep extends TdcElement {
               ${this.found.map(
                 (device) =>
                   html`<li>
-                    <button @click=${() => void this.choose(device)}>${device.name}</button>
-                    <small>${[device.manufacturer, device.model].filter(Boolean).join(' ')}</small>
+                    <button
+                      ?disabled=${device.usable === 0}
+                      @click=${() => void this.choose(device)}
+                    >
+                      ${device.name}
+                    </button>
+                    <small
+                      >${
+                        device.usable === 0
+                          ? this.tr('sourceUnusable')
+                          : [device.manufacturer, device.model].filter(Boolean).join(' ')
+                      }</small
+                    >
                   </li>`,
               )}
             </ul>`

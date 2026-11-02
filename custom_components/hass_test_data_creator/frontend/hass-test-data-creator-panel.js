@@ -1171,6 +1171,7 @@ var xt = {
 		sourceIntro: "The devices copy the values of a real device (read only) and deviate from it by their seed. If the source is offline, the copies are offline too.",
 		sourceSearch: "Search device",
 		sourceNoMatch: "No device found",
+		sourceUnusable: "No entity that a copy could follow",
 		sourceChosen: "Source: {name}",
 		sourceChange: "Change",
 		sourceColSource: "Source entity",
@@ -1558,6 +1559,7 @@ var xt = {
 		sourceIntro: "Die Geräte übernehmen die Werte eines echten Geräts (nur lesend) und weichen per Seed davon ab. Ist die Quelle offline, sind auch die Kopien offline.",
 		sourceSearch: "Gerät suchen",
 		sourceNoMatch: "Kein Gerät gefunden",
+		sourceUnusable: "Keine Entität, der eine Kopie folgen könnte",
 		sourceChosen: "Quelle: {name}",
 		sourceChange: "Ändern",
 		sourceColSource: "Quell-Entität",
@@ -4104,6 +4106,13 @@ var Vi = 300, Hi = "custom", Ui = [
 	constructor(...e) {
 		super(...e), this.seed = "", this.query = "", this.found = [], this.infos = [], this.included = /* @__PURE__ */ new Set(), this.form = Fi, this.error = "";
 	}
+	static {
+		this.styles = [A.styles, o`
+      table {
+        margin-bottom: 16px;
+      }
+    `];
+	}
 	disconnectedCallback() {
 		window.clearTimeout(this.timer), super.disconnectedCallback();
 	}
@@ -4168,8 +4177,15 @@ var Vi = 300, Hi = "custom", Ui = [
       </div>
       ${this.found.length === 0 ? h`<p><small>${this.tr("sourceNoMatch")}</small></p>` : h`<ul>
               ${this.found.map((e) => h`<li>
-                    <button @click=${() => void this.choose(e)}>${e.name}</button>
-                    <small>${[e.manufacturer, e.model].filter(Boolean).join(" ")}</small>
+                    <button
+                      ?disabled=${e.usable === 0}
+                      @click=${() => void this.choose(e)}
+                    >
+                      ${e.name}
+                    </button>
+                    <small
+                      >${e.usable === 0 ? this.tr("sourceUnusable") : [e.manufacturer, e.model].filter(Boolean).join(" ")}</small
+                    >
                   </li>`)}
             </ul>`}`;
 	}

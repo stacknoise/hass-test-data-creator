@@ -61,8 +61,22 @@ async def test_the_search_finds_real_devices_and_never_generated_ones(
     found = (await call(client, "sources/list"))["result"]["devices"]
     assert [item["name"] for item in found] == [REAL]
     assert found[0]["entities"] == 2
+    assert found[0]["usable"] == 2
     assert (await call(client, "sources/list", query="acme"))["result"]["devices"] == found
     assert (await call(client, "sources/list", query="plug"))["result"]["devices"] == []
+
+
+async def test_a_device_without_followable_entities_is_marked_unusable(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    other = MockConfigEntry(domain="other")
+    other.add_to_hass(hass)
+    dr.async_get(hass).async_get_or_create(
+        config_entry_id=other.entry_id, identifiers={("other", "empty")}, name="Empty"
+    )
+    client = await hass_ws_client(hass)
+    found = (await call(client, "sources/list"))["result"]["devices"]
+    assert [(item["name"], item["usable"]) for item in found] == [("Empty", 0)]
 
 
 async def test_inspect_lists_entities_and_proposes_a_mapping(
