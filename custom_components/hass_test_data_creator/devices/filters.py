@@ -20,7 +20,11 @@ SORT_NAME = "name"
 SORT_CREATED = "created"
 SORT_TEMPLATE = "template"
 SORTS = (SORT_NAME, SORT_CREATED, SORT_TEMPLATE)
-GROUPS = ("templates", "areas", "outputs", "platforms", "runs")
+SOURCE_ANY = "any"
+SOURCE_WITH = "with"
+SOURCE_WITHOUT = "without"
+SOURCE_STATES = (SOURCE_ANY, SOURCE_WITH, SOURCE_WITHOUT, "offline", "removed")
+GROUPS = ("templates", "areas", "outputs", "platforms", "runs", "sources")
 _NUMBERS = re.compile(r"(\d+)")
 
 
@@ -34,6 +38,8 @@ class DeviceFilter:
     outputs: tuple[str, ...] = ()
     platforms: tuple[str, ...] = ()
     runs: tuple[str, ...] = ()
+    sources: tuple[str, ...] = ()
+    source_state: str = SOURCE_ANY
     custom: bool = False
     state: str = STATE_ANY
     sort: str | None = None
@@ -49,6 +55,8 @@ class DeviceFilter:
             outputs=tuple(data.get("outputs", ())),
             platforms=tuple(data.get("platforms", ())),
             runs=tuple(data.get("runs", ())),
+            sources=tuple(data.get("sources", ())),
+            source_state=data.get("source_state", SOURCE_ANY),
             custom=data.get("custom", False),
             state=data.get("state", STATE_ANY),
             sort=data.get("sort"),
@@ -63,6 +71,7 @@ class FilterContext:
     usage: UsageLookup
     has_fault: Callable[[DeviceDef], bool]
     bundled: frozenset[str]
+    source_of: Callable[[DeviceDef], dict[str, Any] | None] = lambda device: None
 
 
 def natural_key(text: str) -> tuple[Any, ...]:
@@ -74,9 +83,10 @@ def natural_key(text: str) -> tuple[Any, ...]:
     )
 
 
-def _text_matches(device: DeviceDef, query: str) -> bool:
-    """Whether `query` (lower case) is part of a searched text of `device`."""
+def _text_matches(device: DeviceDef, query: str, source: dict[str, Any] | None) -> bool:
+    """Whether `query` (lower case) is part of a searched text of `device`, its source included."""
     texts = (
+        (source or {}).get("name", ""),
         device.name,
         device.id,
         device.template,
@@ -91,17 +101,31 @@ def _checks(
     device: DeviceDef, flt: DeviceFilter, context: FilterContext, query: str
 ) -> dict[str, bool]:
     """Return per group of the filter whether `device` passes it; unset groups pass."""
+    source = context.source_of(device)
     return {
-        "query": not query or _text_matches(device, query),
+        "query": not query or _text_matches(device, query, source),
         "templates": not flt.templates or device.template in flt.templates,
         "areas": not flt.areas or (device.area or "") in flt.areas,
         "outputs": not flt.outputs or device.output in flt.outputs,
         "platforms": not flt.platforms
         or any(entity.platform in flt.platforms for entity in device.entities),
         "runs": not flt.runs or device.run_id in flt.runs,
+        "sources": not flt.sources or (source["id"] if source else "") in flt.sources,
+        "source_state": _source_state_matches(source, flt.source_state),
         "custom": not flt.custom or device.template not in context.bundled,
         "state": _state_matches(device, flt.state, context),
     }
+
+
+def _source_state_matches(source: dict[str, Any] | None, wanted: str) -> bool:
+    """Whether the source of a device has the state asked for (with, without, offline, removed)."""
+    if wanted == SOURCE_WITH:
+        return source is not None
+    if wanted == SOURCE_WITHOUT:
+        return source is None
+    if wanted in SOURCE_STATES[3:]:
+        return source is not None and source["state"] == wanted
+    return True
 
 
 def _state_matches(device: DeviceDef, state: str, context: FilterContext) -> bool:
@@ -138,7 +162,7 @@ def filter_and_sort(
     return found
 
 
-def _values(device: DeviceDef) -> dict[str, set[str]]:
+def _values(device: DeviceDef, source: dict[str, Any] | None) -> dict[str, set[str]]:
     """Return the values of `device` in each facet group."""
     return {
         "templates": {device.template},
@@ -146,6 +170,7 @@ def _values(device: DeviceDef) -> dict[str, set[str]]:
         "outputs": {device.output},
         "platforms": {entity.platform for entity in device.entities},
         "runs": {device.run_id},
+        "sources": {source["id"] if source else ""},
     }
 
 
@@ -162,7 +187,7 @@ def facets(
     counts: dict[str, dict[str, int]] = {name: {} for name in (*GROUPS, "state")}
     for device in devices:
         checks = _checks(device, flt, context, query)
-        values = _values(device)
+        values = _values(device, context.source_of(device))
         for group, found in values.items():
             if all(passed for key, passed in checks.items() if key != group):
                 for value in found:

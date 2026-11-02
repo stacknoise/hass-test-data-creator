@@ -42,3 +42,8 @@ SOURCES_PREVIEW_FIELDS: dict[Any, Any] = {
     vol.Optional("span", default=0.0): _amount,
     vol.Optional("deviation", default={}): vol.Schema(DEVIATION_FIELDS),
 }
+
+SOURCES_CONFIRM_FIELDS: dict[Any, Any] = {
+    vol.Required("source"): SHORT_TEXT,
+    vol.Required("remove"): bool,
+}

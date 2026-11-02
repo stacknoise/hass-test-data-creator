@@ -65,8 +65,10 @@ from .scheduler.planner import SchedulePlanner
 from .scheduler.runner import ActionRunner
 from .scheduler.triggers import TriggerFactory
 from .sources.binding import SourceBindingFactory
+from .sources.decision import SourceDecision
 from .sources.follower import SourceFollower
 from .sources.registry import SourceRegistry
+from .sources.status import SourceStatus
 from .store.store import TdcStore
 from .templates.device_factory import DeviceFactory
 from .templates.factory import TemplateFactory
@@ -99,6 +101,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     log_buffer = LogBuffer(LOG_DEFAULT_ENTRIES)
     log_recorder = LogRecorder(store, LogEntryFactory(), log_buffer)
     follower = SourceFollower(hass)
+    source_status = SourceStatus(hass)
     source_registry = SourceRegistry(hass)
     scheduler = HassScheduler(hass, clock)
     bindings = SourceBindingFactory(follower, hass.states.get, source_registry)
@@ -195,13 +198,15 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         history=history,
         clock=clock,
         usage=usage,
-        device_view=DeviceView(hass, store, usage, live, registry.bundled_ids),
+        device_view=DeviceView(hass, store, usage, live, registry.bundled_ids, SourceStatus(hass)),
         signal_editor=signal_editor,
         pauser=pauser,
         csv=csv,
         log=LogView(log_recorder, log_buffer),
         sources=source_registry,
         follower=follower,
+        source_status=source_status,
+        source_decision=SourceDecision(store, audit, audit_factory),
         transfer=TransferExporter(store, registry, TransferFactory()),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,

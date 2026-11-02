@@ -38,6 +38,8 @@ class LogEntry:
     old: str | None
     new: str
     cause: str
+    source_id: str = ""
+    source: str = ""
 
     @property
     def delta(self) -> float | None:
@@ -65,4 +67,6 @@ class LogEntry:
             "new": self.new,
             "delta": self.delta,
             "cause": self.cause,
+            "source_id": self.source_id,
+            "source": self.source,
         }

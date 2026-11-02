@@ -184,3 +184,26 @@ async def test_a_unit_that_cannot_be_converted_is_refused(
     refused = await create_copies(hass, client, device_id)
     assert refused["success"] is False
     assert refused["error"]["message"] == "The unit of the source cannot be converted"
+
+
+async def test_the_log_names_the_source_and_filters_by_it(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    device_id = real_device(hass, entry)
+    set_source(hass, "sensor.hum", "40", "%")
+    client = await hass_ws_client(hass)
+    await create_copies(hass, client, device_id)
+    await hass.async_block_till_done()
+    log = get_data(hass).log
+    log.get(0, 1, LogFilter.from_request(None), False)
+
+    set_source(hass, "sensor.temp", "unavailable", "°F")
+    await hass.async_block_till_done()
+    mine = log.get(0, 100, LogFilter.from_request({"sources": [device_id]}), False)["entries"]
+    assert mine
+    assert {item["source_id"] for item in mine} == {device_id}
+    assert {item["source"] for item in mine} == {"Boiler room sensor"}
+    other = log.get(0, 100, LogFilter.from_request({"sources": ["nope"]}), False)["entries"]
+    assert other == []
+    by_text = log.get(0, 100, LogFilter.from_request({"query": "boiler"}), False)["entries"]
+    assert len(by_text) == len(mine)

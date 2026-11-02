@@ -180,8 +180,10 @@ async def test_names_are_light_and_get_reports_a_missing_device(
         "output",
         "run_id",
         "created_at",
+        "source",
         "entities",
     }
+    assert names[0]["source"] is None
     assert names[0]["entities"]
     assert set(names[0]["entities"][0]) == {"key", "name", "platform", "state_class", "shape"}
 

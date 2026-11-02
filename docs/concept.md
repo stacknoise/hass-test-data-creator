@@ -574,7 +574,7 @@ The deviation is a pure function over `hash01` of `(seed, bucket, source value)`
 The source a device depends on must be visible everywhere the device is shown (maintainer request 2026-11-01).
 
 - **Device list:** a column "Source" with the name of the source device and a state badge (`ok`, `offline`, `removed`); devices without a source show a dash. The source name is a link that sets the source filter.
-- **Filter (F1):** `devices/list` takes the optional fields `sources[]` (names or ids of source devices, `""` means no source) and `source_state` (`any`, `with`, `without`, `offline`, `removed`). The facets (16.1) count the sources, so the filter shows "Boiler (12)". The `query` also matches the source name. Bulk actions (16.3) and "all N matches" work with these fields, so one can select, pause or remove all copies of one source.
+- **Filter (F1):** `devices/list` takes the optional fields `sources[]` (ids of source devices, `""` means no source) and `source_state` (`any`, `with`, `without`, `offline`, `removed`). The facets (16.1) count the sources, so the filter shows "Boiler (12)". The `query` also matches the source name. Bulk actions (16.3) and "all N matches" work with these fields, so one can select, pause or remove all copies of one source.
 - **Device detail and dialogs:** the header shows "Source: <name>" with the badge; the entity list shows the mapped source entity next to each entity; the target pickers of schedules, scenarios and groups show the source as a badge.
 - **Log:** the source is a column and a filter (`sources[]`) in the live log; `cause=source` marks changes that come from it.
 - **Other lists:** the Removal tab names the source of each listed device and states that the source itself is never touched; the Transfer tab shows the source per device.
@@ -612,7 +612,7 @@ Pause and resume (16.8), duplicate (16.4) and removal work as for any device; a 
 
 The source is followed by events: one `SourceFollower` keeps one subscription per source entity (`async_track_state_change_event`) however many copies follow it. A new source value reaches the copies at their next interval tick, so the state rate stays plannable (12); only a status change (offline, back) is immediate.
 
-**Store (version 4).** `DeviceDef.source` is `None` or `{ device_id, mapping: {key: entity_id}, deviation: {…}, seeds: {key: seed}, removed: bool }`. `STORE_VERSION` goes from 3 to 4 and `store/migrate.py` sets `source` to `None` on existing devices, with a test. No source values and no secrets are stored, only references. Removal never touches the source (4.4). Export (16.5) writes the source by the name of the device; import resolves it by name and, if it is missing, creates the device without a source and reports it (nothing half-way); `format_version` is raised with a test that reads the previous one.
+**Store (version 4).** `DeviceDef.source` is `None` or `{ device_id, name, mapping: {key: entity_id}, deviation: {…}, seeds: {key: seed}, dismissed: bool }`; `name` is kept for when the device is gone, and `removed` is not stored but read from the registries (`sources/status.py`): the state is `removed` when the device or a mapped entity is missing, `offline` when a mapped entity is unavailable, else `ok`. `dismissed` is set by the answer "keep them offline". `STORE_VERSION` goes from 3 to 4 and `store/migrate.py` sets `source` to `None` on existing devices, with a test. No source values and no secrets are stored, only references. Removal never touches the source (4.4). Export (16.5) writes the source by the name of the device; import resolves it by name and, if it is missing, creates the device without a source and reports it (nothing half-way); `format_version` is raised with a test that reads the previous one.
 
 ### 17.6 Source device: commands and panel
 
@@ -624,7 +624,8 @@ The source is followed by events: one `SourceFollower` keeps one subscription pe
 | `devices/create` | gets the optional field `source` |
 | `devices/set_source` | Set or clear the source of devices; target as in 16.3 (`ids` or `filter`, `expected`) |
 | `devices/set_seed` | Set the seed of one sensor or of a whole copy (17.4a); copies only |
-| `devices/confirm_source_removed` | The answer to the question of 17.3: remove the copies (through the removal plan) or keep them offline |
+| `sources/removed` | The removed sources that still have copies nobody decided about, with the names of the copies (the banner) |
+| `devices/confirm_source_removed` | The answer to the question of 17.3 (`source`, `remove`): remove the copies (through the removal plan) or keep them offline (`dismissed`) |
 
 The creation wizard gets an optional step "Source": device search, the mapping as a table (target, source entity, current value, unit) and the deviation controls, with a preview of five simulated devices. The live view of 16.7 draws two lines for a bound entity, the source (dashed) and the device. Texts through `i18n`, colours from Home Assistant variables; the README names the feature in the same pull request.
 
