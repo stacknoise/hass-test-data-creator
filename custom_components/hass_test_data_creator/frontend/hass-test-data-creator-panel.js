@@ -4465,9 +4465,10 @@ var Yi = class extends A {
 	static {
 		this.styles = [A.styles, o`
       small {
-        padding: 1px 6px;
-        border-radius: 8px;
         color: var(--text-primary-color);
+        font-size: 0.8em;
+        padding: 1px 8px;
+        border-radius: 999px;
       }
       .ok {
         background: var(--success-color);
