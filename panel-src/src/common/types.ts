@@ -97,6 +97,8 @@ export interface SourceDevice {
   manufacturer: string | null;
   model: string | null;
   entities: number;
+  /** How many entities a copy gets; a device with none cannot be a source. */
+  usable: number;
 }
 
 /** One entity of a source device with its current state (`sources/inspect`). */

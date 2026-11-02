@@ -32,7 +32,9 @@ function fakeHass(sent: Record<string, unknown>[]): Hass {
           ];
         case 'hass_test_data_creator/sources/list':
           return {
-            devices: [{ id: 'd1', name: 'Boiler', manufacturer: '', model: '', entities: 1 }],
+            devices: [
+              { id: 'd1', name: 'Boiler', manufacturer: '', model: '', entities: 1, usable: 1 },
+            ],
           };
         case 'hass_test_data_creator/sources/derive':
           return {

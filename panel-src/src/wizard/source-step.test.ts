@@ -27,7 +27,14 @@ describe('SourceStep', () => {
           case 'hass_test_data_creator/sources/list':
             return {
               devices: [
-                { id: 'd1', name: 'Boiler', manufacturer: 'Acme', model: 'B1', entities: 1 },
+                {
+                  id: 'd1',
+                  name: 'Boiler',
+                  manufacturer: 'Acme',
+                  model: 'B1',
+                  entities: 1,
+                  usable: 1,
+                },
               ],
             };
           case 'hass_test_data_creator/sources/inspect':
@@ -97,5 +104,26 @@ describe('SourceStep', () => {
     await settle();
 
     expect(reported.at(-1)?.source.deviation).toEqual({ scale: 0.02 });
+  });
+
+  it('does not let a device without usable entities be chosen', async () => {
+    const hass = step.hass as unknown as {
+      callWS: (m: Record<string, unknown>) => Promise<unknown>;
+    };
+    const original = hass.callWS;
+    hass.callWS = async (message) => {
+      if (message.type === 'hass_test_data_creator/sources/list') {
+        return {
+          devices: [
+            { id: 'x', name: 'Empty', manufacturer: '', model: '', entities: 3, usable: 0 },
+          ],
+        };
+      }
+      return original(message);
+    };
+    step.remove();
+    document.body.append(step);
+    await settle();
+    expect(step.shadowRoot!.querySelector<HTMLButtonElement>('li button')!.disabled).toBe(true);
   });
 });
