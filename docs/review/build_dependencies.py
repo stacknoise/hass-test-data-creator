@@ -646,10 +646,28 @@ NOTES: dict[str, dict[str, str]] = {
         "Notable decisions": "Only ids recorded in the store or devices carrying this config entry are touched; areas are deleted only if the integration created them and they are empty. Retained topics are cleared last, when nothing publishes any more.",
     },
     "store": {
-        "Responsibility": "Persistence in one Home Assistant <code>Store</code> (key <code>hass_test_data_creator.data</code>, version 1).",
-        "Key classes": "<code>TdcStore</code>: dicts of devices, runs, schedules, scenarios, groups, published topics, created statistics, created areas and counters.",
-        "Data flow": "Reads build dataclasses from dicts on every call; writes replace the dict entry. User changes call <code>async_save</code> at once, retained-topic bookkeeping uses <code>async_delay_save</code> (5 s).",
-        "Notable decisions": "No secrets. No migration function yet (version 1). Loaded data is merged over an empty skeleton without validation.",
+        "Responsibility": "Persistence in one Home Assistant <code>Store</code> (key <code>hass_test_data_creator.data</code>, version 4).",
+        "Key classes": "<code>TdcStore</code>: dicts of devices, runs, schedules, scenarios, groups, published topics, created statistics, created areas and counters; <code>migrate</code> upgrades older versions.",
+        "Data flow": "Reads build dataclasses from dicts on every call; writes replace the dict entry. User changes call <code>async_save</code> at once, retained-topic bookkeeping uses <code>async_delay_save</code>. On load <code>store/migrate.py</code> lifts older data to the current version (3 added <code>paused</code>, 4 added <code>source</code> per device).",
+        "Notable decisions": "No secrets; a copy of a source device stores only references (device id, name, entity ids, deviation, seeds). Every store change has a version bump, a migration and a test. Loaded data is merged over an empty skeleton without validation.",
+    },
+    "log": {
+        "Responsibility": "The live log: every state change of the generated entities, kept in memory only while the tab asks for it.",
+        "Key classes": "<code>LogRecorder</code> (called by the outputs), <code>LogBuffer</code> (ring buffer), <code>LogEntryFactory</code> + <code>LogEntry</code>, <code>LogFilter</code>, <code>LogView</code> (reply of <code>log/get</code>).",
+        "Data flow": "The native and MQTT outputs hand each change to <code>LogRecorder.record</code>; while capture is on it builds an entry and appends it to the buffer. <code>log/get</code> returns the entries after a sequence number through <code>LogFilter</code>; <code>log/set</code> switches capture on or off and <code>log/clear</code> empties the buffer.",
+        "Notable decisions": "Capture stops when no reader asks for a while and the buffer is emptied; nothing is written to the store. Entries name the source of a copy so that the log can filter by it.",
+    },
+    "sources": {
+        "Responsibility": "Copies that follow a real device: finding sources, deriving the entities of a copy, converting and deviating values, and the state of the source.",
+        "Key classes": "<code>SourceRegistry</code> (search and read real devices), <code>SourceBindingFactory</code> + <code>SourceBinding</code> (one subscription per source entity, <code>online</code>, <code>value</code>, <code>raw</code>), <code>Deviation</code> (pure, seeded), <code>SourceSeeds</code>, <code>SourceStatus</code> (ok, offline, removed), <code>SourceDecision</code> (answer to \"remove the copies?\"), <code>derive</code>, <code>SourceFollower</code>.",
+        "Data flow": "<code>sources/derive</code> proposes the entities of a copy from the states of the source; <code>devices/create</code> with a <code>source</code> stores the mapping and deviation on the device. Behaviours get an optional <code>ValueProvider</code> from the binding and read it at their tick; when the source is offline the copy reports <code>unavailable</code>.",
+        "Notable decisions": "The deviation is a pure function of the source value, time and the seed per sensor. Copies are locked like bundled templates (<code>TDC-SRC-005</code>), actions on a copy with an offline source are refused (<code>TDC-SRC-007</code>), and removal never touches the source.",
+    },
+    "transfer": {
+        "Responsibility": "Export and import of devices, own templates, schedules, scenarios and groups as a JSON file of definitions.",
+        "Key classes": "<code>TransferExporter</code>, <code>TransferImporter</code> with one <code>CategoryHandler</code> per category, <code>TransferFactory</code> (file entries), <code>CategoryPlan</code>, <code>References</code>/<code>ReferenceNames</code>.",
+        "Data flow": "The panel reads <code>transfer/export</code> page by page and joins the file; for an import it sends batches to <code>transfer/plan</code> (what would happen) and <code>transfer/run</code> (does it) in the order templates, devices, scenarios, schedules, groups.",
+        "Notable decisions": "References are written by name and resolved on import; the file holds no runtime values, credentials or markers. Format version 2 adds the source of a copy; format 1 still imports. An entry that fails is reported and does not stop the others.",
     },
     "api": {
         "Responsibility": "The <code>hass_test_data_creator/*</code> WebSocket commands.",

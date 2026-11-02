@@ -13,11 +13,11 @@ Home Assistant custom integration (domain `hass_test_data_creator`) that creates
 
 ```text
 CLAUDE.md  README.md  hacs.json  pyproject.toml  requirements_test.txt  requirements_lint.txt
-docs/            concept.md, development.md, code-index.md (GENERATED), error-codes.md (GENERATED), mockups/
+docs/            concept.md, development.md, code-index.md (GENERATED), error-codes.md (GENERATED), mockups/, review/ (dependency maps)
 scripts/code_index.py
 custom_components/hass_test_data_creator/
   __init__.py config_flow.py const.py manifest.json services.yaml translations/{en,de}.json
-  core/ model/ store/ templates/ engine/ scheduler/ scenarios/ faults/ outputs/ platforms/ devices/ groups/ history/ replay/ areas/ removal/ audit/ log/ api/
+  core/ model/ store/ templates/ engine/ scheduler/ scenarios/ faults/ outputs/ platforms/ devices/ groups/ history/ replay/ areas/ removal/ audit/ log/ sources/ transfer/ api/
   frontend/      BUILT panel (never edit by hand)
 panel-src/       TypeScript, Lit, Vite, Vitest
 tests/  dev/  .github/workflows/
