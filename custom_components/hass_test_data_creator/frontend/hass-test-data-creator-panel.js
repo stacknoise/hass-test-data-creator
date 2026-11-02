@@ -5428,11 +5428,11 @@ var Na = 1e3, Pa = 5e3, Fa = "min(65vh, 640px)", G = class extends j {
 	static {
 		this.styles = [j.styles, o`
       .bar {
-        display: flex;
-        flex-wrap: wrap;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        display: flex;
         margin-bottom: 8px;
+        flex-wrap: wrap;
       }
       .bar .grow {
         flex: 1;
@@ -5472,9 +5472,10 @@ var Na = 1e3, Pa = 5e3, Fa = "min(65vh, 640px)", G = class extends j {
         font-size: 0.9em;
       }
       .row > span {
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
       .time {
         font-variant-numeric: tabular-nums;

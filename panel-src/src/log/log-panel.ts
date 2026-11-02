@@ -50,11 +50,11 @@ export class LogPanel extends TdcElement {
     TdcElement.styles,
     css`
       .bar {
-        display: flex;
-        flex-wrap: wrap;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        display: flex;
         margin-bottom: 8px;
+        flex-wrap: wrap;
       }
       .bar .grow {
         flex: 1;
@@ -94,9 +94,10 @@ export class LogPanel extends TdcElement {
         font-size: 0.9em;
       }
       .row > span {
-        overflow: hidden;
-        text-overflow: ellipsis;
         white-space: nowrap;
+        min-width: 0;
+        text-overflow: ellipsis;
+        overflow: hidden;
       }
       .time {
         font-variant-numeric: tabular-nums;
