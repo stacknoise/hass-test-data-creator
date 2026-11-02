@@ -1149,6 +1149,32 @@ Lists every module, class and function of the integration with signature, file a
 | `ScenarioManager._run_step` | `async def _run_step(self, name: str, step: dict[str, Any]) -> None` | `custom_components/hass_test_data_creator/scenarios/manager.py` | Run the action of one step on all devices of its target. |
 | `hass_test_data_creator.scenarios.schema` | `module` | `custom_components/hass_test_data_creator/scenarios/schema.py` | Request fields of a scenario, shared by the services and the WebSocket commands. |
 
+## sources
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.sources.__init__` | `module` | `custom_components/hass_test_data_creator/sources/__init__.py` | The source device: a real device whose values the generated copies follow (concept 17). |
+| `hass_test_data_creator.sources.deviation` | `module` | `custom_components/hass_test_data_creator/sources/deviation.py` | Pure functions that turn the value of a source into the value of one copy (concept 17.5). |
+| `Deviation` | `class Deviation` | `custom_components/hass_test_data_creator/sources/deviation.py` | The optional deviation parameters of a job; zero or `None` switches a part off. |
+| `Deviation.to_dict` | `def to_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return the JSON-serialisable form. |
+| `Deviation.from_dict` | `def from_dict(cls, data: dict[str, Any] \| None) -> Deviation` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return the parameters stored in `data`; missing or unknown fields use the defaults. |
+| `signed` | `def signed(seed: int, salt: int, n: int=0) -> float` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return a deterministic number in [-1, 1) for `seed`, one parameter `salt` and a step `n`. |
+| `lag_of` | `def lag_of(seed: int, deviation: Deviation) -> float` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return the delay in seconds of one copy: fixed per seed, between 0 and `lag_s`. |
+| `is_dropout` | `def is_dropout(seed: int, bucket: int, deviation: Deviation) -> bool` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return True if the copy holds its last value in this time bucket. |
+| `deviate` | `def deviate(value: float, seed: int, bucket: int, deviation: Deviation, span: float=0.0) -> float` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return the value of a copy for a source `value`. |
+| `clamped` | `def clamped(value: float, deviation: Deviation) -> float` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return `value` kept within the limits of the deviation. |
+| `rounded` | `def rounded(value: float, deviation: Deviation) -> float` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return `value` rounded to the decimals of the deviation, if it has any. |
+| `bucket_of` | `def bucket_of(at: float, interval_s: float) -> int` | `custom_components/hass_test_data_creator/sources/deviation.py` | Return the number of the time bucket that `at` falls in, for buckets of `interval_s`. |
+| `hass_test_data_creator.sources.mapper` | `module` | `custom_components/hass_test_data_creator/sources/mapper.py` | Mapping of the entities of a copy to the entities of its source (concept 17.5). |
+| `SourceEntity` | `class SourceEntity` | `custom_components/hass_test_data_creator/sources/mapper.py` | One entity of the source device, as far as the mapping needs it. |
+| `Proposal` | `class Proposal` | `custom_components/hass_test_data_creator/sources/mapper.py` | The result for one entity of the copy: the chosen source entity, or why there is none. |
+| `compatible` | `def compatible(target: EntityDef, source: SourceEntity) -> bool` | `custom_components/hass_test_data_creator/sources/mapper.py` | Return True if `source` can feed `target`: same platform, same device class, units convert. |
+| `propose` | `def propose(entities: list[EntityDef], sources: list[SourceEntity]) -> list[Proposal]` | `custom_components/hass_test_data_creator/sources/mapper.py` | Return one proposal per entity: a unique match is taken, the rest says why not. |
+| `_only_unit_differs` | `def _only_unit_differs(target: EntityDef, same_platform: list[SourceEntity]) -> bool` | `custom_components/hass_test_data_creator/sources/mapper.py` | Return True if a source entity has the right class but a unit that cannot be converted. |
+| `hass_test_data_creator.sources.units` | `module` | `custom_components/hass_test_data_creator/sources/units.py` | Unit conversion between a source entity and a copy, with the converters of Home Assistant. |
+| `converter` | `def converter(device_class: str \| None, source_unit: str \| None, target_unit: str \| None) -> Callable[[float], float] \| None` | `custom_components/hass_test_data_creator/sources/units.py` | Return the function that converts source values, or None if the units do not fit. |
+| `_identity` | `def _identity(value: float) -> float` | `custom_components/hass_test_data_creator/sources/units.py` | Return `value` unchanged. |
+
 ## transfer
 
 | Symbol | Signature | File | Description |
