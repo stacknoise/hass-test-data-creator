@@ -511,7 +511,7 @@ A paused device stands still, like a device that has dropped off the network wit
 - Regenerate `dependencies.html` and `dependency-graph.html` when modules or imports change (F1, F3, F5, F6); no new cross-topic imports.
 - Each package: its own branch and pull request, squash merge on green CI, then update the test container.
 
-## 17. Live log and source device (v1.2, planned)
+## 17. Live log and source device (v1.2)
 
 Decided with the maintainer on 2026-11-01 (see 15, O11 to O15). Both features ship in 1.2.0, each work package is its own pull request. Nothing here changes an existing command in a breaking way, so `API_VERSION` stays 2; each package adds its entry to `FEATURES` in `info`. The source device changes the store (version 4, 17.5); the live log does not.
 
