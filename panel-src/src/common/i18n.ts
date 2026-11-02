@@ -257,7 +257,7 @@ const en = {
   leftoverDeleted: '{count} topics deleted',
   error: 'Error',
   tabTransfer: 'Transfer',
-  tabLog: 'Log',
+  tabLog: 'Live Log',
   logIntro:
     'Every state change of the generated entities while this tab is open. Nothing is stored; closing the tab empties the log.',
   logPause: 'Pause',
@@ -660,7 +660,7 @@ const de: Record<TextKey, string> = {
   leftoverDeleted: '{count} Topics gelöscht',
   error: 'Fehler',
   tabTransfer: 'Transfer',
-  tabLog: 'Log',
+  tabLog: 'Live Log',
   logIntro:
     'Jede Zustandsänderung der generierten Entitäten, solange dieser Tab offen ist. Es wird nichts gespeichert; beim Schließen des Tabs wird das Log geleert.',
   logPause: 'Pause',
