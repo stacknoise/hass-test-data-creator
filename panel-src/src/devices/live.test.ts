@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { livePoints, numericState, pushSample } from './live';
+import { livePoints, numericState, pushSample, valueRange } from './live';
 
 describe('numericState', () => {
   it.each([
@@ -50,5 +50,26 @@ describe('livePoints', () => {
         0,
       ),
     ).toBe('0.0,10.0 10.0,10.0');
+  });
+});
+
+describe('valueRange', () => {
+  it('spans all series', () => {
+    const range = valueRange([{ at: 0, value: 2 }], [{ at: 0, value: 12 }]);
+    expect(range).toEqual({ low: 2, span: 10 });
+  });
+  it('lets a shared range place a second line', () => {
+    const range = { low: 0, span: 10 };
+    const points = livePoints(
+      [
+        { at: 0, value: 5 },
+        { at: 10, value: 5 },
+      ],
+      100,
+      40,
+      0,
+      range,
+    );
+    expect(points).toBe('0.0,20.0 100.0,20.0');
   });
 });

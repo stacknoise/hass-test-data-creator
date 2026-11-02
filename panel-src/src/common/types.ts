@@ -79,6 +79,8 @@ export interface EntityState {
   unit: string | null;
   state_class?: string | null;
   fault: string | null;
+  /** The raw value of the source of a copy; null while the source is offline. */
+  source_value?: number | string | null;
 }
 
 /** What a picker needs of an entity: no state, no curve. */
