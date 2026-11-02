@@ -21,6 +21,7 @@ FEATURES: Final = (
     "import",
     "faults",
     "list_filters",
+    "live_log",
     "mqtt_discovery",
     "native_output",
     "pause",
@@ -75,6 +76,12 @@ MAX_SCHEDULES: Final = 200
 MAX_SCENARIOS: Final = 100
 MAX_GROUPS: Final = 100
 MAX_PAGE_SIZE: Final = 500
+# The live log (concept 17.1): entries kept in memory, entries per second, seconds of silence.
+LOG_DEFAULT_ENTRIES: Final = 5000
+LOG_MIN_ENTRIES: Final = 500
+MAX_LOG_ENTRIES: Final = 50_000
+MAX_LOG_RATE: Final = 200
+LOG_IDLE_S: Final = 10
 MAX_FILTER_VALUES: Final = 50
 MAX_TRANSFER_BYTES: Final = 32 * 1024 * 1024
 MAX_SIGNAL_PERIOD_SECONDS: Final = 366 * 86400

@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_TICK_SECONDS,
     DEFAULT_TIME_LAPSE,
     DEFAULT_Z2M_BASE_TOPIC,
+    LOG_DEFAULT_ENTRIES,
 )
 from .core.keys import KEY_DEVICES, KEY_GROUPS, KEY_SCENARIOS, KEY_SCHEDULES
 from .data import TdcData
@@ -38,6 +39,10 @@ from .groups.manager import GroupManager
 from .history.factory import SeriesFactory
 from .history.manager import HistoryManager
 from .history.recorder import StatisticsClient
+from .log.buffer import LogBuffer
+from .log.factory import LogEntryFactory
+from .log.recorder import LogRecorder
+from .log.view import LogView
 from .outputs.adapter import OutputAdapterFactory
 from .outputs.mqtt.client import MqttClient
 from .outputs.mqtt.devices import MqttDevices
@@ -88,7 +93,9 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     csv = CsvLibrary(hass)
     signals = SignalFactory(csv)
     clock = Clock(entry.options.get(CONF_TIME_LAPSE, DEFAULT_TIME_LAPSE))
-    behaviours = BehaviourFactory(signals, HassScheduler(hass, clock))
+    log_buffer = LogBuffer(LOG_DEFAULT_ENTRIES)
+    log_recorder = LogRecorder(store, LogEntryFactory(), log_buffer)
+    behaviours = BehaviourFactory(signals, HassScheduler(hass, clock), log_recorder)
     parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
     mqtt_base = entry.options.get(CONF_MQTT_BASE_TOPIC, DEFAULT_MQTT_BASE_TOPIC)
     z2m_base = entry.options.get(CONF_Z2M_BASE_TOPIC, DEFAULT_Z2M_BASE_TOPIC)
@@ -179,6 +186,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         signal_editor=signal_editor,
         pauser=pauser,
         csv=csv,
+        log=LogView(log_recorder, log_buffer),
         transfer=TransferExporter(store, registry, TransferFactory()),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,

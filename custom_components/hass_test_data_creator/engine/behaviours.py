@@ -7,6 +7,8 @@ from datetime import datetime
 from typing import Protocol
 
 from ..const import MAX_LIGHT_BRIGHTNESS
+from ..core.keys import CAUSE_ACTION, CAUSE_FAULT, CAUSE_OTHER, CAUSE_SIGNAL
+from ..core.protocols import ChangeRecorder, LoggedBehaviour
 from ..faults.factory import Fault
 from ..model.models import EntityDef
 from .signal_factory import Signal
@@ -21,6 +23,9 @@ DEFAULT_TARGET_TEMPERATURE = 21.0
 TEMPERATURE_DIGITS = 2
 MIN_TEMPERATURE = 5.0
 MAX_TEMPERATURE = 30.0
+TEXT_ON = "on"
+TEXT_OFF = "off"
+TEXT_UNAVAILABLE = "unavailable"
 
 Cancel = Callable[[], None]
 
@@ -46,6 +51,18 @@ def _ignore_event(event_type: str) -> None:
     """Do nothing with an event; the default of the event callback."""
 
 
+class _NoLog:
+    """The recorder of a behaviour that is not logged: it never records."""
+
+    active = False
+
+    def changed(self, behaviour: LoggedBehaviour, cause: str, value: str | None = None) -> None:
+        """Do nothing."""
+
+
+NO_LOG: ChangeRecorder = _NoLog()
+
+
 class Behaviour:
     """What every entity has: its place in a device, a fault and a callback for changes."""
 
@@ -56,6 +73,7 @@ class Behaviour:
         self.definition = definition
         self.platform = definition.platform
         self.on_change: Callable[[], None] = _ignore
+        self.recorder: ChangeRecorder = NO_LOG
         self._scheduler = scheduler
         self.paused = False
         self._fault: Fault | None = None
@@ -64,6 +82,24 @@ class Behaviour:
     def now(self) -> float:
         """Return the current signal time in seconds."""
         return self._scheduler.now()
+
+    def state_text(self) -> str:
+        """Return the state as text for the live log; `unavailable` while a fault makes it so."""
+        return self._value_text() if self.available else TEXT_UNAVAILABLE
+
+    def _value_text(self) -> str:
+        """Return the value of the entity as text; entities without a value return nothing."""
+        return ""
+
+    def _record(self, cause: str, value: str | None = None) -> None:
+        """Tell the live log that the state changed, if it records."""
+        if self.recorder.active:
+            self.recorder.changed(self, cause, value)
+
+    def _changed(self, cause: str = CAUSE_ACTION) -> None:
+        """Record the change for `cause` and tell the output."""
+        self._record(cause)
+        self.on_change()
 
     @property
     def available(self) -> bool:
@@ -91,7 +127,7 @@ class Behaviour:
         self._fault = fault
         self._cancel_fault = self._scheduler.call_later(fault.duration_s, self._end_fault)
         self._fault_changed()
-        self.on_change()
+        self._changed(CAUSE_FAULT)
 
     def tick(self, now: float) -> bool:
         """Follow the clock; True if the state changed. Most entities do not move by themselves."""
@@ -118,7 +154,7 @@ class Behaviour:
         self._cancel_fault = None
         self._fault = None
         self._fault_changed()
-        self.on_change()
+        self._changed(CAUSE_FAULT)
 
     def _clear_fault_timer(self) -> None:
         """Cancel the timer that ends the active fault."""
@@ -154,13 +190,18 @@ class SensorBehaviour(Behaviour):
             return False
         self._last = now
         self.native_value = self._value(now)
+        self._record(CAUSE_SIGNAL)
         return True
+
+    def _value_text(self) -> str:
+        """Return the current value as text."""
+        return str(self.native_value)
 
     def _resumed(self) -> None:
         """Show the value of the curve at once, unless the sensor is frozen."""
         self._last = self._scheduler.now()
         self._fault_changed()
-        self.on_change()
+        self._changed(CAUSE_OTHER)
 
     def _value(self, now: float) -> float | str:
         """Return the value of the signal at `now` with the transformation of an active fault."""
@@ -173,7 +214,7 @@ class SensorBehaviour(Behaviour):
         self.signal = signal
         self._last = self._scheduler.now()
         self._fault_changed()
-        self.on_change()
+        self._changed()
 
     def _fault_changed(self) -> None:
         """Show the changed value at once, unless the sensor is frozen."""
@@ -189,6 +230,10 @@ class OnOffBehaviour(Behaviour):
         super().__init__(device_id, definition, scheduler)
         self.is_on = definition.initial_on
 
+    def _value_text(self) -> str:
+        """Return `on` or `off`."""
+        return TEXT_ON if self.is_on else TEXT_OFF
+
     def restore(self, is_on: bool) -> None:
         """Set the last state without telling anyone."""
         self.is_on = is_on
@@ -196,12 +241,12 @@ class OnOffBehaviour(Behaviour):
     def turn_on(self) -> None:
         """Switch on."""
         self.is_on = True
-        self.on_change()
+        self._changed()
 
     def turn_off(self) -> None:
         """Switch off."""
         self.is_on = False
-        self.on_change()
+        self._changed()
 
     def toggle(self) -> None:
         """Switch to the other state."""
@@ -243,7 +288,7 @@ class BinarySensorBehaviour(OnOffBehaviour):
         """Set the state; a running pulse is cancelled."""
         self._clear_pulse()
         self.is_on = is_on
-        self.on_change()
+        self._changed()
 
     def pulse(self, seconds: float | None) -> None:
         """Switch on and off again after `seconds` (default: the pulse of the template)."""
@@ -274,6 +319,7 @@ class EventBehaviour(Behaviour):
 
     def press(self, event_type: str) -> None:
         """Fire the event `event_type`."""
+        self._record(CAUSE_ACTION, event_type)
         self.on_event(event_type)
 
 
@@ -290,6 +336,10 @@ class CoverBehaviour(Behaviour):
         """Whether the cover is fully closed."""
         return self.position == CLOSED
 
+    def _value_text(self) -> str:
+        """Return the position as text."""
+        return str(self.position)
+
     def restore(self, position: int) -> None:
         """Set the last position without telling anyone."""
         self.position = position
@@ -297,7 +347,7 @@ class CoverBehaviour(Behaviour):
     def set_position(self, position: int) -> None:
         """Move to `position` (0 to 100) at once."""
         self.position = max(CLOSED, min(OPEN, position))
-        self.on_change()
+        self._changed()
 
     def open_cover(self) -> None:
         """Open fully."""
@@ -332,7 +382,7 @@ class ClimateBehaviour(Behaviour):
         """Measure another curve from now on."""
         self.signal = signal
         self.temperature = self._measure(self._scheduler.now())
-        self.on_change()
+        self._changed()
 
     def _measure(self, now: float) -> float:
         """Return the measured temperature at `now`, rounded to what a thermostat reports."""
@@ -341,7 +391,7 @@ class ClimateBehaviour(Behaviour):
     def _resumed(self) -> None:
         """Measure the current temperature at once."""
         self.temperature = self._measure(self._scheduler.now())
-        self.on_change()
+        self._changed(CAUSE_OTHER)
 
     def measured(self) -> float | str:
         """The measured temperature now."""
@@ -355,7 +405,12 @@ class ClimateBehaviour(Behaviour):
         if measured == self.temperature:
             return False
         self.temperature = measured
+        self._record(CAUSE_SIGNAL)
         return True
+
+    def _value_text(self) -> str:
+        """Return the measured temperature as text."""
+        return str(self.temperature)
 
     def restore(self, heating: bool, target: float | None) -> None:
         """Set the last mode and target without telling anyone."""
@@ -369,7 +424,7 @@ class ClimateBehaviour(Behaviour):
             self.heating = heating
         if target is not None:
             self.target = target
-        self.on_change()
+        self._changed()
 
     def set_heating(self, heating: bool) -> None:
         """Switch between heat and off."""

@@ -25,6 +25,7 @@ from .devices import (
 from .groups import ws_groups_add, ws_groups_list, ws_groups_remove, ws_groups_update
 from .history import ws_history_import
 from .info import ws_info, ws_templates_delete, ws_templates_list, ws_templates_save
+from .log import ws_log_clear, ws_log_get, ws_log_set
 from .removal import (
     ws_removal_orphan_topics,
     ws_removal_orphan_topics_clear,
@@ -86,6 +87,9 @@ COMMANDS = (
     ws_groups_update,
     ws_groups_remove,
     ws_history_import,
+    ws_log_get,
+    ws_log_set,
+    ws_log_clear,
     ws_transfer_export,
     ws_transfer_plan,
     ws_transfer_run,

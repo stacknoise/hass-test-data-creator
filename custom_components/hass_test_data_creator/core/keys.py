@@ -97,3 +97,12 @@ KEY_UNIT = "unit"
 KEY_VALUE = "value"
 KEY_VALUES = "values"
 KEY_VENDOR = "vendor"
+
+# Why a state changed, as the live log shows it (concept 17.1).
+CAUSE_SIGNAL = "signal"
+CAUSE_ACTION = "action"
+CAUSE_FAULT = "fault"
+CAUSE_SOURCE = "source"
+CAUSE_RESTORE = "restore"
+CAUSE_OTHER = "other"
+CAUSES = (CAUSE_SIGNAL, CAUSE_ACTION, CAUSE_FAULT, CAUSE_SOURCE, CAUSE_RESTORE, CAUSE_OTHER)
