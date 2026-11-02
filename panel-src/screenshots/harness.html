@@ -63,13 +63,39 @@
         },
         'devices/get': (m) => data.devices.find((d) => d.id === m.device),
         'devices/names': () => ({ devices: data.devices }),
-        'devices/list': () => ({ total: data.devices.length, devices: data.devices }),
+        'devices/list': () => ({ total: data.devices.length, matched: data.devices.length, devices: data.devices }),
         'schedules/list': () => data.schedules,
         'schedules/preview': () => data.runs,
         'scenarios/list': () => data.scenarios,
         'groups/list': () => data.groups,
         'removal/plan': () => data.removalPlan,
         'history/import': () => data.historyResult,
+        'log/get': (m) => {
+          const entries = data.logEntries.filter((e) => e.seq > m.since);
+          return {
+            entries,
+            dropped: 0,
+            capture: true,
+            last_seq: data.logEntries.length,
+            size: data.logEntries.length,
+            capacity: 5000,
+            discarded: 0,
+          };
+        },
+        'log/set': () => ({ capture: false, last_seq: 0, size: 0, capacity: 5000, discarded: 0 }),
+        'log/clear': () => ({ capture: true, last_seq: 0, size: 0, capacity: 5000, discarded: 0 }),
+        'sources/list': (m) => ({
+          devices: data.sourceDevices.filter((d) => d.name.toLowerCase().includes((m.query || '').toLowerCase())),
+        }),
+        'sources/inspect': () => ({ entities: data.sourceInfos }),
+        'sources/derive': () => data.sourceDerived,
+        'sources/removed': () => ({ sources: [] }),
+        'sources/preview': () => ({
+          entity_id: 'sensor.boiler_temperature',
+          source: 21.8,
+          unit: '°C',
+          copies: [21.8, 22.4, 21.3, 22.1, 21.6].map((value, index) => ({ index, value, lag_s: index * 2 })),
+        }),
       };
 
       const hass = {
