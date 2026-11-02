@@ -207,11 +207,12 @@ class DevicesManager:
             output=job.output,
             now=run.created_at,
         )
+        name = self._sources.name_of(job.source["device_id"]) if job.source else ""
         for device in devices:
             if job.device_seed is not None:
                 device.seed = job.device_seed
             if job.source:
-                device.source = new_source(job.source)
+                device.source = new_source(job.source, name)
         for start in range(0, len(devices), CHUNK_SIZE):
             chunk = devices[start : start + CHUNK_SIZE]
             for device in chunk:

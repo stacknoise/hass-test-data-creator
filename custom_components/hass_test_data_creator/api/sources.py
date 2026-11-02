@@ -14,7 +14,12 @@ from ..data import get_data
 from ..sources.deviation import Deviation
 from ..sources.mapper import propose
 from ..sources.preview import preview
-from ..sources.schema import SOURCES_INSPECT_FIELDS, SOURCES_LIST_FIELDS, SOURCES_PREVIEW_FIELDS
+from ..sources.schema import (
+    SOURCES_CONFIRM_FIELDS,
+    SOURCES_INSPECT_FIELDS,
+    SOURCES_LIST_FIELDS,
+    SOURCES_PREVIEW_FIELDS,
+)
 
 
 @tdc_command(f"{DOMAIN}/sources/list", SOURCES_LIST_FIELDS)
@@ -69,3 +74,29 @@ async def ws_sources_preview(
         "unit": item.entity.unit,
         "copies": rows,
     }
+
+
+@tdc_command(f"{DOMAIN}/sources/removed")
+async def ws_sources_removed(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Return the removed sources whose copies still wait for a decision (concept 17.3)."""
+    data = get_data(hass)
+    return {"sources": data.source_status.removed(data.store.devices())}
+
+
+@tdc_command(f"{DOMAIN}/devices/confirm_source_removed", SOURCES_CONFIRM_FIELDS)
+async def ws_devices_confirm_source_removed(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Remove the copies of a removed source through the removal plan, or keep them offline."""
+    data = get_data(hass)
+    devices = [
+        device
+        for device in data.store.devices()
+        if device.source and device.source["device_id"] == msg["source"]
+    ]
+    if msg["remove"]:
+        plan = data.removal_planner.plan_devices(devices)
+        return await data.removal_runner.async_run(plan)
+    return {"kept": await data.source_decision.keep(devices)}

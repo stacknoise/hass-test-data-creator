@@ -17,6 +17,7 @@ _GROUPS = (
     "outputs",
     "causes",
     "runs",
+    "sources",
 )
 
 
@@ -34,6 +35,7 @@ class LogFilter:
     outputs: frozenset[str] = frozenset()
     causes: frozenset[str] = frozenset()
     runs: frozenset[str] = frozenset()
+    sources: frozenset[str] = frozenset()
     only_numeric: bool = False
     min_delta: float | None = None
     since_time: float | None = None
@@ -85,6 +87,7 @@ class LogFilter:
             (self.outputs, (entry.output,)),
             (self.causes, (entry.cause,)),
             (self.runs, (entry.run_id,)),
+            (self.sources, (entry.source_id, entry.source)),
         )
         return all(not wanted or wanted.intersection(have) for wanted, have in pairs)
 
@@ -101,5 +104,7 @@ class LogFilter:
         """Whether the text is part of the device, entity or value."""
         if not self.query:
             return True
-        text = " ".join((entry.device, entry.name, entry.key, entry.new, entry.old or ""))
+        text = " ".join(
+            (entry.device, entry.name, entry.key, entry.new, entry.old or "", entry.source)
+        )
         return self.query in text.casefold()

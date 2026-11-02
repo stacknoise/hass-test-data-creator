@@ -30,7 +30,7 @@ from ..core.keys import (
 )
 from ..core.limits import SHORT_TEXT, json_size
 from ..sources.schema import DEVIATION_FIELDS
-from .filters import SORTS, STATES, DeviceFilter
+from .filters import SORTS, SOURCE_STATES, STATES, DeviceFilter
 from .manager import CreationJob
 
 _entities_size = json_size(MAX_ENTITIES_BYTES)
@@ -78,6 +78,8 @@ FILTER_FIELDS: dict[Any, Any] = {
     vol.Optional("outputs"): _filter_values,
     vol.Optional("platforms"): _filter_values,
     vol.Optional("runs"): _filter_values,
+    vol.Optional("sources"): _filter_values,
+    vol.Optional("source_state"): vol.In(SOURCE_STATES),
     vol.Optional("custom"): bool,
     vol.Optional("state"): vol.In(STATES),
     vol.Optional("sort"): vol.In(SORTS),

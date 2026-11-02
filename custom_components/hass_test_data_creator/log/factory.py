@@ -37,4 +37,6 @@ class LogEntryFactory:
             old=old,
             new=new,
             cause=cause,
+            source_id=(device.source or {}).get("device_id", ""),
+            source=(device.source or {}).get("name", ""),
         )

@@ -22,6 +22,7 @@ LOG_FILTER_FIELDS: dict[Any, Any] = {
     vol.Optional("outputs"): _values,
     vol.Optional("causes"): _values,
     vol.Optional("runs"): _values,
+    vol.Optional("sources"): _values,
     vol.Optional("only_numeric"): bool,
     vol.Optional("min_delta"): vol.All(vol.Coerce(float), vol.Range(min=0)),
     vol.Optional("from"): vol.Coerce(float),

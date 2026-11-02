@@ -47,7 +47,13 @@ from .schedules import (
     ws_schedules_remove,
     ws_schedules_update,
 )
-from .sources import ws_sources_inspect, ws_sources_list, ws_sources_preview
+from .sources import (
+    ws_devices_confirm_source_removed,
+    ws_sources_inspect,
+    ws_sources_list,
+    ws_sources_preview,
+    ws_sources_removed,
+)
 from .transfer import ws_transfer_export, ws_transfer_plan, ws_transfer_run
 
 COMMANDS = (
@@ -55,6 +61,8 @@ COMMANDS = (
     ws_sources_list,
     ws_sources_inspect,
     ws_sources_preview,
+    ws_sources_removed,
+    ws_devices_confirm_source_removed,
     ws_templates_list,
     ws_templates_save,
     ws_templates_delete,

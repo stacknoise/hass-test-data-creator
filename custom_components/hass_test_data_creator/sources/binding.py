@@ -169,6 +169,11 @@ class SourceBindingFactory:
         )
         behaviour.bind_source(binding)
 
+    def name_of(self, device_id: str) -> str:
+        """Return the name of the source device."""
+        entry = self._registry.device(device_id)
+        return entry.name_by_user or entry.name or ""
+
     def check(self, source: dict[str, Any] | None, entities: list[EntityDef]) -> None:
         """Raise a source error unless the source exists, is not generated and the mapping fits."""
         if not source:

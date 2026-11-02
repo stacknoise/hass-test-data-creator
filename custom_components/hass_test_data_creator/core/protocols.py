@@ -103,3 +103,6 @@ class SourceCheck(Protocol):
 
     def check(self, source: dict[str, Any] | None, entities: list[EntityDef]) -> None:
         """Raise a source error if the source or its mapping does not fit the entities."""
+
+    def name_of(self, device_id: str) -> str:
+        """Return the name of the source device, to keep it for when the device is gone."""

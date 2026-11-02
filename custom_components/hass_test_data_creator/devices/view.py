@@ -30,6 +30,7 @@ from ..core.keys import (
 from ..engine.behaviours import Live
 from ..model.identifiers import entity_id_of
 from ..model.models import DeviceDef, EntityDef
+from ..sources.status import SourceStatus
 from ..store.store import TdcStore
 from .filters import DeviceFilter, FilterContext, facets, filter_and_sort
 from .usage import DeviceUsage, UsageIndex
@@ -45,6 +46,7 @@ class DeviceView:
         usage: DeviceUsage,
         live: Live,
         bundled_ids: Callable[[], frozenset[str]],
+        sources: SourceStatus,
     ) -> None:
         """Keep the collaborators."""
         self._hass = hass
@@ -52,6 +54,7 @@ class DeviceView:
         self._usage = usage
         self._live = live
         self._bundled_ids = bundled_ids
+        self._sources = sources
 
     def page(
         self, offset: int, limit: int, flt: DeviceFilter | None = None, *, with_facets: bool = False
@@ -63,7 +66,7 @@ class DeviceView:
         flt = flt or DeviceFilter()
         devices = self._store.devices()
         index = self._usage.index()
-        context = FilterContext(index, self._has_fault, self._bundled_ids())
+        context = self._context(index)
         found = filter_and_sort(devices, flt, context)
         reply: dict[str, Any] = {
             "total": len(devices),
@@ -77,13 +80,17 @@ class DeviceView:
             reply["facets"] = self._facets(devices, flt, context)
         return reply
 
+    def _context(self, index: UsageIndex) -> FilterContext:
+        """Return what the filter needs besides the device: usage, faults, templates and sources."""
+        return FilterContext(index, self._has_fault, self._bundled_ids(), self._sources.of)
+
     def select(self, ids: list[str] | None, flt: DeviceFilter | None) -> list[DeviceDef]:
         """Return the devices with these ids (unknown ones skipped), or all that pass `flt`."""
         if ids is not None:
             wanted = set(ids)
             return [device for device in self._store.devices() if device.id in wanted]
         index = self._usage.index()
-        context = FilterContext(index, self._has_fault, self._bundled_ids())
+        context = self._context(index)
         return filter_and_sort(self._store.devices(), flt or DeviceFilter(), context)
 
     def _has_fault(self, device: DeviceDef) -> bool:
@@ -101,6 +108,12 @@ class DeviceView:
         labels = {run.id: run.label for run in self._store.runs()}
         for item in reply["runs"]:
             item[KEY_LABEL] = labels.get(item["value"], "")
+        names = {
+            info["id"]: info["name"]
+            for info in filter(None, (self._sources.of(device) for device in devices))
+        }
+        for item in reply["sources"]:
+            item[KEY_LABEL] = names.get(item["value"], "")
         return reply
 
     def one(self, device_id: str) -> dict[str, Any]:
@@ -121,6 +134,7 @@ class DeviceView:
                 KEY_OUTPUT: device.output,
                 KEY_RUN_ID: device.run_id,
                 "created_at": device.created_at,
+                "source": self._source_name(device),
                 KEY_ENTITIES: [
                     {
                         "key": item.key,
@@ -135,6 +149,11 @@ class DeviceView:
             for device in self._store.devices()
         ]
 
+    def _source_name(self, device: DeviceDef) -> dict[str, str] | None:
+        """Return `{id, name}` of the source of `device` for the pickers, or None."""
+        info = self._sources.of(device)
+        return None if info is None else {KEY_ID: info["id"], KEY_NAME: info["name"]}
+
     def _device(self, device: DeviceDef, index: UsageIndex, *, with_signal: bool) -> dict[str, Any]:
         """Return the reply for one device."""
         registry = er.async_get(self._hass)
@@ -148,6 +167,7 @@ class DeviceView:
             KEY_RUN_ID: device.run_id,
             "created_at": device.created_at,
             "paused": device.paused,
+            "source": self._sources.of(device),
             KEY_ENTITIES: [
                 self._entity(registry, device, definition, with_signal=with_signal)
                 for definition in device.entities
