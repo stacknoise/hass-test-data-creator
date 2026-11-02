@@ -10,6 +10,8 @@ import './removal/removal-panel';
 import './scenario/scenario-panel';
 import './schedule/schedule-panel';
 import './transfer/transfer-panel';
+import { writeFilter } from './common/filter-state';
+import { LOG_FIELDS, LOG_FILTER_TAB, deviceOnly } from './log/helpers';
 import { KIND_ALL, TAB_DEVICES, TAB_GROUPS } from './common/constants';
 
 /** The tabs of the panel. */
@@ -96,6 +98,12 @@ export class TdcPanel extends TdcElement {
     this.tab = 'remove';
   }
 
+  /** Switch to the log tab with the filter set to one device. */
+  private showLog(event: CustomEvent<{ id: string }>): void {
+    writeFilter(LOG_FILTER_TAB, deviceOnly(LOG_FIELDS, event.detail.id));
+    this.tab = 'log';
+  }
+
   /** Render one tab button. */
   private renderTab(tab: Tab, label: string): TemplateResult {
     return html`<button
@@ -136,6 +144,7 @@ export class TdcPanel extends TdcElement {
           ? html`<tdc-device-list
               .hass=${this.hass}
               @tdc-remove=${this.startRemoval}
+              @tdc-show-log=${this.showLog}
             ></tdc-device-list>`
           : ''
       }

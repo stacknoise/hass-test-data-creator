@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { LogEntry } from '../common/types';
 import {
+  LOG_FIELDS,
+  deviceOnly,
+  logOptions,
+  logRequest,
   LOG_ROW_HEIGHT,
   appendEntries,
   atBottom,
@@ -114,5 +118,62 @@ describe('files', () => {
     const now = new Date('2026-11-02T06:45:09.000Z');
     expect(logFileName(now, 'csv')).toBe('tdc-log-2026-11-02-064509.csv');
     expect(logFileName(now, 'json')).toBe('tdc-log-2026-11-02-064509.json');
+  });
+});
+
+describe('log filter', () => {
+  it('leaves out empty restrictions', () => {
+    expect(logRequest({ query: ' ', devices: [], causes: ['fault'], only_numeric: false })).toEqual(
+      {
+        causes: ['fault'],
+      },
+    );
+  });
+
+  it('sends the query trimmed and the switch only when it is on', () => {
+    expect(logRequest({ query: ' temp ', only_numeric: true })).toEqual({
+      query: 'temp',
+      only_numeric: true,
+    });
+  });
+
+  it('builds sorted options without duplicates', () => {
+    const names = [
+      {
+        id: 'b',
+        name: 'Beta',
+        template: 't',
+        model: '',
+        output: 'native',
+        run_id: '',
+        created_at: 0,
+        entities: [{ key: 'temp', name: 'Temp', platform: 'sensor' }],
+      },
+      {
+        id: 'a',
+        name: 'Alpha',
+        template: 't',
+        model: '',
+        output: 'native',
+        run_id: '',
+        created_at: 0,
+        entities: [{ key: 'temp', name: 'Temp', platform: 'sensor' }],
+      },
+    ];
+    const options = logOptions(
+      names,
+      (id) => id.toUpperCase(),
+      (id) => id,
+    );
+    expect(options.devices.map((i) => i.label)).toEqual(['Alpha', 'Beta']);
+    expect(options.entities).toEqual([{ value: 'temp', label: 'Temp' }]);
+    expect(options.templates).toEqual([{ value: 't', label: 'T' }]);
+  });
+
+  it('shows one device only', () => {
+    const values = deviceOnly(LOG_FIELDS, 'x');
+    expect(values.devices).toEqual(['x']);
+    expect(values.causes).toEqual([]);
+    expect(values.only_numeric).toBe(false);
   });
 });

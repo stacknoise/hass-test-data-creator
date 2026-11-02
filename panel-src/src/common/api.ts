@@ -16,6 +16,7 @@ import type {
   ImportBatch,
   ImportPlan,
   HistoryResult,
+  LogFilterRequest,
   LogReply,
   LogStatus,
   RemovalTarget,
@@ -88,8 +89,11 @@ export class TdcApi {
   }
 
   /** Return the log entries after `since` (0 for all); asking also keeps the recording going. */
-  logGet(since: number, limit: number): Promise<LogReply> {
-    return this.call('log/get', { since, limit });
+  logGet(since: number, limit: number, filter: LogFilterRequest = {}): Promise<LogReply> {
+    return this.call(
+      'log/get',
+      Object.keys(filter).length ? { since, limit, filter } : { since, limit },
+    );
   }
 
   /** Stop the recording of the log; it also empties the log in the backend. */

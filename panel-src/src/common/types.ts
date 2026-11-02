@@ -90,6 +90,18 @@ export interface PickerEntity {
   shape?: string | null;
 }
 
+/** The restrictions of a `log/get` call; every field is optional and an empty one is left out. */
+export interface LogFilterRequest {
+  query?: string;
+  devices?: string[];
+  entities?: string[];
+  templates?: string[];
+  platforms?: string[];
+  outputs?: string[];
+  causes?: string[];
+  only_numeric?: boolean;
+}
+
 /** What pickers and run lists need of a generated device (`devices/names`). */
 export interface DeviceName {
   id: string;

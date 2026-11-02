@@ -2,18 +2,28 @@ import { css, html, nothing, type PropertyValues, type TemplateResult } from 'li
 import { customElement, query, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
+import '../common/filter-bar';
+import { OUTPUT_LABELS, labelOf, templateLabel } from '../common/labels';
+import { readFilter, resetValues, writeFilter } from '../common/filter-state';
+import type { FilterField, FilterValues } from '../common/filter-state';
 import { startPolling } from '../common/polling';
-import type { LogEntry } from '../common/types';
+import type { DeviceName, LogEntry } from '../common/types';
 import type { TextKey } from '../common/i18n';
 import {
   LOG_MAX_CATCH_UP,
   LOG_PAGE,
+  LOG_CAUSES,
+  LOG_FIELDS,
+  LOG_FILTER_TAB,
+  LOG_PLATFORMS,
   LOG_ROW_HEIGHT,
   appendEntries,
   atBottom,
   deltaText,
   formatTime,
   logFileName,
+  logOptions,
+  logRequest,
   toCsv,
   toJson,
   valueText,
@@ -37,6 +47,8 @@ export class LogPanel extends TdcElement {
   @state() private missed = 0;
   @state() private message = '';
   @state() private error = '';
+  @state() private filter: FilterValues = readFilter(LOG_FILTER_TAB, LOG_FIELDS);
+  @state() private names: DeviceName[] = [];
 
   @query('.list') private list?: HTMLElement;
 
@@ -133,6 +145,7 @@ export class LogPanel extends TdcElement {
   /** Start reading the log when the tab opens. */
   override connectedCallback(): void {
     super.connectedCallback();
+    void this.loadNames();
     void this.read();
     this.stopPolling = startPolling(() => void this.read(), POLL_MS);
   }
@@ -157,7 +170,7 @@ export class LogPanel extends TdcElement {
     this.reading = true;
     try {
       for (let round = 0; round < LOG_MAX_CATCH_UP; round += 1) {
-        const reply = await this.api.logGet(this.lastSeq, LOG_PAGE);
+        const reply = await this.api.logGet(this.lastSeq, LOG_PAGE, logRequest(this.filter));
         this.capacity = reply.capacity || DEFAULT_CAPACITY;
         if (reply.last_seq < this.lastSeq) {
           this.entries = [];
@@ -175,6 +188,68 @@ export class LogPanel extends TdcElement {
       this.error = describeError(err);
     }
     this.reading = false;
+  }
+
+  /** Read the generated devices; their names fill the options of the filter. */
+  private async loadNames(): Promise<void> {
+    try {
+      this.names = await this.api.deviceNames();
+    } catch (err) {
+      this.error = describeError(err);
+    }
+  }
+
+  /** Apply a new filter: keep it for the session and read the log again from the start. */
+  private setFilter(values: FilterValues): void {
+    this.filter = values;
+    writeFilter(LOG_FILTER_TAB, values);
+    this.entries = [];
+    this.frozen = 0;
+    this.lastSeq = 0;
+    this.paused = false;
+    this.follow = true;
+    void this.read();
+  }
+
+  /** Return the fields of the filter with their labels and the options of the current devices. */
+  private fields(): FilterField[] {
+    const lang = this.hass?.language;
+    const options = logOptions(
+      this.names,
+      (id) => templateLabel(lang, id, id),
+      (id) => this.tr(OUTPUT_LABELS[id] ?? 'outputNative'),
+    );
+    const labels: Record<string, string> = {
+      devices: this.tr('filterDevices'),
+      entities: this.tr('logColEntity'),
+      templates: this.tr('filterTemplates'),
+      platforms: this.tr('entPlatform'),
+      outputs: this.tr('colOutput'),
+      causes: this.tr('logFilterCause'),
+      only_numeric: this.tr('logOnlyNumeric'),
+    };
+    const byKey: Record<string, FilterField['options']> = {
+      devices: options.devices,
+      entities: options.entities,
+      templates: options.templates,
+      outputs: options.outputs,
+      platforms: LOG_PLATFORMS.map((p) => ({ value: p, label: labelOf(lang, 'platform', p) })),
+      causes: LOG_CAUSES.map((c) => ({ value: c, label: this.tr(`logCause_${c}` as TextKey) })),
+    };
+    return LOG_FIELDS.map((f) => ({ ...f, label: labels[f.key], options: byKey[f.key] }));
+  }
+
+  /** Render the filter bar over the list. */
+  private renderFilter(): TemplateResult {
+    const fields = this.fields();
+    return html`<tdc-filter-bar
+      .hass=${this.hass}
+      .fields=${fields}
+      .values=${this.filter}
+      hideCount
+      searchLabel=${this.tr('filterSearchList')}
+      @tdc-filter-change=${(e: CustomEvent<FilterValues>) => this.setFilter(e.detail)}
+    ></tdc-filter-bar>`;
   }
 
   /** The entries that the list shows: all, or the ones that were there when it was paused. */
@@ -275,7 +350,7 @@ export class LogPanel extends TdcElement {
     const { start, end } = visibleRange(shown.length, this.listTop, viewHeight);
     return html`
       <p>${this.tr('logIntro')}</p>
-      ${this.renderBar(shown.length)}
+      ${this.renderFilter()} ${this.renderBar(shown.length)}
       ${this.missed > 0 ? html`<p class="warning">${this.tr('logMissed', { count: this.missed })}</p>` : nothing}
       <div class="list" style="height: ${LIST_HEIGHT}" @scroll=${() => this.onScroll()}>
         <div class="head">
@@ -287,7 +362,20 @@ export class LogPanel extends TdcElement {
         </div>
         ${
           shown.length === 0
-            ? html`<div class="empty">${this.tr('logEmpty')}</div>`
+            ? html`<div class="empty">
+                ${this.tr(
+                  Object.keys(logRequest(this.filter)).length ? 'logNoMatches' : 'logEmpty',
+                )}
+                ${
+                  Object.keys(logRequest(this.filter)).length
+                    ? html`<button
+                        @click=${() => this.setFilter(resetValues(LOG_FIELDS, this.filter))}
+                      >
+                        ${this.tr('filterReset')}
+                      </button>`
+                    : nothing
+                }
+              </div>`
             : html`<div style="height: ${shown.length * LOG_ROW_HEIGHT}px; position: relative">
                 <div style="transform: translateY(${start * LOG_ROW_HEIGHT}px)">
                   ${shown.slice(start, end).map((entry) => this.renderRow(entry))}

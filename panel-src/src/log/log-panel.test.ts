@@ -58,6 +58,7 @@ describe('LogPanel', () => {
         if (message.type === 'hass_test_data_creator/log/get') {
           return answers.shift() ?? reply([], { last_seq: 2 });
         }
+        if (message.type === 'hass_test_data_creator/devices/names') return { devices: [] };
         return { capture: false, last_seq: 2, size: 0, capacity: 5000, discarded: 0 };
       },
     } as unknown as Hass;
@@ -69,6 +70,20 @@ describe('LogPanel', () => {
   afterEach(() => {
     panel.remove();
     vi.useRealTimers();
+  });
+
+  it('sends the filter and reads again from the start when it changes', async () => {
+    sent.length = 0;
+    answers = [reply([entry(3)])];
+    const bar = panel.shadowRoot!.querySelector('tdc-filter-bar')!;
+    bar.dispatchEvent(
+      new CustomEvent('tdc-filter-change', { detail: { query: '', causes: ['fault'] } }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    await panel.updateComplete;
+    const gets = sent.filter((m) => m.type === 'hass_test_data_creator/log/get');
+    expect(gets[0]).toMatchObject({ since: 0, filter: { causes: ['fault'] } });
+    expect(panel.shadowRoot!.querySelectorAll('.row')).toHaveLength(1);
   });
 
   it('shows the entries it read, with the unavailable value marked', () => {
