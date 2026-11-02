@@ -21,6 +21,7 @@ from .engine.clock import Clock
 from .engine.tick import Tick
 from .groups.manager import GroupManager
 from .history.manager import HistoryManager
+from .log.view import LogView
 from .outputs.adapter import OutputAdapterFactory
 from .outputs.mqtt.client import MqttClient
 from .outputs.mqtt.devices import MqttDevices
@@ -69,6 +70,7 @@ class TdcData:
     usage: DeviceUsage
     device_view: DeviceView
     csv: CsvLibrary
+    log: LogView
     transfer: TransferExporter
     importer: TransferImporter
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)

@@ -100,6 +100,11 @@ Lists every module, class and function of the integration with signature, file a
 | `GroupPublisher.async_drop` | `async def async_drop(self, group_ids: list[str], device_ids: set[str]) -> None` | `custom_components/hass_test_data_creator/core/protocols.py` | Delete groups and remove `device_ids` from the remaining groups. |
 | `UsageLookup` | `class UsageLookup(Protocol)` | `custom_components/hass_test_data_creator/core/protocols.py` | What the device filter needs of the usage index: whether anything names a device. |
 | `UsageLookup.is_used` | `def is_used(self, device: DeviceDef) -> bool` | `custom_components/hass_test_data_creator/core/protocols.py` | Whether a schedule, scenario or group names the device. |
+| `LoggedBehaviour` | `class LoggedBehaviour(Protocol)` | `custom_components/hass_test_data_creator/core/protocols.py` | What the live log needs of a behaviour: where it lives and how its state reads. |
+| `LoggedBehaviour.state_text` | `def state_text(self) -> str` | `custom_components/hass_test_data_creator/core/protocols.py` | Return the state as text, `unavailable` while a fault makes it so. |
+| `ChangeRecorder` | `class ChangeRecorder(Protocol)` | `custom_components/hass_test_data_creator/core/protocols.py` | What the behaviours need of the live log: whether it records and a way to report a change. |
+| `ChangeRecorder.active` | `def active(self) -> bool` | `custom_components/hass_test_data_creator/core/protocols.py` | Whether the log records now. |
+| `ChangeRecorder.changed` | `def changed(self, behaviour: LoggedBehaviour, cause: str, value: str \| None=None) -> None` | `custom_components/hass_test_data_creator/core/protocols.py` | Record that `behaviour` changed for `cause`; `value` replaces its state text. |
 | `HasReplies` | `class HasReplies(Protocol)` | `custom_components/hass_test_data_creator/core/protocols.py` | The runtime data as far as the command wrapper needs it: the reply and error factories. |
 | `hass_test_data_creator.core.response_factory` | `module` | `custom_components/hass_test_data_creator/core/response_factory.py` | Factory for WebSocket replies (concept 13.2). |
 | `ResponseFactory` | `class ResponseFactory` | `custom_components/hass_test_data_creator/core/response_factory.py` | Creates the result and error replies of the panel commands. |
@@ -203,7 +208,7 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.engine.behaviour_factory` | `module` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Factory that creates the behaviour per platform (concept 13.2). |
 | `entity_seed` | `def entity_seed(device_seed: int, key: str) -> int` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the seed of one entity from the seed of its device and its key. |
 | `BehaviourFactory` | `class BehaviourFactory` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Creates the behaviour for an entity definition. |
-| `BehaviourFactory.__init__` | `def __init__(self, signals: SignalFactory, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Keep the signal factory and the scheduler the behaviours use. |
+| `BehaviourFactory.__init__` | `def __init__(self, signals: SignalFactory, scheduler: Scheduler, recorder: ChangeRecorder=NO_LOG) -> None` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Keep the signal factory, the scheduler and the live log recorder the behaviours use. |
 | `BehaviourFactory.signal_for` | `def signal_for(self, device: DeviceDef, definition: EntityDef) -> Signal` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the signal of `definition` of `device`, with the seed and origin of the entity. |
 | `BehaviourFactory.create` | `def create(self, device: DeviceDef, definition: EntityDef) -> Behaviour` | `custom_components/hass_test_data_creator/engine/behaviour_factory.py` | Return the behaviour for `definition` of `device`. |
 | `hass_test_data_creator.engine.behaviours` | `module` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Behaviours: the state and logic of one generated entity, independent of any output (concept 2). |
@@ -213,9 +218,15 @@ Lists every module, class and function of the integration with signature, file a
 | `Scheduler.call_later` | `def call_later(self, delay_s: float, callback: Callable[[], None]) -> Cancel` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Run `callback` after `delay_s` seconds and return the function that cancels it. |
 | `_ignore` | `def _ignore() -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing; the default of the change callbacks. |
 | `_ignore_event` | `def _ignore_event(event_type: str) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing with an event; the default of the event callback. |
+| `_NoLog` | `class _NoLog` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The recorder of a behaviour that is not logged: it never records. |
+| `_NoLog.changed` | `def changed(self, behaviour: LoggedBehaviour, cause: str, value: str \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Do nothing. |
 | `Behaviour` | `class Behaviour` | `custom_components/hass_test_data_creator/engine/behaviours.py` | What every entity has: its place in a device, a fault and a callback for changes. |
 | `Behaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Keep the ids, the definition and the scheduler. |
 | `Behaviour.now` | `def now(self) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the current signal time in seconds. |
+| `Behaviour.state_text` | `def state_text(self) -> str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the state as text for the live log; `unavailable` while a fault makes it so. |
+| `Behaviour._value_text` | `def _value_text(self) -> str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the value of the entity as text; entities without a value return nothing. |
+| `Behaviour._record` | `def _record(self, cause: str, value: str \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Tell the live log that the state changed, if it records. |
+| `Behaviour._changed` | `def _changed(self, cause: str=CAUSE_ACTION) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Record the change for `cause` and tell the output. |
 | `Behaviour.available` | `def available(self) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | False while a fault makes the entity unavailable. |
 | `Behaviour.fault_kind` | `def fault_kind(self) -> str \| None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The kind of the active fault, if there is one. |
 | `Behaviour.message_delay_s` | `def message_delay_s(self) -> float` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Seconds that the messages of this entity are held back (fault late). |
@@ -231,12 +242,14 @@ Lists every module, class and function of the integration with signature, file a
 | `SensorBehaviour` | `class SensorBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A sensor whose value comes from a signal. |
 | `SensorBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Compute the first value at the current signal time. |
 | `SensorBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Compute a new value if the interval has passed and the sensor is not frozen or paused. |
+| `SensorBehaviour._value_text` | `def _value_text(self) -> str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the current value as text. |
 | `SensorBehaviour._resumed` | `def _resumed(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Show the value of the curve at once, unless the sensor is frozen. |
 | `SensorBehaviour._value` | `def _value(self, now: float) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the value of the signal at `now` with the transformation of an active fault. |
 | `SensorBehaviour.replace_signal` | `def replace_signal(self, signal: Signal) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Follow another curve from now on and show its value at once, unless the sensor is frozen. |
 | `SensorBehaviour._fault_changed` | `def _fault_changed(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Show the changed value at once, unless the sensor is frozen. |
 | `OnOffBehaviour` | `class OnOffBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | An entity with an on/off state that survives a restart. |
 | `OnOffBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start in the initial state of the definition. |
+| `OnOffBehaviour._value_text` | `def _value_text(self) -> str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return `on` or `off`. |
 | `OnOffBehaviour.restore` | `def restore(self, is_on: bool) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last state without telling anyone. |
 | `OnOffBehaviour.turn_on` | `def turn_on(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch on. |
 | `OnOffBehaviour.turn_off` | `def turn_off(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch off. |
@@ -257,6 +270,7 @@ Lists every module, class and function of the integration with signature, file a
 | `CoverBehaviour` | `class CoverBehaviour(Behaviour)` | `custom_components/hass_test_data_creator/engine/behaviours.py` | A cover that moves to a position at once; 100 is open, 0 is closed. |
 | `CoverBehaviour.__init__` | `def __init__(self, device_id: str, definition: EntityDef, scheduler: Scheduler) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Start open if the definition says `initial_on`, otherwise closed. |
 | `CoverBehaviour.is_closed` | `def is_closed(self) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Whether the cover is fully closed. |
+| `CoverBehaviour._value_text` | `def _value_text(self) -> str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the position as text. |
 | `CoverBehaviour.restore` | `def restore(self, position: int) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last position without telling anyone. |
 | `CoverBehaviour.set_position` | `def set_position(self, position: int) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Move to `position` (0 to 100) at once. |
 | `CoverBehaviour.open_cover` | `def open_cover(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Open fully. |
@@ -269,6 +283,7 @@ Lists every module, class and function of the integration with signature, file a
 | `ClimateBehaviour._resumed` | `def _resumed(self) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Measure the current temperature at once. |
 | `ClimateBehaviour.measured` | `def measured(self) -> float \| str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | The measured temperature now. |
 | `ClimateBehaviour.tick` | `def tick(self, now: float) -> bool` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Measure again; True only if the rounded temperature differs from the last one. |
+| `ClimateBehaviour._value_text` | `def _value_text(self) -> str` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Return the measured temperature as text. |
 | `ClimateBehaviour.restore` | `def restore(self, heating: bool, target: float \| None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Set the last mode and target without telling anyone. |
 | `ClimateBehaviour.update` | `def update(self, *, heating: bool \| None=None, target: float \| None=None) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Change the mode and the target together and report once. |
 | `ClimateBehaviour.set_heating` | `def set_heating(self, heating: bool) -> None` | `custom_components/hass_test_data_creator/engine/behaviours.py` | Switch between heat and off. |
@@ -936,6 +951,10 @@ Lists every module, class and function of the integration with signature, file a
 | `ws_templates_list` | `async def ws_templates_list(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> list[dict[str, Any]]` | `custom_components/hass_test_data_creator/api/info.py` | Return all templates with their entities. |
 | `ws_templates_save` | `async def ws_templates_save(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/info.py` | Save an own template (new or replacing one of the same id) and return it. |
 | `ws_templates_delete` | `async def ws_templates_delete(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/info.py` | Delete an own template; built-in templates cannot be deleted. |
+| `hass_test_data_creator.api.log` | `module` | `custom_components/hass_test_data_creator/api/log.py` | Commands of the live log (concept 17.2). |
+| `ws_log_get` | `async def ws_log_get(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/log.py` | Return the log entries after `since`; the call also starts or keeps the recording. |
+| `ws_log_set` | `async def ws_log_set(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/log.py` | Stop the recording, set the filter in front of the buffer or the size of the buffer. |
+| `ws_log_clear` | `async def ws_log_clear(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/log.py` | Empty the log buffer. |
 | `hass_test_data_creator.api.removal` | `module` | `custom_components/hass_test_data_creator/api/removal.py` | Commands about removal (concept 8.2, 10). |
 | `ws_removal_plan` | `async def ws_removal_plan(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/removal.py` | Return what a removal of the target would delete. |
 | `ws_removal_orphan_topics` | `async def ws_removal_orphan_topics(hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]) -> dict[str, Any]` | `custom_components/hass_test_data_creator/api/removal.py` | Return the retained topics of generated devices that the store does not know. |
@@ -1035,6 +1054,59 @@ Lists every module, class and function of the integration with signature, file a
 | `StatisticsClient.write` | `def write(self, metadata: StatisticMetaData, rows: Iterable[StatisticData]) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Queue the hourly `rows` of one statistic; rows of the same hour are replaced. |
 | `StatisticsClient.clear` | `def clear(self, statistic_ids: list[str]) -> None` | `custom_components/hass_test_data_creator/history/recorder.py` | Queue the deletion of the statistics `statistic_ids`. |
 | `hass_test_data_creator.history.schema` | `module` | `custom_components/hass_test_data_creator/history/schema.py` | Request fields of a statistics import, shared by the service and the WebSocket command. |
+
+## log
+
+| Symbol | Signature | File | Description |
+| --- | --- | --- | --- |
+| `hass_test_data_creator.log.__init__` | `module` | `custom_components/hass_test_data_creator/log/__init__.py` | The live log: state changes of the generated entities, kept in memory (concept 17). |
+| `hass_test_data_creator.log.buffer` | `module` | `custom_components/hass_test_data_creator/log/buffer.py` | The ring buffer of the live log: newest entries in memory, never stored (concept 17.1). |
+| `LogBuffer` | `class LogBuffer` | `custom_components/hass_test_data_creator/log/buffer.py` | Keeps the newest entries; each one has a rising `seq` so that readers can ask for more. |
+| `LogBuffer.__init__` | `def __init__(self, capacity: int) -> None` | `custom_components/hass_test_data_creator/log/buffer.py` | Start empty with room for `capacity` entries. |
+| `LogBuffer.capacity` | `def capacity(self) -> int` | `custom_components/hass_test_data_creator/log/buffer.py` | The most entries that are kept. |
+| `LogBuffer.size` | `def size(self) -> int` | `custom_components/hass_test_data_creator/log/buffer.py` | The number of entries now. |
+| `LogBuffer.last_seq` | `def last_seq(self) -> int` | `custom_components/hass_test_data_creator/log/buffer.py` | The `seq` of the newest entry made so far, 0 before the first. |
+| `LogBuffer.next_seq` | `def next_seq(self) -> int` | `custom_components/hass_test_data_creator/log/buffer.py` | Return the `seq` of the next entry. |
+| `LogBuffer.append` | `def append(self, entry: LogEntry) -> None` | `custom_components/hass_test_data_creator/log/buffer.py` | Add `entry`; the oldest one drops out when the buffer is full. |
+| `LogBuffer.clear` | `def clear(self) -> None` | `custom_components/hass_test_data_creator/log/buffer.py` | Remove all entries; `seq` goes on, and the removed ones do not count as dropped. |
+| `LogBuffer.resize` | `def resize(self, capacity: int) -> None` | `custom_components/hass_test_data_creator/log/buffer.py` | Change the room; the newest entries stay if it gets smaller. |
+| `LogBuffer.read` | `def read(self, since: int, limit: int, matches: Callable[[LogEntry], bool], newest_first: bool=False) -> tuple[list[LogEntry], int]` | `custom_components/hass_test_data_creator/log/buffer.py` | Return up to `limit` matching entries after `since` and how many dropped out unseen. |
+| `LogBuffer._dropped` | `def _dropped(self, since: int, base: int) -> int` | `custom_components/hass_test_data_creator/log/buffer.py` | Return how many entries after `base` are gone because the buffer was full. |
+| `hass_test_data_creator.log.entry` | `module` | `custom_components/hass_test_data_creator/log/entry.py` | One row of the live log (concept 17.1). |
+| `number_of` | `def number_of(text: str \| None) -> float \| None` | `custom_components/hass_test_data_creator/log/entry.py` | Return the number in `text`, or None if it is not a finite number. |
+| `LogEntry` | `class LogEntry` | `custom_components/hass_test_data_creator/log/entry.py` | A state change of one generated entity. |
+| `LogEntry.delta` | `def delta(self) -> float \| None` | `custom_components/hass_test_data_creator/log/entry.py` | The change of a numeric value, or None if either value is not a number. |
+| `LogEntry.as_dict` | `def as_dict(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/log/entry.py` | Return the entry as the reply of `log/get` shows it. |
+| `hass_test_data_creator.log.factory` | `module` | `custom_components/hass_test_data_creator/log/factory.py` | Factory for log entries (concept 13.2, 17.1). |
+| `LogEntryFactory` | `class LogEntryFactory` | `custom_components/hass_test_data_creator/log/factory.py` | Creates the log entry of a state change; the only place where entries are built. |
+| `LogEntryFactory.create` | `def create(self, seq: int, at: float, device: DeviceDef, definition: EntityDef, old: str \| None, new: str, cause: str) -> LogEntry` | `custom_components/hass_test_data_creator/log/factory.py` | Return the entry for the change of `definition` of `device` from `old` to `new`. |
+| `hass_test_data_creator.log.filters` | `module` | `custom_components/hass_test_data_creator/log/filters.py` | The filter of the live log: one pure test per entry (concept 17.2). |
+| `LogFilter` | `class LogFilter` | `custom_components/hass_test_data_creator/log/filters.py` | What a request asks for; a field that is empty or missing does not filter. |
+| `LogFilter.from_request` | `def from_request(cls, data: dict[str, Any] \| None) -> LogFilter` | `custom_components/hass_test_data_creator/log/filters.py` | Return the filter for a validated request; None means no filter. |
+| `LogFilter.is_empty` | `def is_empty(self) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the filter lets every entry pass. |
+| `LogFilter.matches` | `def matches(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether `entry` passes: all groups must match, a value inside a group may be any. |
+| `LogFilter._in_time` | `def _in_time(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the entry lies in the time window. |
+| `LogFilter._in_groups` | `def _in_groups(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the entry matches every group that has values. |
+| `LogFilter._by_value` | `def _by_value(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the value passes `only_numeric` and `min_delta`. |
+| `LogFilter._by_query` | `def _by_query(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the text is part of the device, entity or value. |
+| `hass_test_data_creator.log.recorder` | `module` | `custom_components/hass_test_data_creator/log/recorder.py` | The recorder of the live log: takes the changes of the behaviours while someone looks (concept 17.1). |
+| `LogRecorder` | `class LogRecorder` | `custom_components/hass_test_data_creator/log/recorder.py` | Records state changes into the buffer; it runs only while a reader keeps asking for them. |
+| `LogRecorder.__init__` | `def __init__(self, store: TdcStore, factory: LogEntryFactory, buffer: LogBuffer, wall: Callable[[], float]=time.time, monotonic: Callable[[], float]=time.monotonic) -> None` | `custom_components/hass_test_data_creator/log/recorder.py` | Keep the collaborators and the two clocks; the log starts switched off. |
+| `LogRecorder.active` | `def active(self) -> bool` | `custom_components/hass_test_data_creator/log/recorder.py` | Whether the log records now; it stops by itself when nobody has asked for `LOG_IDLE_S`. |
+| `LogRecorder.capture_filter` | `def capture_filter(self) -> LogFilter` | `custom_components/hass_test_data_creator/log/recorder.py` | The filter in front of the buffer. |
+| `LogRecorder.touch` | `def touch(self) -> None` | `custom_components/hass_test_data_creator/log/recorder.py` | Note that a reader is there; this starts the recording if it was off. |
+| `LogRecorder.stop` | `def stop(self) -> None` | `custom_components/hass_test_data_creator/log/recorder.py` | Stop recording and forget everything, as the log is never kept. |
+| `LogRecorder.set_filter` | `def set_filter(self, flt: LogFilter) -> None` | `custom_components/hass_test_data_creator/log/recorder.py` | Record only the entries that pass `flt` from now on. |
+| `LogRecorder.changed` | `def changed(self, behaviour: LoggedBehaviour, cause: str, value: str \| None=None) -> None` | `custom_components/hass_test_data_creator/log/recorder.py` | Record the change of `behaviour` unless the rate is too high or the filter says no. |
+| `LogRecorder._within_rate` | `def _within_rate(self) -> bool` | `custom_components/hass_test_data_creator/log/recorder.py` | Count one entry in the current second and say whether it is below `MAX_LOG_RATE`. |
+| `hass_test_data_creator.log.schema` | `module` | `custom_components/hass_test_data_creator/log/schema.py` | Request fields of the live log commands (concept 17.2). |
+| `hass_test_data_creator.log.view` | `module` | `custom_components/hass_test_data_creator/log/view.py` | What the commands of the live log do: read, set and clear (concept 17.2). |
+| `LogView` | `class LogView` | `custom_components/hass_test_data_creator/log/view.py` | The read and write side of the live log for the WebSocket commands. |
+| `LogView.__init__` | `def __init__(self, recorder: LogRecorder, buffer: LogBuffer) -> None` | `custom_components/hass_test_data_creator/log/view.py` | Keep the recorder and the buffer. |
+| `LogView.get` | `def get(self, since: int, limit: int, flt: LogFilter, newest_first: bool) -> dict[str, Any]` | `custom_components/hass_test_data_creator/log/view.py` | Return the entries after `since`; asking also keeps the recording going or starts it. |
+| `LogView.configure` | `def configure(self, capture: bool \| None, capture_filter: LogFilter \| None, size: int \| None) -> dict[str, Any]` | `custom_components/hass_test_data_creator/log/view.py` | Stop the recording, set the filter in front of the buffer or its size; return the status. |
+| `LogView.clear` | `def clear(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/log/view.py` | Empty the buffer and return the status. |
+| `LogView._status` | `def _status(self) -> dict[str, Any]` | `custom_components/hass_test_data_creator/log/view.py` | Return the state of the log: whether it records, how full it is and what was dropped. |
 
 ## replay
 

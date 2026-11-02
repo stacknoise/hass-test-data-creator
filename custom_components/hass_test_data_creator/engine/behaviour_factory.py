@@ -15,8 +15,10 @@ from ..core.keys import (
     KEY_SENSOR,
     KEY_SWITCH,
 )
+from ..core.protocols import ChangeRecorder
 from ..model.models import DeviceDef, EntityDef
 from .behaviours import (
+    NO_LOG,
     Behaviour,
     BinarySensorBehaviour,
     ClimateBehaviour,
@@ -52,10 +54,13 @@ def entity_seed(device_seed: int, key: str) -> int:
 class BehaviourFactory:
     """Creates the behaviour for an entity definition."""
 
-    def __init__(self, signals: SignalFactory, scheduler: Scheduler) -> None:
-        """Keep the signal factory and the scheduler the behaviours use."""
+    def __init__(
+        self, signals: SignalFactory, scheduler: Scheduler, recorder: ChangeRecorder = NO_LOG
+    ) -> None:
+        """Keep the signal factory, the scheduler and the live log recorder the behaviours use."""
         self._signals = signals
         self._scheduler = scheduler
+        self._recorder = recorder
 
     def signal_for(self, device: DeviceDef, definition: EntityDef) -> Signal:
         """Return the signal of `definition` of `device`, with the seed and origin of the entity."""
@@ -73,4 +78,5 @@ class BehaviourFactory:
         else:
             behaviour = _SIMPLE[definition.platform](device.id, definition, self._scheduler)
         behaviour.paused = device.paused
+        behaviour.recorder = self._recorder
         return behaviour

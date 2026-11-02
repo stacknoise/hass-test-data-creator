@@ -8,7 +8,7 @@ from .error_factory import ErrorFactory
 from .response_factory import ResponseFactory
 
 if TYPE_CHECKING:
-    from ..model.models import DeviceDef
+    from ..model.models import DeviceDef, EntityDef
 
 
 class ScenarioRunner(Protocol):
@@ -33,6 +33,27 @@ class UsageLookup(Protocol):
 
     def is_used(self, device: DeviceDef) -> bool:
         """Whether a schedule, scenario or group names the device."""
+
+
+class LoggedBehaviour(Protocol):
+    """What the live log needs of a behaviour: where it lives and how its state reads."""
+
+    device_id: str
+    definition: EntityDef
+
+    def state_text(self) -> str:
+        """Return the state as text, `unavailable` while a fault makes it so."""
+
+
+class ChangeRecorder(Protocol):
+    """What the behaviours need of the live log: whether it records and a way to report a change."""
+
+    @property
+    def active(self) -> bool:
+        """Whether the log records now."""
+
+    def changed(self, behaviour: LoggedBehaviour, cause: str, value: str | None = None) -> None:
+        """Record that `behaviour` changed for `cause`; `value` replaces its state text."""
 
 
 @runtime_checkable
