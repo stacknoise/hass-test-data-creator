@@ -27,7 +27,7 @@ from ..core.keys import (
 from ..core.targets import device_references
 from ..model.models import DeviceDef, GroupDef, ScenarioDef, ScheduleDef
 from ..templates.factory import Template
-from .schema import KEY_OVERRIDES
+from .schema import KEY_OVERRIDES, KEY_SOURCE
 
 
 @dataclass
@@ -50,7 +50,9 @@ class TransferFactory:
         """Return the entry of an own template: the content of its template file."""
         return template.to_file()
 
-    def device(self, device: DeviceDef, template: Template | None) -> dict[str, Any]:
+    def device(
+        self, device: DeviceDef, template: Template | None, source_name: str | None = None
+    ) -> dict[str, Any]:
         """Return the entry of a device: its template and what differs, or all entities.
 
         The entity list is written in full for a device without a matching template, that is a
@@ -64,6 +66,13 @@ class TransferFactory:
             KEY_OUTPUT: device.output,
             "seed": device.seed,
         }
+        if device.source:
+            entry[KEY_SOURCE] = {
+                KEY_NAME: source_name or device.source.get(KEY_NAME, ""),
+                "mapping": dict(device.source.get("mapping", {})),
+                "deviation": dict(device.source.get("deviation", {})),
+                "seeds": dict(device.source.get("seeds", {})),
+            }
         entities = [item.to_dict() for item in device.entities]
         overrides = self._overrides(entities, template)
         if overrides is None:

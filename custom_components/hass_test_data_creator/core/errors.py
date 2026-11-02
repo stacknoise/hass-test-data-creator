@@ -165,6 +165,9 @@ class ErrorCode(StrEnum):
     SRC_OFFLINE = "TDC-SRC-007"
     """The source of a copy is offline, so no action or fault runs on the copy."""
 
+    SRC_IMPORT_MISSING = "TDC-SRC-008"
+    """The source named in an imported device is not in this instance, so the device has none."""
+
     WS_INVALID_REQUEST = "TDC-WS-001"
     """The request does not match the schema of the command."""
 

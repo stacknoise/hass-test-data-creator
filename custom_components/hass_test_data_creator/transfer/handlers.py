@@ -22,7 +22,14 @@ from ..const import (
     OUTPUT_NATIVE,
     OUTPUTS,
 )
-from ..core.errors import ErrorCode, GenerationError, OutputError, RemovalError, TdcError
+from ..core.errors import (
+    ErrorCode,
+    GenerationError,
+    OutputError,
+    RemovalError,
+    SourceError,
+    TdcError,
+)
 from ..core.keys import (
     KEY_AREA,
     KEY_ENTITIES,
@@ -45,6 +52,7 @@ from ..devices.signal_editor import SignalEditor
 from ..devices.usage import DeviceUsage
 from ..groups.manager import GroupManager
 from ..groups.schema import GROUP_FIELDS
+from ..model.models import EntityDef
 from ..outputs.mqtt.client import MqttClient
 from ..removal.planner import RemovalPlanner
 from ..removal.runner import RemovalRunner
@@ -56,10 +64,19 @@ from ..templates.factory import TemplateFactory
 from ..templates.registry import TemplateRegistry
 from ..templates.schema import SIGNAL_SCHEMA
 from .references import References
-from .schema import KEY_OVERRIDES
+from .schema import KEY_OVERRIDES, KEY_SOURCE
 
 Failure = tuple[str, TdcError]
 _NAME = vol.All(str, vol.Length(min=1, max=64))
+SOURCE_ITEM = vol.Schema(
+    {
+        vol.Required(KEY_NAME): _NAME,
+        vol.Optional("mapping", default=dict): {SHORT_TEXT: SHORT_TEXT},
+        vol.Optional("deviation", default=dict): dict,
+        vol.Optional("seeds", default=dict): {SHORT_TEXT: int},
+    },
+    extra=vol.REMOVE_EXTRA,
+)
 DEVICE_ITEM = vol.Schema(
     {
         vol.Required(KEY_NAME): vol.All(_NAME, vol.Match(r"^[^{}]+$")),
@@ -72,6 +89,7 @@ DEVICE_ITEM = vol.Schema(
         vol.Optional(KEY_ENTITIES): vol.All(
             [dict], vol.Length(max=MAX_ENTITIES_PER_DEVICE), json_size(MAX_ENTITIES_BYTES)
         ),
+        vol.Optional(KEY_SOURCE): SOURCE_ITEM,
     },
     extra=vol.REMOVE_EXTRA,
 )
@@ -227,19 +245,42 @@ class DevicesHandler(CategoryHandler):
         data = checked(DEVICE_ITEM, item, self.name_of(item))
         if data[KEY_OUTPUT] != OUTPUT_NATIVE and not self._mqtt.available():
             raise OutputError(ErrorCode.OUT_MQTT_UNAVAILABLE)
+        entities: list[EntityDef] = []
         if KEY_ENTITIES in data:
-            self._factory.custom(data[KEY_ENTITIES])
+            entities = self._factory.custom(data[KEY_ENTITIES]).entities
         else:
             refs.template(data[KEY_TEMPLATE])
             known = next((t for t in self._registry.all() if t.id == data[KEY_TEMPLATE]), None)
             if known is not None:
-                self._factory.with_overrides(known, data[KEY_OVERRIDES])
+                entities = self._factory.with_overrides(known, data[KEY_OVERRIDES]).entities
+        data["warning"] = self._link_source(data, entities)
         data["signals"] = {
             key: checked(SIGNAL_SCHEMA, override[KEY_SIGNAL], data[KEY_NAME])
             for key, override in data[KEY_OVERRIDES].items()
             if KEY_SIGNAL in override
         }
         return data
+
+    def _link_source(self, data: dict[str, Any], entities: list[EntityDef]) -> TdcError | None:
+        """Resolve the source of an entry by name; return why it is dropped, or None if it fits.
+
+        A source that is not in this instance does not stop the import: the device is created
+        without it and the plan names the reason.
+        """
+        entry = data.pop(KEY_SOURCE, None)
+        data[KEY_SOURCE] = None
+        if entry is None:
+            return None
+        device_id = self._manager.find_source(entry[KEY_NAME])
+        if device_id is None:
+            return SourceError(ErrorCode.SRC_IMPORT_MISSING)
+        source = {**entry, "device_id": device_id}
+        try:
+            self._manager.check_source(source, entities)
+        except SourceError as error:
+            return error
+        data[KEY_SOURCE] = source
+        return None
 
     def existing(self) -> dict[str, list[Any]]:
         """Return the devices by name."""
@@ -313,6 +354,7 @@ class DevicesHandler(CategoryHandler):
             areas=[data[KEY_AREA]] if data.get(KEY_AREA) else [],
             output=data[KEY_OUTPUT],
             entities=entities,
+            source=data.get(KEY_SOURCE),
         )
 
     async def async_create_many(self, items: list[dict[str, Any]], label: str) -> list[Failure]:

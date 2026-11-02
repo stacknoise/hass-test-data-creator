@@ -7,6 +7,8 @@ from typing import Any
 
 from ..core.errors import ErrorCode, TemplateError
 from ..core.keys import KEY_DEVICES, KEY_GROUPS, KEY_SCENARIOS, KEY_SCHEDULES
+from ..model.models import DeviceDef
+from ..sources.status import SourceStatus
 from ..store.store import TdcStore
 from ..templates.factory import Template
 from ..templates.registry import TemplateRegistry
@@ -18,9 +20,14 @@ class TransferExporter:
     """Builds the entries of a category, a page at a time."""
 
     def __init__(
-        self, store: TdcStore, templates: TemplateRegistry, factory: TransferFactory
+        self,
+        store: TdcStore,
+        templates: TemplateRegistry,
+        factory: TransferFactory,
+        status: SourceStatus,
     ) -> None:
-        """Keep the store, the templates and the factory of the entries."""
+        """Keep the store, the templates, the factory of the entries and the names of sources."""
+        self._status = status
         self._store = store
         self._templates = templates
         self._factory = factory
@@ -42,6 +49,11 @@ class TransferExporter:
             scenarios={item.id: item.name for item in self._store.scenarios()},
         )
 
+    def _source_name(self, device: DeviceDef) -> str | None:
+        """Return the current name of the source of `device`, or None without one."""
+        info = self._status.of(device)
+        return None if info is None else str(info["name"])
+
     def _template(self, template_id: str) -> Template | None:
         """Return the template with `template_id`, or None if there is none."""
         try:
@@ -59,7 +71,8 @@ class TransferExporter:
                 factory.template(item) for item in self._templates.all() if not item.bundled
             ],
             KEY_DEVICES: lambda: [
-                factory.device(item, self._template(item.template)) for item in store.devices()
+                factory.device(item, self._template(item.template), self._source_name(item))
+                for item in store.devices()
             ],
             KEY_SCHEDULES: lambda: [factory.schedule(item, names) for item in store.schedules()],
             KEY_SCENARIOS: lambda: [factory.scenario(item, names) for item in store.scenarios()],

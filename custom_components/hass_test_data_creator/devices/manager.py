@@ -24,7 +24,7 @@ from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..core.ids import new_id
 from ..core.keys import KEY_AREAS
 from ..core.protocols import SourceCheck
-from ..model.models import DeviceDef, RunRecord
+from ..model.models import DeviceDef, EntityDef, RunRecord
 from ..outputs.adapter import OutputAdapterFactory
 from ..sources.model import new_source
 from ..store.store import TdcStore
@@ -114,6 +114,14 @@ class DevicesManager:
         self._audit.record(self._audit_factory.bulk_done("area", len(stored), 0))
         return len(stored)
 
+    def check_source(self, source: dict[str, Any] | None, entities: list[EntityDef]) -> None:
+        """Raise a source error if `source` does not fit `entities`."""
+        self._sources.check(source, entities)
+
+    def find_source(self, name: str) -> str | None:
+        """Return the id of the real device called `name`, or None."""
+        return self._sources.find(name)
+
     def _template_for(self, job: CreationJob) -> Template:
         """Return the template of `job`: a stored one, or one built from its custom entities."""
         if job.template == CUSTOM_TEMPLATE_ID:
@@ -149,7 +157,7 @@ class DevicesManager:
             template=source.template,
             output=source.output,
             areas=job.areas or ([source.area] if source.area else []),
-            source=source.source,
+            source={**source.source, "seeds": {}} if source.source else None,
         )
         return await self._async_run(job, template, template_key=f"copy:{source.id}")
 

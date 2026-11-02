@@ -184,6 +184,9 @@
     "src_offline": {
       "message": "Die Quelle ist offline, die Kopie lässt sich nicht steuern"
     },
+    "src_import_missing": {
+      "message": "Das Quellgerät gibt es in dieser Instanz nicht, das Gerät wurde ohne Quelle erstellt"
+    },
     "ws_invalid_request": {
       "message": "Die Anfrage ist ungültig"
     },

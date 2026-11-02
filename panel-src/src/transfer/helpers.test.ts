@@ -72,7 +72,12 @@ describe('parseTransferFile', () => {
 
   it('refuses a file that is too large or newer', () => {
     expect(parseTransferFile(file(), 5)).toMatchObject({ error: 'trfTooBig' });
-    expect(parseTransferFile(file({ format_version: 2 }), 1000)).toEqual({ error: 'trfNewer' });
+    expect(parseTransferFile(file({ format_version: 3 }), 1000)).toEqual({ error: 'trfNewer' });
+  });
+
+  it('still reads a file of the previous format, which has no sources', () => {
+    expect(parseTransferFile(file({ format_version: 1 }), 1000)).not.toHaveProperty('error');
+    expect(parseTransferFile(file({ format_version: 2 }), 1000)).not.toHaveProperty('error');
   });
 
   it('refuses two entries of one name in a category', () => {

@@ -10,11 +10,12 @@ from ..const import MAX_BATCH
 from ..core.keys import KEY_DEVICES, KEY_GROUPS, KEY_SCENARIOS, KEY_SCHEDULES
 from ..core.limits import SHORT_TEXT
 
-FORMAT_VERSION: Final = 1
+FORMAT_VERSION: Final = 2
 KEY_TEMPLATES: Final = "templates"
 KEY_CATEGORY: Final = "category"
 KEY_ITEMS: Final = "items"
 KEY_OVERRIDES: Final = "overrides"
+KEY_SOURCE: Final = "source"
 
 CATEGORIES: Final = (KEY_DEVICES, KEY_TEMPLATES, KEY_SCHEDULES, KEY_SCENARIOS, KEY_GROUPS)
 

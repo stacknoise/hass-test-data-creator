@@ -184,6 +184,9 @@
     "src_offline": {
       "message": "The source is offline, so the copy cannot be controlled"
     },
+    "src_import_missing": {
+      "message": "The source device is not in this instance, the device was created without source"
+    },
     "ws_invalid_request": {
       "message": "The request is invalid"
     },
