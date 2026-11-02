@@ -14,6 +14,6 @@ python docs/review/build_dependencies.py
 python docs/review/build_graph.py
 ```
 
-The maps are a **static approximation**: module imports are exact, but caller/callee and "used by" lists are resolved by name through the imports and the class hierarchy. Calls through callbacks or objects of unknown type are missing, and entries marked `~` are matched by method name only.
+The maps are a **static approximation**: module imports are exact, but caller/callee and "used by" lists are resolved by name through the imports and the class hierarchy. Callbacks and table entries are listed as "used as a value", overrides and protocol implementations as "implements", and framework hooks (Home Assistant entry points, entities, WebSocket commands, platforms, packages) carry a note why no Python code calls them. Calls through objects of unknown type are matched by method name only (marked `~`). The section "Objects without a production use" at the end lists what remains: code that only tests use, and removal candidates.
 
 These are documentation tools, not part of the integration. They do not satisfy the strict ruff configuration (docstrings, complexity) and are excluded in `pyproject.toml`.

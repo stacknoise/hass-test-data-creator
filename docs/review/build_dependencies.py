@@ -145,6 +145,11 @@ class Func:
     callees: set[str] = field(default_factory=set)
     approx_callees: set[str] = field(default_factory=set)
     callers: set[str] = field(default_factory=set)
+    ref_by: set[str] = field(default_factory=set)  # used as a value (callback, table entry)
+    via: set[str] = field(default_factory=set)  # base/protocol methods this one implements
+    note: str = ""  # why nothing in the package calls it
+    used: bool = False  # called, referenced, reached through a base, or hooked by a framework
+    test_only: bool = False
 
     @property
     def id(self) -> str:
@@ -164,6 +169,7 @@ class Klass:
     methods: list[str] = field(default_factory=list)
     created_in: set[str] = field(default_factory=set)
     referenced_in: set[str] = field(default_factory=set)
+    note: str = ""  # why no code creates or references it
 
     @property
     def id(self) -> str:
@@ -189,6 +195,7 @@ class Module:
         default_factory=dict
     )  # local name -> (module, symbol)
     mod_alias: dict[str, str] = field(default_factory=dict)  # local name -> module
+    note: str = ""  # why no module imports it
 
 
 # ----------------------------------------------------------------------------- Python analysis
@@ -439,13 +446,225 @@ def analyse_python() -> dict[str, Module]:
                         and len(methods_by_name.get(method, [])) == 1
                     ):
                         options = methods_by_name[method]  # unique in the whole package
-                    if 1 <= len(options) <= 2:
+                    if not options and len(methods_by_name.get(method, [])) <= 6:
+                        options = methods_by_name.get(method, [])  # few candidates: name match
+                    if 1 <= len(options) <= 6:
                         fn.approx_callees.update(options)
     for fn in funcs.values():
         for callee in fn.callees | fn.approx_callees:
             if callee in funcs and callee != fn.id:
                 funcs[callee].callers.add(fn.id)
+    enrich(modules, classes, funcs, class_of, func_of, mro_method)
     return modules
+
+
+# Names Home Assistant calls on an integration module.
+HA_MODULE_HOOKS = {
+    "async_setup",
+    "async_setup_entry",
+    "async_unload_entry",
+    "async_remove_entry",
+    "async_migrate_entry",
+}
+# Base classes whose methods the framework calls.
+FRAMEWORK_BASE = re.compile(r"(Entity|Flow|FlowHandler|Store)$")
+NOT_FRAMEWORK = {"Protocol", "ABC", "Generic", "object", "Enum", "StrEnum", "NamedTuple", "TypedDict"}
+
+
+def walk_shallow(node: ast.AST):
+    """Yield the nodes of a body without entering nested defs (their decorators and signature count)."""
+    stack = list(ast.iter_child_nodes(node))
+    while stack:
+        n = stack.pop()
+        yield n
+        if isinstance(n, ast.FunctionDef | ast.AsyncFunctionDef):
+            stack.extend(n.decorator_list)
+            stack.extend(ast.iter_child_nodes(n.args))
+            if n.returns:
+                stack.append(n.returns)
+            continue
+        stack.extend(ast.iter_child_nodes(n))
+
+
+def base_name(base: str) -> str:
+    """Return the plain class name of a base expression (`pkg.Foo[T]` -> `Foo`)."""
+    return base.split("[")[0].split(".")[-1]
+
+
+def tests_text() -> str:
+    """Return the source of all tests (for the 'only used by tests' hint)."""
+    return "\n".join(p.read_text(encoding="utf-8") for p in sorted((ROOT / "tests").rglob("*.py")))
+
+
+def enrich(modules, classes, funcs, class_of, func_of, mro_method) -> None:  # noqa: C901
+    """Second pass: value references, overrides, framework hooks and 'why unused' notes."""
+
+    def own_ref(mod: Module, owner: str, own_class: str | None, nested: dict[str, str], root):
+        """Record every function/class used as a value (callback, table entry, annotation, base)."""
+        for node in walk_shallow(root):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+                cid = class_of(mod, node.id)
+                if cid:
+                    classes[cid].referenced_in.add(owner)
+                fid = nested.get(node.id) or func_of(mod, node.id)
+                if fid and fid != owner:
+                    funcs[fid].ref_by.add(owner)
+            elif isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+                value = node.value.id
+                hit = None
+                if value in ("self", "cls") and own_class:
+                    hit = mro_method(f"{mod.name}:{own_class}", node.attr)
+                elif value in mod.mod_alias:
+                    cand = f"{mod.mod_alias[value]}:{node.attr}"
+                    hit = cand if cand in funcs else None
+                else:
+                    cid = class_of(mod, value)
+                    hit = mro_method(cid, node.attr) if cid else None
+                if hit and hit != owner:
+                    funcs[hit].ref_by.add(owner)
+
+    for mod in modules.values():
+        own_ref(mod, f"{mod.name}:(module level)", None, {}, mod_tree(mod))
+        for fn in mod.funcs:
+            nested = {
+                c.name: f"{fn.id}.{c.name}"
+                for c in ast.iter_child_nodes(fn.node)
+                if isinstance(c, ast.FunctionDef | ast.AsyncFunctionDef)
+            }
+            own_ref(mod, fn.id, fn.cls, nested, fn.node)
+
+    # class hierarchy: subclasses reference their bases, methods implement base methods
+    protocols = {
+        cid
+        for cid, k in classes.items()
+        if any(base_name(b) == "Protocol" for b in k.bases)
+    }
+    external: dict[str, set[str]] = {}
+    for cid, k in classes.items():
+        owner = modules[k.module]
+        ext = set()
+        for base in k.bases:
+            bid = class_of(owner, base_name(base))
+            if bid:
+                classes[bid].referenced_in.add(cid)
+                for mid in k.methods:
+                    hit = mro_method(bid, mid.split(".")[-1])
+                    if hit:
+                        funcs[mid].via.add(hit)
+            elif base_name(base) not in NOT_FRAMEWORK:
+                ext.add(base_name(base))
+        external[cid] = ext
+    by_name: dict[str, list[str]] = defaultdict(list)
+    for fn in funcs.values():
+        if fn.cls:
+            by_name[fn.qual.split(".")[-1]].append(fn.id)
+    for pid in protocols:
+        for mid in classes[pid].methods:
+            for other in by_name.get(mid.split(".")[-1], []):
+                if other != mid and other.split(":")[1].split(".")[0] != classes[pid].name:
+                    funcs[other].via.add(mid)
+
+    # classes the framework drives: a subclass of a framework base, or a mixin of one
+    hosted: dict[str, str] = {}
+    for cid, ext in external.items():
+        hits = sorted(e for e in ext if FRAMEWORK_BASE.search(e))
+        if hits:
+            hosted[cid] = hits[0]
+    changed = True
+    while changed:
+        changed = False
+        for cid, k in classes.items():
+            if cid in hosted:
+                for base in k.bases:
+                    bid = class_of(modules[k.module], base_name(base))
+                    if bid and bid not in hosted:
+                        hosted[bid] = hosted[cid]
+                        changed = True
+
+    memo: dict[str, bool] = {}
+
+    def reached(fid: str, seen: frozenset = frozenset()) -> bool:
+        """Return whether a function is called, referenced or reached through a base."""
+        if fid in memo:
+            return memo[fid]
+        f = funcs[fid]
+        hit = bool(f.callers or f.ref_by) or any(
+            v not in seen and reached(v, seen | {fid}) for v in f.via
+        )
+        memo[fid] = hit
+        return hit
+
+    tests = tests_text()
+    package_lines = {
+        m.name: m.path.read_text(encoding="utf-8").splitlines() for m in modules.values()
+    }
+    for fn in funcs.values():
+        fn.used = reached(fn.id)
+        if fn.used:
+            continue
+        name = fn.qual.split(".")[-1]
+        decos = [ast.unparse(d) for d in getattr(fn.node, "decorator_list", [])]
+        cid = f"{fn.module}:{fn.cls}" if fn.cls else None
+        cmd = next((re.search(r"/([a-z_/]+)'", d) for d in decos if d.startswith("tdc_command(")), None)
+        if cmd:
+            fn.note = f"WebSocket command <code>{cmd.group(1)}</code>: called by the panel through <code>api.ts</code>, not by Python"
+        elif any("websocket_api" in d for d in decos):
+            fn.note = "registered with Home Assistant as WebSocket command handler"
+        elif name.startswith("__"):
+            fn.note = "special method, called by Python"
+        elif fn.module == "(root)" and name in HA_MODULE_HOOKS:
+            fn.note = "integration hook called by Home Assistant"
+        elif cid in hosted:
+            fn.note = f"called by Home Assistant (method of a {hosted[cid]} subclass)"
+        else:
+            pattern = re.compile(r"\b" + re.escape(name) + r"\b")
+            defn = re.compile(r"\s*(async )?def " + re.escape(name) + r"\b")
+            hits = sorted(
+                {
+                    module
+                    for module, lines in package_lines.items()
+                    for line in lines
+                    if pattern.search(line) and not defn.match(line) and not line.lstrip().startswith("#")
+                }
+            )
+            if hits:
+                fn.note = (
+                    "called through an object whose type the analysis cannot follow "
+                    f"(the name appears in {len(hits)} other module{'s' if len(hits) > 1 else ''})"
+                )
+            elif pattern.search(tests):
+                fn.note = "only used by tests"
+                fn.test_only = True
+        fn.used = bool(fn.note) and not fn.test_only
+
+    for k in classes.values():
+        if k.created_in or k.referenced_in:
+            continue
+        ext = sorted(e for e in external[k.id] if FRAMEWORK_BASE.search(e))
+        if k.id == "config_flow:TestDataCreatorConfigFlow" or ext:
+            k.note = f"found and driven by Home Assistant (subclass of {', '.join(ext) or 'ConfigFlow'})"
+        else:
+            k.note = "no reference found"
+
+    for m in modules.values():
+        if m.used_by:
+            continue
+        has_children = any(o.startswith(m.name + ".") for o in modules) or m.name == "(root)"
+        if m.name == "(root)":
+            m.note = "integration entry point, loaded by Home Assistant (<code>__init__.py</code>)"
+        elif m.path.name == "__init__.py" and has_children:
+            m.note = "package: loaded implicitly when one of its submodules is imported"
+        elif m.name == "config_flow":
+            m.note = "loaded by Home Assistant (<code>config_flow</code> in <code>manifest.json</code>)"
+        elif "async_setup_entry" in m.path.read_text(encoding="utf-8"):
+            m.note = "platform: loaded by Home Assistant through <code>async_forward_entry_setups</code>"
+        else:
+            m.note = "no import found"
+
+
+def mod_tree(mod: Module) -> ast.AST:
+    """Parse a module file again (module-level statements are not kept in `Module`)."""
+    return ast.parse(mod.path.read_text(encoding="utf-8"))
 
 
 def classes_of(method_id: str, funcs: dict[str, Func]) -> str:
@@ -511,6 +730,8 @@ class TsFile:
     extends: dict[str, str] = field(default_factory=dict)
     exports: list[str] = field(default_factory=list)
     commands: dict[str, str] = field(default_factory=dict)  # api method -> ws command
+    note: str = ""  # why no file imports it
+    export_notes: dict[str, str] = field(default_factory=dict)  # export -> why no other file uses it
 
 
 def analyse_ts() -> dict[str, TsFile]:
@@ -560,7 +781,47 @@ def analyse_ts() -> dict[str, TsFile]:
                 call = re.search(r"this\.call(?:<[^>]*>)?\('([^']+)'", chunk)
                 if head and call:
                     f.commands[head.group(1)] = call.group(1)
+    ts_notes(files)
     return files
+
+
+def ts_notes(files: dict[str, TsFile]) -> None:
+    """Explain files without importers and exports that no other production file uses."""
+    texts = {rel: (PANEL / rel).read_text(encoding="utf-8") for rel in files}
+    prod = {rel: t for rel, t in texts.items() if not files[rel].test}
+    tests = {rel: t for rel, t in texts.items() if files[rel].test}
+    for rel, f in files.items():
+        if f.test:
+            f.note = "test file, run by Vitest"
+        elif not f.imported_by and rel == "panel.ts":
+            f.note = "entry point of the Vite build; Home Assistant loads the built module as the panel"
+        elif not f.imported_by:
+            f.note = "no importer found"
+        if f.test:
+            continue
+        elements = {cls for _tag, cls in f.tags}
+        for name in f.exports:
+            pattern = re.compile(r"\b" + re.escape(name) + r"\b")
+            if any(pattern.search(t) for o, t in prod.items() if o != rel):
+                continue
+            if name in elements:
+                f.export_notes[name] = "custom element, used through its tag in templates"
+            elif len(pattern.findall(texts[rel])) > 1:
+                f.export_notes[name] = "used inside this file only; exported for tests or typing"
+            elif any(pattern.search(t) for t in tests.values()):
+                f.export_notes[name] = "only used by tests"
+            else:
+                f.export_notes[name] = "no use found"
+    api = texts.get("common/api.ts", "")
+    for method in re.findall(r"^  (?:async )?(\w+)\(", api, re.M):
+        if method in ("constructor", "call"):
+            continue
+        pattern = re.compile(r"\b" + method + r"\(")
+        if not any(pattern.search(t) for o, t in prod.items() if o != "common/api.ts"):
+            used_in_tests = any(pattern.search(t) for t in tests.values())
+            files["common/api.ts"].export_notes[f"TdcApi.{method}"] = (
+                "only used by tests" if used_in_tests else "no use found"
+            )
 
 
 def ws_handlers(modules: dict[str, Module]) -> dict[str, str]:
@@ -755,6 +1016,15 @@ def link_func(fid: str, funcs: dict[str, Func], approx: bool = False) -> str:
     return f"<a href='#{anchor('f', fid)}'>{esc(label)}</a>{mark}"
 
 
+def link_ref(ref: str, funcs: dict[str, Func]) -> str:
+    """Return a link for a function, a class or a module-level reference."""
+    if ref in funcs:
+        return link_func(ref, funcs)
+    if ref.endswith(":(module level)"):
+        return f"module level of {link_mod(ref.split(':')[0])}"
+    return link_class(ref)
+
+
 def link_class(cid: str) -> str:
     """Return an anchor to a class."""
     return f"<a href='#{anchor('c', cid)}'>{esc(cid.replace(':', '.'))}</a>"
@@ -839,7 +1109,7 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
     w("<title>Dependency map</title><style>" + CSS + "</style></head><body>")
     w(
         "<nav class='top'><a href='#overview'><b>Map</b></a><a href='#layers'>Layers</a><a href='#cycles'>Cycles</a><a href='#details'>Details</a>"
-        "<a href='#index'>Index</a><a href='#modules'>Modules</a><a href='#panel'>Panel</a>"
+        "<a href='#index'>Index</a><a href='#modules'>Modules</a><a href='#panel'>Panel</a><a href='#unused'>Unused</a>"
         "<input id='q' type='search' placeholder='Filter the index (module, class, function)' aria-label='Filter'></nav><main>"
     )
     w("<h1 id='overview'>HASS Test Data Creator: dependency map</h1>")
@@ -976,7 +1246,7 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
                 + "".join(f"<li>{link_mod(u)}</li>" for u in sorted(m.used_by))
                 + "</ul>"
                 if m.used_by
-                else "<p class='muted'>nothing</p>"
+                else f"<p class='muted'>no import found: {m.note}</p>"
             )
             + "</div></div>"
         )
@@ -1008,7 +1278,7 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
                 "<p><b>Created in</b> "
                 + (
                     ", ".join(link_func(x, funcs) for x in created)
-                    or "<span class='muted'>no call found (static)</span>"
+                    or f"<span class='muted'>no call found{': ' + k.note if k.note else ''}</span>"
                 )
                 + "</p>"
             )
@@ -1016,8 +1286,8 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
                 w(
                     "<details><summary>Otherwise referenced in "
                     + str(len(ref))
-                    + " functions</summary><div>"
-                    + ", ".join(link_func(x, funcs) for x in ref)
+                    + " places</summary><div>"
+                    + ", ".join(link_ref(x, funcs) for x in ref)
                     + "</div></details>"
                 )
             importers = sorted(
@@ -1117,6 +1387,8 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
             w("<br>Elements: " + ", ".join(f"<code>{esc(t)}</code> ({esc(c)})" for t, c in f.tags))
         if f.exports:
             w("<br>Exports: " + ", ".join(f"<code>{esc(x)}</code>" for x in f.exports))
+        for name, why in f.export_notes.items():
+            w(f"<br><span class='muted'><code>{esc(name)}</code>: {esc(why)}</span>")
         w(
             "<br>Imports: "
             + (
@@ -1130,7 +1402,7 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
                 ", ".join(
                     f"<a href='#{anchor('t', x)}'>{esc(x)}</a>" for x in sorted(f.imported_by)
                 )
-                or "<span class='muted'>nothing</span>"
+                or f"<span class='muted'>nothing{': ' + esc(f.note) if f.note else ''}</span>"
             )
         )
         w("</div>")
@@ -1147,8 +1419,32 @@ def render(modules: dict[str, Module], ts: dict[str, TsFile]) -> str:
             else "<p class='ok'>No import cycle between panel files.</p>"
         )
     )
+    render_unused(w, modules, funcs, ts)
     w("</main><script>" + JS + "</script></body></html>")
     return "".join(out)
+
+
+def render_unused(w, modules: dict[str, Module], funcs: dict[str, Func], ts: dict[str, TsFile]) -> None:
+    """Write the list of objects that no production code uses (after all resolution rules)."""
+    w("<h2 id='unused'>Objects without a production use</h2>")
+    w(
+        "<p class='muted'>Everything the analysis cannot connect to a caller, after resolving callbacks, tables, "
+        "base classes, protocols and framework hooks. What remains is either used only by tests "
+        "or a candidate for removal.</p>"
+    )
+    rows = [
+        f"<li>{link_func(f.id, funcs)}: {'only used by tests' if f.test_only else 'no use found'}</li>"
+        for f in funcs.values()
+        if not f.used
+    ]
+    for rel, f in ts.items():
+        for name, why in f.export_notes.items():
+            if why in ("only used by tests", "no use found"):
+                rows.append(f"<li><a href='#{anchor('t', rel)}'>{esc(rel)}</a> <code>{esc(name)}</code>: {esc(why)}</li>")
+    classes = [k for m in modules.values() for k in m.classes if k.note == "no reference found"]
+    rows += [f"<li>class {link_class(k.id)}: no reference found</li>" for k in classes]
+    w("<ul class='tight'>" + "".join(rows) + "</ul>" if rows else "<p class='ok'>None.</p>")
+
 
 
 def render_func(w, f: Func, funcs: dict[str, Func]) -> None:
@@ -1162,9 +1458,11 @@ def render_func(w, f: Func, funcs: dict[str, Func]) -> None:
     callers = sorted(f.callers)
     callees = sorted(f.callees)
     approx = sorted(f.approx_callees - f.callees)
+    refs = sorted(f.ref_by - f.callers)
+    via = sorted(v for v in f.via if v in funcs)
     w(
         "<details><summary>Callers "
-        + str(len(callers))
+        + str(len(callers) + len(refs))
         + " / callees "
         + str(len(callees) + len(approx))
         + "</summary>"
@@ -1180,10 +1478,24 @@ def render_func(w, f: Func, funcs: dict[str, Func]) -> None:
                 )
                 for c in callers
             )
-            or "<span class='muted'>none found (entry point, callback or dynamic call)</span>"
+            or "<span class='muted'>no direct call found</span>"
         )
         + "</div>"
     )
+    if refs:
+        w(
+            "<div><b>Used as a value</b> (callback or table entry) in "
+            + ", ".join(link_ref(r, funcs) for r in refs)
+            + "</div>"
+        )
+    if via:
+        w(
+            "<div><b>Implements</b> "
+            + ", ".join(link_func(v, funcs) for v in via)
+            + " <span class='muted'>(called through the base or protocol)</span></div>"
+        )
+    if f.note:
+        w(f"<div><b>Why no caller in the package</b> {f.note}</div>")
     w(
         "<div><b>Calls</b> "
         + (
