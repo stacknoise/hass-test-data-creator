@@ -39,7 +39,7 @@ async def test_devices_are_exported_with_their_overrides(
     reply = await export(client, "devices")
     assert reply["success"]
     result = reply["result"]
-    assert result["format_version"] == 1
+    assert result["format_version"] == 2
     assert result["total"] == 2
     first, second = result["items"]
     assert first["name"] == "Plug 01"

@@ -128,6 +128,9 @@ class TransferImporter:
             raise GenerationError(ErrorCode.GEN_TRANSFER_DUPLICATE, name=name)
         seen.add(name)
         data = handler.prepare(item, refs)
+        warning = data.pop("warning", None)
+        if warning is not None:
+            plan.problem(name, warning)
         found = existing.get(name, [])
         if not found:
             decisions.create.append(data)

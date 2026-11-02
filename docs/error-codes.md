@@ -57,6 +57,7 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-SRC-005 | A copy of a source is locked, only its seed can be changed | A copy of a source is locked: only its seed can be changed. |
 | TDC-SRC-006 | The device follows no source | The device follows no source, so it has no seed of a source. |
 | TDC-SRC-007 | The source is offline, so the copy cannot be controlled | The source of a copy is offline, so no action or fault runs on the copy. |
+| TDC-SRC-008 | The source device is not in this instance, the device was created without source | The source named in an imported device is not in this instance, so the device has none. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |
 | TDC-WS-002 | The selection has changed since you confirmed it. Check it and try again | The devices a bulk action selects are not the number the user confirmed. |
 | TDC-INT-001 | An unexpected error occurred. See the Home Assistant log | An unexpected error; the details are in the Home Assistant log. |

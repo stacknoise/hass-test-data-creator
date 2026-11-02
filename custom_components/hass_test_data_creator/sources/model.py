@@ -14,6 +14,6 @@ def new_source(request: dict[str, Any], name: str = "") -> dict[str, Any]:
         "name": name or request.get("name", ""),
         "mapping": dict(request.get("mapping", {})),
         "deviation": Deviation.from_dict(request.get("deviation")).to_dict(),
-        "seeds": {},
+        "seeds": dict(request.get("seeds", {})),
         "dismissed": False,
     }

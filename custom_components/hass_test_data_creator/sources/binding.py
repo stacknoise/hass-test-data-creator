@@ -180,6 +180,10 @@ class SourceBindingFactory:
         )
         behaviour.bind_source(binding)
 
+    def find(self, name: str) -> str | None:
+        """Return the id of the one real device called `name`, or None if there is none."""
+        return self._registry.find_by_name(name)
+
     def name_of(self, device_id: str) -> str:
         """Return the name of the source device."""
         entry = self._registry.device(device_id)
