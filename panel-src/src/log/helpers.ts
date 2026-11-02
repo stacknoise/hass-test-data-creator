@@ -1,4 +1,4 @@
-import type { FilterField, FilterValues } from '../common/filter-state';
+import type { FilterField, FilterValue, FilterValues } from '../common/filter-state';
 import type { SelectItem } from '../common/multi-select';
 import type { DeviceName, LogEntry, LogFilterRequest } from '../common/types';
 
@@ -135,6 +135,10 @@ export const LOG_PLATFORMS = [
 ];
 /** The key of the switch that keeps only entries with numbers. */
 export const KEY_ONLY_NUMERIC = 'only_numeric';
+/** The key of the choice of the time window. */
+export const KEY_WINDOW = 'window';
+/** The key of the choice of the smallest change. */
+export const KEY_MIN_DELTA = 'min_delta';
 
 /** The fields of the log filter by key and kind; labels and options are filled in by the panel. */
 export const LOG_FIELDS: FilterField[] = [
@@ -144,11 +148,24 @@ export const LOG_FIELDS: FilterField[] = [
   { key: 'platforms', kind: 'multi', label: '' },
   { key: 'outputs', kind: 'multi', label: '' },
   { key: 'causes', kind: 'multi', label: '' },
+  { key: KEY_WINDOW, kind: 'choice', label: '' },
+  { key: KEY_MIN_DELTA, kind: 'choice', label: '' },
   { key: KEY_ONLY_NUMERIC, kind: 'switch', label: '' },
 ];
 
+/** The time windows the filter offers, in seconds; the window counts back from the moment of the choice. */
+export const LOG_WINDOWS = [60, 300, 900, 3600];
+/** The smallest changes the filter offers; smaller changes of a number are left out. */
+export const LOG_MIN_DELTAS = [0.1, 1, 10, 100];
+
+/** Return the number in a choice value, or undefined if it is empty or not a positive number. */
+function positive(value: FilterValue | undefined): number | undefined {
+  const number = typeof value === 'string' ? Number(value) : NaN;
+  return number > 0 ? number : undefined;
+}
+
 /** Return the request filter for the state of the bar; empty restrictions are left out. */
-export function logRequest(values: FilterValues): LogFilterRequest {
+export function logRequest(values: FilterValues, now = Date.now() / 1000): LogFilterRequest {
   const list = (key: string): string[] | undefined => {
     const value = values[key];
     return Array.isArray(value) && value.length ? value : undefined;
@@ -163,6 +180,8 @@ export function logRequest(values: FilterValues): LogFilterRequest {
     outputs: list('outputs'),
     causes: list('causes'),
     only_numeric: values[KEY_ONLY_NUMERIC] === true ? true : undefined,
+    min_delta: positive(values[KEY_MIN_DELTA]),
+    from: positive(values[KEY_WINDOW]) === undefined ? undefined : now - Number(values[KEY_WINDOW]),
   };
   return Object.fromEntries(
     Object.entries(request).filter(([, value]) => value !== undefined),
