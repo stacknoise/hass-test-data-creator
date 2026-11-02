@@ -49,6 +49,7 @@ from .schedules import (
 )
 from .sources import (
     ws_devices_confirm_source_removed,
+    ws_devices_set_seed,
     ws_sources_inspect,
     ws_sources_list,
     ws_sources_preview,
@@ -63,6 +64,7 @@ COMMANDS = (
     ws_sources_preview,
     ws_sources_removed,
     ws_devices_confirm_source_removed,
+    ws_devices_set_seed,
     ws_templates_list,
     ws_templates_save,
     ws_templates_delete,

@@ -671,6 +671,13 @@ var bt = class {
 	async sourcesRemoved() {
 		return (await this.call("sources/removed")).sources;
 	}
+	setSeed(e, t, n) {
+		return this.call("devices/set_seed", {
+			devices: e,
+			seed: t,
+			...n ? { entity: n } : {}
+		});
+	}
 	confirmSourceRemoved(e, t) {
 		return this.call("devices/confirm_source_removed", {
 			source: e,
@@ -1021,6 +1028,9 @@ var xt = {
 		detRun: "Run",
 		detSeconds: "Duration in seconds",
 		detCurve: "Change curve",
+		detSeed: "Seed",
+		detSeedSet: "Set seed",
+		detSeedRandom: "Random seed",
 		detSaveCurve: "Save curve",
 		detLive: "Live view",
 		detLiveColumn: "Live (1-second interval)",
@@ -1406,6 +1416,9 @@ var xt = {
 		detRun: "Ausführen",
 		detSeconds: "Dauer in Sekunden",
 		detCurve: "Kurve ändern",
+		detSeed: "Seed",
+		detSeedSet: "Seed setzen",
+		detSeedRandom: "Zufälliger Seed",
 		detSaveCurve: "Kurve speichern",
 		detLive: "Live-Ansicht",
 		detLiveColumn: "Live (1-Sekunden-Takt)",
@@ -4532,7 +4545,7 @@ k([b({ attribute: !1 })], na.prototype, "samples", void 0), na = k([y("tdc-live-
 // src/devices/device-detail.ts
 var B = class extends A {
 	constructor(...e) {
-		super(...e), this.actions = {}, this.areas = [], this.shapes = [], this.picked = {}, this.inputs = {}, this.curves = {}, this.live = !1, this.samples = {}, this.liveStates = {}, this.busy = !1, this.error = "";
+		super(...e), this.actions = {}, this.areas = [], this.shapes = [], this.picked = {}, this.inputs = {}, this.curves = {}, this.live = !1, this.samples = {}, this.liveStates = {}, this.seeds = {}, this.busy = !1, this.error = "";
 	}
 	static {
 		this.styles = [A.styles, o`
@@ -4605,6 +4618,47 @@ var B = class extends A {
         }
       }
     `];
+	}
+	connectedCallback() {
+		super.connectedCallback(), this.device.source && this.loadFull();
+	}
+	async loadFull() {
+		try {
+			this.full = await this.api.device(this.device.id);
+		} catch (e) {
+			this.error = w(e);
+		}
+	}
+	async setSeed(e, t) {
+		let n = this.seeds[e.key] ?? "", r = t ? "random" : Number(n);
+		!t && (n.trim() === "" || !Number.isInteger(r) || Number(r) < 0) || await this.run(async () => {
+			await this.api.setSeed([this.device.id], r, e.key), await this.loadFull(), this.seeds = {
+				...this.seeds,
+				[e.key]: ""
+			};
+		});
+	}
+	renderSeed(e) {
+		let t = this.full?.source?.mapping;
+		if (!t || !(e.key in t)) return v;
+		let n = this.full?.source?.seeds?.[e.key];
+		return g`<input
+        type="number"
+        min="0"
+        aria-label=${this.tr("detSeed")}
+        placeholder=${n === void 0 ? this.tr("detSeed") : String(n)}
+        .value=${this.seeds[e.key] ?? ""}
+        @input=${(t) => this.seeds = {
+			...this.seeds,
+			[e.key]: t.target.value
+		}}
+      />
+      <button ?disabled=${this.busy} @click=${() => void this.setSeed(e, !1)}>
+        ${this.tr("detSeedSet")}
+      </button>
+      <button ?disabled=${this.busy} @click=${() => void this.setSeed(e, !0)}>
+        ${this.tr("detSeedRandom")}
+      </button>`;
 	}
 	disconnectedCallback() {
 		this.stopLive?.(), super.disconnectedCallback();
@@ -4771,7 +4825,7 @@ var B = class extends A {
     </tr>`;
 	}
 	renderEntity(e) {
-		let t = this.hass?.language, n = this.menuItems(e), r = e.shape != null && !ar(e.shape);
+		let t = this.hass?.language, n = this.menuItems(e), r = e.shape != null && !ar(e.shape) && !this.device.source;
 		return g`<tr>
         <td>
           ${kt(t, e.key, e.name)}<br /><small
@@ -4796,7 +4850,7 @@ var B = class extends A {
                   .items=${n}
                   @tdc-pick=${(t) => this.pick(e, t.detail)}
                 ></tdc-menu-button>` : ""}
-          ${this.renderPicked(e)}
+          ${this.renderPicked(e)} ${this.renderSeed(e)}
           ${r ? g`<button
                   ?disabled=${this.busy || e.key in this.curves}
                   @click=${() => void this.openCurve(e)}
@@ -4824,7 +4878,7 @@ var B = class extends A {
     </p>` : v;
 	}
 	renderFollows(e) {
-		let t = this.device.source?.mapping?.[e.key];
+		let t = this.full?.source?.mapping?.[e.key];
 		return t ? g`<br /><small>${this.tr("sourceFollows", { entity: t })}</small>` : v;
 	}
 	render() {
@@ -4852,7 +4906,7 @@ var B = class extends A {
     `;
 	}
 };
-k([b({ attribute: !1 })], B.prototype, "device", void 0), k([b({ attribute: !1 })], B.prototype, "actions", void 0), k([b({ attribute: !1 })], B.prototype, "areas", void 0), k([b({ attribute: !1 })], B.prototype, "shapes", void 0), k([x()], B.prototype, "areaDraft", void 0), k([x()], B.prototype, "picked", void 0), k([x()], B.prototype, "inputs", void 0), k([x()], B.prototype, "curves", void 0), k([x()], B.prototype, "live", void 0), k([x()], B.prototype, "samples", void 0), k([x()], B.prototype, "liveStates", void 0), k([x()], B.prototype, "busy", void 0), k([x()], B.prototype, "error", void 0), B = k([y("tdc-device-detail")], B);
+k([b({ attribute: !1 })], B.prototype, "device", void 0), k([b({ attribute: !1 })], B.prototype, "actions", void 0), k([b({ attribute: !1 })], B.prototype, "areas", void 0), k([b({ attribute: !1 })], B.prototype, "shapes", void 0), k([x()], B.prototype, "areaDraft", void 0), k([x()], B.prototype, "picked", void 0), k([x()], B.prototype, "inputs", void 0), k([x()], B.prototype, "curves", void 0), k([x()], B.prototype, "live", void 0), k([x()], B.prototype, "samples", void 0), k([x()], B.prototype, "liveStates", void 0), k([x()], B.prototype, "full", void 0), k([x()], B.prototype, "seeds", void 0), k([x()], B.prototype, "busy", void 0), k([x()], B.prototype, "error", void 0), B = k([y("tdc-device-detail")], B);
 var ra = {
 	ids: /* @__PURE__ */ new Set(),
 	all: !1

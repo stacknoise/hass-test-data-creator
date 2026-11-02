@@ -9,6 +9,7 @@ import voluptuous as vol
 from ..const import MAX_PAGE_SIZE, MAX_SOURCE_PREVIEW
 from ..core.limits import SHORT_TEXT
 
+MAX_SEED_DEVICES = 5000
 _fraction = vol.All(vol.Coerce(float), vol.Range(min=0, max=1))
 _amount = vol.All(vol.Coerce(float), vol.Range(min=0, max=1_000_000))
 
@@ -41,6 +42,12 @@ SOURCES_PREVIEW_FIELDS: dict[Any, Any] = {
     vol.Optional("count", default=5): vol.All(int, vol.Range(min=1, max=MAX_SOURCE_PREVIEW)),
     vol.Optional("span", default=0.0): _amount,
     vol.Optional("deviation", default={}): vol.Schema(DEVIATION_FIELDS),
+}
+
+SOURCES_SEED_FIELDS: dict[Any, Any] = {
+    vol.Required("devices"): vol.All([SHORT_TEXT], vol.Length(min=1, max=MAX_SEED_DEVICES)),
+    vol.Optional("entity"): SHORT_TEXT,
+    vol.Required("seed"): vol.Any(vol.All(int, vol.Range(min=0, max=2**31 - 1)), "random"),
 }
 
 SOURCES_CONFIRM_FIELDS: dict[Any, Any] = {

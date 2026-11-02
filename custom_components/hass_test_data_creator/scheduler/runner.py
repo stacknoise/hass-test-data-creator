@@ -8,7 +8,7 @@ from typing import Any
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
 from ..const import CHUNK_SIZE
-from ..core.errors import ErrorCode, ScheduleError, TdcError
+from ..core.errors import ErrorCode, ScheduleError, SourceError, TdcError
 from ..core.keys import KEY_DEVICE, KEY_RUN, KEY_TEMPLATE
 from ..core.targets import device_references
 from ..engine.behaviours import Live
@@ -131,6 +131,9 @@ class ActionRunner:
             behaviour = self._live.get((device_id, entity))
             if behaviour is None:
                 raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+            source = getattr(behaviour, "source", None)
+            if source is not None and not source.online():
+                raise SourceError(ErrorCode.SRC_OFFLINE)
             await self._actions.create(behaviour.platform, action)(behaviour, params or {})
         return keys
 

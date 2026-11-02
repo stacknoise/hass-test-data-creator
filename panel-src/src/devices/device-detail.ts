@@ -39,6 +39,8 @@ export class DeviceDetail extends TdcElement {
   @state() private live = false;
   @state() private samples: Record<string, LiveSample[]> = {};
   @state() private liveStates: Record<string, string> = {};
+  @state() private full?: DeviceInfo;
+  @state() private seeds: Record<string, string> = {};
   @state() private busy = false;
   @state() private error = '';
 
@@ -117,6 +119,55 @@ export class DeviceDetail extends TdcElement {
   ];
 
   private stopLive?: () => void;
+
+  /** Read the mapping and the seeds of a copy, which the list does not carry. */
+  override connectedCallback(): void {
+    super.connectedCallback();
+    if (this.device.source) void this.loadFull();
+  }
+
+  /** Read the full device, so that the mapping and the seeds are there. */
+  private async loadFull(): Promise<void> {
+    try {
+      this.full = await this.api.device(this.device.id);
+    } catch (err) {
+      this.error = describeError(err);
+    }
+  }
+
+  /** Set the seed of one sensor of a copy, or draw a new one, and read the device again. */
+  private async setSeed(entity: EntityState, random: boolean): Promise<void> {
+    const draft = this.seeds[entity.key] ?? '';
+    const seed = random ? 'random' : Number(draft);
+    if (!random && (draft.trim() === '' || !Number.isInteger(seed) || Number(seed) < 0)) return;
+    await this.run(async () => {
+      await this.api.setSeed([this.device.id], seed, entity.key);
+      await this.loadFull();
+      this.seeds = { ...this.seeds, [entity.key]: '' };
+    });
+  }
+
+  /** Render the seed of a sensor of a copy: the field, the button to set it and the dice. */
+  private renderSeed(entity: EntityState): TemplateResult | typeof nothing {
+    const mapping = this.full?.source?.mapping;
+    if (!mapping || !(entity.key in mapping)) return nothing;
+    const stored = this.full?.source?.seeds?.[entity.key];
+    return html`<input
+        type="number"
+        min="0"
+        aria-label=${this.tr('detSeed')}
+        placeholder=${stored === undefined ? this.tr('detSeed') : String(stored)}
+        .value=${this.seeds[entity.key] ?? ''}
+        @input=${(e: Event) =>
+          (this.seeds = { ...this.seeds, [entity.key]: (e.target as HTMLInputElement).value })}
+      />
+      <button ?disabled=${this.busy} @click=${() => void this.setSeed(entity, false)}>
+        ${this.tr('detSeedSet')}
+      </button>
+      <button ?disabled=${this.busy} @click=${() => void this.setSeed(entity, true)}>
+        ${this.tr('detSeedRandom')}
+      </button>`;
+  }
 
   /** Stop reading values when the element is removed. */
   override disconnectedCallback(): void {
@@ -339,7 +390,7 @@ export class DeviceDetail extends TdcElement {
   private renderEntity(entity: EntityState): TemplateResult {
     const lang = this.hass?.language;
     const items = this.menuItems(entity);
-    const editable = entity.shape != null && !isDiscrete(entity.shape);
+    const editable = entity.shape != null && !isDiscrete(entity.shape) && !this.device.source;
     return html`<tr>
         <td>
           ${entityName(lang, entity.key, entity.name)}<br /><small
@@ -378,7 +429,7 @@ export class DeviceDetail extends TdcElement {
                 ></tdc-menu-button>`
               : ''
           }
-          ${this.renderPicked(entity)}
+          ${this.renderPicked(entity)} ${this.renderSeed(entity)}
           ${
             editable
               ? html`<button
@@ -421,7 +472,7 @@ export class DeviceDetail extends TdcElement {
 
   /** Render the entity of the source that `entity` follows, or nothing. */
   private renderFollows(entity: EntityState): TemplateResult | typeof nothing {
-    const followed = this.device.source?.mapping?.[entity.key];
+    const followed = this.full?.source?.mapping?.[entity.key];
     return followed
       ? html`<br /><small>${this.tr('sourceFollows', { entity: followed })}</small>`
       : nothing;

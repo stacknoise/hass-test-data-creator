@@ -92,6 +92,12 @@ class AuditEntryFactory:
             logging.INFO, "signal changed", {KEY_DEVICE: device, KEY_ENTITY: key, KEY_SHAPE: shape}
         )
 
+    def seed_changed(self, device: str, key: str, seed: int) -> AuditEntry:
+        """Return the entry for the seed of a copy that was changed; `key` is empty for all sensors."""
+        return AuditEntry(
+            logging.INFO, "seed changed", {KEY_DEVICE: device, KEY_ENTITY: key, "seed": seed}
+        )
+
     def action_fired(self, device: str, key: str, action: str) -> AuditEntry:
         """Return the entry for an action on one entity."""
         return AuditEntry(

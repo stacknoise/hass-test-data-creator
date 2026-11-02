@@ -19,6 +19,7 @@ from ..sources.schema import (
     SOURCES_INSPECT_FIELDS,
     SOURCES_LIST_FIELDS,
     SOURCES_PREVIEW_FIELDS,
+    SOURCES_SEED_FIELDS,
 )
 
 
@@ -100,3 +101,14 @@ async def ws_devices_confirm_source_removed(
         plan = data.removal_planner.plan_devices(devices)
         return await data.removal_runner.async_run(plan)
     return {"kept": await data.source_decision.keep(devices)}
+
+
+@tdc_command(f"{DOMAIN}/devices/set_seed", SOURCES_SEED_FIELDS)
+async def ws_devices_set_seed(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Set the seed of one sensor, or of all sensors, of copies; "random" draws a seed per sensor."""
+    changed = await get_data(hass).source_seeds.async_set(
+        msg["devices"], msg.get("entity"), msg["seed"]
+    )
+    return {"changed": changed}

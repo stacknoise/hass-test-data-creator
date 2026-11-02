@@ -38,6 +38,7 @@ from .scheduler.runner import ActionRunner
 from .sources.decision import SourceDecision
 from .sources.follower import SourceFollower
 from .sources.registry import SourceRegistry
+from .sources.seeds import SourceSeeds
 from .sources.status import SourceStatus
 from .store.store import TdcStore
 from .templates.registry import TemplateRegistry
@@ -79,6 +80,7 @@ class TdcData:
     follower: SourceFollower
     source_status: SourceStatus
     source_decision: SourceDecision
+    source_seeds: SourceSeeds
     transfer: TransferExporter
     importer: TransferImporter
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)

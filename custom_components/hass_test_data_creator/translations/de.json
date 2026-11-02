@@ -175,6 +175,15 @@
     "src_unit": {
       "message": "Die Einheit der Quelle lässt sich nicht umrechnen"
     },
+    "src_locked": {
+      "message": "Eine Kopie einer Quelle ist gesperrt, nur ihr Seed lässt sich ändern"
+    },
+    "src_not_copy": {
+      "message": "Das Gerät folgt keiner Quelle"
+    },
+    "src_offline": {
+      "message": "Die Quelle ist offline, die Kopie lässt sich nicht steuern"
+    },
     "ws_invalid_request": {
       "message": "Die Anfrage ist ungültig"
     },

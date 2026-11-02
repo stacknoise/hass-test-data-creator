@@ -156,6 +156,15 @@ class ErrorCode(StrEnum):
     SRC_UNIT = "TDC-SRC-004"
     """The unit of a source entity cannot be converted to the unit of the entity."""
 
+    SRC_LOCKED = "TDC-SRC-005"
+    """A copy of a source is locked: only its seed can be changed."""
+
+    SRC_NOT_COPY = "TDC-SRC-006"
+    """The device follows no source, so it has no seed of a source."""
+
+    SRC_OFFLINE = "TDC-SRC-007"
+    """The source of a copy is offline, so no action or fault runs on the copy."""
+
     WS_INVALID_REQUEST = "TDC-WS-001"
     """The request does not match the schema of the command."""
 

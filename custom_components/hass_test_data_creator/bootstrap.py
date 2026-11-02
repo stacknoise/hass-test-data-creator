@@ -68,6 +68,7 @@ from .sources.binding import SourceBindingFactory
 from .sources.decision import SourceDecision
 from .sources.follower import SourceFollower
 from .sources.registry import SourceRegistry
+from .sources.seeds import SourceSeeds
 from .sources.status import SourceStatus
 from .store.store import TdcStore
 from .templates.device_factory import DeviceFactory
@@ -207,6 +208,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         follower=follower,
         source_status=source_status,
         source_decision=SourceDecision(store, audit, audit_factory),
+        source_seeds=SourceSeeds(store, live, audit, audit_factory),
         transfer=TransferExporter(store, registry, TransferFactory()),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,
