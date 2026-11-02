@@ -7,7 +7,7 @@ from typing import Any
 from homeassistant.components.websocket_api import ActiveConnection
 from homeassistant.core import HomeAssistant
 
-from ..const import DOMAIN
+from ..const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from ..core.command import tdc_command
 from ..core.errors import ErrorCode, SourceError
 from ..data import get_data
@@ -53,13 +53,15 @@ async def ws_sources_preview(
         value = float(item.state or "")
     except ValueError as err:
         raise SourceError(ErrorCode.SRC_NOT_FOUND) from err
+    seed = msg.get("seed") or get_data(hass).entry.data.get(CONF_SEED, DEFAULT_SEED)
     rows = preview(
         value,
-        msg["seed"],
+        seed,
         msg["key"],
         msg["count"],
         Deviation.from_dict(msg["deviation"]),
         msg["span"],
+        template=msg["template"],
     )
     return {
         "entity_id": item.entity.entity_id,

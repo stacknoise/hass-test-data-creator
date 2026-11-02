@@ -20,15 +20,17 @@ def preview(
     span: float = 0.0,
     interval_s: float = 60.0,
     at: float = 0.0,
+    template: str = PREVIEW_TEMPLATE,
 ) -> list[dict[str, Any]]:
     """Return what `count` copies would show for a source `value`, nothing is created.
 
-    The seeds follow the rule of the creation: one device seed per index, one seed per entity.
+    The seeds follow the rule of the creation: one device seed per number (from 1), one seed per
+    entity. The numbers are those of a first job; later jobs continue the count of the template.
     """
     bucket = bucket_of(at, interval_s)
     rows = []
-    for index in range(count):
-        seed = entity_seed(device_seed(seed_text, PREVIEW_TEMPLATE, index), key)
+    for index in range(1, count + 1):
+        seed = entity_seed(device_seed(seed_text, template, index), key)
         rows.append(
             {
                 "index": index,

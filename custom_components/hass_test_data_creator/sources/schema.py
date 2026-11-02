@@ -35,7 +35,8 @@ SOURCES_INSPECT_FIELDS: dict[Any, Any] = {
 
 SOURCES_PREVIEW_FIELDS: dict[Any, Any] = {
     vol.Required("entity_id"): SHORT_TEXT,
-    vol.Optional("seed", default="tdc-0042"): SHORT_TEXT,
+    vol.Optional("seed"): SHORT_TEXT,
+    vol.Optional("template", default="source"): SHORT_TEXT,
     vol.Optional("key", default="value"): SHORT_TEXT,
     vol.Optional("count", default=5): vol.All(int, vol.Range(min=1, max=MAX_SOURCE_PREVIEW)),
     vol.Optional("span", default=0.0): _amount,
