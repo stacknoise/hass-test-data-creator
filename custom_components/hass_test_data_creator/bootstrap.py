@@ -64,6 +64,7 @@ from .scheduler.manager import ScheduleManager
 from .scheduler.planner import SchedulePlanner
 from .scheduler.runner import ActionRunner
 from .scheduler.triggers import TriggerFactory
+from .sources.registry import SourceRegistry
 from .store.store import TdcStore
 from .templates.device_factory import DeviceFactory
 from .templates.factory import TemplateFactory
@@ -187,6 +188,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         pauser=pauser,
         csv=csv,
         log=LogView(log_recorder, log_buffer),
+        sources=SourceRegistry(hass),
         transfer=TransferExporter(store, registry, TransferFactory()),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,

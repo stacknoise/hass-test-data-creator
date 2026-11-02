@@ -144,6 +144,12 @@ class ErrorCode(StrEnum):
     REM_IN_USE = "TDC-REM-002"
     """A device that a schedule, scenario or group names cannot be removed until it is not used."""
 
+    SRC_NOT_FOUND = "TDC-SRC-001"
+    """The source device or one of its entities does not exist (any more)."""
+
+    SRC_GENERATED = "TDC-SRC-002"
+    """A device made by this integration cannot be a source."""
+
     WS_INVALID_REQUEST = "TDC-WS-001"
     """The request does not match the schema of the command."""
 
@@ -212,6 +218,12 @@ class RemovalError(TdcError):
     """Error while removing generated data."""
 
     default_code = ErrorCode.REM_FAILED
+
+
+class SourceError(TdcError):
+    """Error with the source device of a copy."""
+
+    default_code = ErrorCode.SRC_NOT_FOUND
 
 
 class RequestError(TdcError):

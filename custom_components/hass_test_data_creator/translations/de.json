@@ -163,6 +163,12 @@
     "rem_failed": {
       "message": "Das Entfernen wurde unterbrochen. Starte es erneut, um es abzuschließen"
     },
+    "src_not_found": {
+      "message": "Das Quellgerät wurde nicht gefunden"
+    },
+    "src_generated": {
+      "message": "Ein erzeugtes Gerät kann keine Quelle sein"
+    },
     "ws_invalid_request": {
       "message": "Die Anfrage ist ungültig"
     },

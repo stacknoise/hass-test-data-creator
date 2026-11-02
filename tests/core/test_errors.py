@@ -17,7 +17,7 @@ from custom_components.hass_test_data_creator.core.errors import (
 TRANSLATIONS = (
     Path(__file__).parents[2] / "custom_components" / "hass_test_data_creator" / "translations"
 )
-AREAS = {"CFG", "TPL", "GEN", "SIG", "SCH", "OUT", "REM", "WS", "INT"}
+AREAS = {"CFG", "TPL", "GEN", "SIG", "SCH", "OUT", "REM", "SRC", "WS", "INT"}
 
 
 def test_codes_are_unique_and_well_formed() -> None:
