@@ -281,14 +281,22 @@ render();
 
 def main() -> None:
     """Analyse the repository and write dependency-graph.html."""
-    if len(sys.argv) > 1:
-        point_at(Path(sys.argv[1]).resolve())
+    args = [a for a in sys.argv[1:] if a != "--check"]
+    if args:
+        point_at(Path(args[0]).resolve())
     modules = bd.analyse_python()
     ts = bd.analyse_ts()
     data = module_nodes(modules)
     data["panel"] = panel_nodes(ts)
     layers = ["Entry points", "WebSocket API", "Topic modules", "Domain parts", "Foundation"]
     page = PAGE.replace("__DATA__", json.dumps(data)).replace("__LAYERS__", json.dumps(layers))
+    if "--check" in sys.argv[1:]:
+        current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+        if current != page:
+            print(f"{OUT.name} is out of date: run `python docs/review/build_graph.py`")
+            raise SystemExit(1)
+        print(f"{OUT.name} is up to date")
+        return
     OUT.write_text(page, encoding="utf-8")
     print(
         f"wrote {OUT} ({len(page) / 1024:.0f} KiB): {len(data['modules']['nodes'])} modules, "
