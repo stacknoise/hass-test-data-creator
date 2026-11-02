@@ -100,6 +100,8 @@ export interface LogFilterRequest {
   outputs?: string[];
   causes?: string[];
   only_numeric?: boolean;
+  min_delta?: number;
+  from?: number;
 }
 
 /** What pickers and run lists need of a generated device (`devices/names`). */

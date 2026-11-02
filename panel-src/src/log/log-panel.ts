@@ -14,6 +14,8 @@ import {
   LOG_PAGE,
   LOG_CAUSES,
   LOG_FIELDS,
+  LOG_MIN_DELTAS,
+  LOG_WINDOWS,
   LOG_FILTER_TAB,
   LOG_PLATFORMS,
   LOG_ROW_HEIGHT,
@@ -226,6 +228,8 @@ export class LogPanel extends TdcElement {
       platforms: this.tr('entPlatform'),
       outputs: this.tr('colOutput'),
       causes: this.tr('logFilterCause'),
+      window: this.tr('logWindow'),
+      min_delta: this.tr('logMinDelta'),
       only_numeric: this.tr('logOnlyNumeric'),
     };
     const byKey: Record<string, FilterField['options']> = {
@@ -234,6 +238,14 @@ export class LogPanel extends TdcElement {
       templates: options.templates,
       outputs: options.outputs,
       platforms: LOG_PLATFORMS.map((p) => ({ value: p, label: labelOf(lang, 'platform', p) })),
+      window: LOG_WINDOWS.map((w) => ({
+        value: String(w),
+        label: this.tr('logWindowMinutes', { count: w / 60 }),
+      })),
+      min_delta: LOG_MIN_DELTAS.map((d) => ({
+        value: String(d),
+        label: this.tr('logMinDeltaValue', { value: d }),
+      })),
       causes: LOG_CAUSES.map((c) => ({ value: c, label: this.tr(`logCause_${c}` as TextKey) })),
     };
     return LOG_FIELDS.map((f) => ({ ...f, label: labels[f.key], options: byKey[f.key] }));

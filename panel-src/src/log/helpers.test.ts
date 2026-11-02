@@ -137,6 +137,14 @@ describe('log filter', () => {
     });
   });
 
+  it('turns the window into a start time and keeps the minimum change', () => {
+    expect(logRequest({ window: '300', min_delta: '0.1' }, 1000)).toEqual({
+      from: 700,
+      min_delta: 0.1,
+    });
+    expect(logRequest({ window: '', min_delta: 'x' }, 1000)).toEqual({});
+  });
+
   it('builds sorted options without duplicates', () => {
     const names = [
       {
