@@ -336,3 +336,39 @@ export interface ImportPlan {
   delete: number;
   problems: { name: string; code: string; reason: string }[];
 }
+
+/** One state change in the live log; `delta` is set when old and new value are numbers. */
+export interface LogEntry {
+  seq: number;
+  at: number;
+  device_id: string;
+  device: string;
+  key: string;
+  name: string;
+  template: string;
+  area: string;
+  run_id: string;
+  output: string;
+  platform: string;
+  device_class: string;
+  unit: string;
+  old: string | null;
+  new: string;
+  delta: number | null;
+  cause: string;
+}
+
+/** The state of the live log that every `log/*` reply carries. */
+export interface LogStatus {
+  capture: boolean;
+  last_seq: number;
+  size: number;
+  capacity: number;
+  discarded: number;
+}
+
+/** The reply of `log/get`: the entries after `since` and how many dropped out unseen. */
+export interface LogReply extends LogStatus {
+  entries: LogEntry[];
+  dropped: number;
+}

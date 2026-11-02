@@ -5,6 +5,7 @@ import type { RemovalTarget } from './common/types';
 import './devices/device-list';
 import './group/group-panel';
 import './history/history-panel';
+import './log/log-panel';
 import './removal/removal-panel';
 import './scenario/scenario-panel';
 import './schedule/schedule-panel';
@@ -12,7 +13,8 @@ import './transfer/transfer-panel';
 import { KIND_ALL, TAB_DEVICES, TAB_GROUPS } from './common/constants';
 
 /** The tabs of the panel. */
-type Tab = 'devices' | 'schedules' | 'scenarios' | 'groups' | 'history' | 'remove' | 'transfer';
+type Tab =
+  'devices' | 'schedules' | 'scenarios' | 'groups' | 'history' | 'log' | 'remove' | 'transfer';
 
 /** The sidebar panel: header with the test environment badge and five tabs. */
 @customElement('hass-test-data-creator-panel')
@@ -125,6 +127,7 @@ export class TdcPanel extends TdcElement {
         ${this.renderTab('scenarios', this.tr('tabScenarios'))}
         ${this.mqtt ? this.renderTab(TAB_GROUPS, this.tr('tabGroups')) : ''}
         ${this.renderTab('history', this.tr('tabHistory'))}
+        ${this.renderTab('log', this.tr('tabLog'))}
         ${this.renderTab('remove', this.tr('tabRemove'))}
         ${this.renderTab('transfer', this.tr('tabTransfer'))}
       </nav>
@@ -152,6 +155,7 @@ export class TdcPanel extends TdcElement {
           ? html`<tdc-history-panel .hass=${this.hass}></tdc-history-panel>`
           : ''
       }
+      ${this.tab === 'log' ? html`<tdc-log-panel .hass=${this.hass}></tdc-log-panel>` : ''}
       ${
         this.tab === 'remove'
           ? html`<tdc-removal-panel
