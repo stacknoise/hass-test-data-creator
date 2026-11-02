@@ -29,6 +29,7 @@ from ..core.keys import (
     KEY_TEMPLATE,
 )
 from ..core.limits import SHORT_TEXT, json_size
+from ..sources.schema import DEVIATION_FIELDS
 from .filters import SORTS, STATES, DeviceFilter
 from .manager import CreationJob
 
@@ -49,6 +50,14 @@ def _job_fields(pattern: str) -> dict[Any, Any]:
     }
 
 
+SOURCE_FIELDS: dict[Any, Any] = {
+    vol.Required("device_id"): SHORT_TEXT,
+    vol.Optional("mapping", default=dict): vol.All(
+        {SHORT_TEXT: SHORT_TEXT}, vol.Length(max=MAX_ENTITIES_PER_DEVICE)
+    ),
+    vol.Optional("deviation", default=dict): vol.Schema(DEVIATION_FIELDS),
+}
+
 CREATE_FIELDS: dict[Any, Any] = {
     vol.Required(KEY_TEMPLATE): SHORT_TEXT,
     **_job_fields("{template} {nn}"),
@@ -56,6 +65,7 @@ CREATE_FIELDS: dict[Any, Any] = {
     vol.Optional(KEY_ENTITIES): vol.All(
         [dict], vol.Length(max=MAX_ENTITIES_PER_DEVICE), _entities_size
     ),
+    vol.Optional("source"): vol.Schema(SOURCE_FIELDS),
 }
 
 
@@ -102,6 +112,7 @@ def job_from_request(data: dict[str, Any], default_seed: str) -> CreationJob:
         label=data[KEY_LABEL],
         output=data[KEY_OUTPUT],
         entities=data.get(KEY_ENTITIES),
+        source=data.get("source"),
     )
 
 

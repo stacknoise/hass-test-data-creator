@@ -66,7 +66,31 @@ def test_data_of_version_one_gets_the_time_lapse_key() -> None:
 
 def test_data_of_version_two_gets_the_paused_flag_on_every_device() -> None:
     migrated = migrate(2, {KEY_DEVICES: {"a": {"id": "a"}}})
-    assert migrated == {KEY_DEVICES: {"a": {"id": "a", "paused": False}}}
+    assert migrated == {KEY_DEVICES: {"a": {"id": "a", "paused": False, "source": None}}}
+
+
+def test_data_of_version_three_gets_no_source_on_every_device() -> None:
+    migrated = migrate(3, {KEY_DEVICES: {"a": {"id": "a", "paused": True}}})
+    assert migrated == {KEY_DEVICES: {"a": {"id": "a", "paused": True, "source": None}}}
+    assert migrate(STORE_VERSION, migrated) == migrated
+
+
+async def test_a_stored_version_three_file_is_loaded_with_devices_without_source(
+    hass: HomeAssistant, entry: MockConfigEntry, hass_storage: dict[str, Any]
+) -> None:
+    await create_devices(hass, count=1)
+    stored = get_data(hass).store._snapshot()
+    old = {
+        **stored,
+        KEY_DEVICES: {
+            key: {name: value for name, value in device.items() if name != "source"}
+            for key, device in stored[KEY_DEVICES].items()
+        },
+    }
+    hass_storage[STORE_KEY] = {"version": 3, "key": STORE_KEY, "data": old}
+    store = TdcStore(hass)
+    await store.async_load()
+    assert [device.source for device in store.devices()] == [None]
 
 
 async def test_a_stored_version_one_file_is_loaded_and_migrated(
