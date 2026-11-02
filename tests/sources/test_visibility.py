@@ -63,6 +63,26 @@ async def test_every_device_carries_its_source_and_the_filter_finds_the_copies(
     assert (await listing(client, query="boiler"))["matched"] == 2
 
 
+async def test_the_full_device_names_the_followed_entities_and_the_plan_names_the_source(
+    hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
+) -> None:
+    client = await hass_ws_client(hass)
+    device_id = await setup_copies(hass, client, entry)
+
+    copy = next(d for d in (await listing(client))["devices"] if d["name"] == "Copy 01")
+    assert "mapping" not in copy["source"]
+    full = (await call(client, "devices/get", device=copy["id"]))["result"]
+    assert set(full["source"]["mapping"].values()) <= {"sensor.temp", "sensor.hum"}
+    assert full["source"]["mapping"]
+
+    plan = (await call(client, "removal/plan", target="device", target_id=copy["id"]))["result"]
+    assert plan["devices"][0]["source"] == REAL
+    other = next(d for d in (await listing(client))["devices"] if d["name"] == "Plug 01")
+    plan = (await call(client, "removal/plan", target="device", target_id=other["id"]))["result"]
+    assert plan["devices"][0]["source"] is None
+    assert device_id
+
+
 async def test_an_offline_source_shows_in_the_state_and_its_filter(
     hass: HomeAssistant, hass_ws_client: WebSocketGenerator, entry: MockConfigEntry
 ) -> None:

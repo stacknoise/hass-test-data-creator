@@ -23,6 +23,8 @@ function entry(seq: number, fields: Partial<LogEntry> = {}): LogEntry {
     new: '12.5',
     delta: 2.5,
     cause: 'signal',
+    source_id: '',
+    source: '',
     ...fields,
   };
 }

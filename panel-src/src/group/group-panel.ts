@@ -1,3 +1,4 @@
+import { pickerLabel } from '../common/targets';
 import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -61,7 +62,7 @@ export class GroupPanel extends TdcPollingElement {
   private members(): SelectItem[] {
     return this.devices
       .filter((device) => device.output === Z2M_OUTPUT)
-      .map((device) => ({ value: device.id, label: device.name }));
+      .map((device) => ({ value: device.id, label: pickerLabel(device.name, device.source) }));
   }
 
   /** Return the names of the members of a group, as one text. */

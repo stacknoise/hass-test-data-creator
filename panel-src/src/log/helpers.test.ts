@@ -37,6 +37,8 @@ function entry(seq: number, fields: Partial<LogEntry> = {}): LogEntry {
     new: '12.5',
     delta: 2.5,
     cause: 'signal',
+    source_id: '',
+    source: '',
     ...fields,
   };
 }
@@ -102,9 +104,11 @@ describe('files', () => {
 
   it('writes a header and one line per entry with the time in UTC', () => {
     const lines = toCsv([entry(1, { device: 'Plug, 1', old: null, delta: null })]).split('\n');
-    expect(lines[0].startsWith('seq,at,device,entity,key,old,new,unit,delta,cause')).toBe(true);
+    expect(lines[0].startsWith('seq,at,device,source,entity,key,old,new,unit,delta,cause')).toBe(
+      true,
+    );
     expect(lines[1]).toBe(
-      '1,2023-11-14T22:13:21.000Z,"Plug, 1",Power,power,,12.5,W,,signal,plug_metering,Kitchen,sensor',
+      '1,2023-11-14T22:13:21.000Z,"Plug, 1",,Power,power,,12.5,W,,signal,plug_metering,Kitchen,sensor',
     );
     expect(lines[2]).toBe('');
   });
@@ -176,6 +180,28 @@ describe('log filter', () => {
     expect(options.devices.map((i) => i.label)).toEqual(['Alpha', 'Beta']);
     expect(options.entities).toEqual([{ value: 'temp', label: 'Temp' }]);
     expect(options.templates).toEqual([{ value: 't', label: 'T' }]);
+    expect(options.sources).toEqual([]);
+  });
+
+  it('offers each source once and sends the chosen ones', () => {
+    const copy = (id: string) => ({
+      id,
+      name: id,
+      template: 't',
+      model: '',
+      output: 'native',
+      run_id: '',
+      created_at: 0,
+      entities: [],
+      source: { id: 's1', name: 'Real plug' },
+    });
+    const options = logOptions(
+      [copy('a'), copy('b')],
+      (id) => id,
+      (id) => id,
+    );
+    expect(options.sources).toEqual([{ value: 's1', label: 'Real plug' }]);
+    expect(logRequest({ sources: ['s1'] })).toEqual({ sources: ['s1'] });
   });
 
   it('shows one device only', () => {

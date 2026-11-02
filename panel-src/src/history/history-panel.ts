@@ -1,3 +1,4 @@
+import { pickerLabel } from '../common/targets';
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
@@ -86,7 +87,10 @@ export class HistoryPanel extends TdcElement {
   /** Render the element. */
   override render(): TemplateResult {
     const lang = this.hass?.language;
-    const devices = this.devices.map((device) => ({ value: device.id, label: device.name }));
+    const devices = this.devices.map((device) => ({
+      value: device.id,
+      label: pickerLabel(device.name, device.source),
+    }));
     const sensors = sensorEntities(this.devices, this.chosen).map((sensor) => ({
       value: sensor.key,
       label: entityName(lang, sensor.key, sensor.name),

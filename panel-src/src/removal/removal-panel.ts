@@ -157,7 +157,7 @@ export class RemovalPanel extends TdcElement {
         <small
           >${plan.devices
             .slice(0, LISTED_MAX)
-            .map((d) => d.name)
+            .map((d) => (d.source ? `${d.name} · ${d.source}` : d.name))
             .join(LIST_SEPARATOR)}${plan.devices.length > LISTED_MAX ? ' …' : ''}</small
         >
       </p>

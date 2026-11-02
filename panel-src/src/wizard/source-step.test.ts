@@ -70,15 +70,14 @@ describe('SourceStep', () => {
     await step.updateComplete;
   }
 
-  it('reports nothing while it is switched off', () => {
+  it('offers the devices at once and reports nothing before one is chosen', async () => {
+    await settle();
+    expect(step.shadowRoot!.querySelectorAll('li button')).toHaveLength(1);
     expect(step.shadowRoot!.querySelector('table')).toBeNull();
     expect(reported).toEqual([]);
   });
 
   it('searches, takes the proposal and reports the source', async () => {
-    const box = step.shadowRoot!.querySelector<HTMLInputElement>('input[type=checkbox]')!;
-    box.checked = true;
-    box.dispatchEvent(new Event('change'));
     await settle();
     step.shadowRoot!.querySelector<HTMLButtonElement>('li button')!.click();
     await settle();
@@ -97,9 +96,6 @@ describe('SourceStep', () => {
   });
 
   it('sends the deviation as fractions', async () => {
-    const box = step.shadowRoot!.querySelector<HTMLInputElement>('input[type=checkbox]')!;
-    box.checked = true;
-    box.dispatchEvent(new Event('change'));
     await settle();
     step.shadowRoot!.querySelector<HTMLButtonElement>('li button')!.click();
     await settle();
@@ -109,16 +105,5 @@ describe('SourceStep', () => {
     await settle();
 
     expect(reported.at(-1)?.deviation).toEqual({ scale: 0.02 });
-  });
-
-  it('reports no source again when it is switched off', async () => {
-    const box = step.shadowRoot!.querySelector<HTMLInputElement>('input[type=checkbox]')!;
-    box.checked = true;
-    box.dispatchEvent(new Event('change'));
-    await settle();
-    box.checked = false;
-    box.dispatchEvent(new Event('change'));
-    await settle();
-    expect(reported.at(-1)).toBeNull();
   });
 });

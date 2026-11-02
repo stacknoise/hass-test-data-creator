@@ -3,13 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
-import type {
-  EntityDef,
-  SourceDevice,
-  SourceEntityInfo,
-  SourcePreview,
-  SourceRequest,
-} from '../common/types';
+import type { EntityDef, SourceDevice, SourceEntityInfo, SourcePreview } from '../common/types';
 import {
   NO_DEVIATION,
   candidates,
@@ -42,7 +36,6 @@ export class SourceStep extends TdcElement {
   @property() template = '';
   @property() seed = '';
 
-  @state() private enabled = false;
   @state() private query = '';
   @state() private found: SourceDevice[] = [];
   @state() private device?: SourceDevice;
@@ -69,18 +62,14 @@ export class SourceStep extends TdcElement {
 
   /** Tell the wizard the source as it stands now. */
   private report(): void {
-    const request: SourceRequest | null = this.enabled
-      ? sourceRequest(this.device?.id ?? '', this.mapping, this.form)
-      : null;
+    const request = sourceRequest(this.device?.id ?? '', this.mapping, this.form);
     this.dispatchEvent(new CustomEvent('tdc-source-change', { detail: request }));
   }
 
-  /** Switch the step on or off. */
-  private async toggle(on: boolean): Promise<void> {
-    this.enabled = on;
-    this.preview = undefined;
-    if (on && this.found.length === 0) await this.search();
-    this.report();
+  /** Offer the devices to choose from when the step is added to the page. */
+  override connectedCallback(): void {
+    super.connectedCallback();
+    void this.search();
   }
 
   /** Ask the backend for the devices that match the query. */
@@ -164,7 +153,7 @@ export class SourceStep extends TdcElement {
 
   /** Render the search: a field and the devices that were found. */
   private renderSearch(): TemplateResult {
-    return html`<div class="row form">
+    return html`<div class="fields">
         ${this.textField(this.tr('sourceSearch'), this.query, (v) => this.typing(v))}
       </div>
       ${
@@ -223,10 +212,10 @@ export class SourceStep extends TdcElement {
 
   /** Render the fields of the deviation and the preview. */
   private renderDeviation(): TemplateResult {
-    return html`<div class="row form">
+    return html`<div class="fields">
         ${FIELDS.map(
           (field) =>
-            html`<label style="flex: 0 0 150px"
+            html`<label
               >${this.tr(field.label)}
               <input
                 type="number"
@@ -237,7 +226,7 @@ export class SourceStep extends TdcElement {
               />
             </label>`,
         )}
-        <label style="flex: 0 0 150px"
+        <label
           >${this.tr('sourceDecimals')}
           <input
             type="number"
@@ -272,31 +261,17 @@ export class SourceStep extends TdcElement {
   /** Render the element. */
   override render(): TemplateResult {
     return html`<fieldset>
-      <legend>
-        <label
-          ><input
-            type="checkbox"
-            .checked=${this.enabled}
-            @change=${(e: Event) => void this.toggle((e.target as HTMLInputElement).checked)}
-          />
-          ${this.tr('sourceUse')}</label
-        >
-      </legend>
+      <legend>${this.tr('colSource')}</legend>
       ${
-        this.enabled
-          ? html`<p><small>${this.tr('sourceIntro')}</small></p>
-              ${
-                this.device
-                  ? html`<p>
-                        ${this.tr('sourceChosen', { name: this.device.name })}
-                        <button @click=${() => this.change()}>${this.tr('sourceChange')}</button>
-                      </p>
-                      ${this.renderMapping()} ${this.renderDeviation()}`
-                  : this.renderSearch()
-              }
-              <span class="error">${this.error}</span>`
-          : nothing
+        this.device
+          ? html`<p>
+                ${this.tr('sourceChosen', { name: this.device.name })}
+                <button @click=${() => this.change()}>${this.tr('sourceChange')}</button>
+              </p>
+              ${this.renderMapping()} ${this.renderDeviation()}`
+          : this.renderSearch()
       }
+      <span class="error">${this.error}</span>
     </fieldset>`;
   }
 }

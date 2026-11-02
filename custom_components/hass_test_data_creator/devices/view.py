@@ -157,6 +157,9 @@ class DeviceView:
     def _device(self, device: DeviceDef, index: UsageIndex, *, with_signal: bool) -> dict[str, Any]:
         """Return the reply for one device."""
         registry = er.async_get(self._hass)
+        source = self._sources.of(device)
+        if source and with_signal:
+            source["mapping"] = dict((device.source or {}).get("mapping", {}))
         return {
             KEY_ID: device.id,
             KEY_NAME: device.name,
@@ -167,7 +170,7 @@ class DeviceView:
             KEY_RUN_ID: device.run_id,
             "created_at": device.created_at,
             "paused": device.paused,
-            "source": self._sources.of(device),
+            "source": source,
             KEY_ENTITIES: [
                 self._entity(registry, device, definition, with_signal=with_signal)
                 for definition in device.entities

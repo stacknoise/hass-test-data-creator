@@ -66,6 +66,7 @@ const CSV_COLUMNS = [
   'seq',
   'at',
   'device',
+  'source',
   'entity',
   'key',
   'old',
@@ -91,6 +92,7 @@ export function toCsv(entries: LogEntry[]): string {
       entry.seq,
       new Date(entry.at * 1000).toISOString(),
       entry.device,
+      entry.source,
       entry.name,
       entry.key,
       entry.old,
@@ -145,6 +147,7 @@ export const LOG_FIELDS: FilterField[] = [
   { key: 'devices', kind: 'multi', label: '' },
   { key: 'entities', kind: 'multi', label: '' },
   { key: 'templates', kind: 'multi', label: '' },
+  { key: 'sources', kind: 'multi', label: '' },
   { key: 'platforms', kind: 'multi', label: '' },
   { key: 'outputs', kind: 'multi', label: '' },
   { key: 'causes', kind: 'multi', label: '' },
@@ -176,6 +179,7 @@ export function logRequest(values: FilterValues, now = Date.now() / 1000): LogFi
     devices: list('devices'),
     entities: list('entities'),
     templates: list('templates'),
+    sources: list('sources'),
     platforms: list('platforms'),
     outputs: list('outputs'),
     causes: list('causes'),
@@ -199,6 +203,7 @@ export interface LogOptions {
   devices: SelectItem[];
   entities: SelectItem[];
   templates: SelectItem[];
+  sources: SelectItem[];
   outputs: SelectItem[];
 }
 
@@ -214,6 +219,9 @@ export function logOptions(
       names.flatMap((n) => n.entities.map((e) => ({ value: e.key, label: e.name || e.key }))),
     ),
     templates: uniqueItems(names.map((n) => ({ value: n.template, label: template(n.template) }))),
+    sources: uniqueItems(
+      names.flatMap((n) => (n.source ? [{ value: n.source.id, label: n.source.name }] : [])),
+    ),
     outputs: uniqueItems(names.map((n) => ({ value: n.output, label: output(n.output) }))),
   };
 }

@@ -62,7 +62,14 @@ class RemovalPlan:
         """Return the plan as the panel shows it before the user confirms."""
         return {
             KEY_TARGET: self.target,
-            KEY_DEVICES: [{KEY_ID: item.id, KEY_NAME: item.name} for item in self.devices],
+            KEY_DEVICES: [
+                {
+                    KEY_ID: item.id,
+                    KEY_NAME: item.name,
+                    "source": (item.source or {}).get("name"),
+                }
+                for item in self.devices
+            ],
             "orphans": self.orphans,
             KEY_RUNS: self.runs,
             KEY_SCHEDULES: self.schedules,
