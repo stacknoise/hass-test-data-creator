@@ -28,6 +28,26 @@ describe('TdcApi', () => {
     expect(sent[0]).toEqual({ type: 'hass_test_data_creator/removal/plan', target: 'all' });
   });
 
+  it('sends the log commands', async () => {
+    const sent: Record<string, unknown>[] = [];
+    const hass = {
+      language: 'en',
+      callWS: async (message: Record<string, unknown>) => {
+        sent.push(message);
+        return {};
+      },
+    } as unknown as Hass;
+    const api = new TdcApi(hass);
+    await api.logGet(7, 500);
+    await api.logStop();
+    await api.logClear();
+    expect(sent).toEqual([
+      { type: 'hass_test_data_creator/log/get', since: 7, limit: 500 },
+      { type: 'hass_test_data_creator/log/set', capture: false },
+      { type: 'hass_test_data_creator/log/clear' },
+    ]);
+  });
+
   it('sends the leftover topic commands', async () => {
     const sent: Record<string, unknown>[] = [];
     const hass = {

@@ -16,6 +16,8 @@ import type {
   ImportBatch,
   ImportPlan,
   HistoryResult,
+  LogReply,
+  LogStatus,
   RemovalTarget,
   SignalDef,
   ScenarioInfo,
@@ -83,6 +85,21 @@ export class TdcApi {
   async deleteTemplate(id: string): Promise<void> {
     await this.call('templates/delete', { template_id: id });
     cache.delete('templates');
+  }
+
+  /** Return the log entries after `since` (0 for all); asking also keeps the recording going. */
+  logGet(since: number, limit: number): Promise<LogReply> {
+    return this.call('log/get', { since, limit });
+  }
+
+  /** Stop the recording of the log; it also empties the log in the backend. */
+  logStop(): Promise<LogStatus> {
+    return this.call('log/set', { capture: false });
+  }
+
+  /** Empty the log in the backend. */
+  logClear(): Promise<LogStatus> {
+    return this.call('log/clear');
   }
 
   /** Return one device in full, with the curve of each entity. */

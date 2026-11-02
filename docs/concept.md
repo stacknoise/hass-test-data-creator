@@ -518,7 +518,7 @@ Decided with the maintainer on 2026-11-01 (see 15, O11 to O15). Both features sh
 | Package | Content |
 | --- | --- |
 | L1 | Ring buffer, recorder, hook in the behaviours, `log/get`, `log/set`, `log/clear` |
-| L2 | "Log" tab: list, capture while the tab is open, pause, follow, save to a file (`log/export`) |
+| L2 | "Log" tab: list, capture while the tab is open, pause, follow, save to a file in the browser |
 | L3 | Filters of the log, chips, jump from a device; source filter (17.4) |
 | L4 | `min_delta`, time window and format choice of the file |
 | L5 | The live curve reads from the log instead of its own reads |
@@ -548,11 +548,10 @@ The entries are made at `Behaviour.on_change`, the one place that all outputs (n
 | `log/get` | Read entries: `since` (seq), `limit` (at most `MAX_PAGE_SIZE`), filter, `newest_first`; reply `entries`, `last_seq`, `dropped`, `size` |
 | `log/set` | Stop capture (tab closed), capture filter, buffer size |
 | `log/clear` | Empty the buffer |
-| `log/export` | The current (filtered) entries page by page for the download; the panel builds the file in the browser, the backend writes none |
 
 Filter fields (all optional; OR inside a group, AND between groups, as in 16.1): `query`, `devices[]`, `entities[]`, `templates[]`, `areas[]`, `platforms[]`, `device_classes[]`, `outputs[]`, `causes[]`, `runs[]`, `sources[]` (17.4), `only_numeric`, `min_delta`, `from`, `to`. Values are shown only, never interpreted. No tokens or credentials can get in, because entries hold states and names only. `api/log.py` parses and calls `LogView`.
 
-Panel: a new tab "Log" after "History" (`log/` folder, `tdc-log-panel`). Header: counter "N of M", "Pause" (freeze the view, capture goes on), "Clear" and **"Save to file"** (CSV or JSON, with the active filters; the file is made in the browser). The filter bar is `common/filter-bar.ts`, its state is kept under `tdc.filter.log` (O9). Refresh uses `startPolling` of `common/polling.ts` with `since=last_seq`. The list has a fixed row height and renders only the visible rows (pure helpers in `log/helpers.ts`, Vitest); it follows new rows only when the user is at the bottom, otherwise it shows "N new entries". Columns: time (with milliseconds), device, entity, old → new (delta for numbers), cause label, and the **source** of the device (17.4). The device detail links to the log with the device filter set.
+Panel: a new tab "Log" after "History" (`log/` folder, `tdc-log-panel`). Header: counter "N of M", "Pause" (freeze the view, capture goes on), "Clear" and **"Save to file"** (CSV or JSON, with the active filters). The panel already holds the entries it read with `log/get`, so it builds the file in the browser from them; there is no `log/export` command and the backend writes no file. The filter bar is `common/filter-bar.ts`, its state is kept under `tdc.filter.log` (O9). Refresh uses `startPolling` of `common/polling.ts` with `since=last_seq`. The list has a fixed row height and renders only the visible rows (pure helpers in `log/helpers.ts`, Vitest); it follows new rows only when the user is at the bottom, otherwise it shows "N new entries". Columns: time (with milliseconds), device, entity, old → new (delta for numbers), cause label, and the **source** of the device (17.4). The device detail links to the log with the device filter set.
 
 ### 17.3 Source device: model
 
