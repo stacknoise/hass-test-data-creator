@@ -1,13 +1,4 @@
-import type {
-  EntityDef,
-  SourceDeviation,
-  SourceEntityInfo,
-  SourceProposal,
-  SourceRequest,
-} from '../common/types';
-
-/** The platforms whose entities can follow an entity of a source. */
-export const FOLLOWABLE = ['sensor', 'binary_sensor', 'switch', 'light'];
+import type { EntityDef, SourceDerived, SourceDeviation, SourceRequest } from '../common/types';
 
 /** The settings of the deviation as the form holds them: percent for the shares. */
 export interface DeviationForm {
@@ -29,11 +20,6 @@ export const NO_DEVIATION: DeviationForm = {
   decimals: null,
 };
 
-/** Return the entities of a template that can follow a source. */
-export function followable(entities: EntityDef[]): EntityDef[] {
-  return entities.filter((entity) => FOLLOWABLE.includes(entity.platform));
-}
-
 /** Return the request fields of the form: shares as fractions, switched-off parts left out. */
 export function deviationRequest(form: DeviationForm): SourceDeviation {
   const request: SourceDeviation = {
@@ -49,45 +35,44 @@ export function deviationRequest(form: DeviationForm): SourceDeviation {
   ) as SourceDeviation;
 }
 
-/** Return the source entities that an entity of the copy can follow: the same platform and class. */
-export function candidates(target: EntityDef, entities: SourceEntityInfo[]): SourceEntityInfo[] {
-  return entities.filter(
-    (item) =>
-      item.platform === target.platform &&
-      (item.device_class ?? null) === (target.device_class ?? null),
-  );
-}
-
-/** Return the mapping that the proposal found: entity key to source entity. */
-export function mappingFromProposal(
-  proposal: SourceProposal[] | undefined,
-): Record<string, string> {
-  return Object.fromEntries(
-    (proposal ?? []).flatMap((item) => (item.entity_id ? [[item.key, item.entity_id]] : [])),
-  );
-}
-
-/** Return `mapping` with `key` set to `entityId`, or removed for an empty id. */
-export function withMapping(
+/** Return `mapping` without the entities whose key is not in `included`. */
+export function includedMapping(
   mapping: Record<string, string>,
-  key: string,
-  entityId: string,
+  included: ReadonlySet<string>,
 ): Record<string, string> {
-  const rest = Object.fromEntries(Object.entries(mapping).filter(([name]) => name !== key));
-  return entityId ? { ...rest, [key]: entityId } : rest;
+  return Object.fromEntries(Object.entries(mapping).filter(([key]) => included.has(key)));
 }
 
-/** Return the source of a job, or nothing while no device is chosen or nothing is mapped. */
-export function sourceRequest(
+/** Return `included` with `key` added or removed. */
+export function toggled(included: ReadonlySet<string>, key: string, on: boolean): Set<string> {
+  const next = new Set(included);
+  if (on) next.add(key);
+  else next.delete(key);
+  return next;
+}
+
+/** What the source step hands to the wizard: the source and the entities of the copy. */
+export interface SourceChoice {
+  source: SourceRequest;
+  entities: EntityDef[];
+}
+
+/** Return the choice for the entities that are taken in, or nothing while there are none. */
+export function sourceChoice(
   deviceId: string,
-  mapping: Record<string, string>,
+  derived: SourceDerived,
+  included: ReadonlySet<string>,
   form: DeviationForm,
-): SourceRequest | null {
+): SourceChoice | null {
+  const mapping = includedMapping(derived.mapping, included);
   if (!deviceId || Object.keys(mapping).length === 0) return null;
-  return { device_id: deviceId, mapping, deviation: deviationRequest(form) };
+  return {
+    source: { device_id: deviceId, mapping, deviation: deviationRequest(form) },
+    entities: derived.entities.filter((entity) => included.has(entity.key)),
+  };
 }
 
-/** Return the first mapped sensor of the copy, whose values the preview shows. */
+/** Return the key of the first mapped sensor of the copy, whose values the preview shows. */
 export function previewKey(entities: EntityDef[], mapping: Record<string, string>): string {
-  return followable(entities).find((e) => e.platform === 'sensor' && mapping[e.key])?.key ?? '';
+  return entities.find((e) => e.platform === 'sensor' && mapping[e.key])?.key ?? '';
 }

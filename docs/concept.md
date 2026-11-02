@@ -620,6 +620,7 @@ The source is followed by events: one `SourceFollower` keeps one subscription pe
 | --- | --- |
 | `sources/list` | Search the real devices (`query`, `limit`), only devices of other integrations |
 | `sources/inspect` | The entities and current values of a device, with a mapping proposal for a template |
+| `sources/derive` | The entities a copy of the device gets (followable sensors, binary sensors, switches, lights) and the mapping to them; used by the dialog "Follow device", which then creates the copies as a custom device, so no template is needed |
 | `sources/preview` | The deviations of N seeds against the current source value, nothing is created |
 | `devices/create` | gets the optional field `source` |
 | `devices/set_source` | Set or clear the source of devices; target as in 16.3 (`ids` or `filter`, `expected`) |

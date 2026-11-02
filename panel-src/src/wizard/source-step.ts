@@ -3,16 +3,20 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
-import type { EntityDef, SourceDevice, SourceEntityInfo, SourcePreview } from '../common/types';
+import type {
+  EntityDef,
+  SourceDerived,
+  SourceDevice,
+  SourceEntityInfo,
+  SourcePreview,
+} from '../common/types';
 import {
   NO_DEVIATION,
-  candidates,
   deviationRequest,
-  followable,
-  mappingFromProposal,
+  includedMapping,
   previewKey,
-  sourceRequest,
-  withMapping,
+  sourceChoice,
+  toggled,
   type DeviationForm,
 } from './source-helpers';
 
@@ -32,15 +36,14 @@ const FIELDS: { key: keyof DeviationForm; label: TextKey; step: string }[] = [
 /** The optional step of the creation wizard: follow a real device and deviate by the seed. */
 @customElement('tdc-source-step')
 export class SourceStep extends TdcElement {
-  @property({ attribute: false }) entities: EntityDef[] = [];
-  @property() template = '';
   @property() seed = '';
 
   @state() private query = '';
   @state() private found: SourceDevice[] = [];
   @state() private device?: SourceDevice;
-  @state() private sourceEntities: SourceEntityInfo[] = [];
-  @state() private mapping: Record<string, string> = {};
+  @state() private derived?: SourceDerived;
+  @state() private infos: SourceEntityInfo[] = [];
+  @state() private included: ReadonlySet<string> = new Set();
   @state() private form: DeviationForm = NO_DEVIATION;
   @state() private preview?: SourcePreview;
   @state() private error = '';
@@ -53,17 +56,12 @@ export class SourceStep extends TdcElement {
     super.disconnectedCallback();
   }
 
-  /** Read the mapping proposal again when the template changes under a chosen device. */
-  protected override updated(changed: Map<string, unknown>): void {
-    if (changed.has('template') && this.device && changed.get('template') !== undefined) {
-      void this.choose(this.device);
-    }
-  }
-
-  /** Tell the wizard the source as it stands now. */
+  /** Tell the wizard the source and the entities as they stand now. */
   private report(): void {
-    const request = sourceRequest(this.device?.id ?? '', this.mapping, this.form);
-    this.dispatchEvent(new CustomEvent('tdc-source-change', { detail: request }));
+    const choice = this.derived
+      ? sourceChoice(this.device?.id ?? '', this.derived, this.included, this.form)
+      : null;
+    this.dispatchEvent(new CustomEvent('tdc-source-change', { detail: choice }));
   }
 
   /** Offer the devices to choose from when the step is added to the page. */
@@ -89,14 +87,17 @@ export class SourceStep extends TdcElement {
     this.timer = window.setTimeout(() => void this.search(), SEARCH_DELAY_MS);
   }
 
-  /** Take a device as the source and read its entities and the mapping proposal. */
+  /** Take a device as the source and read the entities that its copies get. */
   private async choose(device: SourceDevice): Promise<void> {
     try {
-      const template = this.template && this.template !== CUSTOM ? this.template : undefined;
-      const reply = await this.api.sourcesInspect(device.id, template);
+      const [derived, infos] = await Promise.all([
+        this.api.sourcesDerive(device.id),
+        this.api.sourcesInspect(device.id),
+      ]);
       this.device = device;
-      this.sourceEntities = reply.entities;
-      this.mapping = mappingFromProposal(reply.proposal);
+      this.derived = derived;
+      this.infos = infos;
+      this.included = new Set(derived.entities.map((entity) => entity.key));
       this.preview = undefined;
       this.error = '';
     } catch (err) {
@@ -108,14 +109,15 @@ export class SourceStep extends TdcElement {
   /** Go back to the search. */
   private change(): void {
     this.device = undefined;
-    this.mapping = {};
+    this.derived = undefined;
+    this.included = new Set();
     this.preview = undefined;
     this.report();
   }
 
-  /** Map an entity of the copy to a source entity, or none. */
-  private map(key: string, entityId: string): void {
-    this.mapping = withMapping(this.mapping, key, entityId);
+  /** Take an entity of the copy in or out. */
+  private include(key: string, on: boolean): void {
+    this.included = toggled(this.included, key, on);
     this.preview = undefined;
     this.report();
   }
@@ -136,14 +138,14 @@ export class SourceStep extends TdcElement {
 
   /** Show what five copies would show now, without creating anything. */
   private async runPreview(): Promise<void> {
-    const key = previewKey(this.entities, this.mapping);
-    if (!key) return;
+    const key = this.previewKey();
+    if (!key || !this.derived) return;
     try {
       this.preview = await this.api.sourcesPreview(
-        this.mapping[key],
+        this.derived.mapping[key],
         key,
         deviationRequest(this.form),
-        { seed: this.seed, template: this.template },
+        { seed: this.seed, template: CUSTOM },
       );
       this.error = '';
     } catch (err) {
@@ -171,41 +173,44 @@ export class SourceStep extends TdcElement {
       }`;
   }
 
-  /** Render the select of one row of the mapping. */
-  private renderRow(entity: EntityDef): TemplateResult {
-    const options = candidates(entity, this.sourceEntities);
-    const chosen = this.sourceEntities.find((e) => e.entity_id === this.mapping[entity.key]);
+  /** Return the key of the sensor whose values the preview shows, or an empty text. */
+  private previewKey(): string {
+    return this.derived
+      ? previewKey(this.derived.entities, includedMapping(this.derived.mapping, this.included))
+      : '';
+  }
+
+  /** Render one entity of the copy: the box to take it in, its name and the entity it follows. */
+  private renderRow(entity: EntityDef, derived: SourceDerived): TemplateResult {
+    const followed = derived.mapping[entity.key];
+    const info = this.infos.find((item) => item.entity_id === followed);
     return html`<tr>
-      <td>${entity.name}</td>
       <td>
-        <select
-          @change=${(e: Event) => this.map(entity.key, (e.target as HTMLSelectElement).value)}
-        >
-          <option value="">${this.tr('sourceNone')}</option>
-          ${options.map(
-            (o) =>
-              html`<option value=${o.entity_id} ?selected=${o.entity_id === chosen?.entity_id}>
-                ${o.name}
-              </option>`,
-          )}
-        </select>
+        <input
+          type="checkbox"
+          .checked=${this.included.has(entity.key)}
+          @change=${(e: Event) => this.include(entity.key, (e.target as HTMLInputElement).checked)}
+        />
       </td>
-      <td>${chosen ? `${chosen.state ?? '–'} ${chosen.unit ?? ''}` : ''}</td>
+      <td>${entity.name}</td>
+      <td><small>${followed}</small></td>
+      <td>${info ? `${info.state ?? '–'} ${info.unit ?? ''}` : ''}</td>
     </tr>`;
   }
 
-  /** Render the mapping table. */
-  private renderMapping(): TemplateResult {
+  /** Render the entities of the copy; each can be left out. */
+  private renderMapping(derived: SourceDerived): TemplateResult {
     return html`<table>
       <thead>
         <tr>
+          <th></th>
           <th>${this.tr('detEntity')}</th>
           <th>${this.tr('sourceColSource')}</th>
           <th>${this.tr('sourceColValue')}</th>
         </tr>
       </thead>
       <tbody>
-        ${followable(this.entities).map((entity) => this.renderRow(entity))}
+        ${derived.entities.map((entity) => this.renderRow(entity, derived))}
       </tbody>
     </table>`;
   }
@@ -238,10 +243,7 @@ export class SourceStep extends TdcElement {
         </label>
       </div>
       <p class="row">
-        <button
-          ?disabled=${!previewKey(this.entities, this.mapping)}
-          @click=${() => void this.runPreview()}
-        >
+        <button ?disabled=${!this.previewKey()} @click=${() => void this.runPreview()}>
           ${this.tr('sourcePreview')}
         </button>
         ${
@@ -263,12 +265,12 @@ export class SourceStep extends TdcElement {
     return html`<fieldset>
       <legend>${this.tr('colSource')}</legend>
       ${
-        this.device
+        this.device && this.derived
           ? html`<p>
                 ${this.tr('sourceChosen', { name: this.device.name })}
                 <button @click=${() => this.change()}>${this.tr('sourceChange')}</button>
               </p>
-              ${this.renderMapping()} ${this.renderDeviation()}`
+              ${this.renderMapping(this.derived)} ${this.renderDeviation()}`
           : this.renderSearch()
       }
       <span class="error">${this.error}</span>

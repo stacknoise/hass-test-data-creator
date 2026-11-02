@@ -11,11 +11,13 @@ from ..const import CONF_SEED, DEFAULT_SEED, DOMAIN
 from ..core.command import tdc_command
 from ..core.errors import ErrorCode, SourceError
 from ..data import get_data
+from ..sources.derive import derive
 from ..sources.deviation import Deviation
 from ..sources.mapper import propose
 from ..sources.preview import preview
 from ..sources.schema import (
     SOURCES_CONFIRM_FIELDS,
+    SOURCES_DERIVE_FIELDS,
     SOURCES_INSPECT_FIELDS,
     SOURCES_LIST_FIELDS,
     SOURCES_PREVIEW_FIELDS,
@@ -112,3 +114,18 @@ async def ws_devices_set_seed(
         msg["devices"], msg.get("entity"), msg["seed"]
     )
     return {"changed": changed}
+
+
+@tdc_command(f"{DOMAIN}/sources/derive", SOURCES_DERIVE_FIELDS)
+async def ws_sources_derive(
+    hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
+) -> dict[str, Any]:
+    """Return the entities that a copy of the source gets and the mapping to the source entities."""
+    sources = get_data(hass).sources
+    entry = sources.device(msg["device_id"])
+    derived = derive(entry.name_by_user or entry.name or "", sources.entities(msg["device_id"]))
+    return {
+        "name": entry.name_by_user or entry.name or "",
+        "entities": [item.entity.to_dict() for item in derived],
+        "mapping": {item.entity.key: item.source_entity_id for item in derived},
+    }
