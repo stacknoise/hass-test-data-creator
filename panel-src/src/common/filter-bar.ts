@@ -36,6 +36,8 @@ export class FilterBar extends TdcElement {
   @property() searchBefore = '';
   @property({ type: Number }) matched = 0;
   @property({ type: Number }) total = 0;
+  /** Leave out the counter, for a list whose total is not known. */
+  @property({ type: Boolean }) hideCount = false;
 
   @state() private draft: FilterValues = {};
 
@@ -257,9 +259,13 @@ export class FilterBar extends TdcElement {
               </button>`
             : nothing
         }
-        <small class="count">
-          ${this.tr('filterCount', { matched: this.matched, total: this.total })}
-        </small>
+        ${
+          this.hideCount
+            ? nothing
+            : html`<small class="count">
+                ${this.tr('filterCount', { matched: this.matched, total: this.total })}
+              </small>`
+        }
       </div>
     `;
   }

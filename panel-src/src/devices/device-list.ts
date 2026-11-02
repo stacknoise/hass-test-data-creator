@@ -69,6 +69,7 @@ const FIRE_PREFIX = 'fire:';
 const REMOVE = 'remove';
 const DUPLICATE = 'duplicate';
 const PAUSE = 'pause';
+const SHOW_LOG = 'show_log';
 const VALUE_PLATFORMS = [PLATFORM_SENSOR, 'switch', 'binary_sensor', 'light', 'cover', 'climate'];
 
 /** Lists the generated devices with live values and manual actions. */
@@ -310,6 +311,7 @@ export class DeviceList extends TdcPollingElement {
         ...items,
         { value: DUPLICATE, label: this.tr('duplicate') },
         { value: PAUSE, label: this.tr(device.paused ? 'resume' : 'pause') },
+        { value: SHOW_LOG, label: this.tr('logShow') },
         {
           value: REMOVE,
           label: this.tr('remove'),
@@ -329,6 +331,10 @@ export class DeviceList extends TdcPollingElement {
     }
     if (value === PAUSE) {
       void this.togglePause(device);
+      return;
+    }
+    if (value === SHOW_LOG) {
+      this.dispatchEvent(new CustomEvent('tdc-show-log', { detail: { id: device.id } }));
       return;
     }
     if (value === REMOVE) {

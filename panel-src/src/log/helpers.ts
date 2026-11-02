@@ -1,4 +1,6 @@
-import type { LogEntry } from '../common/types';
+import type { FilterField, FilterValues } from '../common/filter-state';
+import type { SelectItem } from '../common/multi-select';
+import type { DeviceName, LogEntry, LogFilterRequest } from '../common/types';
 
 /** The height of one row of the log list in pixels; the list draws only the rows in view. */
 export const LOG_ROW_HEIGHT = 28;
@@ -115,4 +117,99 @@ export function toJson(entries: LogEntry[]): string {
 export function logFileName(now: Date, extension: 'csv' | 'json'): string {
   const iso = now.toISOString();
   return `tdc-log-${iso.slice(0, 10)}-${iso.slice(11, 19).replaceAll(':', '')}.${extension}`;
+}
+
+/** The tab under which the filter of the log is kept in the session. */
+export const LOG_FILTER_TAB = 'log';
+/** The causes a change can have, in the order the filter offers them. */
+export const LOG_CAUSES = ['signal', 'action', 'fault', 'source', 'restore', 'other'] as const;
+/** The platforms whose changes the log can hold. */
+export const LOG_PLATFORMS = [
+  'sensor',
+  'binary_sensor',
+  'switch',
+  'light',
+  'cover',
+  'climate',
+  'event',
+];
+/** The key of the switch that keeps only entries with numbers. */
+export const KEY_ONLY_NUMERIC = 'only_numeric';
+
+/** The fields of the log filter by key and kind; labels and options are filled in by the panel. */
+export const LOG_FIELDS: FilterField[] = [
+  { key: 'devices', kind: 'multi', label: '' },
+  { key: 'entities', kind: 'multi', label: '' },
+  { key: 'templates', kind: 'multi', label: '' },
+  { key: 'platforms', kind: 'multi', label: '' },
+  { key: 'outputs', kind: 'multi', label: '' },
+  { key: 'causes', kind: 'multi', label: '' },
+  { key: KEY_ONLY_NUMERIC, kind: 'switch', label: '' },
+];
+
+/** Return the request filter for the state of the bar; empty restrictions are left out. */
+export function logRequest(values: FilterValues): LogFilterRequest {
+  const list = (key: string): string[] | undefined => {
+    const value = values[key];
+    return Array.isArray(value) && value.length ? value : undefined;
+  };
+  const query = typeof values.query === 'string' ? values.query.trim() : '';
+  const request: LogFilterRequest = {
+    query: query || undefined,
+    devices: list('devices'),
+    entities: list('entities'),
+    templates: list('templates'),
+    platforms: list('platforms'),
+    outputs: list('outputs'),
+    causes: list('causes'),
+    only_numeric: values[KEY_ONLY_NUMERIC] === true ? true : undefined,
+  };
+  return Object.fromEntries(
+    Object.entries(request).filter(([, value]) => value !== undefined),
+  ) as LogFilterRequest;
+}
+
+/** Return `items` sorted by label, without duplicate values. */
+function uniqueItems(items: SelectItem[]): SelectItem[] {
+  const seen = new Map(items.map((item) => [item.value, item]));
+  return [...seen.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** The options of the selects that depend on the generated devices. */
+export interface LogOptions {
+  devices: SelectItem[];
+  entities: SelectItem[];
+  templates: SelectItem[];
+  outputs: SelectItem[];
+}
+
+/** Return the options for devices, entities, templates and outputs from the generated devices. */
+export function logOptions(
+  names: DeviceName[],
+  template: (id: string) => string,
+  output: (id: string) => string,
+): LogOptions {
+  return {
+    devices: uniqueItems(names.map((n) => ({ value: n.id, label: n.name }))),
+    entities: uniqueItems(
+      names.flatMap((n) => n.entities.map((e) => ({ value: e.key, label: e.name || e.key }))),
+    ),
+    templates: uniqueItems(names.map((n) => ({ value: n.template, label: template(n.template) }))),
+    outputs: uniqueItems(names.map((n) => ({ value: n.output, label: output(n.output) }))),
+  };
+}
+
+/** Return the filter state that shows only the changes of one device. */
+export function deviceOnly(fields: FilterField[], deviceId: string): FilterValues {
+  return {
+    query: '',
+    sort: '',
+    descending: false,
+    ...Object.fromEntries(
+      fields.map((f) => [
+        f.key,
+        f.kind === 'multi' ? (f.key === 'devices' ? [deviceId] : []) : false,
+      ]),
+    ),
+  };
 }
