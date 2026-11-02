@@ -1,7 +1,8 @@
 """Build docs/review/dependencies.html: a clickable dependency map of the integration and the panel.
 
 Usage (Python 3.14, stdlib only):
-    python docs/review/build_dependencies.py
+    python docs/review/build_dependencies.py            # write the file
+    python docs/review/build_dependencies.py --check    # CI: fail if the file is out of date
 
 The map is derived with `ast` (Python) and regular expressions (TypeScript). Calls are resolved by
 name through the imports of each module, so the caller/callee and "used by" lists are a static
@@ -17,6 +18,7 @@ from dataclasses import dataclass, field
 import html
 from pathlib import Path
 import re
+import sys
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 PKG = ROOT / "custom_components" / "hass_test_data_creator"
@@ -1509,10 +1511,17 @@ def render_func(w, f: Func, funcs: dict[str, Func]) -> None:
 
 
 def main() -> None:
-    """Analyse the sources and write the HTML file."""
+    """Write the HTML file, or with `--check` only verify that the committed file is current."""
     modules = analyse_python()
     ts = analyse_ts()
     document = render(modules, ts)
+    if "--check" in sys.argv[1:]:
+        current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
+        if current != document:
+            print(f"{OUT.name} is out of date: run `python docs/review/build_dependencies.py`")
+            raise SystemExit(1)
+        print(f"{OUT.name} is up to date")
+        return
     OUT.write_text(document, encoding="utf-8")
     print(
         f"wrote {OUT} ({len(document) / 1024:.0f} KiB): {len(modules)} modules, {len(ts)} TypeScript files"

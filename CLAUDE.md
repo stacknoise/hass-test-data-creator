@@ -26,7 +26,7 @@ tests/  dev/  .github/workflows/
 ## Build and checks
 
 - Python tests do not run on Windows: use Docker (`docker compose -f dev/docker-compose.test.yml run --rm tests`) or CI.
-- Must pass before a PR: `ruff check .`, `ruff format --check .`, `bandit`, `python scripts/code_index.py --check`, `pytest`, and in `panel-src`: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` with no diff in `frontend/`. CI also runs `hassfest`, HACS validation, PMD CPD and CodeQL.
+- Must pass before a PR: `ruff check .`, `ruff format --check .`, `bandit`, `python scripts/code_index.py --check`, `python docs/review/build_dependencies.py --check`, `python docs/review/build_graph.py --check` (regenerate without `--check` and commit the maps after changes to modules, imports or the panel), `pytest`, and in `panel-src`: `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` with no diff in `frontend/`. CI also runs `hassfest`, HACS validation, PMD CPD and CodeQL.
 - Run the code index generator with Python 3.14.
 
 ## Development rules (concept 13) – follow for every change
