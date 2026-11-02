@@ -29,8 +29,15 @@ from ..sources.schema import (
 async def ws_sources_list(
     hass: HomeAssistant, connection: ActiveConnection, msg: dict[str, Any]
 ) -> dict[str, Any]:
-    """Search the real devices that can be a source; generated devices are never listed."""
-    return {"devices": get_data(hass).sources.search(msg["query"], msg["limit"])}
+    """Search the real devices that can be a source; `usable` counts the entities a copy gets."""
+    sources = get_data(hass).sources
+    found = sources.search(msg["query"], msg["limit"])
+    return {
+        "devices": [
+            {**item, "usable": len(derive(str(item["name"]), sources.entities(str(item["id"]))))}
+            for item in found
+        ]
+    }
 
 
 @tdc_command(f"{DOMAIN}/sources/inspect", SOURCES_INSPECT_FIELDS)

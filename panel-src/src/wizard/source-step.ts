@@ -1,7 +1,8 @@
-import { html, nothing, type TemplateResult } from 'lit';
+import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
+import { rowListStyles } from '../common/row-list';
 import type { TextKey } from '../common/i18n';
 import type {
   EntityDef,
@@ -36,6 +37,35 @@ const FIELDS: { key: keyof DeviationForm; label: TextKey; step: string }[] = [
 /** The optional step of the creation wizard: follow a real device and deviate by the seed. */
 @customElement('tdc-source-step')
 export class SourceStep extends TdcElement {
+  static override styles = [
+    TdcElement.styles,
+    rowListStyles,
+    css`
+      :host {
+        --head-height: 36px;
+      }
+      .entities {
+        max-height: calc(var(--head-height) + 4 * var(--row-height) + 2px);
+        overflow-y: auto;
+        margin-bottom: 16px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        height: var(--head-height);
+        background: var(--card-background-color);
+      }
+      tbody tr {
+        height: var(--row-height);
+      }
+      ul {
+        margin-bottom: 12px;
+      }
+    `,
+  ];
+
   @property() seed = '';
 
   @state() private query = '';
@@ -165,8 +195,19 @@ export class SourceStep extends TdcElement {
               ${this.found.map(
                 (device) =>
                   html`<li>
-                    <button @click=${() => void this.choose(device)}>${device.name}</button>
-                    <small>${[device.manufacturer, device.model].filter(Boolean).join(' ')}</small>
+                    <button
+                      ?disabled=${device.usable === 0}
+                      @click=${() => void this.choose(device)}
+                    >
+                      ${device.name}
+                    </button>
+                    <small
+                      >${
+                        device.usable === 0
+                          ? this.tr('sourceUnusable')
+                          : [device.manufacturer, device.model].filter(Boolean).join(' ')
+                      }</small
+                    >
                   </li>`,
               )}
             </ul>`
@@ -200,19 +241,21 @@ export class SourceStep extends TdcElement {
 
   /** Render the entities of the copy; each can be left out. */
   private renderMapping(derived: SourceDerived): TemplateResult {
-    return html`<table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>${this.tr('detEntity')}</th>
-          <th>${this.tr('sourceColSource')}</th>
-          <th>${this.tr('sourceColValue')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${derived.entities.map((entity) => this.renderRow(entity, derived))}
-      </tbody>
-    </table>`;
+    return html`<div class="entities">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>${this.tr('detEntity')}</th>
+            <th>${this.tr('sourceColSource')}</th>
+            <th>${this.tr('sourceColValue')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${derived.entities.map((entity) => this.renderRow(entity, derived))}
+        </tbody>
+      </table>
+    </div>`;
   }
 
   /** Render the fields of the deviation and the preview. */
