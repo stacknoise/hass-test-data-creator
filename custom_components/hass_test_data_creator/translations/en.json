@@ -163,6 +163,12 @@
     "rem_failed": {
       "message": "The removal was interrupted. Run it again to finish it"
     },
+    "src_not_found": {
+      "message": "The source device was not found"
+    },
+    "src_generated": {
+      "message": "A generated device cannot be a source"
+    },
     "ws_invalid_request": {
       "message": "The request is invalid"
     },

@@ -35,6 +35,7 @@ from .replay.library import CsvLibrary
 from .scenarios.manager import ScenarioManager
 from .scheduler.manager import ScheduleManager
 from .scheduler.runner import ActionRunner
+from .sources.registry import SourceRegistry
 from .store.store import TdcStore
 from .templates.registry import TemplateRegistry
 from .transfer.exporter import TransferExporter
@@ -71,6 +72,7 @@ class TdcData:
     device_view: DeviceView
     csv: CsvLibrary
     log: LogView
+    sources: SourceRegistry
     transfer: TransferExporter
     importer: TransferImporter
     error_factory: ErrorFactory = field(default_factory=ErrorFactory)
