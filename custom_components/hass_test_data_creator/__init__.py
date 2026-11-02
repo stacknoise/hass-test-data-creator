@@ -54,6 +54,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data = hass.data.pop(DOMAIN)
         data.tick.stop()
         data.labeler.stop()
+        data.follower.stop()
         data.schedules.async_stop()
         data.scenarios.async_stop()
         for runtime in data.outputs.runtimes().values():

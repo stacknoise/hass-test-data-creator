@@ -15,7 +15,7 @@ from ..core.keys import (
     KEY_SENSOR,
     KEY_SWITCH,
 )
-from ..core.protocols import ChangeRecorder
+from ..core.protocols import ChangeRecorder, SourceBinder, SourceFollowing
 from ..model.models import DeviceDef, EntityDef
 from .behaviours import (
     NO_LOG,
@@ -51,16 +51,31 @@ def entity_seed(device_seed: int, key: str) -> int:
     return int.from_bytes(digest[:SEED_BYTES], "big")
 
 
+class _NoSources:
+    """The binder of a system without sources: connects nothing."""
+
+    def bind(self, device: DeviceDef, definition: EntityDef, behaviour: SourceFollowing) -> None:
+        """Do nothing."""
+
+
+NO_SOURCES: SourceBinder = _NoSources()
+
+
 class BehaviourFactory:
     """Creates the behaviour for an entity definition."""
 
     def __init__(
-        self, signals: SignalFactory, scheduler: Scheduler, recorder: ChangeRecorder = NO_LOG
+        self,
+        signals: SignalFactory,
+        scheduler: Scheduler,
+        recorder: ChangeRecorder = NO_LOG,
+        sources: SourceBinder = NO_SOURCES,
     ) -> None:
-        """Keep the signal factory, the scheduler and the live log recorder the behaviours use."""
+        """Keep the signal factory, the scheduler, the live log recorder and the source binder."""
         self._signals = signals
         self._scheduler = scheduler
         self._recorder = recorder
+        self._sources = sources
 
     def signal_for(self, device: DeviceDef, definition: EntityDef) -> Signal:
         """Return the signal of `definition` of `device`, with the seed and origin of the entity."""
@@ -79,4 +94,5 @@ class BehaviourFactory:
             behaviour = _SIMPLE[definition.platform](device.id, definition, self._scheduler)
         behaviour.paused = device.paused
         behaviour.recorder = self._recorder
+        self._sources.bind(device, definition, behaviour)
         return behaviour

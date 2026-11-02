@@ -10,6 +10,7 @@ from .units import converter
 REASON_NONE = "none"
 REASON_AMBIGUOUS = "ambiguous"
 REASON_UNIT = "unit"
+FOLLOWABLE = ("sensor", "binary_sensor", "switch", "light")
 
 
 @dataclass(frozen=True)
@@ -32,9 +33,18 @@ class Proposal:
     candidates: list[str] = field(default_factory=list)
 
 
+def same_kind(target: EntityDef, source: SourceEntity) -> bool:
+    """Return True if `source` has the platform and device class of `target` and can be followed."""
+    return (
+        target.platform in FOLLOWABLE
+        and target.platform == source.platform
+        and target.device_class == source.device_class
+    )
+
+
 def compatible(target: EntityDef, source: SourceEntity) -> bool:
     """Return True if `source` can feed `target`: same platform, same device class, units convert."""
-    if target.platform != source.platform or target.device_class != source.device_class:
+    if not same_kind(target, source):
         return False
     return converter(target.device_class, source.unit, target.unit) is not None
 
@@ -47,6 +57,9 @@ def propose(entities: list[EntityDef], sources: list[SourceEntity]) -> list[Prop
     taken: set[str] = set()
     result: list[Proposal] = []
     for target in entities:
+        if target.platform not in FOLLOWABLE:
+            result.append(Proposal(target.key, reason=REASON_NONE))
+            continue
         same = [s for s in sources if s.platform == target.platform and s.entity_id not in taken]
         fitting = [s.entity_id for s in same if compatible(target, s)]
         if len(fitting) == 1:

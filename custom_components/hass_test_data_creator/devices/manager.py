@@ -23,8 +23,10 @@ from ..const import (
 from ..core.errors import ErrorCode, GenerationError, ScheduleError
 from ..core.ids import new_id
 from ..core.keys import KEY_AREAS
+from ..core.protocols import SourceCheck
 from ..model.models import DeviceDef, RunRecord
 from ..outputs.adapter import OutputAdapterFactory
+from ..sources.model import new_source
 from ..store.store import TdcStore
 from ..templates.device_factory import DeviceFactory, device_seed
 from ..templates.factory import Template, TemplateFactory
@@ -46,6 +48,16 @@ class CreationJob:
     entities: list[dict[str, Any]] | None = None
     overrides: dict[str, dict[str, Any]] = field(default_factory=dict)
     device_seed: int | None = None
+    source: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class DeviceParts:
+    """What the manager needs to build a device from a template."""
+
+    templates: TemplateRegistry
+    template_factory: TemplateFactory
+    device_factory: DeviceFactory
 
 
 class DevicesManager:
@@ -54,23 +66,23 @@ class DevicesManager:
     def __init__(
         self,
         store: TdcStore,
-        templates: TemplateRegistry,
-        template_factory: TemplateFactory,
-        device_factory: DeviceFactory,
+        parts: DeviceParts,
         outputs: OutputAdapterFactory,
         areas: AreaAssigner,
         audit: AuditLog,
         audit_factory: AuditEntryFactory,
+        sources: SourceCheck,
     ) -> None:
         """Keep the collaborators."""
         self._store = store
-        self._templates = templates
-        self._template_factory = template_factory
-        self._device_factory = device_factory
+        self._templates = parts.templates
+        self._template_factory = parts.template_factory
+        self._device_factory = parts.device_factory
         self._outputs = outputs
         self._areas = areas
         self._audit = audit
         self._audit_factory = audit_factory
+        self._sources = sources
 
     async def async_set_area(self, device_id: str, area: str | None) -> DeviceDef:
         """Put the device into the area `area` (created if new), or into none; return the device."""
@@ -118,6 +130,7 @@ class DevicesManager:
             raise GenerationError(ErrorCode.GEN_LIMIT)
         if len(template.entities) > MAX_ENTITIES_PER_DEVICE:
             raise GenerationError(ErrorCode.GEN_ENTITY_LIMIT)
+        self._sources.check(job.source, template.entities)
 
     async def async_create(self, job: CreationJob) -> RunRecord:
         """Create the devices of `job` in chunks and return the run that holds them."""
@@ -136,6 +149,7 @@ class DevicesManager:
             template=source.template,
             output=source.output,
             areas=job.areas or ([source.area] if source.area else []),
+            source=source.source,
         )
         return await self._async_run(job, template, template_key=f"copy:{source.id}")
 
@@ -193,9 +207,11 @@ class DevicesManager:
             output=job.output,
             now=run.created_at,
         )
-        if job.device_seed is not None:
-            for device in devices:
+        for device in devices:
+            if job.device_seed is not None:
                 device.seed = job.device_seed
+            if job.source:
+                device.source = new_source(job.source)
         for start in range(0, len(devices), CHUNK_SIZE):
             chunk = devices[start : start + CHUNK_SIZE]
             for device in chunk:

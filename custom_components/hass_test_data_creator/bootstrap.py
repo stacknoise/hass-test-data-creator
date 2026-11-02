@@ -24,7 +24,7 @@ from .const import (
 )
 from .core.keys import KEY_DEVICES, KEY_GROUPS, KEY_SCENARIOS, KEY_SCHEDULES
 from .data import TdcData
-from .devices.manager import DevicesManager
+from .devices.manager import DeviceParts, DevicesManager
 from .devices.pause import DevicePauser
 from .devices.signal_editor import SignalEditor
 from .devices.usage import DeviceUsage
@@ -64,6 +64,8 @@ from .scheduler.manager import ScheduleManager
 from .scheduler.planner import SchedulePlanner
 from .scheduler.runner import ActionRunner
 from .scheduler.triggers import TriggerFactory
+from .sources.binding import SourceBindingFactory
+from .sources.follower import SourceFollower
 from .sources.registry import SourceRegistry
 from .store.store import TdcStore
 from .templates.device_factory import DeviceFactory
@@ -96,7 +98,11 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
     clock = Clock(entry.options.get(CONF_TIME_LAPSE, DEFAULT_TIME_LAPSE))
     log_buffer = LogBuffer(LOG_DEFAULT_ENTRIES)
     log_recorder = LogRecorder(store, LogEntryFactory(), log_buffer)
-    behaviours = BehaviourFactory(signals, HassScheduler(hass, clock), log_recorder)
+    follower = SourceFollower(hass)
+    source_registry = SourceRegistry(hass)
+    scheduler = HassScheduler(hass, clock)
+    bindings = SourceBindingFactory(follower, hass.states.get, source_registry)
+    behaviours = BehaviourFactory(signals, scheduler, log_recorder, bindings)
     parts = RuntimeParts(hass, mqtt, behaviours, live, audit, audit_factory)
     mqtt_base = entry.options.get(CONF_MQTT_BASE_TOPIC, DEFAULT_MQTT_BASE_TOPIC)
     z2m_base = entry.options.get(CONF_Z2M_BASE_TOPIC, DEFAULT_Z2M_BASE_TOPIC)
@@ -132,7 +138,13 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         hass, store, StatisticsClient(hass), SeriesFactory(signals), audit, audit_factory
     )
     manager = DevicesManager(
-        store, registry, template_factory, DeviceFactory(), outputs, areas, audit, audit_factory
+        store,
+        DeviceParts(registry, template_factory, DeviceFactory()),
+        outputs,
+        areas,
+        audit,
+        audit_factory,
+        bindings,
     )
     planner = RemovalPlanner(hass, entry, store, usage)
     runner = RemovalRunner(
@@ -188,7 +200,8 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         pauser=pauser,
         csv=csv,
         log=LogView(log_recorder, log_buffer),
-        sources=SourceRegistry(hass),
+        sources=source_registry,
+        follower=follower,
         transfer=TransferExporter(store, registry, TransferFactory()),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,

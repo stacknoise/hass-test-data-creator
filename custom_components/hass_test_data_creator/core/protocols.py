@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from .error_factory import ErrorFactory
 from .response_factory import ResponseFactory
@@ -62,3 +63,43 @@ class HasReplies(Protocol):
 
     error_factory: ErrorFactory
     response_factory: ResponseFactory
+
+
+class ValueProvider(Protocol):
+    """What a behaviour needs of its source: whether it is online and the value to show."""
+
+    def online(self) -> bool:
+        """Whether the source has a usable state."""
+
+    def value(self, now: float) -> float | str | None:
+        """Return the value of the copy at signal time `now`, or None if there is none yet."""
+
+    def release(self) -> None:
+        """Stop following the source."""
+
+    def listen(self, listener: Callable[[], None]) -> None:
+        """Call `listener` whenever the source changes."""
+
+
+class SourceFollowing(Protocol):
+    """What a binding needs of a behaviour: its clock and a place to hand the source to."""
+
+    def now(self) -> float:
+        """Return the current signal time in seconds."""
+
+    def bind_source(self, source: ValueProvider) -> None:
+        """Follow `source` from now on."""
+
+
+class SourceBinder(Protocol):
+    """What the behaviour factory needs of the sources: connect a behaviour to its source."""
+
+    def bind(self, device: DeviceDef, definition: EntityDef, behaviour: SourceFollowing) -> None:
+        """Connect `behaviour` to the source of `device`, if the entity has one."""
+
+
+class SourceCheck(Protocol):
+    """What a creation job needs of the sources: check the source of a job before it runs."""
+
+    def check(self, source: dict[str, Any] | None, entities: list[EntityDef]) -> None:
+        """Raise a source error if the source or its mapping does not fit the entities."""

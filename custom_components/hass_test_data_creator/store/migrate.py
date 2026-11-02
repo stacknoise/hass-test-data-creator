@@ -21,7 +21,16 @@ def _to_version_3(data: dict[str, Any]) -> dict[str, Any]:
     return {**data, KEY_DEVICES: devices}
 
 
-_STEPS = {1: _to_version_2, 2: _to_version_3}
+def _to_version_4(data: dict[str, Any]) -> dict[str, Any]:
+    """Version 4 lets a device follow a source device; every stored device has none."""
+    devices = {
+        key: {**device, "source": None} if isinstance(device, dict) else device
+        for key, device in data.get(KEY_DEVICES, {}).items()
+    }
+    return {**data, KEY_DEVICES: devices}
+
+
+_STEPS = {1: _to_version_2, 2: _to_version_3, 3: _to_version_4}
 
 
 def migrate(version: int, data: dict[str, Any]) -> dict[str, Any]:

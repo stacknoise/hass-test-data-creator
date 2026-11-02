@@ -7,8 +7,8 @@ from datetime import datetime
 from typing import Protocol
 
 from ..const import MAX_LIGHT_BRIGHTNESS
-from ..core.keys import CAUSE_ACTION, CAUSE_FAULT, CAUSE_OTHER, CAUSE_SIGNAL
-from ..core.protocols import ChangeRecorder, LoggedBehaviour
+from ..core.keys import CAUSE_ACTION, CAUSE_FAULT, CAUSE_OTHER, CAUSE_SIGNAL, CAUSE_SOURCE
+from ..core.protocols import ChangeRecorder, LoggedBehaviour, ValueProvider
 from ..faults.factory import Fault
 from ..model.models import EntityDef
 from .signal_factory import Signal
@@ -74,6 +74,7 @@ class Behaviour:
         self.platform = definition.platform
         self.on_change: Callable[[], None] = _ignore
         self.recorder: ChangeRecorder = NO_LOG
+        self.source: ValueProvider | None = None
         self._scheduler = scheduler
         self.paused = False
         self._fault: Fault | None = None
@@ -103,8 +104,24 @@ class Behaviour:
 
     @property
     def available(self) -> bool:
-        """False while a fault makes the entity unavailable."""
+        """False while a fault makes the entity unavailable or its source is offline."""
+        if self.source is not None and not self.source.online():
+            return False
         return not (self._fault and self._fault.unavailable)
+
+    def bind_source(self, source: ValueProvider) -> None:
+        """Follow `source` from now on; a change of it reaches `source_changed` at once."""
+        self.source = source
+        source.listen(self.source_changed)
+        self._adopt()
+
+    def _adopt(self) -> None:
+        """Take over the current value of the source without telling anyone; the default has none."""
+
+    def source_changed(self) -> None:
+        """The source went offline, came back or changed; show it at once."""
+        if not self.paused:
+            self._changed(CAUSE_SOURCE)
 
     @property
     def fault_kind(self) -> str | None:
@@ -147,6 +164,9 @@ class Behaviour:
     def close(self) -> None:
         """Cancel the timers and stop reporting; the behaviour is no longer used."""
         self._clear_fault_timer()
+        if self.source is not None:
+            self.source.release()
+            self.source = None
         self.on_change = _ignore
 
     def _end_fault(self) -> None:
@@ -205,9 +225,27 @@ class SensorBehaviour(Behaviour):
 
     def _value(self, now: float) -> float | str:
         """Return the value of the signal at `now` with the transformation of an active fault."""
-        value = self.signal.value(now)
+        value = self._base_value(now)
         transform = self._fault.transform if self._fault else None
         return transform(value) if transform and not isinstance(value, str) else value
+
+    def _base_value(self, now: float) -> float | str:
+        """Return the value of the source while one is bound and has one, else of the curve."""
+        if self.source is None:
+            return self.signal.value(now)
+        followed = self.source.value(now)
+        return self.native_value if followed is None else followed
+
+    def _adopt(self) -> None:
+        """Show the value of the source instead of the first value of the curve."""
+        self.native_value = self._value(self._scheduler.now())
+
+    def source_changed(self) -> None:
+        """Show the value of the source at once, unless the sensor is frozen or paused."""
+        if self.paused:
+            return
+        self._fault_changed()
+        self._changed(CAUSE_SOURCE)
 
     def replace_signal(self, signal: Signal) -> None:
         """Follow another curve from now on and show its value at once, unless the sensor is frozen."""
@@ -237,6 +275,17 @@ class OnOffBehaviour(Behaviour):
     def restore(self, is_on: bool) -> None:
         """Set the last state without telling anyone."""
         self.is_on = is_on
+
+    def _adopt(self) -> None:
+        """Take over the state `on` or `off` of the source."""
+        followed = self.source.value(self._scheduler.now()) if self.source else None
+        if followed in (TEXT_ON, TEXT_OFF):
+            self.is_on = followed == TEXT_ON
+
+    def source_changed(self) -> None:
+        """Take over the state of the source, then report the change."""
+        self._adopt()
+        super().source_changed()
 
     def turn_on(self) -> None:
         """Switch on."""

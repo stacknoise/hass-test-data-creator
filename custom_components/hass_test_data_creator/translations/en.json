@@ -169,6 +169,12 @@
     "src_generated": {
       "message": "A generated device cannot be a source"
     },
+    "src_mapping": {
+      "message": "The mapping does not fit the source device"
+    },
+    "src_unit": {
+      "message": "The unit of the source cannot be converted"
+    },
     "ws_invalid_request": {
       "message": "The request is invalid"
     },

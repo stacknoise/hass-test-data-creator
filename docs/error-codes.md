@@ -52,6 +52,8 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-REM-002 | A device that is still used cannot be removed. Take it out of the schedules, scenarios and groups first: {usage} | A device that a schedule, scenario or group names cannot be removed until it is not used. |
 | TDC-SRC-001 | The source device was not found | The source device or one of its entities does not exist (any more). |
 | TDC-SRC-002 | A generated device cannot be a source | A device made by this integration cannot be a source. |
+| TDC-SRC-003 | The mapping does not fit the source device | A mapped entity does not belong to the source or cannot be followed by the entity. |
+| TDC-SRC-004 | The unit of the source cannot be converted | The unit of a source entity cannot be converted to the unit of the entity. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |
 | TDC-WS-002 | The selection has changed since you confirmed it. Check it and try again | The devices a bulk action selects are not the number the user confirmed. |
 | TDC-INT-001 | An unexpected error occurred. See the Home Assistant log | An unexpected error; the details are in the Home Assistant log. |

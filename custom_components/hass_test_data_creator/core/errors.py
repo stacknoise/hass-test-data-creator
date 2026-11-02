@@ -150,6 +150,12 @@ class ErrorCode(StrEnum):
     SRC_GENERATED = "TDC-SRC-002"
     """A device made by this integration cannot be a source."""
 
+    SRC_MAPPING = "TDC-SRC-003"
+    """A mapped entity does not belong to the source or cannot be followed by the entity."""
+
+    SRC_UNIT = "TDC-SRC-004"
+    """The unit of a source entity cannot be converted to the unit of the entity."""
+
     WS_INVALID_REQUEST = "TDC-WS-001"
     """The request does not match the schema of the command."""
 

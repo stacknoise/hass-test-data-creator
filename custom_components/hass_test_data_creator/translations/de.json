@@ -169,6 +169,12 @@
     "src_generated": {
       "message": "Ein erzeugtes Gerät kann keine Quelle sein"
     },
+    "src_mapping": {
+      "message": "Die Zuordnung passt nicht zum Quellgerät"
+    },
+    "src_unit": {
+      "message": "Die Einheit der Quelle lässt sich nicht umrechnen"
+    },
     "ws_invalid_request": {
       "message": "Die Anfrage ist ungültig"
     },
