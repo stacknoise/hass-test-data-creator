@@ -21,6 +21,11 @@ import type {
   LogStatus,
   RemovalTarget,
   SignalDef,
+  SourceDevice,
+  SourceDeviation,
+  SourceEntityInfo,
+  SourcePreview,
+  SourceProposal,
   ScenarioInfo,
   ScenarioStep,
   ScheduleInfo,
@@ -104,6 +109,39 @@ export class TdcApi {
   /** Empty the log in the backend. */
   logClear(): Promise<LogStatus> {
     return this.call('log/clear');
+  }
+
+  /** Search the real devices that can be a source; generated devices are never listed. */
+  async sourcesList(query: string, limit = 50): Promise<SourceDevice[]> {
+    return (await this.call<{ devices: SourceDevice[] }>('sources/list', { query, limit })).devices;
+  }
+
+  /** Return the entities of a source device and, for a template, the mapping proposal. */
+  sourcesInspect(
+    deviceId: string,
+    template?: string,
+  ): Promise<{ entities: SourceEntityInfo[]; proposal?: SourceProposal[] }> {
+    return this.call('sources/inspect', {
+      device_id: deviceId,
+      ...(template ? { template } : {}),
+    });
+  }
+
+  /** Return what copies with `deviation` would show for the current value of a source entity. */
+  sourcesPreview(
+    entityId: string,
+    key: string,
+    deviation: SourceDeviation,
+    options: { seed?: string; template?: string; count?: number } = {},
+  ): Promise<SourcePreview> {
+    return this.call('sources/preview', {
+      entity_id: entityId,
+      key,
+      deviation,
+      count: options.count ?? 5,
+      ...(options.seed ? { seed: options.seed } : {}),
+      ...(options.template ? { template: options.template } : {}),
+    });
   }
 
   /** Return one device in full, with the curve of each entity. */

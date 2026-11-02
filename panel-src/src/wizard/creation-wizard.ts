@@ -4,9 +4,10 @@ import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
 import { OUTPUT_LABELS, sortedByLabel, templateLabel } from '../common/labels';
-import type { CreateRequest, EntityDef, Info, TemplateInfo } from '../common/types';
+import type { CreateRequest, EntityDef, Info, SourceRequest, TemplateInfo } from '../common/types';
 import './entities-form';
 import './entity-list';
+import './source-step';
 import '../common/multi-select';
 import { knownAreas } from '../devices/helpers';
 import { stateRate } from './helpers';
@@ -35,6 +36,7 @@ export class CreationWizard extends TdcElement {
   @state() private seed = '';
   @state() private output = 'native';
   @state() private custom: EntityDef[] = [];
+  @state() private source: SourceRequest | null = null;
   @state() private busy = false;
   @state() private message = '';
   @state() private error = '';
@@ -69,6 +71,7 @@ export class CreationWizard extends TdcElement {
       area_mode: this.mode,
       output: this.output,
       ...(this.seed ? { seed: this.seed } : {}),
+      ...(this.source ? { source: this.source } : {}),
       ...(this.template === CUSTOM
         ? { entities: this.custom as unknown as Record<string, unknown>[] }
         : {}),
@@ -235,6 +238,13 @@ export class CreationWizard extends TdcElement {
             </p>`
           : ''
       }
+      <tdc-source-step
+        .hass=${this.hass}
+        .entities=${this.entities()}
+        template=${this.template}
+        seed=${this.seed}
+        @tdc-source-change=${(e: CustomEvent<SourceRequest | null>) => (this.source = e.detail)}
+      ></tdc-source-step>
       ${this.renderEstimate()}
       <p class="row">
         <button

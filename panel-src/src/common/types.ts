@@ -90,6 +90,58 @@ export interface PickerEntity {
   shape?: string | null;
 }
 
+/** A real device that can be a source (`sources/list`). */
+export interface SourceDevice {
+  id: string;
+  name: string;
+  manufacturer: string | null;
+  model: string | null;
+  entities: number;
+}
+
+/** One entity of a source device with its current state (`sources/inspect`). */
+export interface SourceEntityInfo {
+  entity_id: string;
+  name: string;
+  platform: string;
+  device_class: string | null;
+  unit: string | null;
+  state: string | null;
+}
+
+/** The mapping proposal for one entity of a template. */
+export interface SourceProposal {
+  key: string;
+  entity_id: string | null;
+  reason: string | null;
+  candidates: string[];
+}
+
+/** The deviation parameters of a source; every field is optional and zero switches it off. */
+export interface SourceDeviation {
+  offset?: number;
+  scale?: number;
+  noise?: number;
+  lag_s?: number;
+  dropout?: number;
+  decimals?: number;
+}
+
+/** The source of a creation job: the device, its entities by key of the copy and the deviation. */
+export interface SourceRequest {
+  device_id: string;
+  mapping: Record<string, string>;
+  deviation: SourceDeviation;
+}
+
+/** The values that copies with a deviation would show now (`sources/preview`). */
+export interface SourcePreview {
+  entity_id: string;
+  source: number;
+  unit: string | null;
+  copies: { index: number; value: number; lag_s: number }[];
+}
+
 /** The restrictions of a `log/get` call; every field is optional and an empty one is left out. */
 export interface LogFilterRequest {
   query?: string;
@@ -181,6 +233,7 @@ export interface CreateRequest {
   seed?: string;
   label?: string;
   entities?: Record<string, unknown>[];
+  source?: SourceRequest;
 }
 
 /** What a removal would delete. */
