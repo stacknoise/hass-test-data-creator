@@ -4107,23 +4107,34 @@ var Vi = 300, Hi = "custom", Ui = [
 		super(...e), this.seed = "", this.query = "", this.found = [], this.infos = [], this.included = /* @__PURE__ */ new Set(), this.form = Fi, this.error = "";
 	}
 	static {
-		this.styles = [A.styles, o`
+		this.styles = [
+			A.styles,
+			Qn,
+			o`
+      :host {
+        --head-height: 36px;
+      }
       .entities {
-        max-height: 320px;
+        max-height: calc(var(--head-height) + 4 * var(--row-height) + 2px);
         overflow-y: auto;
         margin-bottom: 16px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
       }
       thead th {
         position: sticky;
         top: 0;
+        height: var(--head-height);
         background: var(--card-background-color);
       }
-      ul.found {
-        max-height: 260px;
-        overflow-y: auto;
-        margin: 0 0 12px;
+      tbody tr {
+        height: var(--row-height);
       }
-    `];
+      ul {
+        margin-bottom: 12px;
+      }
+    `
+		];
 	}
 	disconnectedCallback() {
 		window.clearTimeout(this.timer), super.disconnectedCallback();
@@ -4187,7 +4198,7 @@ var Vi = 300, Hi = "custom", Ui = [
 		return h`<div class="fields">
         ${this.textField(this.tr("sourceSearch"), this.query, (e) => this.typing(e))}
       </div>
-      ${this.found.length === 0 ? h`<p><small>${this.tr("sourceNoMatch")}</small></p>` : h`<ul class="found">
+      ${this.found.length === 0 ? h`<p><small>${this.tr("sourceNoMatch")}</small></p>` : h`<ul>
               ${this.found.map((e) => h`<li>
                     <button
                       ?disabled=${e.usable === 0}

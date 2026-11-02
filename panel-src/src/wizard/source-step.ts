@@ -2,6 +2,7 @@ import { css, html, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { describeError } from '../common/api';
 import { TdcElement } from '../common/base';
+import { rowListStyles } from '../common/row-list';
 import type { TextKey } from '../common/i18n';
 import type {
   EntityDef,
@@ -38,21 +39,29 @@ const FIELDS: { key: keyof DeviationForm; label: TextKey; step: string }[] = [
 export class SourceStep extends TdcElement {
   static override styles = [
     TdcElement.styles,
+    rowListStyles,
     css`
+      :host {
+        --head-height: 36px;
+      }
       .entities {
-        max-height: 320px;
+        max-height: calc(var(--head-height) + 4 * var(--row-height) + 2px);
         overflow-y: auto;
         margin-bottom: 16px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
       }
       thead th {
         position: sticky;
         top: 0;
+        height: var(--head-height);
         background: var(--card-background-color);
       }
-      ul.found {
-        max-height: 260px;
-        overflow-y: auto;
-        margin: 0 0 12px;
+      tbody tr {
+        height: var(--row-height);
+      }
+      ul {
+        margin-bottom: 12px;
       }
     `,
   ];
@@ -182,7 +191,7 @@ export class SourceStep extends TdcElement {
       ${
         this.found.length === 0
           ? html`<p><small>${this.tr('sourceNoMatch')}</small></p>`
-          : html`<ul class="found">
+          : html`<ul>
               ${this.found.map(
                 (device) =>
                   html`<li>
