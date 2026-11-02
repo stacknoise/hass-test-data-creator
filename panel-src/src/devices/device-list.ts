@@ -5,6 +5,7 @@ import { describeError } from '../common/api';
 import { containerHost } from '../common/base';
 import { TdcPollingElement } from '../common/polling';
 import '../common/filter-bar';
+import type { TextKey } from '../common/i18n';
 import {
   readFilter,
   resetValues,
@@ -26,6 +27,7 @@ import {
 } from '../common/labels';
 import '../common/dialog';
 import '../wizard/creation-wizard';
+import '../wizard/follow-wizard';
 import '../wizard/template-manager';
 import './device-detail';
 import './bulk-bar';
@@ -40,6 +42,8 @@ import {
   type Selection,
 } from './bulk-helpers';
 import './duplicate-dialog';
+import './source-badge';
+import './source-banner';
 import {
   DEVICE_FIELDS,
   DEVICE_FILTER_TAB,
@@ -56,7 +60,7 @@ import {
 import { KIND_DEVICE, PLATFORM_SENSOR } from '../common/constants';
 
 const VALUES_SHOWN = 4;
-const COLUMN_COUNT = 7;
+const COLUMN_COUNT = 8;
 
 export const PAGE_SIZE = 50;
 const ACTION_BY_PLATFORM: Record<string, string> = {
@@ -129,6 +133,7 @@ export class DeviceList extends TdcPollingElement {
   @state() private offset = 0;
   @state() private loaded = false;
   @state() private templating = false;
+  @state() private following = false;
   @state() private duplicating?: DeviceInfo;
   @state() private facets?: DeviceFacets;
   @state() private filter: FilterValues = readFilter(DEVICE_FILTER_TAB, DEVICE_FIELDS);
@@ -239,6 +244,25 @@ export class DeviceList extends TdcPollingElement {
         kind: 'multi',
         label: this.tr('schTarget_run'),
         options: options('runs', 'runs', (e) => e.label || e.value),
+      },
+      {
+        key: 'sources',
+        kind: 'multi',
+        label: this.tr('filterSource'),
+        options: options('sources', 'sources', (e) =>
+          e.value === '' ? this.tr('filterSourceNone') : e.label || e.value,
+        ),
+      },
+      {
+        key: 'source_state',
+        kind: 'choice',
+        label: this.tr('filterSourceState'),
+        options: [
+          { value: 'with', label: this.tr('filterSourceWith') },
+          { value: 'without', label: this.tr('filterSourceWithout') },
+          { value: 'offline', label: this.tr('sourceState_offline') },
+          { value: 'removed', label: this.tr('sourceState_removed') },
+        ],
       },
       { key: 'custom', kind: 'switch', label: this.tr('filterCustom') },
     ];
@@ -415,6 +439,26 @@ export class DeviceList extends TdcPollingElement {
     `;
   }
 
+  /** Render the source of a device: its name as a link that filters by it, and the state badge. */
+  private renderSource(device: DeviceInfo): TemplateResult | string {
+    const source = device.source;
+    if (!source) return '–';
+    return html`<a
+        href="#"
+        title=${this.tr('sourceFilterBy')}
+        @click=${(e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.setFilter({
+            ...resetValues(this.filterFields(), this.filter),
+            sources: [source.id],
+          });
+        }}
+        >${source.name}</a
+      >
+      <tdc-source-badge .hass=${this.hass} state=${source.state}></tdc-source-badge>`;
+  }
+
   /** Render the table row of one device. */
   private renderRow(device: DeviceInfo): TemplateResult {
     const open = this.expanded.has(device.id);
@@ -437,6 +481,7 @@ export class DeviceList extends TdcPollingElement {
         <td class="nowrap" data-label=${this.tr('colOutput')}>
           ${this.tr(OUTPUT_LABELS[device.output] ?? 'outputNative')}
         </td>
+        <td class="nowrap" data-label=${this.tr('colSource')}>${this.renderSource(device)}</td>
         <td class="values" data-label=${this.tr('colValues')}>
           <small>${this.values(device)}</small>
         </td>
@@ -467,6 +512,30 @@ export class DeviceList extends TdcPollingElement {
       }`;
   }
 
+  /** Close the popups of the wizards and read the list again. */
+  private created(): void {
+    this.creating = false;
+    this.following = false;
+    this.reload();
+  }
+
+  /** Render a popup with a wizard; the wizard exists only while the popup is open. */
+  private renderWizard(
+    heading: TextKey,
+    open: boolean,
+    close: () => void,
+    wizard: () => TemplateResult,
+  ): TemplateResult {
+    return html`<tdc-dialog
+      .hass=${this.hass}
+      heading=${this.tr(heading)}
+      ?open=${open}
+      @tdc-close=${close}
+    >
+      ${open ? wizard() : nothing}
+    </tdc-dialog>`;
+  }
+
   /** Render the buttons that open the popups to create devices and to manage the own templates. */
   private renderNew(): TemplateResult {
     return html`
@@ -474,28 +543,33 @@ export class DeviceList extends TdcPollingElement {
         <button class="primary" @click=${() => (this.creating = true)}>
           + ${this.tr('create')}
         </button>
+        <button class="primary" @click=${() => (this.following = true)}>
+          + ${this.tr('follow')}
+        </button>
         <button class="primary" @click=${() => (this.templating = true)}>
           ${this.tr('tplManage')}
         </button>
       </p>
-      <tdc-dialog
-        .hass=${this.hass}
-        heading=${this.tr('create')}
-        ?open=${this.creating}
-        @tdc-close=${() => (this.creating = false)}
-      >
-        ${
-          this.creating
-            ? html`<tdc-creation-wizard
-                .hass=${this.hass}
-                @tdc-created=${() => {
-                  this.creating = false;
-                  this.reload();
-                }}
-              ></tdc-creation-wizard>`
-            : nothing
-        }
-      </tdc-dialog>
+      ${this.renderWizard(
+        'create',
+        this.creating,
+        () => (this.creating = false),
+        () =>
+          html`<tdc-creation-wizard
+            .hass=${this.hass}
+            @tdc-created=${() => this.created()}
+          ></tdc-creation-wizard>`,
+      )}
+      ${this.renderWizard(
+        'follow',
+        this.following,
+        () => (this.following = false),
+        () =>
+          html`<tdc-follow-wizard
+            .hass=${this.hass}
+            @tdc-created=${() => this.created()}
+          ></tdc-follow-wizard>`,
+      )}
       <tdc-dialog
         .hass=${this.hass}
         heading=${this.tr('duplicate')}
@@ -535,6 +609,7 @@ export class DeviceList extends TdcPollingElement {
     if (!this.loaded) return html`${this.tr('loading')}`;
     return html`
       ${this.renderNew()} ${this.error ? html`<p class="error">${this.error}</p>` : ''}
+      <tdc-source-banner .hass=${this.hass} @tdc-changed=${() => this.reload()}></tdc-source-banner>
       ${this.total === 0 ? '' : this.renderFilter()}
       ${
         this.total === 0
@@ -570,6 +645,7 @@ export class DeviceList extends TdcPollingElement {
                       ${this.sortHeader('template', this.tr('colTemplate'))}
                       <th>${this.tr('colArea')}</th>
                       <th>${this.tr('colOutput')}</th>
+                      <th>${this.tr('colSource')}</th>
                       <th>${this.tr('colValues')}</th>
                       <th>${this.tr('colActions')}</th>
                     </tr>

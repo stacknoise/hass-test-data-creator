@@ -21,6 +21,7 @@ import type {
   LogStatus,
   RemovalTarget,
   SignalDef,
+  RemovedSource,
   SourceDevice,
   SourceDeviation,
   SourceEntityInfo,
@@ -142,6 +143,16 @@ export class TdcApi {
       ...(options.seed ? { seed: options.seed } : {}),
       ...(options.template ? { template: options.template } : {}),
     });
+  }
+
+  /** Return the removed sources whose copies still wait for the answer "remove them?". */
+  async sourcesRemoved(): Promise<RemovedSource[]> {
+    return (await this.call<{ sources: RemovedSource[] }>('sources/removed')).sources;
+  }
+
+  /** Answer the question about a removed source: remove its copies, or keep them offline. */
+  confirmSourceRemoved(source: string, remove: boolean): Promise<Record<string, unknown>> {
+    return this.call('devices/confirm_source_removed', { source, remove });
   }
 
   /** Return one device in full, with the curve of each entity. */

@@ -84,8 +84,8 @@ export class LogPanel extends TdcElement {
       .row {
         display: grid;
         grid-template-columns:
-          110px minmax(120px, 1fr) minmax(120px, 1fr) minmax(160px, 1.5fr)
-          90px;
+          110px minmax(120px, 1fr) minmax(120px, 1fr) minmax(110px, 1fr)
+          minmax(160px, 1.5fr) 90px;
         gap: 8px;
         align-items: center;
         padding: 0 8px;
@@ -228,6 +228,7 @@ export class LogPanel extends TdcElement {
       platforms: this.tr('entPlatform'),
       outputs: this.tr('colOutput'),
       causes: this.tr('logFilterCause'),
+      sources: this.tr('colSource'),
       window: this.tr('logWindow'),
       min_delta: this.tr('logMinDelta'),
       only_numeric: this.tr('logOnlyNumeric'),
@@ -236,6 +237,7 @@ export class LogPanel extends TdcElement {
       devices: options.devices,
       entities: options.entities,
       templates: options.templates,
+      sources: options.sources,
       outputs: options.outputs,
       platforms: LOG_PLATFORMS.map((p) => ({ value: p, label: labelOf(lang, 'platform', p) })),
       window: LOG_WINDOWS.map((w) => ({
@@ -343,6 +345,7 @@ export class LogPanel extends TdcElement {
       <span class="time">${formatTime(entry.at)}</span>
       <span title=${entry.device}>${entry.device}</span>
       <span title=${entry.key}>${entry.name}</span>
+      <span title=${entry.source}>${entry.source || '–'}</span>
       <span class=${unavailable ? 'unavailable' : ''}>
         ${valueText(entry.old, entry.unit)} → ${valueText(entry.new, entry.unit)}
         ${delta ? html`<span class="delta">${delta}</span>` : nothing}
@@ -369,6 +372,7 @@ export class LogPanel extends TdcElement {
           <span>${this.tr('logColTime')}</span>
           <span>${this.tr('logColDevice')}</span>
           <span>${this.tr('logColEntity')}</span>
+          <span>${this.tr('colSource')}</span>
           <span>${this.tr('logColChange')}</span>
           <span>${this.tr('logColCause')}</span>
         </div>

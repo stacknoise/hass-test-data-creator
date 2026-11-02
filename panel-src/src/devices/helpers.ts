@@ -1,6 +1,12 @@
 import type { FilterField, FilterValue, FilterValues } from '../common/filter-state';
 import type { SelectItem } from '../common/multi-select';
-import type { DeviceFilterRequest, DeviceInfo, DeviceUsage, FacetEntry } from '../common/types';
+import type {
+  DeviceFilterRequest,
+  DeviceInfo,
+  DeviceUsage,
+  FacetEntry,
+  SourceState,
+} from '../common/types';
 import { TAB_GROUPS } from '../common/constants';
 
 /** An action that needs one number, with the name of its parameter and the allowed range. */
@@ -98,6 +104,8 @@ export const DEVICE_FIELDS: FilterField[] = [
   { key: 'outputs', kind: 'multi', label: '' },
   { key: 'platforms', kind: 'multi', label: '' },
   { key: 'runs', kind: 'multi', label: '' },
+  { key: 'sources', kind: 'multi', label: '' },
+  { key: 'source_state', kind: 'choice', label: '' },
   { key: 'custom', kind: 'switch', label: '' },
 ];
 
@@ -144,6 +152,8 @@ export function deviceRequest(values: FilterValues): DeviceFilterRequest {
     outputs: list('outputs'),
     platforms: list('platforms'),
     runs: list('runs'),
+    sources: list('sources'),
+    source_state: text('source_state'),
     custom: values.custom === true ? true : undefined,
     state: text('state'),
     sort: text('sort'),
@@ -168,4 +178,17 @@ export function facetItems(
     .filter((value) => !items.some((item) => item.value === value))
     .map((value) => ({ value, label: label({ value, count: 0 }) }));
   return [...items, ...missing];
+}
+
+/** The look and the text key of the badge of a source state. */
+export interface SourceBadge {
+  text: 'sourceState_ok' | 'sourceState_offline' | 'sourceState_removed';
+  tone: 'ok' | 'warn' | 'error';
+}
+
+/** Return the badge for a source state; the one place that decides how the states look. */
+export function sourceBadge(state: SourceState): SourceBadge {
+  if (state === 'removed') return { text: 'sourceState_removed', tone: 'error' };
+  if (state === 'offline') return { text: 'sourceState_offline', tone: 'warn' };
+  return { text: 'sourceState_ok', tone: 'ok' };
 }

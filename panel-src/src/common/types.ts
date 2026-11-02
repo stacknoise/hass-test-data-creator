@@ -151,9 +151,30 @@ export interface LogFilterRequest {
   platforms?: string[];
   outputs?: string[];
   causes?: string[];
+  sources?: string[];
   only_numeric?: boolean;
   min_delta?: number;
   from?: number;
+}
+
+/** The state of the source of a copy: working, unusable for now, or gone from the registries. */
+export type SourceState = 'ok' | 'offline' | 'removed';
+
+/** The source a generated device follows, as the backend reports it. */
+export interface DeviceSource {
+  id: string;
+  name: string;
+  state: SourceState;
+  dismissed: boolean;
+  /** Entity key of the copy to entity id of the source; only in the full device. */
+  mapping?: Record<string, string>;
+}
+
+/** A removed source with the copies that wait for the answer "remove them?". */
+export interface RemovedSource {
+  id: string;
+  name: string;
+  devices: { id: string; name: string }[];
 }
 
 /** What pickers and run lists need of a generated device (`devices/names`). */
@@ -166,12 +187,14 @@ export interface DeviceName {
   run_id: string;
   created_at: number;
   entities: PickerEntity[];
+  source?: { id: string; name: string } | null;
 }
 
 /** A generated device as listed by the backend. */
 export interface DeviceInfo extends DeviceName {
   area: string | null;
   paused: boolean;
+  source: DeviceSource | null;
   entities: EntityState[];
   used_by: DeviceUsage;
 }
@@ -205,6 +228,7 @@ export interface DeviceFacets {
   outputs: FacetEntry[];
   platforms: FacetEntry[];
   runs: FacetEntry[];
+  sources: FacetEntry[];
   state: FacetEntry[];
 }
 
@@ -216,6 +240,8 @@ export interface DeviceFilterRequest {
   outputs?: string[];
   platforms?: string[];
   runs?: string[];
+  sources?: string[];
+  source_state?: string;
   custom?: boolean;
   state?: string;
   sort?: string;
@@ -239,7 +265,7 @@ export interface CreateRequest {
 /** What a removal would delete. */
 export interface RemovalPlan {
   target: string;
-  devices: { id: string; name: string }[];
+  devices: { id: string; name: string; source?: string | null }[];
   orphans: { id: string; name: string }[];
   runs: string[];
   areas: string[];
@@ -423,6 +449,8 @@ export interface LogEntry {
   new: string;
   delta: number | null;
   cause: string;
+  source_id: string;
+  source: string;
 }
 
 /** The state of the live log that every `log/*` reply carries. */

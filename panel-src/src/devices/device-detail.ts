@@ -7,6 +7,7 @@ import type { TextKey } from '../common/i18n';
 import { actionLabel, entityName, labelOf, sortedByLabel, stateLabel } from '../common/labels';
 import '../common/menu-button';
 import { areaPicker } from './area-picker';
+import './source-badge';
 import type { MenuItem } from '../common/menu-button';
 import '../signals/curve-editor';
 import './live-curve';
@@ -344,6 +345,7 @@ export class DeviceDetail extends TdcElement {
           ${entityName(lang, entity.key, entity.name)}<br /><small
             >${labelOf(lang, 'platform', entity.platform)}</small
           >
+          ${this.renderFollows(entity)}
         </td>
         <td>
           <span
@@ -407,10 +409,28 @@ export class DeviceDetail extends TdcElement {
     </details>`;
   }
 
+  /** Render the source the device follows, with the badge; nothing for a device without one. */
+  private renderSource(): TemplateResult | typeof nothing {
+    const source = this.device.source;
+    if (!source) return nothing;
+    return html`<p>
+      ${this.tr('detSource')}: <strong>${source.name}</strong>
+      <tdc-source-badge .hass=${this.hass} state=${source.state}></tdc-source-badge>
+    </p>`;
+  }
+
+  /** Render the entity of the source that `entity` follows, or nothing. */
+  private renderFollows(entity: EntityState): TemplateResult | typeof nothing {
+    const followed = this.device.source?.mapping?.[entity.key];
+    return followed
+      ? html`<br /><small>${this.tr('sourceFollows', { entity: followed })}</small>`
+      : nothing;
+  }
+
   /** Render the element. */
   override render(): TemplateResult {
     return html`
-      ${this.renderArea()}
+      ${this.renderArea()} ${this.renderSource()}
       <label class="live">
         <input
           type="checkbox"

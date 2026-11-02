@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { DeviceInfo } from '../common/types';
+import { pickerLabel } from '../common/targets';
 import { emptyValues } from '../common/filter-state';
 import {
   DEVICE_FIELDS,
@@ -10,6 +11,7 @@ import {
   facetItems,
   faultParams,
   knownAreas,
+  sourceBadge,
   lastPageOffset,
   usageEntries,
   valueParams,
@@ -160,5 +162,18 @@ describe('column sort', () => {
 
   it('keeps the other restrictions', () => {
     expect(nextSort({ ...start, query: 'x' }, 'name').query).toBe('x');
+  });
+});
+
+describe('source helpers', () => {
+  it('maps each state to a text and a tone', () => {
+    expect(sourceBadge('ok')).toEqual({ text: 'sourceState_ok', tone: 'ok' });
+    expect(sourceBadge('offline').tone).toBe('warn');
+    expect(sourceBadge('removed').tone).toBe('error');
+  });
+
+  it('adds the source to the label of a picker entry', () => {
+    expect(pickerLabel('Plug 01')).toBe('Plug 01');
+    expect(pickerLabel('Plug 01', { name: 'Real plug' })).toBe('Plug 01 · Real plug');
   });
 });

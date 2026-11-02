@@ -18,6 +18,7 @@ function device(n: number): DeviceInfo {
     created_at: 0,
     area: null,
     paused: n === 2,
+    source: null,
     entities: [],
     used_by: { schedules: [], scenarios: [], groups: [] },
   };
@@ -40,6 +41,7 @@ function fakeHass(sent: Record<string, unknown>[], total = TOTAL): Hass {
           devices: Array.from({ length: count }, (_, i) => device(offset + i + 1)),
         };
       }
+      if (message.type === 'hass_test_data_creator/sources/removed') return { sources: [] };
       return { actions: {}, shapes: [] };
     },
   } as unknown as Hass;

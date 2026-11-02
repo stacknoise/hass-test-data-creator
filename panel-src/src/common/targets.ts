@@ -70,11 +70,16 @@ export function targetOptions(
 ): TargetOption[] {
   const options: TargetOption[] =
     kind === KIND_DEVICE
-      ? devices.map((d) => ({ value: d.id, label: d.name }))
+      ? devices.map((d) => ({ value: d.id, label: pickerLabel(d.name, d.source) }))
       : kind === KIND_TEMPLATE
         ? templates.map((t) => ({ value: t.id, label: templateLabel(lang, t.id, t.name) }))
         : runsOf(devices).map((r) => ({ value: r.id, label: runLabel(r, lang, countText) }));
   return sortedByLabel(lang, options, (option) => option.label);
+}
+
+/** Return the label of a device in a picker: its name, and the source it follows after a dot. */
+export function pickerLabel(name: string, source?: { name: string } | null): string {
+  return source ? `${name} · ${source.name}` : name;
 }
 
 /** Return the text of a target for a list; an id that no longer exists is shown as it is. */
