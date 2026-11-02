@@ -1,23 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import type { EntityDef, SourceEntityInfo } from '../common/types';
+import type { EntityDef, SourceDerived } from '../common/types';
 import {
   NO_DEVIATION,
-  candidates,
   deviationRequest,
-  followable,
-  mappingFromProposal,
+  includedMapping,
   previewKey,
-  sourceRequest,
-  withMapping,
+  sourceChoice,
+  toggled,
 } from './source-helpers';
 
-const temperature: EntityDef = {
-  key: 'temperature',
-  platform: 'sensor',
-  name: 'Temperature',
-  device_class: 'temperature',
-} as EntityDef;
-const event: EntityDef = { key: 'press', platform: 'event', name: 'Press' } as EntityDef;
+const temperature = { key: 'temperature', platform: 'sensor', name: 'Temperature' } as EntityDef;
+const plug = { key: 'plug', platform: 'switch', name: 'Plug' } as EntityDef;
+const derived: SourceDerived = {
+  name: 'Boiler',
+  entities: [temperature, plug],
+  mapping: { temperature: 'sensor.temp', plug: 'switch.plug' },
+};
 
 describe('source helpers', () => {
   it('turns the form into fractions and leaves out what is switched off', () => {
@@ -31,41 +29,26 @@ describe('source helpers', () => {
     expect(deviationRequest({ ...NO_DEVIATION, decimals: 0 })).toEqual({ decimals: 0 });
   });
 
-  it('offers only entities that can follow, and only source entities of the same kind', () => {
-    expect(followable([temperature, event])).toEqual([temperature]);
-    const source = [
-      { entity_id: 'sensor.a', platform: 'sensor', device_class: 'temperature' },
-      { entity_id: 'sensor.b', platform: 'sensor', device_class: 'humidity' },
-      { entity_id: 'switch.c', platform: 'switch', device_class: null },
-    ] as SourceEntityInfo[];
-    expect(candidates(temperature, source).map((e) => e.entity_id)).toEqual(['sensor.a']);
+  it('takes entities in and out', () => {
+    const all = new Set(['temperature', 'plug']);
+    const without = toggled(all, 'plug', false);
+    expect([...without]).toEqual(['temperature']);
+    expect(toggled(without, 'plug', true).has('plug')).toBe(true);
+    expect(includedMapping(derived.mapping, without)).toEqual({ temperature: 'sensor.temp' });
   });
 
-  it('takes the proposal where it found an entity and keeps the mapping editable', () => {
-    const mapping = mappingFromProposal([
-      { key: 'temperature', entity_id: 'sensor.a', reason: null, candidates: [] },
-      { key: 'humidity', entity_id: null, reason: 'none', candidates: [] },
-    ]);
-    expect(mapping).toEqual({ temperature: 'sensor.a' });
-    expect(withMapping(mapping, 'humidity', 'sensor.h')).toEqual({
-      temperature: 'sensor.a',
-      humidity: 'sensor.h',
-    });
-    expect(withMapping(mapping, 'temperature', '')).toEqual({});
-  });
-
-  it('builds a source only with a device and at least one mapped entity', () => {
-    expect(sourceRequest('', { a: 'b' }, NO_DEVIATION)).toBeNull();
-    expect(sourceRequest('dev', {}, NO_DEVIATION)).toBeNull();
-    expect(sourceRequest('dev', { a: 'b' }, NO_DEVIATION)).toEqual({
-      device_id: 'dev',
-      mapping: { a: 'b' },
-      deviation: {},
+  it('builds the choice only with a device and at least one entity taken in', () => {
+    const all = new Set(['temperature', 'plug']);
+    expect(sourceChoice('', derived, all, NO_DEVIATION)).toBeNull();
+    expect(sourceChoice('dev', derived, new Set(), NO_DEVIATION)).toBeNull();
+    expect(sourceChoice('dev', derived, new Set(['plug']), NO_DEVIATION)).toEqual({
+      source: { device_id: 'dev', mapping: { plug: 'switch.plug' }, deviation: {} },
+      entities: [plug],
     });
   });
 
   it('previews the first mapped sensor', () => {
-    expect(previewKey([temperature, event], {})).toBe('');
-    expect(previewKey([temperature, event], { temperature: 'sensor.a' })).toBe('temperature');
+    expect(previewKey([temperature, plug], {})).toBe('');
+    expect(previewKey([temperature, plug], { temperature: 'sensor.a' })).toBe('temperature');
   });
 });

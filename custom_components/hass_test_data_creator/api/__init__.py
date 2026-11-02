@@ -50,6 +50,7 @@ from .schedules import (
 from .sources import (
     ws_devices_confirm_source_removed,
     ws_devices_set_seed,
+    ws_sources_derive,
     ws_sources_inspect,
     ws_sources_list,
     ws_sources_preview,
@@ -60,6 +61,7 @@ from .transfer import ws_transfer_export, ws_transfer_plan, ws_transfer_run
 COMMANDS = (
     ws_info,
     ws_sources_list,
+    ws_sources_derive,
     ws_sources_inspect,
     ws_sources_preview,
     ws_sources_removed,

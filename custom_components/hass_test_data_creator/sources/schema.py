@@ -34,6 +34,8 @@ SOURCES_INSPECT_FIELDS: dict[Any, Any] = {
     vol.Optional("template"): SHORT_TEXT,
 }
 
+SOURCES_DERIVE_FIELDS: dict[Any, Any] = {vol.Required("device_id"): SHORT_TEXT}
+
 SOURCES_PREVIEW_FIELDS: dict[Any, Any] = {
     vol.Required("entity_id"): SHORT_TEXT,
     vol.Optional("seed"): SHORT_TEXT,

@@ -34,6 +34,19 @@ function fakeHass(sent: Record<string, unknown>[]): Hass {
           return {
             devices: [{ id: 'd1', name: 'Boiler', manufacturer: '', model: '', entities: 1 }],
           };
+        case 'hass_test_data_creator/sources/derive':
+          return {
+            name: 'Boiler',
+            entities: [
+              {
+                key: 'temperature',
+                platform: 'sensor',
+                name: 'Temperature',
+                device_class: 'temperature',
+              },
+            ],
+            mapping: { temperature: 'sensor.temp' },
+          };
         case 'hass_test_data_creator/sources/inspect':
           return {
             entities: [
@@ -88,9 +101,9 @@ describe('FollowWizard', () => {
     await settle();
 
     const request = sent.find((m) => m.type === 'hass_test_data_creator/devices/create')!;
-    expect(request.template).toBe('climate_sensor');
+    expect(request.template).toBe('custom');
+    expect((request.entities as { key: string }[]).map((e) => e.key)).toEqual(['temperature']);
     expect(request.count).toBe(10);
     expect((request.source as { device_id: string }).device_id).toBe('d1');
-    expect(request.entities).toBeUndefined();
   });
 });

@@ -109,12 +109,11 @@ export interface SourceEntityInfo {
   state: string | null;
 }
 
-/** The mapping proposal for one entity of a template. */
-export interface SourceProposal {
-  key: string;
-  entity_id: string | null;
-  reason: string | null;
-  candidates: string[];
+/** The entities a copy of a source gets and the entity of the source each one follows. */
+export interface SourceDerived {
+  name: string;
+  entities: EntityDef[];
+  mapping: Record<string, string>;
 }
 
 /** The deviation parameters of a source; every field is optional and zero switches it off. */

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { EntityDef, Hass, SourceRequest } from '../common/types';
+import type { EntityDef, Hass } from '../common/types';
+import type { SourceChoice } from './source-helpers';
 import './source-step';
 import type { SourceStep } from './source-step';
 
@@ -11,7 +12,7 @@ const entities = [
 describe('SourceStep', () => {
   let step: SourceStep;
   let sent: Record<string, unknown>[];
-  let reported: (SourceRequest | null)[];
+  let reported: (SourceChoice | null)[];
 
   beforeEach(async () => {
     vi.useFakeTimers();
@@ -41,19 +42,16 @@ describe('SourceStep', () => {
                   state: '20',
                 },
               ],
-              proposal: [
-                { key: 'temperature', entity_id: 'sensor.temp', reason: null, candidates: [] },
-              ],
             };
+          case 'hass_test_data_creator/sources/derive':
+            return { name: 'Boiler', entities, mapping: { temperature: 'sensor.temp' } };
           default:
             return {};
         }
       },
     } as unknown as Hass;
-    step.entities = entities;
-    step.template = 'climate_sensor';
     step.addEventListener('tdc-source-change', (e) =>
-      reported.push((e as CustomEvent<SourceRequest | null>).detail),
+      reported.push((e as CustomEvent<SourceChoice | null>).detail),
     );
     document.body.append(step);
     await step.updateComplete;
@@ -82,16 +80,10 @@ describe('SourceStep', () => {
     step.shadowRoot!.querySelector<HTMLButtonElement>('li button')!.click();
     await settle();
 
-    expect(
-      sent.some(
-        (m) =>
-          m.type === 'hass_test_data_creator/sources/inspect' && m.template === 'climate_sensor',
-      ),
-    ).toBe(true);
+    expect(sent.some((m) => m.type === 'hass_test_data_creator/sources/derive')).toBe(true);
     expect(reported.at(-1)).toEqual({
-      device_id: 'd1',
-      mapping: { temperature: 'sensor.temp' },
-      deviation: {},
+      source: { device_id: 'd1', mapping: { temperature: 'sensor.temp' }, deviation: {} },
+      entities,
     });
   });
 
@@ -104,6 +96,6 @@ describe('SourceStep', () => {
     scale.dispatchEvent(new Event('input'));
     await settle();
 
-    expect(reported.at(-1)?.deviation).toEqual({ scale: 0.02 });
+    expect(reported.at(-1)?.source.deviation).toEqual({ scale: 0.02 });
   });
 });

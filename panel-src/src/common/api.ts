@@ -26,7 +26,7 @@ import type {
   SourceDeviation,
   SourceEntityInfo,
   SourcePreview,
-  SourceProposal,
+  SourceDerived,
   ScenarioInfo,
   ScenarioStep,
   ScheduleInfo,
@@ -117,15 +117,16 @@ export class TdcApi {
     return (await this.call<{ devices: SourceDevice[] }>('sources/list', { query, limit })).devices;
   }
 
-  /** Return the entities of a source device and, for a template, the mapping proposal. */
-  sourcesInspect(
-    deviceId: string,
-    template?: string,
-  ): Promise<{ entities: SourceEntityInfo[]; proposal?: SourceProposal[] }> {
-    return this.call('sources/inspect', {
-      device_id: deviceId,
-      ...(template ? { template } : {}),
-    });
+  /** Return the entities of a source device with their states. */
+  async sourcesInspect(deviceId: string): Promise<SourceEntityInfo[]> {
+    return (
+      await this.call<{ entities: SourceEntityInfo[] }>('sources/inspect', { device_id: deviceId })
+    ).entities;
+  }
+
+  /** Return the entities that a copy of the source gets and what each of them follows. */
+  sourcesDerive(deviceId: string): Promise<SourceDerived> {
+    return this.call('sources/derive', { device_id: deviceId });
   }
 
   /** Return what copies with `deviation` would show for the current value of a source entity. */

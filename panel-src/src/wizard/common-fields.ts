@@ -1,4 +1,4 @@
-import { html, type PropertyValues, type TemplateResult } from 'lit';
+import { html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { TdcElement } from '../common/base';
 import type { TextKey } from '../common/i18n';
@@ -44,13 +44,19 @@ export class DeviceFields extends TdcElement {
   @property({ attribute: false }) templates: TemplateInfo[] = [];
   @property({ attribute: false }) info?: Info;
   @property({ type: Boolean }) allowCustom = false;
+  @property({ type: Boolean }) noTemplate = false;
   @property({ attribute: 'seed-hint' }) seedHint: TextKey = 'seedHint';
 
   @state() private values: CommonValues = DEFAULT_VALUES;
 
   /** Choose the first template as soon as the list is there, and tell the wizard. */
   protected override willUpdate(changed: PropertyValues): void {
-    if (changed.has('templates') && !this.values.template && this.templates.length) {
+    if (
+      changed.has('templates') &&
+      !this.noTemplate &&
+      !this.values.template &&
+      this.templates.length
+    ) {
       this.set({ template: this.templates[0].id });
     }
   }
@@ -115,7 +121,7 @@ export class DeviceFields extends TdcElement {
   override render(): TemplateResult {
     const v = this.values;
     return html`<div class="fields">
-      ${this.renderTemplate()}
+      ${this.noTemplate ? nothing : this.renderTemplate()}
       <label
         >${this.tr('count')}
         <input

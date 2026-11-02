@@ -1,18 +1,32 @@
 import { html, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import type { SourceRequest } from '../common/types';
+import type { EntityDef } from '../common/types';
 import type { CommonValues } from './common-fields';
+import { CUSTOM } from './common-fields';
 import './source-step';
+import type { SourceChoice } from './source-helpers';
 import { WizardBase } from './wizard-base';
 
-/** The wizard that creates copies of a real device (source); the entities come from the template. */
+/** The wizard that creates copies of a real device (source); the entities come from the source. */
 @customElement('tdc-follow-wizard')
 export class FollowWizard extends WizardBase {
-  @state() private source: SourceRequest | null = null;
+  @state() private choice: SourceChoice | null = null;
 
-  /** Create the copies; the source is part of the request. */
+  /** Return the entities of the copy, which the source step derived from the source. */
+  protected override entities(): EntityDef[] {
+    return this.choice?.entities ?? [];
+  }
+
+  /** Create the copies; the source and the entities that follow it are part of the request. */
   private create(): Promise<void> {
-    return this.submit(this.request(this.source ? { source: this.source } : {}));
+    if (!this.choice) return Promise.resolve();
+    return this.submit(
+      this.request({
+        template: CUSTOM,
+        entities: this.choice.entities as unknown as Record<string, unknown>[],
+        source: this.choice.source,
+      }),
+    );
   }
 
   /** Render the element. */
@@ -21,20 +35,17 @@ export class FollowWizard extends WizardBase {
       <p><small>${this.tr('sourceIntro')}</small></p>
       <tdc-device-fields
         .hass=${this.hass}
-        .templates=${this.templates}
         .info=${this.info}
+        noTemplate
         seed-hint="seedHintSource"
         @tdc-fields-change=${(e: CustomEvent<CommonValues>) => this.take(e.detail)}
       ></tdc-device-fields>
       <tdc-source-step
         .hass=${this.hass}
-        .entities=${this.entities()}
-        template=${this.values.template}
         seed=${this.values.seed}
-        @tdc-source-change=${(e: CustomEvent<SourceRequest | null>) => (this.source = e.detail)}
+        @tdc-source-change=${(e: CustomEvent<SourceChoice | null>) => (this.choice = e.detail)}
       ></tdc-source-step>
-      ${this.renderEstimate()}
-      ${this.renderSubmit(!this.values.template || this.source === null, () => void this.create())}
+      ${this.renderEstimate()} ${this.renderSubmit(this.choice === null, () => void this.create())}
     `;
   }
 }
