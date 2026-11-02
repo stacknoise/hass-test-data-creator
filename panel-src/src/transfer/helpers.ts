@@ -73,7 +73,7 @@ export const PURGE_ORDER: TransferCategory[] = [...IMPORT_ORDER].reverse();
 export const MAX_BATCH_BYTES = 1024 * 1024;
 
 /** The file format this panel reads. */
-export const SUPPORTED_FORMAT = 1;
+export const SUPPORTED_FORMAT = 2;
 
 /** The field that names an entry in a category. */
 export function keyField(category: TransferCategory): 'id' | 'name' {

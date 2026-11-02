@@ -71,6 +71,15 @@ class SourceRegistry:
         found.sort(key=lambda item: str(item["name"]).casefold())
         return found[:limit]
 
+    def find_by_name(self, name: str) -> str | None:
+        """Return the id of the one real device called `name`, or None if there is none or several."""
+        found = [
+            entry.id
+            for entry in dr.async_get(self._hass).devices
+            if not self.is_generated(entry) and (entry.name_by_user or entry.name) == name
+        ]
+        return found[0] if len(found) == 1 else None
+
     def device(self, device_id: str) -> dr.DeviceEntry:
         """Return the registry entry of a source or raise SRC_NOT_FOUND / SRC_GENERATED."""
         entry = dr.async_get(self._hass).async_get(device_id)

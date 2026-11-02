@@ -7740,7 +7740,7 @@ function ws(e, t) {
 	if (typeof n != "object" || !n) return { error: "trfBadFile" };
 	let r = n;
 	if (typeof r.format_version != "number") return { error: "trfBadFile" };
-	if (r.format_version > 1) return { error: "trfNewer" };
+	if (r.format_version > 2) return { error: "trfNewer" };
 	if (Ss(r).length === 0) return { error: "trfBadFile" };
 	let i = Cs(r);
 	return i ? {

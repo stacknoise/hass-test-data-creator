@@ -209,7 +209,7 @@ def build_data(hass: HomeAssistant, entry: ConfigEntry) -> TdcData:
         source_status=source_status,
         source_decision=SourceDecision(store, audit, audit_factory),
         source_seeds=SourceSeeds(store, live, audit, audit_factory),
-        transfer=TransferExporter(store, registry, TransferFactory()),
+        transfer=TransferExporter(store, registry, TransferFactory(), source_status),
         importer=TransferImporter(store, registry, handlers, audit, audit_factory),
         live=live,
     )
