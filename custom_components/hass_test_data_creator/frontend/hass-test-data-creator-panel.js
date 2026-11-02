@@ -4108,8 +4108,15 @@ var Vi = 300, Hi = "custom", Ui = [
 	}
 	static {
 		this.styles = [A.styles, o`
-      table {
+      .entities {
+        max-height: 320px;
+        overflow-y: auto;
         margin-bottom: 16px;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: var(--card-background-color);
       }
       ul.found {
         max-height: 260px;
@@ -4213,19 +4220,21 @@ var Vi = 300, Hi = "custom", Ui = [
     </tr>`;
 	}
 	renderMapping(e) {
-		return h`<table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>${this.tr("detEntity")}</th>
-          <th>${this.tr("sourceColSource")}</th>
-          <th>${this.tr("sourceColValue")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${e.entities.map((t) => this.renderRow(t, e))}
-      </tbody>
-    </table>`;
+		return h`<div class="entities">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>${this.tr("detEntity")}</th>
+            <th>${this.tr("sourceColSource")}</th>
+            <th>${this.tr("sourceColValue")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${e.entities.map((t) => this.renderRow(t, e))}
+        </tbody>
+      </table>
+    </div>`;
 	}
 	renderDeviation() {
 		return h`<div class="fields">

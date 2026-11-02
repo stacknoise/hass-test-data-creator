@@ -39,8 +39,15 @@ export class SourceStep extends TdcElement {
   static override styles = [
     TdcElement.styles,
     css`
-      table {
+      .entities {
+        max-height: 320px;
+        overflow-y: auto;
         margin-bottom: 16px;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: var(--card-background-color);
       }
       ul.found {
         max-height: 260px;
@@ -225,19 +232,21 @@ export class SourceStep extends TdcElement {
 
   /** Render the entities of the copy; each can be left out. */
   private renderMapping(derived: SourceDerived): TemplateResult {
-    return html`<table>
-      <thead>
-        <tr>
-          <th></th>
-          <th>${this.tr('detEntity')}</th>
-          <th>${this.tr('sourceColSource')}</th>
-          <th>${this.tr('sourceColValue')}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${derived.entities.map((entity) => this.renderRow(entity, derived))}
-      </tbody>
-    </table>`;
+    return html`<div class="entities">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>${this.tr('detEntity')}</th>
+            <th>${this.tr('sourceColSource')}</th>
+            <th>${this.tr('sourceColValue')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${derived.entities.map((entity) => this.renderRow(entity, derived))}
+        </tbody>
+      </table>
+    </div>`;
   }
 
   /** Render the fields of the deviation and the preview. */
