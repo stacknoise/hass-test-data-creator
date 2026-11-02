@@ -54,6 +54,9 @@ Every error of the integration carries one of these codes (format `TDC-<AREA>-<N
 | TDC-SRC-002 | A generated device cannot be a source | A device made by this integration cannot be a source. |
 | TDC-SRC-003 | The mapping does not fit the source device | A mapped entity does not belong to the source or cannot be followed by the entity. |
 | TDC-SRC-004 | The unit of the source cannot be converted | The unit of a source entity cannot be converted to the unit of the entity. |
+| TDC-SRC-005 | A copy of a source is locked, only its seed can be changed | A copy of a source is locked: only its seed can be changed. |
+| TDC-SRC-006 | The device follows no source | The device follows no source, so it has no seed of a source. |
+| TDC-SRC-007 | The source is offline, so the copy cannot be controlled | The source of a copy is offline, so no action or fault runs on the copy. |
 | TDC-WS-001 | The request is invalid | The request does not match the schema of the command. |
 | TDC-WS-002 | The selection has changed since you confirmed it. Check it and try again | The devices a bulk action selects are not the number the user confirmed. |
 | TDC-INT-001 | An unexpected error occurred. See the Home Assistant log | An unexpected error; the details are in the Home Assistant log. |

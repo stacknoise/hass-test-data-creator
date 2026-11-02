@@ -6,7 +6,7 @@ from typing import Any
 
 from ..audit.factory import AuditEntryFactory
 from ..audit.log import AuditLog
-from ..core.errors import ErrorCode, ScheduleError, TemplateError
+from ..core.errors import ErrorCode, ScheduleError, SourceError, TemplateError
 from ..core.keys import KEY_SHAPE
 from ..engine.behaviour_factory import BehaviourFactory
 from ..engine.behaviours import ClimateBehaviour, Live, SensorBehaviour
@@ -51,6 +51,8 @@ class SignalEditor:
         )
         if device is None or definition is None or definition.platform not in SIGNAL_PLATFORMS:
             raise ScheduleError(ErrorCode.SCH_TARGET_NOT_FOUND)
+        if device.source:
+            raise SourceError(ErrorCode.SRC_LOCKED)
         if (definition.signal or {}).get(KEY_SHAPE) in DISCRETE_SHAPES or (
             signal.get(KEY_SHAPE) in DISCRETE_SHAPES
         ):

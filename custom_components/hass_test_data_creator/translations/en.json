@@ -175,6 +175,15 @@
     "src_unit": {
       "message": "The unit of the source cannot be converted"
     },
+    "src_locked": {
+      "message": "A copy of a source is locked, only its seed can be changed"
+    },
+    "src_not_copy": {
+      "message": "The device follows no source"
+    },
+    "src_offline": {
+      "message": "The source is offline, so the copy cannot be controlled"
+    },
     "ws_invalid_request": {
       "message": "The request is invalid"
     },

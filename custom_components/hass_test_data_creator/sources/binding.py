@@ -54,6 +54,13 @@ class SourceBinding:
         self.observe()
         follower.attach(self)
 
+    def reseed(self, seed: int) -> None:
+        """Deviate with another seed from now on; the value is drawn again."""
+        self._seed = seed
+        self._lag = lag_of(seed, self._deviation)
+        self._held = None
+        self.notify()
+
     def online(self) -> bool:
         """Whether the source entity exists and has a usable state."""
         state = self._states(self.entity_id)

@@ -159,7 +159,9 @@ class DeviceView:
         registry = er.async_get(self._hass)
         source = self._sources.of(device)
         if source and with_signal:
-            source["mapping"] = dict((device.source or {}).get("mapping", {}))
+            stored = device.source or {}
+            source["mapping"] = dict(stored.get("mapping", {}))
+            source["seeds"] = dict(stored.get("seeds", {}))
         return {
             KEY_ID: device.id,
             KEY_NAME: device.name,

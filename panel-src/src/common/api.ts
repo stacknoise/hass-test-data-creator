@@ -150,6 +150,15 @@ export class TdcApi {
     return (await this.call<{ sources: RemovedSource[] }>('sources/removed')).sources;
   }
 
+  /** Set the seed of one sensor, or of all, of copies; "random" draws one per sensor. */
+  setSeed(
+    devices: string[],
+    seed: number | 'random',
+    entity?: string,
+  ): Promise<{ changed: number }> {
+    return this.call('devices/set_seed', { devices, seed, ...(entity ? { entity } : {}) });
+  }
+
   /** Answer the question about a removed source: remove its copies, or keep them offline. */
   confirmSourceRemoved(source: string, remove: boolean): Promise<Record<string, unknown>> {
     return this.call('devices/confirm_source_removed', { source, remove });

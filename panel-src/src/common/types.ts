@@ -168,6 +168,8 @@ export interface DeviceSource {
   dismissed: boolean;
   /** Entity key of the copy to entity id of the source; only in the full device. */
   mapping?: Record<string, string>;
+  /** Seed per entity key that was set by hand; only in the full device. */
+  seeds?: Record<string, number>;
 }
 
 /** A removed source with the copies that wait for the answer "remove them?". */

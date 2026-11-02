@@ -153,4 +153,29 @@ describe('shared answers', () => {
     await expect(new TdcApi(hass).info()).rejects.toThrow('down');
     await expect(new TdcApi(hass).info()).resolves.toEqual({});
   });
+
+  it('sends the seed of one sensor, or a random one for all', async () => {
+    const sent: Record<string, unknown>[] = [];
+    const hass = {
+      language: 'en',
+      callWS: async (message: Record<string, unknown>) => {
+        sent.push(message);
+        return { changed: 1 };
+      },
+    } as unknown as Hass;
+    const api = new TdcApi(hass);
+    await api.setSeed(['d1'], 7, 'temperature');
+    await api.setSeed(['d1', 'd2'], 'random');
+    expect(sent[0]).toEqual({
+      type: 'hass_test_data_creator/devices/set_seed',
+      devices: ['d1'],
+      seed: 7,
+      entity: 'temperature',
+    });
+    expect(sent[1]).toEqual({
+      type: 'hass_test_data_creator/devices/set_seed',
+      devices: ['d1', 'd2'],
+      seed: 'random',
+    });
+  });
 });
