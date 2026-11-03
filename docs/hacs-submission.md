@@ -1,6 +1,6 @@
 # Submitting to the HACS default repositories
 
-The integration is installable today as a custom repository. This page is the checklist for getting it into the default list of HACS (`hacs/default`), and the text of the pull request. The rules are at <https://www.hacs.xyz/docs/publish/include/>.
+The integration is in the default list of HACS (`hacs/default`) and installs without a custom repository. This page keeps the checklist and the text of the pull request for reference. The rules are at <https://www.hacs.xyz/docs/publish/include/>.
 
 ## Requirements and where this repository stands
 
