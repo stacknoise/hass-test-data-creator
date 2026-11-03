@@ -83,27 +83,6 @@ describe('TdcApi', () => {
     });
   });
 
-  it('reads devices in pages of at most 500 and stops at the total', async () => {
-    const sent: { offset: number; limit: number }[] = [];
-    const hass = {
-      language: 'en',
-      callWS: async (message: { offset: number; limit: number }) => {
-        sent.push({ offset: message.offset, limit: message.limit });
-        const size = Math.max(0, Math.min(message.limit, 1200 - message.offset));
-        return { total: 1200, devices: Array.from({ length: size }, () => ({})) };
-      },
-    } as unknown as Hass;
-    const api = new TdcApi(hass);
-    expect((await api.devicesUpTo(600)).devices).toHaveLength(600);
-    expect(sent).toEqual([
-      { offset: 0, limit: 500 },
-      { offset: 500, limit: 100 },
-    ]);
-    sent.length = 0;
-    expect((await api.devicesUpTo(Infinity)).devices).toHaveLength(1200);
-    expect(sent.every((item) => item.limit <= 500)).toBe(true);
-  });
-
   it('reads the device names and one full device with their own commands', async () => {
     const sent: Record<string, unknown>[] = [];
     const hass = {

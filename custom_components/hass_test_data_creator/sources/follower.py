@@ -42,10 +42,6 @@ class SourceFollower:
             if cancel is not None:
                 cancel()
 
-    def subscriptions(self) -> int:
-        """Return the number of entities that are followed."""
-        return len(self._unsubscribe)
-
     def stop(self) -> None:
         """Cancel every subscription."""
         for cancel in self._unsubscribe.values():

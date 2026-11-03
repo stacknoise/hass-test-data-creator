@@ -114,11 +114,11 @@ async def test_one_subscription_serves_all_copies_and_removal_releases_it(
     await create_copies(hass, client, device_id)
     await hass.async_block_till_done()
     follower = get_data(hass).follower
-    assert follower.subscriptions() == 2
+    assert len(follower._unsubscribe) == 2
 
     for behaviour in list(get_data(hass).live.values()):
         behaviour.close()
-    assert follower.subscriptions() == 0
+    assert not follower._unsubscribe
 
 
 async def test_a_source_that_does_not_fit_is_refused_before_anything_is_created(

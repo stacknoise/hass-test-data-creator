@@ -55,11 +55,6 @@ class LogFilter:
             **groups,
         )
 
-    @property
-    def is_empty(self) -> bool:
-        """Whether the filter lets every entry pass."""
-        return self == LogFilter()
-
     def matches(self, entry: LogEntry) -> bool:
         """Whether `entry` passes: all groups must match, a value inside a group may be any."""
         return (

@@ -1124,7 +1124,6 @@ Lists every module, class and function of the integration with signature, file a
 | `hass_test_data_creator.log.filters` | `module` | `custom_components/hass_test_data_creator/log/filters.py` | The filter of the live log: one pure test per entry (concept 17.2). |
 | `LogFilter` | `class LogFilter` | `custom_components/hass_test_data_creator/log/filters.py` | What a request asks for; a field that is empty or missing does not filter. |
 | `LogFilter.from_request` | `def from_request(cls, data: dict[str, Any] \| None) -> LogFilter` | `custom_components/hass_test_data_creator/log/filters.py` | Return the filter for a validated request; None means no filter. |
-| `LogFilter.is_empty` | `def is_empty(self) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the filter lets every entry pass. |
 | `LogFilter.matches` | `def matches(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether `entry` passes: all groups must match, a value inside a group may be any. |
 | `LogFilter._in_time` | `def _in_time(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the entry lies in the time window. |
 | `LogFilter._in_groups` | `def _in_groups(self, entry: LogEntry) -> bool` | `custom_components/hass_test_data_creator/log/filters.py` | Whether the entry matches every group that has values. |
@@ -1243,7 +1242,6 @@ Lists every module, class and function of the integration with signature, file a
 | `SourceFollower.__init__` | `def __init__(self, hass: HomeAssistant) -> None` | `custom_components/hass_test_data_creator/sources/follower.py` | Keep the instance. |
 | `SourceFollower.attach` | `def attach(self, binding: SourceBinding) -> None` | `custom_components/hass_test_data_creator/sources/follower.py` | Follow the entity of `binding`; the first binding of an entity subscribes. |
 | `SourceFollower.detach` | `def detach(self, binding: SourceBinding) -> None` | `custom_components/hass_test_data_creator/sources/follower.py` | Stop telling `binding`; the last binding of an entity cancels the subscription. |
-| `SourceFollower.subscriptions` | `def subscriptions(self) -> int` | `custom_components/hass_test_data_creator/sources/follower.py` | Return the number of entities that are followed. |
 | `SourceFollower.stop` | `def stop(self) -> None` | `custom_components/hass_test_data_creator/sources/follower.py` | Cancel every subscription. |
 | `SourceFollower._on_change` | `def _on_change(self, event: Event[EventStateChangedData]) -> None` | `custom_components/hass_test_data_creator/sources/follower.py` | Hand a new state to every binding of the entity and tell them to show it. |
 | `hass_test_data_creator.sources.mapper` | `module` | `custom_components/hass_test_data_creator/sources/mapper.py` | Mapping of the entities of a copy to the entities of its source (concept 17.5). |
