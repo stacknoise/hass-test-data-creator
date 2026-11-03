@@ -109,10 +109,8 @@ svg text{font-family:var(--f-m);font-size:11px;fill:var(--ink)}
   <div class="note">Wird aus dem Quelltext erzeugt, nicht von Hand gepflegt (<span class="mono">python3 docs/code-doku/generate.py</span>). Metriken sind Näherungen eines Quelltext-Scanners, keine Compiler-Analyse.</div>
 </header>
 <main id="app" class="app"></main>
-<script type="application/json" id="data">/*DATA*/</script>
-<script type="application/json" id="files">/*FILES*/</script>
 <script>
-const D=JSON.parse(document.getElementById('data').textContent),F=JSON.parse(document.getElementById('files').textContent);
+const D=/*DATA*/,F=/*FILES*/;
 const T=D.types,byId={},byName={},users={};
 T.forEach(t=>{byId[t.id]=t;(byName[t.name]=byName[t.name]||[]).push(t)});
 T.forEach(t=>t.deps.forEach(d=>(users[d]=users[d]||[]).push(t.id)));
@@ -170,7 +168,7 @@ function methodTable(t,curL){
 /* Zustand und Navigation */
 const S={id:D.start,line:null,group:null};
 let cur='explorer';
-function go(id,line){if(!byId[id])return;S.id=id;S.line=line||null;S.group=null;V[cur].sel&&V[cur].sel()}
+function go(id,line){const t=byId[id];if(!t)return;S.id=t.id;S.line=line||null;S.group=null;V[cur].sel&&V[cur].sel()}
 document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){e.preventDefault();go(g.dataset.go)}});
 
 /* ===== Variante A: Explorer ===== */
