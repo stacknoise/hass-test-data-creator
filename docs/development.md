@@ -33,6 +33,7 @@ bandit -c pyproject.toml -r custom_components scripts
 python scripts/code_index.py --check        # code index and error code list up to date, docstrings present
 python docs/review/build_dependencies.py --check   # dependency map up to date (regenerate without --check)
 python docs/review/build_graph.py --check          # dependency graph up to date
+python docs/code-doku/generate.py --check          # code documentation up to date (regenerate without --check)
 pytest                                      # Linux, WSL, container or CI
 
 cd panel-src
