@@ -1,4 +1,5 @@
-[![Open your Home Assistant instance and open this repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=stacknoise&repository=hass-test-data-creator&category=integration)
+[![HACS](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://img.shields.io/badge/HACS-Add%20repository-41BDF5?logo=homeassistantcommunitystore&logoColor=white)](https://my.home-assistant.io/redirect/hacs_repository/?owner=stacknoise&repository=hass-test-data-creator&category=integration)
 
 # HASS Test Data Creator
 
@@ -85,10 +86,12 @@ Version 1.2.0 (new since 1.1.0: the Live Log tab, and the source device: copies 
 
 ## Installation (HACS)
 
-The integration is in the default list of HACS, so no custom repository is needed.
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=stacknoise&repository=hass-test-data-creator&category=integration)
 
-1. Click the HACS button at the top of this page, or open HACS and search for **HASS Test Data Creator**.
-2. Download it and restart Home Assistant.
+HASS Test Data Creator is part of the official HACS list, so no custom repository is needed.
+
+1. Click the button above. It opens HASS Test Data Creator in the HACS of your Home Assistant instance. Or open HACS yourself and search for **HASS Test Data Creator**.
+2. Click *Download* and restart Home Assistant.
 3. Go to **Settings → Devices & services → Add integration** and add **HASS Test Data Creator**. Confirm that this is a test environment.
 4. Open **Test Data Generator** in the sidebar (administrators only).
 
