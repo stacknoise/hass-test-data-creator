@@ -98,7 +98,7 @@ def test_the_filter_is_applied_while_reading() -> None:
 
 
 def test_an_empty_filter_lets_everything_pass() -> None:
-    assert LogFilter.from_request(None).is_empty
+    assert LogFilter.from_request(None) == LogFilter()
     assert LogFilter.from_request({}).matches(entry(1))
 
 

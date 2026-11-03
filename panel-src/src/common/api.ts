@@ -185,22 +185,6 @@ export class TdcApi {
     return this.call('devices/list', { offset, limit, ...filter, ...(facets ? { facets } : {}) });
   }
 
-  /** Return the first `count` devices (all if fewer exist), fetched in pages the server accepts. */
-  async devicesUpTo(count: number): Promise<DevicePage> {
-    const devices: DevicePage['devices'] = [];
-    let total = 0;
-    while (devices.length < count) {
-      const page = await this.devices(
-        devices.length,
-        Math.min(MAX_PAGE_SIZE, count - devices.length),
-      );
-      total = page.total;
-      devices.push(...page.devices);
-      if (page.devices.length === 0 || devices.length >= total) break;
-    }
-    return { total, matched: total, devices };
-  }
-
   /** Create the devices of a job. */
   create(request: CreateRequest): Promise<{ run_id: string; devices: number }> {
     return this.call('devices/create', { ...request });

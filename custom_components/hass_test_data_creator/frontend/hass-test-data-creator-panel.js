@@ -698,18 +698,6 @@ var bt = class {
 			...r ? { facets: r } : {}
 		});
 	}
-	async devicesUpTo(e) {
-		let t = [], n = 0;
-		for (; t.length < e;) {
-			let r = await this.devices(t.length, Math.min(500, e - t.length));
-			if (n = r.total, t.push(...r.devices), r.devices.length === 0 || t.length >= n) break;
-		}
-		return {
-			total: n,
-			matched: n,
-			devices: t
-		};
-	}
 	create(e) {
 		return this.call("devices/create", { ...e });
 	}
