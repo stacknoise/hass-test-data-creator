@@ -1,8 +1,39 @@
-# HASS Test Data Creator
+<div align="center">
 
-Home Assistant custom integration that creates and manages **test devices, test entities and test data** for development and performance tests. It is meant for **test environments only**, never for an instance with real devices.
+# 🧪 HASS Test Data Creator
 
-## Install (HACS)
+**Test devices, entities and realistic test data for Home Assistant – on demand, reproducible, and fully removable.**
+
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=stacknoise&repository=hass-test-data-creator&category=integration)
+
+[![Tests](https://github.com/stacknoise/hass-test-data-creator/actions/workflows/tests.yml/badge.svg)](https://github.com/stacknoise/hass-test-data-creator/actions/workflows/tests.yml)
+[![Validate](https://github.com/stacknoise/hass-test-data-creator/actions/workflows/validate.yml/badge.svg)](https://github.com/stacknoise/hass-test-data-creator/actions/workflows/validate.yml)
+[![Release](https://img.shields.io/github/v/release/stacknoise/hass-test-data-creator)](https://github.com/stacknoise/hass-test-data-creator/releases)
+[![HACS Default](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://hacs.xyz)
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2026.9%2B-18BCF2.svg)](https://www.home-assistant.io)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/stacknoise/hass-test-data-creator/blob/main/LICENSE)
+
+</div>
+
+> [!WARNING]
+> This integration is meant for **test environments only**, never for an instance with real devices. Everything it creates carries a marker and can be removed again, completely, without touching anything else.
+
+## ✨ At a glance
+
+| | |
+| --- | --- |
+| 🏭 **Devices from templates** | Plug with metering, wall button, climate, motion and contact sensor, dimmable light, blind, radiator thermostat, washing machine, or your own entity definitions. Up to 500 devices per call. |
+| 📈 **Signal curves** | Constant, sine, saw, square, triangle, noise, random walk, counter, daily profiles, steps, battery discharge, enum, state machine, CSV replay. Always a function of time and seed, so the same seed gives the same values. |
+| ⏱️ **Schedules and scenarios** | Run actions at fixed times, intervals, once, at random moments or by Poisson rate; chain steps to scenarios. |
+| 💥 **Fault injection** | `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`, and `late` / `duplicate` for MQTT. |
+| 📡 **Outputs** | Native entities, MQTT discovery, or a full Zigbee2MQTT bridge emulation including groups. |
+| 🪞 **Follow a real device** | Create copies of a real device with a seed based deviation (new in 1.2). |
+| 📜 **Live Log** | Every state change of the generated entities, live, over all outputs (new in 1.2). |
+| 🕰️ **History and time lapse** | Backfill up to 365 days of statistics; run daily curves faster. |
+| 📦 **Transfer** | Export and import devices, templates, schedules, scenarios and groups as one JSON file. |
+| 🧹 **Clean removal** | Works from markers; foreign devices, entities, areas, statistics and MQTT topics are never touched. |
+
+## 🚀 Installation (HACS)
 
 The integration is part of the HACS default store, so no custom repository is needed.
 
@@ -15,6 +46,38 @@ Click the button above to open the integration in HACS on your Home Assistant in
 3. Go to **Settings → Devices & services → Add integration** and add **HASS Test Data Creator**. Confirm that this is a test environment.
 4. Open **Test Data Generator** in the sidebar (administrators only).
 
+## 🖼️ Screenshots
+
+The panel in the sidebar of Home Assistant (admin only). The images are rendered with demo data by `npm run screenshots` in `panel-src`.
+
+| Devices | Device details |
+| --- | --- |
+| ![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=3) | ![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=3) |
+| **Create devices** | **Custom device with entity editor** |
+| ![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=3) | ![A custom device that starts from a template, with the entity editor](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-custom-device.png?v=3) |
+| **Schedules (next 24 hours)** | **Scenario with steps** |
+| ![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=3) | ![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=3) |
+| **Live Log (1.2)** | **Follow a real device (1.2)** |
+| ![The live log](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/live-log.png?v=3) | ![The popup that follows a real device](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/follow-device.png?v=3) |
+
+<details>
+<summary>More screenshots: own templates, new schedule, MQTT groups, history, removal</summary>
+
+| | |
+| --- | --- |
+| ![The popup that manages the own templates](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/own-templates.png?v=3) | ![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=3) |
+| ![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=3) | ![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=3) |
+| ![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=3) | |
+
+</details>
+
+## 🧰 Features in detail
+
+Open a section to read the details.
+
+<details>
+<summary><b>🏭 Devices, templates and entities</b></summary>
+
 - Create many devices at once from templates (plug with metering, wall button, climate sensor, motion sensor, contact sensor, dimmable light, blind, radiator thermostat, washing machine) or from your own entity definitions.
 - Assign the devices to areas on creation.
 - For a custom device the create dialog has an entity editor instead of a JSON field: "Add entity" opens a form (name, key, platform, unit, curve), and each entity in the scrollable list can be edited or deleted. "Start from a template" copies the entities of a template into the editor after a warning that it replaces the current ones.
@@ -22,15 +85,12 @@ Click the button above to open the integration in HACS on your Home Assistant in
 - The create dialog lists "Custom device" last in the template dropdown (highlighted) and shows all entities of the chosen template (sensors with value range, unit and a small 24-hour curve) in a scrollable list.
 - Value curves: constant, sine, saw, square, triangle, noise, random walk, counter, and the daily profiles `household_load` and `pv_day`, a staircase (`steps`), a battery `discharge`, and the state shapes `enum` (states drawn by weight) and `state_machine` (a cycle of states with durations, as in the `washer` template). Every curve is a function of time and seed, so the same seed gives the same values.
 - Values come from signal curves with a range from–to and a unit (sine, saw, square, triangle, noise, random walk, counter).
-- Trigger actions by hand: switch, press a button, set or pulse a binary sensor, dim a light (`set_brightness` 0 to 255), move a blind (`open`, `close`, `set_position` 0 to 100), set a thermostat (`set_temperature`, `turn_on`, `turn_off`). A blind moves at once. Wrong parameters give error `TDC-SCH-006`.
-- Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
-- Scenarios: a named list of steps, each with a target, an entity, an action and `after_s`, the wait after the step before. Start one by hand, from the scenario tab, or from a schedule (`scenario: <id>` instead of target, entity and action; the schedule form of the panel has a "Runs" select).
-- Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`, and for the MQTT outputs `late` and `duplicate` messages. The device list shows active faults.
-- Publish the devices over MQTT discovery instead (output `mqtt`, base topic `tdc`): Home Assistant creates the entities through its MQTT integration, values follow the curves, commands and faults work, and a removal deletes the retained messages. The devices that Home Assistant creates for them carry the label "test data" like the native ones. MQTT must be set up and connected. If the storage of the integration was lost, the removal tab can search the broker for leftover retained topics of generated devices (own base topics and the discovery topics `homeassistant/<component>/tdc_<id>/<key>/config`; never the default `zigbee2mqtt` base topic) and delete them.
-- Publish the devices as a Zigbee2MQTT bridge instead (output `z2m`, base topic `tdc_z2m`): `bridge/state`, `bridge/info`, `bridge/devices` with exposes, one JSON state per device, availability, `<name>/set` and button actions. Groups of such devices (`add_group`, `remove_group`, the MQTT groups tab) are listed in `bridge/groups`, publish a state derived from their members and pass `set` on to every member. It refuses a base topic that already carries retained messages it did not publish (it listens for 3 seconds, 10 on `zigbee2mqtt`) or a name that a Zigbee2MQTT device or group already has (`TDC-OUT-008`) and device or group names that are no single topic level (no `/`, `+`, `#`, control character, not `bridge`, `TDC-OUT-007`). The base topics are set in the options of the integration.
-- CSV replay: the shape `csv` plays a file from the folder `hass_test_data_creator/csv` of the Home Assistant configuration, looped and joined linearly. A file has one column (one value per `step_s` seconds, default 60) or two (seconds, value; the seconds must rise); blank lines, lines that start with `#` and a first row of names are skipped, and the delimiter is `,` or `;` (then a comma is the decimal mark). Signal block: `{shape: csv, file: load.csv, step_s: 60, min: 0, max: 100, decimals: 1, phase: 0}`. A file is limited to 100000 rows and 5 MB; a file that does not fit is refused with TDC-SIG-005, a missing one with TDC-SIG-004. The curve editor of the panel offers the files of the folder.
-- Time lapse: the option `time_lapse` (1 to 10000, in the options of the integration) makes the curves run faster, for example 60 for one hour per minute, so that daily curves and counters can be watched without waiting. The time lapse continues after a restart or reload; only a changed factor starts it again. Schedules, fault durations and pulses stay in real time; the panel shows the factor in its header. Statistics backfill is not affected.
-- Backfill the past: `import_history` (or the History tab) writes hourly long-term statistics for the last 1 to 365 days of the sensors that have a state class, computed from their curves (`measurement`: mean, minimum, maximum; `total` and `total_increasing`: state and running sum). Counters grow through the whole period. Statistics of those hours that already exist are replaced; the current hour is left to the recorder. It needs the recorder, and a removal clears exactly the statistics that were imported. The state history is not backfilled.
+
+</details>
+
+<details>
+<summary><b>🖱️ Panel: device list, details, bulk actions</b></summary>
+
 - The Devices tab offers the main action of every entity, such as toggling a switch, and "Remove" in one "Actions" menu, and turns into a grid of cards on narrow screens such as a phone; the schedule, scenario and group tables do the same. Click a device to open its details: change its area (an existing one or a new name; an area the integration created goes when it is empty), and run every action of every entity by hand from one "Choose action" menu; actions with a number (brightness, position, target temperature) and faults with a duration ask for their value first. A sensor with a number curve gets a "Change curve" button that opens the curve editor with a live preview; the new curve replaces the old one at once. A sensor with states (`enum`, `state_machine`) keeps its states, and a number curve cannot become a list of states. The switch "Live view" in the details reads the device every second and draws the real values of its numeric entities as a curve under the state; it is off whenever a device is opened.
 - The Schedules tab shows the form for a new schedule first, then the preview of the next 24 hours, then the list. Click a schedule to change it in the same form (name, target, action, trigger, scenario); the change replans the runs at once. The WebSocket command `schedules/update` does the same.
 - Devices are created in a popup of the Devices tab (the button "Create devices"), and so are schedules in the Schedules tab ("New schedule"). The area of a creation job is picked from a multi-select dropdown (the areas of Home Assistant, and new names you add).
@@ -41,60 +101,74 @@ Click the button above to open the integration in HACS on your Home Assistant in
 - The action of a schedule or scenario step needs no entity: without one it runs on every entity of each targeted device that can do it ("Aussetzer" on all sensors, "Umschalten" on the switch). The forms offer only the actions that **every** targeted device can do, so a dimming action is not offered for "all devices" while plugs are among them. The History tab offers only the sensors that every chosen device has. The optional `entity` of `add_schedule` and of a scenario step names one entity if needed; the forms show an "Entity" select next to the target only for a single device or template when the action fits more than one of its entities (default "All that fit"). A select with only one option is preselected and locked (for example "Runs" in the schedule form while no scenario exists).
 - A target of an action, schedule or scenario step can name one device, several devices (`target: {device: ["Plug 01", "Plug 02"]}`), a template or one device set (the devices of one creation job). The forms offer the devices, templates and device sets to pick from, and only the actions and entities that fit the chosen target. Removing devices removes a schedule only when all the devices it names are gone.
 - "Duplicate…" in the Actions menu of a device (and the command `hass_test_data_creator/devices/duplicate`) creates one or up to 500 copies as a new run: same template, model, output, area and curves (including changed ones), new ids and seeds, names by a pattern (default `<name> 1`, `<name> 2`, …). The device limits apply; the copies can be removed by their run like any other devices.
-- Everything that was generated can be removed again, completely, and nothing else is touched.
 - Sidebar panel in German and English with a schedule tab (list, create, switch on or off, remove, preview of the next 24 hours) a scenario tab (list, create with several steps, run, remove) and a curve editor for custom sensors (shape, range, period, noise, with a live preview of one day); services for scripts.
 - Search, filter and sort the device list: filter by template, area, output, entity kind, device set, own templates, faults, state (paused) and whether a device is used, and sort by clicking the column headers (ascending, descending, off). `/` jumps to the search, `Esc` resets the filter, and a reset link shows when nothing matches. The filter runs in the backend, so the counter and the paging are right for any number of devices. The lists of schedules, scenarios and groups have the same filter bar (for schedules trigger type, action, target kind and on or off, for scenarios the devices and templates in their steps); the filter is kept while the browser tab is open.
 - Bulk actions on the device list: tick single devices, a whole page or "all N matches" of the filter, then set the area, add them to a Zigbee2MQTT group (with MQTT), run an action, pause or resume them, or remove them. A removal shows the number first and, above 100 devices, asks for a checkbox; devices that a schedule, scenario or group still names are not removed. The WebSocket commands are `devices/bulk_remove`, `devices/bulk_area`, `devices/bulk_group`, `devices/bulk_action` and `devices/bulk_pause`.
 - Pause and resume: a paused device keeps its last values and sends nothing new until it is resumed; schedules and scenarios skip it, manual and bulk actions still work. Use "Pause" or "Resume" in the actions menu of a device, or the buttons of the bulk bar, and the state filter "Paused" to find paused devices. The pause is stored and survives a restart.
-- Transfer tab: export and import devices, own templates, schedules, scenarios and groups (with MQTT) selectively. The export saves the chosen categories as one JSON file of definitions, with references written by name and without runtime values, credentials or markers; a device carries its seed and the overrides of its template, so noise and the other seeded curves match after an import. The import takes such a file: choose the categories and, per category, the mode (add keeps what exists, sync updates it and creates the rest, replace first removes all generated items of the category); a plan shows what would be created, updated, skipped, refused and removed before anything changes. Entries are matched by name (own templates by id); an entry that names a device, template or scenario that is neither in the file nor here is reported and skipped, and so is an existing device whose template or output differs. Imported devices form one run named `import <file name>`. The commands are `transfer/plan`, `transfer/run` and `transfer/export`. See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 16.
+
+</details>
+
+<details>
+<summary><b>⚡ Actions, schedules, scenarios and faults</b></summary>
+
+- Trigger actions by hand: switch, press a button, set or pulse a binary sensor, dim a light (`set_brightness` 0 to 255), move a blind (`open`, `close`, `set_position` 0 to 100), set a thermostat (`set_temperature`, `turn_on`, `turn_off`). A blind moves at once. Wrong parameters give error `TDC-SCH-006`.
+- Run actions by schedule: at fixed times, every N seconds, once, at random moments inside a window, or at an average rate (Poisson). Random times follow a seed, so the same seed gives the same day.
+- Scenarios: a named list of steps, each with a target, an entity, an action and `after_s`, the wait after the step before. Start one by hand, from the scenario tab, or from a schedule (`scenario: <id>` instead of target, entity and action; the schedule form of the panel has a "Runs" select).
+- Inject faults for a limited time, by hand or by schedule: `unavailable`, `dropout`, `frozen`, `spike`, `battery_low`, `linkquality_drop`, and for the MQTT outputs `late` and `duplicate` messages. The device list shows active faults.
+
+</details>
+
+<details>
+<summary><b>📡 MQTT and Zigbee2MQTT outputs</b></summary>
+
+- Publish the devices over MQTT discovery instead (output `mqtt`, base topic `tdc`): Home Assistant creates the entities through its MQTT integration, values follow the curves, commands and faults work, and a removal deletes the retained messages. The devices that Home Assistant creates for them carry the label "test data" like the native ones. MQTT must be set up and connected. If the storage of the integration was lost, the removal tab can search the broker for leftover retained topics of generated devices (own base topics and the discovery topics `homeassistant/<component>/tdc_<id>/<key>/config`; never the default `zigbee2mqtt` base topic) and delete them.
+- Publish the devices as a Zigbee2MQTT bridge instead (output `z2m`, base topic `tdc_z2m`): `bridge/state`, `bridge/info`, `bridge/devices` with exposes, one JSON state per device, availability, `<name>/set` and button actions. Groups of such devices (`add_group`, `remove_group`, the MQTT groups tab) are listed in `bridge/groups`, publish a state derived from their members and pass `set` on to every member. It refuses a base topic that already carries retained messages it did not publish (it listens for 3 seconds, 10 on `zigbee2mqtt`) or a name that a Zigbee2MQTT device or group already has (`TDC-OUT-008`) and device or group names that are no single topic level (no `/`, `+`, `#`, control character, not `bridge`, `TDC-OUT-007`). The base topics are set in the options of the integration.
+
+</details>
+
+<details>
+<summary><b>🕰️ CSV replay, time lapse and history</b></summary>
+
+- CSV replay: the shape `csv` plays a file from the folder `hass_test_data_creator/csv` of the Home Assistant configuration, looped and joined linearly. A file has one column (one value per `step_s` seconds, default 60) or two (seconds, value; the seconds must rise); blank lines, lines that start with `#` and a first row of names are skipped, and the delimiter is `,` or `;` (then a comma is the decimal mark). Signal block: `{shape: csv, file: load.csv, step_s: 60, min: 0, max: 100, decimals: 1, phase: 0}`. A file is limited to 100000 rows and 5 MB; a file that does not fit is refused with TDC-SIG-005, a missing one with TDC-SIG-004. The curve editor of the panel offers the files of the folder.
+- Time lapse: the option `time_lapse` (1 to 10000, in the options of the integration) makes the curves run faster, for example 60 for one hour per minute, so that daily curves and counters can be watched without waiting. The time lapse continues after a restart or reload; only a changed factor starts it again. Schedules, fault durations and pulses stay in real time; the panel shows the factor in its header. Statistics backfill is not affected.
+- Backfill the past: `import_history` (or the History tab) writes hourly long-term statistics for the last 1 to 365 days of the sensors that have a state class, computed from their curves (`measurement`: mean, minimum, maximum; `total` and `total_increasing`: state and running sum). Counters grow through the whole period. Statistics of those hours that already exist are replaced; the current hour is left to the recorder. It needs the recorder, and a removal clears exactly the statistics that were imported. The state history is not backfilled.
+
+</details>
+
+<details>
+<summary><b>🪞 Follow a real device and Live Log (1.2)</b></summary>
+
 - Live Log tab (1.2): lists every state change of the generated entities while the tab is open, over all outputs (native, MQTT, Zigbee2MQTT): time, device, entity, old and new value, and the cause. It can be paused and cleared and saves the shown entries as a CSV or JSON file; nothing is stored, and closing the tab empties the log. The tab filters by text, device, entity, template, platform, output, cause and source, by a time window (the last 1 to 60 minutes) and by a minimum change for numbers, and has a switch for numeric values only; the filter is kept for the session. "Show in log" in the actions menu of a device opens the tab for that device. The WebSocket commands are `log/get`, `log/set` and `log/clear`; a ring buffer in memory holds the entries while a reader keeps asking.
 - Follow a real device (1.2, store version 4): the button "Follow device" in the Devices tab opens its own popup. Search a real device of your instance and take its entities (sensors, binary sensors, switches, lights; untick those you do not want; devices without such an entity cannot be chosen), so no template is needed. Set the deviation (offset, factor, noise, delay, dropout, decimals) and look at a preview of five copies before creating. A copy shows the converted value of its source entity with a deviation drawn from its seed, goes offline at once when the source is offline and comes back with it. The commands are `sources/list`, `sources/inspect`, `sources/derive` and `sources/preview`; `devices/create` takes an optional `source`.
 - Copies of a source are locked like devices of the bundled templates: no curve or entity changes, only the seed, which you set per sensor in the details (or draw at random) with `devices/set_seed`. Actions, schedules, scenarios and groups work on them; actions and faults on a copy whose source is offline are refused (`TDC-SRC-007`), so schedules and scenarios skip them and count them as failed. In the live view of a copy, the raw value of the source is drawn as a dashed line next to the curve of the copy.
 - The source is shown everywhere: a column with a badge (ok, offline, removed) in the device list, filters by source and by source state, the details (with the followed entity per entity), the pickers for actions, schedules and groups, the removal plan, and the live log (column and filter). When a source is removed, a banner asks "Remove N copies?" (`sources/removed`, `devices/confirm_source_removed`). The transfer file (format 2) carries the source by the name of the source device with the mapping, the deviation and the seeds; on import the source is looked up by name, and a device whose source is not in this instance is created without it and reported (`TDC-SRC-008`). Files of format 1 still import. See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 17.
 
-## Screenshots
+</details>
 
-The panel in the sidebar of Home Assistant (admin only). The images are rendered with demo data by `npm run screenshots` in `panel-src`.
+<details>
+<summary><b>📦 Transfer and removal</b></summary>
 
-**Devices**: every generated device with its values; open one to change its area and the curve of a sensor, and to see where it is used. "Create devices" has an entity editor for custom devices, and "Manage own templates" lists, edits and deletes your own templates.
+- Transfer tab: export and import devices, own templates, schedules, scenarios and groups (with MQTT) selectively. The export saves the chosen categories as one JSON file of definitions, with references written by name and without runtime values, credentials or markers; a device carries its seed and the overrides of its template, so noise and the other seeded curves match after an import. The import takes such a file: choose the categories and, per category, the mode (add keeps what exists, sync updates it and creates the rest, replace first removes all generated items of the category); a plan shows what would be created, updated, skipped, refused and removed before anything changes. Entries are matched by name (own templates by id); an entry that names a device, template or scenario that is neither in the file nor here is reported and skipped, and so is an existing device whose template or output differs. Imported devices form one run named `import <file name>`. The commands are `transfer/plan`, `transfer/run` and `transfer/export`. See [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 16.
+- Everything that was generated can be removed again, completely, and nothing else is touched.
 
-![The device list](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/devices.png?v=3)
+</details>
 
-![A device with its curve editor and its uses](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/device-details.png?v=3)
+## 📌 Status
 
-![The popup that creates devices](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-devices.png?v=3)
+**Version 1.2.0**, requires **Home Assistant 2026.9.0** or newer. The panel API version is 2, the store version is 4. Tried in a running test instance of Home Assistant with a Mosquitto broker; native Home Assistant groups are not created.
 
-![A custom device that starts from a template, with the entity editor](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/create-custom-device.png?v=3)
+The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md)).
 
-![The popup that manages the own templates](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/own-templates.png?v=3)
+<details>
+<summary>What is new in each version</summary>
 
-**Schedules and scenarios**: schedules with the planned runs of the next 24 hours, and scenarios as timed steps.
+- **1.2.0**: the Live Log tab, and the source device: copies of a real device with seed based deviations, shown in the lists, details, filters, removal plan and log, with source support in the transfer file.
+- **1.1.0**: filter and sort the device, schedule, scenario and group lists, bulk actions, duplicating devices, pausing and resuming, keyboard shortcuts, live curves in the entity list, and a Transfer tab to export and import your data with seed and overrides. Panel API version 2: `devices/list` no longer returns the curves, use the new `devices/get`; the new `devices/names` serves the pickers with the key, name, platform, state class and curve shape of each entity.
+- **1.0.0 and earlier (since 0.3.0)**: own templates (saved, edited and deleted in the panel), an entity editor for custom devices, a curve preview that zooms in on short periods, unit suggestions from Home Assistant, statistics backfill, time lapse, CSV replay, and a reworked panel (popups to create and change devices, schedules, scenarios and MQTT groups, device details with the curve editor, targets of several devices with only the actions that all of them can do, protection of devices that are in use, and screenshots in this README).
 
-![The schedules with the next 24 hours](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedules.png?v=3)
+</details>
 
-![The popup of a new schedule](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/schedule-new.png?v=3)
-
-![A scenario with its steps](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/scenarios.png?v=3)
-
-**Live Log and source device (1.2)**: every state change of the generated entities, live, and a popup that follows a real device with a deviation per copy.
-
-![The live log](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/live-log.png?v=3)
-
-![The popup that follows a real device](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/follow-device.png?v=3)
-
-**MQTT groups, history and removal**
-
-![The MQTT groups](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/groups.png?v=3)
-
-![The statistics import](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/history.png?v=3)
-
-![The removal with its plan](https://raw.githubusercontent.com/stacknoise/hass-test-data-creator/main/docs/images/removal.png?v=3)
-
-## Status
-
-Version 1.2.0 (new since 1.1.0: the Live Log tab, and the source device: copies of a real device with seed based deviations, shown in the lists, details, filters, removal plan and log, with source support in the transfer file; the panel API version stays 2, the store version is 4). Version 1.1.0 (new since 1.0.0: filter and sort the device, schedule, scenario and group lists, bulk actions, duplicating devices, pausing and resuming, keyboard shortcuts, live curves in the entity list, and a Transfer tab to export and import your data with seed and overrides; the panel API version stays 2. Panel API version 2: `devices/list` no longer returns the curves, use the new `devices/get`; the new `devices/names` serves the pickers with the key, name, platform, state class and curve shape of each entity). Requires Home Assistant 2026.9.0 or newer. The integration creates devices over the native output and, with the MQTT integration set up, over MQTT discovery and in the Zigbee2MQTT format including groups (see the release plan in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md)). New since 0.3.0: own templates (saved, edited and deleted in the panel), an entity editor for custom devices, a curve preview that zooms in on short periods, unit suggestions from Home Assistant, statistics backfill, time lapse, CSV replay, and a reworked panel (popups to create and change devices, schedules, scenarios and MQTT groups, device details with the curve editor, targets of several devices with only the actions that all of them can do, protection of devices that are in use, and screenshots in this README). Tried in a running test instance of Home Assistant with a Mosquitto broker; native Home Assistant groups are not created.
-
-## Services
+## 🛠️ Services and examples
 
 | Service | Purpose |
 | --- | --- |
@@ -123,9 +197,13 @@ data:
 
 Actions of `fire_event` per entity type: switch `turn_on`, `turn_off`, `toggle`; binary sensor `set_on`, `set_off`, `pulse` (optional `duration_s`); event `press` (optional `event_type`).
 
-Limits: at most 500 devices per call, 2000 devices and 40 entities per device in total, 200 schedules, 100 scenarios and 100 groups (TDC-GEN-007 to TDC-GEN-009). Free-form fields are bounded: names and ids 128 characters, action parameters 2 KiB, a trigger 4 KiB, custom entities 64 KiB.
+### Limits
 
-Schedules: the target is one of `device` (id or name), `template`, `run` or `all`. The trigger has a `type`:
+At most 500 devices per call, 2000 devices and 40 entities per device in total, 200 schedules, 100 scenarios and 100 groups (TDC-GEN-007 to TDC-GEN-009). Free-form fields are bounded: names and ids 128 characters, action parameters 2 KiB, a trigger 4 KiB, custom entities 64 KiB.
+
+### Schedules
+
+The target is one of `device` (id or name), `template`, `run` or `all`. The trigger has a `type`:
 
 | Trigger | Fields | Example |
 | --- | --- | --- |
@@ -134,6 +212,8 @@ Schedules: the target is one of `device` (id or name), `template`, `run` or `all
 | `once` | `at` (local date and time) | `{type: once, at: "2026-11-02T18:30"}` |
 | `random_window` | `count`, `start`, `end` | `{type: random_window, count: 3, start: "18:00", end: "23:00"}` |
 | `poisson` | `per_day` (average) | `{type: poisson, per_day: 24}` |
+
+### Faults
 
 Faults are actions named `fault_<kind>` (for `fire_event` and schedules); `params` takes `duration_s` (1 to 86400 seconds) and the extras of the kind. A new fault replaces a running one on the same entity and ends by itself.
 
@@ -152,6 +232,8 @@ Faults are actions named `fault_<kind>` (for `fire_event` and schedules); `param
 action: hass_test_data_creator.fire_event
 data: { device: Plug 01, entity: power, action: fault_spike, params: { factor: 3, duration_s: 20 } }
 ```
+
+### Scenarios and schedules by service
 
 A scenario is stored once and then run by service or schedule; `remove_all` deletes the scenarios too:
 
@@ -174,9 +256,11 @@ data:
   trigger: { type: random_window, count: 3, start: "18:00", end: "23:00" }
 ```
 
-Own templates: create them in the panel (see above), or put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2. Up to 200 files of at most 256 KiB are read; links, unreadable and invalid files (and files with `!secret` or `!include`) are skipped with a `TDC-TPL-002` warning in the log, the others still load.
+### Own templates
 
-## Development
+Create them in the panel (see above), or put YAML files in `<config>/hass_test_data_creator/templates/`; the format is described in [docs/concept.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/concept.md) chapter 4.2. Up to 200 files of at most 256 KiB are read; links, unreadable and invalid files (and files with `!secret` or `!include`) are skipped with a `TDC-TPL-002` warning in the log, the others still load.
+
+## 👩‍💻 Development
 
 Read [docs/development.md](https://github.com/stacknoise/hass-test-data-creator/blob/main/docs/development.md) first. In short:
 
@@ -186,6 +270,6 @@ docker compose -f dev/docker-compose.test.yml run --rm tests   # Python checks a
 cd panel-src && npm ci && npm run build               # build the panel
 ```
 
-## License
+## 📄 License
 
 Apache-2.0, see [LICENSE](https://github.com/stacknoise/hass-test-data-creator/blob/main/LICENSE) and [NOTICE](https://github.com/stacknoise/hass-test-data-creator/blob/main/NOTICE).
