@@ -20,7 +20,7 @@
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
     "eslint": "^10.14.0",
-    "eslint-plugin-jsdoc": "^65.4.2",
+    "eslint-plugin-jsdoc": "^65.4.5",
     "happy-dom": "^21.0.4",
     "prettier": "^3.4.1",
     "typescript": "^5.6.3",
