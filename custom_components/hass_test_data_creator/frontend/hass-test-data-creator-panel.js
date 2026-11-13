@@ -1902,7 +1902,7 @@ function O(e, t, n) {
 	let r = Mt(e);
 	return [...t].sort((e, t) => r.compare(n(e), n(t)));
 }
-// \0@oxc-project+runtime@0.155.0/helpers/esm/decorate.js
+// \0@oxc-project+runtime@0.156.0/helpers/esm/decorate.js
 function k(e, t, n, r) {
 	var i = arguments.length, a = i < 3 ? t : r === null ? r = Object.getOwnPropertyDescriptor(t, n) : r, o;
 	if (typeof Reflect == "object" && typeof Reflect.decorate == "function") a = Reflect.decorate(e, t, n, r);
