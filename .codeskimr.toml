@@ -1,0 +1,71 @@
+# Architecture layers for CodeSkimr, outermost first. The first layer that owns a qualified name
+# wins. `may_use` lists the other layers a layer may depend on.
+
+[[layers]]
+name = "Einstieg"
+namespaces = [
+  "custom_components.hass_test_data_creator.__init__",
+  "custom_components.hass_test_data_creator.bootstrap",
+  "custom_components.hass_test_data_creator.data",
+  "custom_components.hass_test_data_creator.config_flow",
+  "custom_components.hass_test_data_creator.services",
+  "custom_components.hass_test_data_creator.panel",
+  "custom_components.hass_test_data_creator.api",
+  "custom_components.hass_test_data_creator.platforms",
+]
+may_use = ["Fachlogik", "Engine", "Infrastruktur", "Kern"]
+
+[[layers]]
+name = "Fachlogik"
+namespaces = [
+  "custom_components.hass_test_data_creator.areas",
+  "custom_components.hass_test_data_creator.devices",
+  "custom_components.hass_test_data_creator.groups",
+  "custom_components.hass_test_data_creator.history",
+  "custom_components.hass_test_data_creator.log",
+  "custom_components.hass_test_data_creator.outputs",
+  "custom_components.hass_test_data_creator.removal",
+  "custom_components.hass_test_data_creator.replay",
+  "custom_components.hass_test_data_creator.scenarios",
+  "custom_components.hass_test_data_creator.scheduler",
+  "custom_components.hass_test_data_creator.sources",
+  "custom_components.hass_test_data_creator.templates",
+  "custom_components.hass_test_data_creator.transfer",
+]
+may_use = ["Engine", "Infrastruktur", "Kern"]
+
+[[layers]]
+name = "Engine"
+namespaces = [
+  "custom_components.hass_test_data_creator.engine",
+  "custom_components.hass_test_data_creator.faults",
+]
+may_use = ["Kern"]
+
+[[layers]]
+name = "Infrastruktur"
+namespaces = [
+  "custom_components.hass_test_data_creator.audit",
+  "custom_components.hass_test_data_creator.store",
+]
+may_use = ["Kern"]
+
+[[layers]]
+name = "Kern"
+namespaces = [
+  "custom_components.hass_test_data_creator.core",
+  "custom_components.hass_test_data_creator.model",
+  "custom_components.hass_test_data_creator.const",
+]
+may_use = []
+
+# The panel: the common base first, because "panel-src.src" also matches it.
+[[layers]]
+name = "Panel-Basis"
+namespaces = ["panel-src.src.common"]
+may_use = []
+
+[[layers]]
+name = "Panel-Seiten"
+namespaces = ["panel-src.src"]
+may_use = ["Panel-Basis"]
